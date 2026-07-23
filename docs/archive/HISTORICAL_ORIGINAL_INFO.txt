@@ -1,0 +1,11 @@
+> ⚠️ ARCHIVIERT — Reines TiredGirl4-Artefakt, keine Konsolidierung. Eingefroren 2026-07-21.
+> Original-`_Info.txt` aus TiredGirl4's Economy Mod (Vorgänger von SyxEconomyMod).
+> Aktuelle Version siehe [../../_Info.txt](../../_Info.txt) und [../../CHANGELOG.md](../../CHANGELOG.md).
+> ---
+VERSION: "1.0.0",
+GAME_VERSION_MAJOR: 71,
+GAME_VERSION_MINOR: 44,
+NAME: "TiredGirl4's Economy Mod",
+DESC: "Every settler gets a wallet. Money moves between them through real encounters, inequality emerges on its own, and you set wages per building and a progressive tax. Wealth drives happiness, loyalty and emigration.",
+AUTHOR: "tiredgirl4",
+INFO: "",
