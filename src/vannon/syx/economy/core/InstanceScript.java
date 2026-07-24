@@ -29,6 +29,8 @@ final class InstanceScript implements SCRIPT.SCRIPT_INSTANCE {
     private boolean economyWasDown;
     private boolean stateWasDown;
     private boolean dumpWasDown;
+    /** View-change detection: compare VIEW.current() against last known class name. */
+    private String lastViewClassName = "(startup)";
 
     InstanceScript() {
         EconConfig.init();
@@ -59,9 +61,23 @@ final class InstanceScript implements SCRIPT.SCRIPT_INSTANCE {
     public void update(double deltaSeconds) {
         DebugTracer.tick();
         this.economy.update(deltaSeconds);
+        pollViewChange();
         pollHotkeys();
         pollDumpHotkey();
         DebugTracer.traceEvery(300, DebugTracer.SCRP, "update sample");
+    }
+
+    /** Detect View switches via polling (SCRIPT_INSTANCE has no activate/deactivate). */
+    private void pollViewChange() {
+        if (!DebugTracer.on()) return;
+        view.main.VIEW.ViewSubSimple current = view.main.VIEW.current();
+        if (current == null) return;
+        String name = current.getClass().getSimpleName();
+        if (!name.equals(this.lastViewClassName)) {
+            DebugTracer.trace(DebugTracer.VIEW,
+                "view_change: " + this.lastViewClassName + " -> " + name);
+            this.lastViewClassName = name;
+        }
     }
 
     /** Hotkey polling with edge detection (Hk.java pattern from ListMenus mod).
@@ -118,7 +134,9 @@ final class InstanceScript implements SCRIPT.SCRIPT_INSTANCE {
 
     @Override
     public void hoverTimer(double mouseTimer, GBox text) {
-        // No-op: this mod does not provide a hover timer.
+        if (DebugTracer.on()) {
+            DebugTracer.trace(DebugTracer.SCRP, "hoverTimer t=" + (long)mouseTimer);
+        }
     }
 
     @Override

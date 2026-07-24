@@ -88,9 +88,6 @@ public final class DebugTracer {
 
     /**
      * Trace only every Nth frame. Convenience combining {@link #every(int)} and {@link #trace(byte, String)}.
-     */
-    /**
-     * Trace only every Nth frame. Convenience combining {@link #every(int)} and {@link #trace(byte, String)}.
      * <p><b>Performance note:</b> the {@code msg} argument is evaluated BEFORE the sampling check.
      * For hot-path callers (render, update), wrap with {@code if (DebugTracer.on())} to avoid
      * string allocation when tracing is disabled.</p>
@@ -100,26 +97,53 @@ public final class DebugTracer {
     }
 
     /**
-     * Dump all buffered events to the game log via {@code LOG.ln()}.
-     * Events are oldest-first. Buffer is NOT cleared — old events are
-     * overwritten by new ones in ring-buffer fashion.
+     * Dump all buffered events to stdout in a single {@code System.out.print()}.
+     * Uses a pre-sized StringBuilder to avoid LOG.ln()'s expensive
+     * {@code new RuntimeException().getStackTrace()} per line.
+     * <p>Events are oldest-first. Buffer is NOT cleared.</p>
      */
     public static void dump() {
         if (count == 0) {
-            LOG.ln("[TRACE] buffer empty");
+            System.out.println("[TRACE] buffer empty");
             return;
         }
         int start = count < CAP ? 0 : (pos & (CAP - 1));
-        LOG.ln("[TRACE] === " + count + " events (frame=" + frame + ") ===");
+        StringBuilder sb = new StringBuilder(count * 80);
+        sb.append("[TRACE] === ").append(count).append(" events (frame=").append(frame).append(") ===\n");
         for (int i = 0; i < count; i++) {
             int idx = (start + i) & (CAP - 1);
-            LOG.ln("[TRACE] " + catName(catBuf[idx]) + " f=" + tickBuf[idx] + " " + msgBuf[idx]);
+            sb.append("[TRACE] ").append(catName(catBuf[idx]))
+              .append(" f=").append(tickBuf[idx]).append(' ').append(msgBuf[idx]).append('\n');
         }
-        LOG.ln("[TRACE] === END ===");
+        sb.append("[TRACE] === END ===\n");
+        System.out.print(sb.toString());
     }
 
     /** Number of events currently in the buffer. */
     public static int size() { return count; }
+
+    /**
+     * Dump all buffered events to a file. Useful for crash-recovery:
+     * the buffer survives in-memory and can be written to disk via
+     * an {@code UncaughtExceptionHandler}.
+     * @param absPath absolute path to the output file
+     */
+    public static void dumpToFile(String absPath) {
+        if (count == 0) return;
+        int start = count < CAP ? 0 : (pos & (CAP - 1));
+        StringBuilder sb = new StringBuilder(count * 80);
+        sb.append("=== ").append(count).append(" events (frame=").append(frame).append(") ===\n");
+        for (int i = 0; i < count; i++) {
+            int idx = (start + i) & (CAP - 1);
+            sb.append(catName(catBuf[idx])).append(" f=").append(tickBuf[idx]).append(' ').append(msgBuf[idx]).append('\n');
+        }
+        sb.append("=== END ===\n");
+        try {
+            java.nio.file.Files.writeString(java.nio.file.Path.of(absPath), sb.toString());
+        } catch (java.io.IOException e) {
+            LOG.ln("[TRACE] dumpToFile failed: " + e.getMessage());
+        }
+    }
 
     // ─── Internal ──────────────────────────────────────────────────────────
 
