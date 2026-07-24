@@ -3,6 +3,7 @@
 | Task | Status | Notes |
 |------|--------|-------|
 | 1 (phase47-shield.sh) | DONE | Built + 4 validation-scenarios grün v0.1.3 → v5 with [a-zA-Z]-regex-fix |
+| Phase-3 Kernel Tests QA-Pass | DONE | 138/138 tests, shield PASS, JaCoCo coverage, 5 QA findings fixed |
 | 2 (IdentityHashMap-Migration) | IN-PROGRESS | Strategy B (register-only). User-picked 2026-07-24 earlier |
 | 3 (EngineSeamsCompatLayer) | NOT-STARTED | |
 | 4 (Save/Load-Hash-Sanity) | NOT-STARTED | needs-amend: hook to Task 6 CitizenStateTable |

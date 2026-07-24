@@ -7,6 +7,16 @@
 
 ## v0.1.5 — 2026-07-24
 
+### Phase-3 Kernel Regression Tests — QA-Pass & Refactor
+
+- **7 neue JUnit-Testklassen** hinzugefügt: `ChunkedSaveTest`, `FoodRollbackKernelTest`, `ExchangeKernelTest`, `AuditKernelTest`, `EscrowKernelTest`, `FoodGateKernelTest`, `FirmEconomyKernelTest`.
+- **138/138 Tests grün**, `phase47-shield` PASS, `mvn compile -q` ohne Projekt-Warnings.
+- **`FoodGateKernel.bill()` refactored:** Seiteneffekt aus der `||`-Kette entfernt; Verhalten bleibt exakt gleich. Kumulativer Overflow und exaktes `Integer.MAX_VALUE`-Boundary werden jetzt getestet.
+- **`ExchangeKernel.yardSale`:** Toter Code `int n = ...` entfernt.
+- **`ExchangeKernel.split`:** Truncation-Verhalten mit Regressionstests dokumentiert (Math.Round-Refactor würde Tests brechen).
+- **`FoodRollbackKernel.allocateCapped`:** Unreachable `IllegalStateException`-Branch entfernt; Remainder-Verteilung und `allocateUnbounded` jetzt abgedeckt.
+- **JaCoCo-Coverage-Plugin** in `pom.xml` integriert; Coverage für die 7 Kernel-Klassen nahezu vollständig.
+
 ### 3-Fenster UI-Refactor
 
 - **`EconomyWindow.java` entfernt:** 3.081-LOC God-File durch drei fokussierte Interrupter-Fenster ersetzt: `WindowOverview`, `WindowEconomy`, `WindowState`.

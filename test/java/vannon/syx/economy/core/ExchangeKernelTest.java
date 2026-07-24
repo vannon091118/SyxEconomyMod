@@ -149,4 +149,50 @@ class ExchangeKernelTest {
     void yardSale_zeroBroke_returnsZero() {
         assertEquals(0, ExchangeKernel.yardSale(0, 0, 0.0, 0.0, 0.5));
     }
+
+    @Test
+    void yardSale_asymmetricLambda_aLower_retentionAUsed() {
+        // moneyA=100 <= moneyB=200 → stake uses lambdaA.
+        // lambdaA=0.0 → stake = (1-0)*100 = 100.
+        assertEquals(200, ExchangeKernel.yardSale(100, 200, 0.0, 1.0, 0.0),
+            "eps<0.5 adds stake");
+        assertEquals(0, ExchangeKernel.yardSale(100, 200, 0.0, 1.0, 0.5),
+            "eps>=0.5 subtracts stake");
+    }
+
+    @Test
+    void yardSale_asymmetricLambda_bHigher_lambdaBPreventsStake() {
+        // moneyA=300 > moneyB=100 → stake uses lambdaB.
+        // lambdaB=1.0 → stake = (1-1)*100 = 0, so moneyA is unchanged.
+        assertEquals(300, ExchangeKernel.yardSale(300, 100, 0.0, 1.0, 0.0),
+            "lambdaB=1.0 removes B's stake");
+        assertEquals(300, ExchangeKernel.yardSale(300, 100, 0.0, 1.0, 0.5),
+            "lambdaB=1.0 removes B's stake even when eps>=0.5");
+    }
+
+    @Test
+    void split_5arg_asymmetricLambda_mixedRetention() {
+        // lambdaA=0, lambdaB=1 → A leaks fully, B retains fully.
+        // pot = (1-0)*100 + (1-1)*50 = 100.
+        // newA = 0*100 + 0.5*100 = 50.
+        assertEquals(50, ExchangeKernel.split(100, 50, 0.0, 1.0, 0.5),
+            "asymmetric retention must only leak from A");
+    }
+
+    @Test
+    void split_5arg_truncatesTowardZero() {
+        // λA=λB=0.5, moneyA=50, moneyB=100, eps=0.5.
+        // leaked = 25 + 50 = 75; newA = 25 + 0.5*75 = 62.5 → (int) = 62.
+        // This test documents the current truncation behavior. A future change
+        // to Math.round() would break it and must therefore be intentional.
+        assertEquals(62, ExchangeKernel.split(50, 100, 0.5, 0.5, 0.5),
+            "split truncates fractional newA toward zero");
+    }
+
+    @Test
+    void split_3arg_truncatesTowardZero() {
+        // pot = 1 + 2 = 3; newA = 0.5 * 3 = 1.5 → (int) = 1.
+        assertEquals(1, ExchangeKernel.split(1, 2, 0.5),
+            "3-arg split truncates fractional newA toward zero");
+    }
 }

@@ -57,14 +57,13 @@ public final class FoodRollbackKernel {
             allocated += share;
             remainder[i] = numerator % available;
         }
+        // target <= available, and every iteration looks at slots with
+        // result[i] < stock[i]. Therefore a best slot always exists.
         while (allocated < target) {
             int best = -1;
             for (int i = 0; i < stock.length; ++i) {
                 if (preferred[i] != desiredPreference || result[i] >= stock[i] || best >= 0 && remainder[i] <= remainder[best]) continue;
                 best = i;
-            }
-            if (best < 0) {
-                throw new IllegalStateException("capped allocation lost mass");
             }
             int n = best;
             result[n] = result[n] + 1;

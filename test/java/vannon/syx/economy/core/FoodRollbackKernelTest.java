@@ -26,7 +26,7 @@ class FoodRollbackKernelTest {
         // Proportional split among preferred: stock 100 → 150*100/300 = 50;
         //                                         stock 200 → 150*200/300 = 100.
         assertEquals(50, r[0], "slot 0 gets 150*100/300 = 50");
-        assertEquals(100, r[1], "slot 1 gets 150*200/300 = 100 (residual goes here)");
+        assertEquals(100, r[1], "slot 1 gets 150*200/300 = 100 (exact division, no residual)");
         assertEquals(0, r[2], "non-preferred slot 2 gets nothing");
         assertEquals(150, sum(r), "result must sum to requested demand");
     }
@@ -105,5 +105,56 @@ class FoodRollbackKernelTest {
     void demandWithNoSlots_throws() {
         assertThrows(IllegalArgumentException.class,
             () -> FoodRollbackKernel.allocate(5, new int[0], new boolean[0]));
+    }
+
+    @Test
+    void nonPreferredSlots_remainderDistributedByLargestRemainder() {
+        // preferred slot 0 fully consumed (10). Remaining 15 pulled from
+        // non-preferred slots 1 (stock 7) and 2 (stock 13), total 20.
+        // Proportional shares: 15*7/20 = 5 (rem 105), 15*13/20 = 9 (rem 195).
+        // Residual loop bumps slot 2 (larger remainder) → 10.
+        int[] stock = {10, 7, 13};
+        boolean[] preferred = {true, false, false};
+        int[] r = FoodRollbackKernel.allocate(25, stock, preferred);
+        assertEquals(10, r[0], "preferred slot fully consumed");
+        assertEquals(5, r[1]);
+        assertEquals(10, r[2], "slot 2 absorbs the residual unit");
+        assertEquals(25, sum(r));
+    }
+
+    @Test
+    void demandExceedsTotalStock_noPreferred_unboundedPath_allocatesProportionally() {
+        // WARNING: This test documents the *current* behavior of the unbounded
+        // allocator, not necessarily a desired invariant. When demand exceeds
+        // total stock, the result can exceed the per-slot stock.
+        // Total stock = 30, demand = 40. After both capped passes 30 units are
+        // allocated; the unbounded path distributes the remaining 10.
+        int[] stock = {10, 20};
+        boolean[] preferred = {false, false};
+        int[] r = FoodRollbackKernel.allocate(40, stock, preferred);
+        // Unbounded weights are max(stock,1): 10 and 20.
+        // Remaining 10 is split 10*10/30 = 3 (rem 100), 10*20/30 = 6 (rem 200);
+        // residual bumps slot 1 → 7. Result: [13, 27], sum = 40.
+        assertEquals(13, r[0]);
+        assertEquals(27, r[1]);
+        assertEquals(40, sum(r), "unbounded path returns full demand even when stock is insufficient");
+    }
+
+    @Test
+    void demandExceedsTotalStock_withPreferred_unboundedPathUsesPreferredFallback() {
+        // WARNING: This test documents the *current* behavior of the unbounded
+        // allocator, not necessarily a desired invariant. When demand exceeds
+        // total stock, the result can exceed the per-slot stock.
+        // Total stock = 30, demand = 40. Preferred slot 0 gives 10,
+        // non-preferred slot 1 gives 20, remaining 10 flows into the
+        // unbounded allocator with fallback = preferred.
+        int[] stock = {10, 20};
+        boolean[] preferred = {true, false};
+        int[] r = FoodRollbackKernel.allocate(40, stock, preferred);
+        // Fallback is {true, false}; only slot 0 is eligible.
+        // Weight = max(10,1) = 10; remaining 10 → 10*10/10 = 10 to slot 0.
+        assertEquals(20, r[0], "preferred fallback receives the unbounded allocation");
+        assertEquals(20, r[1]);
+        assertEquals(40, sum(r));
     }
 }

@@ -222,4 +222,31 @@ class FirmEconomyKernelTest {
         assertThrows(IllegalArgumentException.class,
             () -> FirmEconomyKernel.hillStep(null, 0, 0.0, -1, 1, 0.0));
     }
+
+    @Test
+    void hillStep_degenerateMaxTargetZero_probesZeroWithoutLooping() {
+        // maxTarget=0 collapses the search space to a single point.
+        // Uninitialized step: direction=-1 (cannot go up), probe clamps to 0.
+        FirmEconomyKernel.HillResult r =
+            FirmEconomyKernel.hillStep(null, 0, 10.0, /*max*/ 0, 1, 0.0);
+        assertEquals(0, r.nextTarget(), "degenerate space can only probe 0");
+        assertEquals(0, r.state().bestTarget());
+        assertEquals(-1, r.state().direction());
+        assertTrue(r.state().initialized());
+    }
+
+    @Test
+    void hillStep_degenerateSecondStep_noProgressAndNoInfiniteLoop() {
+        // Given a previous state already pinned at bestTarget=0 with direction=-1,
+        // a second observation at 0 must not advance and must not loop.
+        FirmEconomyKernel.HillState prev =
+            new FirmEconomyKernel.HillState(0, 5.0, -1, true);
+        FirmEconomyKernel.HillResult r =
+            FirmEconomyKernel.hillStep(prev, 0, 10.0, /*max*/ 0, 1, 0.0);
+        assertEquals(0, r.nextTarget(), "second degenerate step still probes 0");
+        assertEquals(0, r.state().bestTarget());
+        // The implementation flips direction when probe == bestTarget, so the
+        // final direction may be either +1 or -1, but nextTarget stays 0.
+        assertTrue(r.state().direction() == 1 || r.state().direction() == -1);
+    }
 }

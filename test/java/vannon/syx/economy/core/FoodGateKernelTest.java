@@ -85,4 +85,59 @@ class FoodGateKernelTest {
         assertThrows(IllegalArgumentException.class,
             () -> FoodGateKernel.bill(new int[]{1, 2}, new double[]{1.0}, 100));
     }
+
+    @Test
+    void bill_singleLineOverflow_returnsQuoteCappedAtMax() {
+        // line = 1_000_000 * 3000.0 = 3.0e9 > Integer.MAX_VALUE.
+        // Overflow branch caps the line at Integer.MAX_VALUE, total reaches MAX_VALUE,
+        // and the method returns Math.max(0, quote).
+        int[] quantities = {1_000_000};
+        double[] prices  = {3000.0};
+        assertEquals(500, FoodGateKernel.bill(quantities, prices, 500),
+            "overflow path must return the quote cap");
+    }
+
+    @Test
+    void bill_exactlyAtIntegerMaxBoundary_returnsQuote() {
+        // line == 2.147483647E9 exactly. The branch uses >=, so this exact value
+        // must trigger the overflow-capped return path.
+        int[] quantities = {1};
+        double[] prices  = {2_147_483_647.0};
+        assertEquals(123, FoodGateKernel.bill(quantities, prices, 123),
+            "exact Integer.MAX_VALUE boundary must trigger the overflow path");
+    }
+
+    @Test
+    void bill_cumulativeTotalExceedsMax_returnsQuote() {
+        // Each individual line (1.0e9) is below the 2.147...E9 single-line
+        // threshold, but their sum exceeds Integer.MAX_VALUE. The overflow guard
+        // must fire after the third line, returning the quote cap.
+        int[] quantities = {1, 1, 1};
+        double[] prices  = {1_000_000_000.0, 1_000_000_000.0, 1_000_000_000.0};
+        assertEquals(777, FoodGateKernel.bill(quantities, prices, 777),
+            "cumulative overflow must return the quote cap once total >= Integer.MAX_VALUE");
+    }
+
+    @Test
+    void bill_cumulativeTotalExactlyMax_returnsQuote() {
+        // 1_000_000_000 + 1_000_000_000 + 147_483_647 = Integer.MAX_VALUE.
+        // The guard uses >=, so the exact boundary must also return the quote.
+        int[] quantities = {1, 1, 1};
+        double[] prices  = {1_000_000_000.0, 1_000_000_000.0, 147_483_647.0};
+        assertEquals(888, FoodGateKernel.bill(quantities, prices, 888),
+            "cumulative total exactly at Integer.MAX_VALUE must return the quote cap");
+    }
+
+    @Test
+    void bill_mixedValidAndInvalidLines_skipsInvalidAndReturnsExactTotal() {
+        // Regression guard for the skip-condition refactor:
+        // line 0: 2 * 5.0 = 10
+        // line 1: quantity 0 → skipped
+        // line 2: price 0.0 → skipped
+        // If || were accidentally changed to &&, invalid lines would no longer be skipped.
+        int[] quantities = {2, 0, 5};
+        double[] prices  = {5.0, 100.0, 0.0};
+        assertEquals(10, FoodGateKernel.bill(quantities, prices, 1000),
+            "only valid lines contribute to the total");
+    }
 }

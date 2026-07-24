@@ -66,6 +66,13 @@ class EscrowKernelTest {
         assertTrue(EscrowKernel.canReserve(1000, 999, 0));
     }
 
+    @Test
+    void canReserve_zeroBalanceZeroReserved_positiveQuote_isFalse() {
+        // spendable(0, 0) = 0 < quote = 1 → the boundary between "geht" and "geht nicht".
+        assertFalse(EscrowKernel.canReserve(0, 0, 1),
+            "spendable=0 must not cover a positive quote");
+    }
+
     /* ── canSettle() ─────────────────────────────────────────────────── */
 
     @Test

@@ -16,8 +16,10 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p>Strategy: snake2d's {@link FileGetter} / {@link FilePutter} are {@code final}
  * classes that are NOT {@code AutoCloseable}. {@link FilePutter#save()} commits the
- * underlying buffer to disk; {@link FileGetter#close()} releases the buffer.
- * {@code @AfterEach} removes the temp file.</p>
+ * underlying buffer to disk. {@link FileGetter#close()} releases the buffer and can
+ * throw {@code IOException}. To avoid a {@code finally}-close swallowing an assertion
+ * failure, we wrap {@link FileGetter} in a tiny {@link AutoCloseable} delegator and use
+ * try-with-resources. {@code @AfterEach} removes the temp file.</p>
  */
 class ChunkedSaveTest {
 
@@ -35,6 +37,20 @@ class ChunkedSaveTest {
         }
     }
 
+    /** AutoCloseable wrapper around snake2d's final {@link FileGetter}. */
+    private static final class AutoCloseableGetter implements AutoCloseable {
+        final FileGetter getter;
+
+        AutoCloseableGetter(Path file) throws IOException {
+            this.getter = new FileGetter(file);
+        }
+
+        @Override
+        public void close() throws IOException {
+            getter.close();
+        }
+    }
+
     @Test
     void roundtrip_singleChunk_readHeaderReturnsExpectedTagAndLength() throws IOException {
         FilePutter putter = new FilePutter(tempFile, 256);
@@ -44,16 +60,14 @@ class ChunkedSaveTest {
         ChunkedSave.endChunk(putter, lengthPos);
         putter.save();
 
-        FileGetter getter = new FileGetter(tempFile);
-        try {
+        try (AutoCloseableGetter handle = new AutoCloseableGetter(tempFile)) {
+            FileGetter getter = handle.getter;
             ChunkedSave.Header h = ChunkedSave.readHeader(getter);
             assertNotNull(h, "first chunk header must be readable");
             assertEquals(0xABCD, h.tag, "tag must round-trip");
             assertEquals(8, h.length, "payload length must include both ints (8 bytes)");
             assertEquals(42, getter.i(), "first payload int must round-trip");
             assertEquals(43, getter.i(), "second payload int must round-trip");
-        } finally {
-            getter.close();
         }
     }
 
@@ -77,8 +91,9 @@ class ChunkedSaveTest {
 
         putter.save();
 
-        FileGetter getter = new FileGetter(tempFile);
-        try {
+        try (AutoCloseableGetter handle = new AutoCloseableGetter(tempFile)) {
+            FileGetter getter = handle.getter;
+
             ChunkedSave.Header a = ChunkedSave.readHeader(getter);
             assertNotNull(a);
             assertEquals(0x01, a.tag);
@@ -101,8 +116,6 @@ class ChunkedSaveTest {
 
             assertNull(ChunkedSave.readHeader(getter),
                 "readHeader must return null once all chunks are exhausted");
-        } finally {
-            getter.close();
         }
     }
 
@@ -111,12 +124,9 @@ class ChunkedSaveTest {
         FilePutter putter = new FilePutter(tempFile, 64);
         putter.save();
 
-        FileGetter getter = new FileGetter(tempFile);
-        try {
-            assertNull(ChunkedSave.readHeader(getter),
+        try (AutoCloseableGetter handle = new AutoCloseableGetter(tempFile)) {
+            assertNull(ChunkedSave.readHeader(handle.getter),
                 "an empty stream has no readable chunk headers");
-        } finally {
-            getter.close();
         }
     }
 
@@ -126,12 +136,9 @@ class ChunkedSaveTest {
         putter.i(0xCAFE);
         putter.save();
 
-        FileGetter getter = new FileGetter(tempFile);
-        try {
-            assertNull(ChunkedSave.readHeader(getter),
+        try (AutoCloseableGetter handle = new AutoCloseableGetter(tempFile)) {
+            assertNull(ChunkedSave.readHeader(handle.getter),
                 "when fewer than 2 ints remain, readHeader must return null");
-        } finally {
-            getter.close();
         }
     }
 
@@ -142,16 +149,13 @@ class ChunkedSaveTest {
         ChunkedSave.endChunk(putter, lenPos);
         putter.save();
 
-        FileGetter getter = new FileGetter(tempFile);
-        try {
-            ChunkedSave.Header h = ChunkedSave.readHeader(getter);
+        try (AutoCloseableGetter handle = new AutoCloseableGetter(tempFile)) {
+            ChunkedSave.Header h = ChunkedSave.readHeader(handle.getter);
             assertNotNull(h);
             assertEquals(0x77, h.tag);
             assertEquals(0, h.length, "zero-payload chunk must declare length=0");
-            assertNull(ChunkedSave.readHeader(getter),
+            assertNull(ChunkedSave.readHeader(handle.getter),
                 "after a zero-length chunk, no further ints remain");
-        } finally {
-            getter.close();
         }
     }
 
@@ -162,16 +166,14 @@ class ChunkedSaveTest {
         ChunkedSave.endChunk(putter, lenPos);
         putter.save();
 
-        FileGetter getter = new FileGetter(tempFile);
-        try {
+        try (AutoCloseableGetter handle = new AutoCloseableGetter(tempFile)) {
+            FileGetter getter = handle.getter;
             ChunkedSave.Header h = ChunkedSave.readHeader(getter);
             assertNotNull(h);
             int beforeSkip = getter.getPosition();
             ChunkedSave.skipChunk(getter, h);
             assertEquals(beforeSkip, getter.getPosition(),
                 "skipping a zero-length chunk must not advance the cursor");
-        } finally {
-            getter.close();
         }
     }
 
@@ -187,16 +189,14 @@ class ChunkedSaveTest {
         ChunkedSave.endChunk(putter, lengthPos);
         putter.save();
 
-        FileGetter getter = new FileGetter(tempFile);
-        try {
+        try (AutoCloseableGetter handle = new AutoCloseableGetter(tempFile)) {
+            FileGetter getter = handle.getter;
             ChunkedSave.Header h = ChunkedSave.readHeader(getter);
             assertEquals(0xBEEF, h.tag);
             assertEquals(12, h.length, "endChunk must compute exact byte length");
             assertEquals(10, getter.i());
             assertEquals(20, getter.i());
             assertEquals(30, getter.i());
-        } finally {
-            getter.close();
         }
     }
 }
