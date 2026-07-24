@@ -12,7 +12,6 @@ import java.util.IdentityHashMap;
 import java.util.Map;
 import settlement.entity.humanoid.Humanoid;
 import settlement.room.main.RoomInstance;
-import settlement.stats.Induvidual;
 import settlement.stats.equip.WearableResource;
 import snake2d.util.sets.LIST;
 import vannon.syx.economy.core.EconConfig;
@@ -29,10 +28,10 @@ public final class AffordabilityGate {
     private final Escrow escrow;
     private final FlowPrices prices;
     private final GrainDole grainDole;
-    private final Map<Induvidual, ArrayDeque<Integer>> settledMeals = new IdentityHashMap<Induvidual, ArrayDeque<Integer>>();
-    private final Map<Induvidual, ArrayDeque<Integer>> settledDrinks = new IdentityHashMap<Induvidual, ArrayDeque<Integer>>();
-    private final Map<Induvidual, ArrayDeque<Integer>> settledGoods = new IdentityHashMap<Induvidual, ArrayDeque<Integer>>();
-    private final Map<Induvidual, Humanoid> foodPayers = new IdentityHashMap<Induvidual, Humanoid>();
+    private final Map<Humanoid, ArrayDeque<Integer>> settledMeals = new IdentityHashMap<Humanoid, ArrayDeque<Integer>>();
+    private final Map<Humanoid, ArrayDeque<Integer>> settledDrinks = new IdentityHashMap<Humanoid, ArrayDeque<Integer>>();
+    private final Map<Humanoid, ArrayDeque<Integer>> settledGoods = new IdentityHashMap<Humanoid, ArrayDeque<Integer>>();
+    private final Map<Humanoid, Humanoid> foodPayers = new IdentityHashMap<Humanoid, Humanoid>();
     private int lastFoodBundleQuote;
     private int lastFoodBundleUnits;
     private SettlementSink sink = SettlementSink.NONE;
@@ -41,7 +40,7 @@ public final class AffordabilityGate {
         this.escrow = escrow;
         this.prices = prices;
         this.grainDole = grainDole;
-        // Phase-4.7 (Task 2): register all 4 Induvidual-keyed maps for clearOnLoad.
+        // Phase-4.7 (Task 2): register all 4 Humanoid-keyed IdentityHashMaps for clearOnLoad.
         // Maps are per-tick transient (rebuilt via computeIfAbsent); clearOnLoad
         // is defensive against silent identity-loss after engine RoomInstance reload.
         IdentityMapRegistry.register("AffordabilityGate", "settledMeals", settledMeals);
@@ -103,7 +102,8 @@ public final class AffordabilityGate {
             EventLog.logSampled("LATENT_DEMAND", "Food purchase rejected for " + humanoid.title() + " (Quote: " + quote + ")");
             return new Admission(false, 0, false);
         }
-        this.foodPayers.put(humanoid.indu(), payer);
+        this.foodPayers.put(humanoid,
+ payer);
         EventLog.logSampled("CONSUMPTION", humanoid.title() + " reserved food for " + quote);
         return new Admission(true, quote, false);
     }
@@ -120,7 +120,8 @@ public final class AffordabilityGate {
         if (quote == previous.quote()) {
             return previous;
         }
-        Humanoid payer = this.foodPayers.remove(humanoid.indu());
+        Humanoid payer = this.foodPayers.remove(humanoid)
+;
         if (payer == null) {
             payer = AffordabilityGate.foodPayer(humanoid);
         }
@@ -136,7 +137,8 @@ public final class AffordabilityGate {
         if (!this.escrow.reserve(payer, quote)) {
             return new Admission(false, 0, false);
         }
-        this.foodPayers.put(humanoid.indu(), payer);
+        this.foodPayers.put(humanoid,
+ payer);
         return new Admission(true, quote, false);
     }
 
@@ -181,7 +183,8 @@ public final class AffordabilityGate {
         if (bill > 0) {
             this.sink.purchase(humanoid, AffordabilityGate.drinkToResources(quantities), bill, Kind.DRINK, seller);
         }
-        this.settledDrinks.computeIfAbsent(humanoid.indu(), ignored -> new ArrayDeque<Integer>()).addLast(bill);
+        this.settledDrinks.computeIfAbsent(humanoid,
+ ignored -> new ArrayDeque<Integer>()).addLast(bill);
         return bill;
     }
 
@@ -252,7 +255,8 @@ public final class AffordabilityGate {
             this.grainDole.recordRation(humanoid, priced);
             this.sink.ration(humanoid, resources, priced, seller);
         }
-        if ((payer = this.foodPayers.remove(humanoid.indu())) == null) {
+        if ((payer = this.foodPayers.remove(humanoid)
+) == null) {
             payer = AffordabilityGate.foodPayer(humanoid);
         }
         if (payer == null) {
@@ -264,7 +268,8 @@ public final class AffordabilityGate {
         if (bill > 0) {
             this.sink.purchase(payer, resources, bill, Kind.FOOD, seller);
         }
-        this.settledMeals.computeIfAbsent(humanoid.indu(), ignored -> new ArrayDeque<Integer>()).addLast(bill);
+        this.settledMeals.computeIfAbsent(humanoid,
+ ignored -> new ArrayDeque<Integer>()).addLast(bill);
         return bill;
     }
 
@@ -272,7 +277,8 @@ public final class AffordabilityGate {
         return this.settle(humanoid, admission, Math.max(0, bill), this.settledGoods, resources, Kind.GOODS, seller);
     }
 
-    private int settle(Humanoid humanoid, Admission admission, int rawBill, Map<Induvidual, ArrayDeque<Integer>> queue, int[] resources, Kind kind, RoomInstance seller) {
+    private int settle(Humanoid humanoid, Admission admission, int rawBill,Map<Humanoid, ArrayDeque<Integer>> queue, int[] resources
+, Kind kind, RoomInstance seller) {
         if (!admission.admitted()) {
             return 0;
         }
@@ -281,12 +287,14 @@ public final class AffordabilityGate {
         if (bill > 0) {
             this.sink.purchase(humanoid, resources, bill, kind, seller);
         }
-        queue.computeIfAbsent(humanoid.indu(), ignored -> new ArrayDeque<Integer>()).addLast(bill);
+        queue.computeIfAbsent(humanoid,
+ ignored -> new ArrayDeque<Integer>()).addLast(bill);
         return bill;
     }
 
     public void cancelFood(Humanoid humanoid, Admission admission) {
-        Humanoid payer = this.foodPayers.remove(humanoid.indu());
+        Humanoid payer = this.foodPayers.remove(humanoid)
+;
         if (payer == null) {
             payer = AffordabilityGate.foodPayer(humanoid);
         }
@@ -304,23 +312,28 @@ public final class AffordabilityGate {
         }
     }
 
-    public int consumeSettledMeal(Induvidual individual) {
+    public int consumeSettledMeal(Humanoid individual)
+ {
         return AffordabilityGate.consume(this.settledMeals, individual);
     }
 
-    public int consumeSettledDrink(Induvidual individual) {
+    public int consumeSettledDrink(Humanoid individual)
+ {
         return AffordabilityGate.consume(this.settledDrinks, individual);
     }
 
-    public int consumeSettledGoods(Induvidual individual) {
+    public int consumeSettledGoods(Humanoid individual)
+ {
         return AffordabilityGate.consume(this.settledGoods, individual);
     }
 
     public void recordScavengedMeal(Humanoid humanoid) {
-        this.settledMeals.computeIfAbsent(humanoid.indu(), ignored -> new ArrayDeque<Integer>()).addLast(0);
+        this.settledMeals.computeIfAbsent(humanoid,
+ ignored -> new ArrayDeque<Integer>()).addLast(0);
     }
 
-    private static int consume(Map<Induvidual, ArrayDeque<Integer>> queues, Induvidual individual) {
+    private static int consume(Map<Humanoid, ArrayDeque<Integer>> queues, Humanoid individual)
+ {
         ArrayDeque<Integer> queue = queues.get(individual);
         if (queue == null || queue.isEmpty()) {
             return -1;

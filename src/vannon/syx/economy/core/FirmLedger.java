@@ -22,11 +22,14 @@ import java.util.Map;
 import settlement.entity.humanoid.Humanoid;
 import settlement.main.SETT;
 import settlement.room.infra.stockpile.StockpileInstance;
+import settlement.room.main.Room;
 import settlement.room.main.RoomBlueprintImp;
 import settlement.room.main.RoomBlueprintIns;
 import settlement.room.main.RoomInstance;
 import settlement.room.main.employment.RoomEmploymentIns;
 import settlement.stats.STATS;
+import snake2d.util.file.FileGetter;
+import snake2d.util.file.FilePutter;
 import vannon.syx.economy.core.EconConfig;
 import vannon.syx.economy.core.EconomicRoles;
 import vannon.syx.economy.core.EngineSeams;
@@ -38,7 +41,21 @@ import vannon.syx.economy.core.StateWarehouses;
 import vannon.syx.economy.core.Wallets;
 
 public final class FirmLedger {
-    private final Map<RoomInstance, FirmState> firms = new IdentityHashMap<RoomInstance, FirmState>();
+    /**
+     * Phase 4.7/T-008 — HashMap-Key ist jetzt {@link RoomCoordinateKey#tileOf(int, int)} (long)
+     * statt RoomInstance-Referenz. Vorteile:
+     * <ul>
+     *   <li>HashMap&lt;Long, FirmState&gt; überlebt Save/Load — world grid ist stabil,
+     *       Reference-Identity ist es nicht.</li>
+     *   <li>Hill-climber State derselben Firma bleibt erhalten (vorher: silent
+     *       cleared über clearOnLoad → Cold-Start-Pathology für Carpenter-Firmen).</li>
+     *   <li>{@code IdentityMapRegistry.register(...)} entfällt — Map ist persistent.</li>
+     *   <li>PropertyLedger behält getrennte (tx, ty, blueprintHash)-Encoding;
+     *       {@link RoomCoordinateKey} ist ausschließlich für <i>ephemere Räume</i>.</li>
+     * </ul>
+     */
+    private final HashMap<Long, FirmState> firms = new HashMap<>();
+    private static final int SAVE_VERSION_FIRMS = 1;
     private final Map<String, BlueprintState> blueprints = new HashMap<String, BlueprintState>();
     private final Map<String, Double> serviceRevenue = new HashMap<String, Double>();
     private final Map<String, Double> stateWageMarginal = new HashMap<String, Double>();
@@ -59,16 +76,10 @@ public final class FirmLedger {
     private double meanPositiveMarginal;
     private int lastFurnitureDumpTick = -1;
 
-    /**
-     * v0.1.3 (Phase-4.7-Blocker #8): Register all reference-keyed maps with the
-     * {@link IdentityMapRegistry} so they are explicitly cleared on Save/Load
-     * instead of silently losing data. IncomeCarry per firm, service-revenue and
-     * state-wage-marginal per blueprint cannot survive a reference-identity shift
-     * (Java IdentityHashMap looks up by {@code ==}); clearing them is the
-     * intermediate fix until full Long-Key migration in Phase-4.7.
-     */
     public FirmLedger() {
-        IdentityMapRegistry.register("FirmLedger", "firms", firms);
+        // Phase 4.7/T-008: firms long-keyed and persistent via save()/load().
+        // No more IdentityMapRegistry.register — reference-identity is no longer
+        // load-bearing; tile-coords are stable across Save/Load cycles.
     }
     public long lastIncomeDue() {
         return this.lastIncomeDue;
@@ -98,6 +109,20 @@ public final class FirmLedger {
     private boolean stateWarehouse(RoomInstance room) {
         return room instanceof StockpileInstance && this.stateWarehouses != null && this.stateWarehouses.isStateOwned(room);
     }
+
+    /**
+     * Phase 4.7/T-008: resolve a tile-key back to its RoomInstance. Returns null
+     * if no SETT.ROOMS() is available (mid-unload) or no room at this tile exists
+     * (demolished, or blueprint not yet committed at edge of frame).
+     */
+    private static RoomInstance roomFor(long key) {
+        if (SETT.ROOMS() == null) {
+            return null;
+        }
+        Room room = SETT.ROOMS().map.get(RoomCoordinateKey.txOf(key), RoomCoordinateKey.tyOf(key));
+        return room instanceof RoomInstance ? (RoomInstance) room : null;
+    }
+
 
     private boolean excludedFromMarketSizing(RoomInstance room) {
         return room == null || EconomicRoles.excludedFromMarketSizing((RoomBlueprintImp)room.blueprintI()) || this.stateWarehouse(room);
@@ -147,7 +172,7 @@ public final class FirmLedger {
         if (room == null || room.employees() == null || EconomicRoles.excludedFromMarketAccounting((RoomBlueprintImp)room.blueprintI()) || !(amount > 0.0) || !Double.isFinite(amount)) {
             return;
         }
-        FirmState state = this.firms.computeIfAbsent(room, ignored -> new FirmState());
+        FirmState state = this.firms.computeIfAbsent(RoomCoordinateKey.tileOf(room.mX(), room.mY()), ignored -> new FirmState());
         state.cashTracked = true;
         state.pendingCash += amount;
     }
@@ -156,7 +181,7 @@ public final class FirmLedger {
         if (room == null || room.employees() == null || EconomicRoles.excludedFromMarketAccounting((RoomBlueprintImp)room.blueprintI()) || !(amount > 0.0) || !Double.isFinite(amount)) {
             return;
         }
-        FirmState state = this.firms.computeIfAbsent(room, ignored -> new FirmState());
+        FirmState state = this.firms.computeIfAbsent(RoomCoordinateKey.tileOf(room.mX(), room.mY()), ignored -> new FirmState());
         state.cashTracked = true;
         state.pendingCash -= amount;
     }
@@ -197,7 +222,7 @@ public final class FirmLedger {
             for (int i = 0; i < blueprint.instancesSize(); ++i) {
                 RoomInstance room = blueprint.getInstance(i);
                 if (room == null || !room.exists() || room.employees() == null || room.employees().max() <= 0 || this.excludedFromMarketSizing(room)) continue;
-                FirmState state = this.firms.computeIfAbsent(room, ignored -> new FirmState());
+                FirmState state = this.firms.computeIfAbsent(RoomCoordinateKey.tileOf(room.mX(), room.mY()), ignored -> new FirmState());
                 state.marketTracked = true;
                 if (!state.targetInitialized) {
                     state.marketTarget = FirmLedger.initialMarketTarget(room.employees().employed(), room.employees().max(), EconConfig.minimumWorkersPerWorkplace);
@@ -211,7 +236,7 @@ public final class FirmLedger {
         for (FlowMeter.FirmSnapshot snapshot : meter.firmSnapshots()) {
             RoomInstance room = snapshot.room();
             if (room == null || room.employees() == null || EconomicRoles.excludedFromMarketAccounting((RoomBlueprintImp)room.blueprintI())) continue;
-            FirmState state = this.firms.computeIfAbsent(room, ignored -> new FirmState());
+            FirmState state = this.firms.computeIfAbsent(RoomCoordinateKey.tileOf(room.mX(), room.mY()), ignored -> new FirmState());
             state.setOutputs(snapshot);
             state.physicalSeen = true;
             state.physicalProfit = FirmLedger.value(snapshot, prices);
@@ -225,10 +250,10 @@ public final class FirmLedger {
         // Phase 5e Fix (2026-07-24): marginal-per-worker durch slopeClamp()-Helper,
         // bounded auf [-wageMax, +wageMax], NaN→0. Sonst: meanPositiveMarginal-
         // Eskalation → log(marginal/meanWage) drückt alle Firm-Prioritäten auf 0.
-        Iterator<Map.Entry<RoomInstance, FirmState>> iterator = this.firms.entrySet().iterator();
+        Iterator<Map.Entry<Long, FirmState>> iterator = this.firms.entrySet().iterator();
         while (iterator.hasNext()) {
-            Map.Entry<RoomInstance, FirmState> entry = iterator.next();
-            RoomInstance roomInstance = entry.getKey();
+            Map.Entry<Long, FirmState> entry = iterator.next();
+            RoomInstance roomInstance = FirmLedger.roomFor(entry.getKey());
             FirmState state = entry.getValue();
             if (roomInstance == null || !roomInstance.exists() || roomInstance.employees() == null || EconomicRoles.excludedFromMarketAccounting((RoomBlueprintImp)roomInstance.blueprintI()) || this.stateWarehouse(roomInstance) || !state.physicalSeen && !state.cashTracked && !state.marketTracked) {
                 iterator.remove();
@@ -297,9 +322,10 @@ public final class FirmLedger {
             for (FlowMeter.FirmSnapshot snapshot : meter.firmSnapshots()) {
                 snapshots.put(snapshot.room(), snapshot);
             }
-            for (Map.Entry<RoomInstance, FirmState> entry : this.firms.entrySet()) {
-                RoomInstance room = entry.getKey();
-                if (this.excludedFromMarketSizing(room)) continue;
+            for (Map.Entry<Long, FirmState> entry : this.firms.entrySet()) {
+                if (entry.getKey() == null) continue;
+                RoomInstance room = FirmLedger.roomFor(entry.getKey());
+                if (room == null || this.excludedFromMarketSizing(room)) continue;
                 FirmState state = entry.getValue();
                 if (!state.physicalSeen || state.hill == null) continue;
                 FlowMeter.FirmSnapshot snap = snapshots.get(room);
@@ -317,9 +343,10 @@ public final class FirmLedger {
         boolean bl = sizeNow = EconConfig.firmSizingEnabled && ticks - this.lastSizingTick >= sizingThreshold;
         if (sizeNow) {
             this.lastSizingTick = ticks;
-            for (Map.Entry<RoomInstance, FirmState> entry : this.firms.entrySet()) {
-                RoomInstance room = entry.getKey();
-                if (this.excludedFromMarketSizing(room)) continue;
+            for (Map.Entry<Long, FirmState> entry : this.firms.entrySet()) {
+                if (entry.getKey() == null) continue;
+                RoomInstance room = FirmLedger.roomFor(entry.getKey());
+                if (room == null || this.excludedFromMarketSizing(room)) continue;
                 if (gateActive && snapshots != null) {
                     FlowMeter.FirmSnapshot snap = snapshots.get(room);
                     if (snap != null && !gate.affordFirmInputs(snap, entry.getValue().profit, prices)) {
@@ -334,11 +361,13 @@ public final class FirmLedger {
         this.stateWageMarginal.clear();
         long l = 0L;
         long treasuryBudget = Math.max(0L, (long)Math.floor(FACTIONS.player().credits().credits()));
-        for (Map.Entry<RoomInstance, FirmState> entry : this.firms.entrySet()) {
+        for (Map.Entry<Long, FirmState> entry : this.firms.entrySet()) {
             int due;
             FirmState state = entry.getValue();
             if (!(state.profit > 0.0)) continue;
-            ArrayList<Humanoid> workers = FirmLedger.freeWorkers(roster, entry.getKey());
+            RoomInstance room = FirmLedger.roomFor(entry.getKey());
+            if (room == null) continue;
+            ArrayList<Humanoid> workers = FirmLedger.freeWorkers(roster, room);
             int workerCount = Math.max(1, workers.size());
             double excessProfit = state.profit - EconConfig.guildSurplusMinProfitPerWorker * (double) workerCount;
             if (excessProfit > 0.0) {
@@ -527,8 +556,10 @@ public final class FirmLedger {
     private void recomputeBlueprintMarginals() {
         this.blueprints.clear();
         this.serviceRevenue.clear();
-        for (Map.Entry<RoomInstance, FirmState> entry : this.firms.entrySet()) {
-            RoomInstance room = entry.getKey();
+        for (Map.Entry<Long, FirmState> entry : this.firms.entrySet()) {
+            if (entry.getKey() == null) continue;
+            RoomInstance room = FirmLedger.roomFor(entry.getKey());
+            if (room == null) continue;
             if (EconomicRoles.excludedFromMarketAccounting((RoomBlueprintImp)room.blueprintI())) continue;
             FirmState state = entry.getValue();
             BlueprintState aggregate = this.blueprints.computeIfAbsent(room.blueprintI().key, ignored -> new BlueprintState());
@@ -598,8 +629,9 @@ public final class FirmLedger {
                             + "profit;marginal;incomeCarry;out_count;out0_name;out0_per_day;out0_producedDelta;"
                             + "in_count;in0_name;in0_per_day;in0_consumedDelta;note\n");
                 }
-                for (Map.Entry<RoomInstance, FirmState> entry : this.firms.entrySet()) {
-                    RoomInstance room = entry.getKey();
+                for (Map.Entry<Long, FirmState> entry : this.firms.entrySet()) {
+                    if (entry.getKey() == null) continue;
+                    RoomInstance room = FirmLedger.roomFor(entry.getKey());
                     if (room == null || !room.exists() || room.employees() == null) continue;
                     RoomBlueprintImp bp = room.blueprintI();
                     if (bp == null) continue;
@@ -686,6 +718,73 @@ public final class FirmLedger {
         this.meanPositiveMarginal = 0.0;
     }
 
+    // —— save / load (Phase 4.7/T-008) ——————————————————————————————
+
+    /**
+     * Phase 4.7/T-008: Persistiert die Firm-Hot-State. {@code HillState} wird in
+     * v0.1.x nicht serialisiert (Re-Cold-Start-Pfad nach Load ist noch durch den
+     * Phase-5e-Fix abgesichert — Firmen überleben einige Ticks ohne Hill).
+     *
+     * <p>Save-Format (pro Firm, key=long):</p>
+     * <ol>
+     *   <li>{@code l}: marketTarget</li>
+     *   <li>{@code b}: targetInitialized</li>
+     *   <li>{@code d}: incomeCarry</li>
+     *   <li>{@code d}: profit (last computed)</li>
+     *   <li>{@code d}: marginal (last computed, slope-clamp'd)</li>
+     *   <li>{@code d}: cashRate (last computed)</li>
+     *   <li>{@code d}: totalOutputValue</li>
+     *   <li>{@code d}: totalInputValue</li>
+     * </ol>
+     */
+    public void save(FilePutter file) {
+        file.i(SAVE_VERSION_FIRMS);
+        file.i(this.firms.size());
+        for (Map.Entry<Long, FirmState> entry : this.firms.entrySet()) {
+            if (entry.getKey() == null) continue;
+            file.l(entry.getKey());
+            FirmState s = entry.getValue();
+            file.i(s.marketTarget);
+            file.bool(s.targetInitialized);
+            file.d(s.incomeCarry);
+            file.d(s.profit);
+            file.d(s.marginal);
+            file.d(s.cashRate);
+            file.d(s.totalOutputValue);
+            file.d(s.totalInputValue);
+        }
+    }
+
+    /**
+     * Phase 4.7/T-008: Lädt die Firm-Hot-State. Überspringt Einträge deren
+     * Tile keinen Room mehr hat (Demolished between saves → karteileiche
+     * Überreste).
+     */
+    public void load(FileGetter file) throws IOException {
+        this.firms.clear();
+        int version = file.i();
+        int count = file.i();
+        for (int i = 0; i < count; ++i) {
+            long key = file.l();
+            FirmState s = new FirmState();
+            s.marketTarget = file.i();
+            s.targetInitialized = file.bool();
+            s.incomeCarry = file.d();
+            s.profit = file.d();
+            s.marginal = file.d();
+            s.cashRate = file.d();
+            if (version >= 1) {
+                s.totalOutputValue = file.d();
+                s.totalInputValue = file.d();
+            }
+            // Note: hill-state nicht in v0.1.x persistiert — siehe save()-Doc.
+            // Defensive: Skip wenn room an dieser Tile-Coord nicht (mehr) existiert.
+            if (SETT.ROOMS() == null || FirmLedger.roomFor(key) != null) {
+                this.firms.put(key, s);
+            }
+        }
+    }
+
     private static final class BlueprintState {
         double profit;
         double marginalNumerator;
@@ -762,10 +861,11 @@ public final class FirmLedger {
      */
     public List<FirmFinancialSnapshot> firmFinancialSnapshots() {
         List<FirmFinancialSnapshot> result = new ArrayList<>(this.firms.size());
-        for (Map.Entry<RoomInstance, FirmState> entry : this.firms.entrySet()) {
-            RoomInstance room = entry.getKey();
-            FirmState state = entry.getValue();
+        for (Map.Entry<Long, FirmState> entry : this.firms.entrySet()) {
+            if (entry.getKey() == null) continue;
+            RoomInstance room = FirmLedger.roomFor(entry.getKey());
             if (room == null || !room.exists() || room.employees() == null) continue;
+            FirmState state = entry.getValue();
             if (EconomicRoles.excludedFromMarketAccounting((RoomBlueprintImp) room.blueprintI())) continue;
             if (!state.physicalSeen) continue;
             result.add(new FirmFinancialSnapshot(
@@ -788,4 +888,3 @@ public final class FirmLedger {
     public record UpdateResult(long paid) {
     }
 }
-

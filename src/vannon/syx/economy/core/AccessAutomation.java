@@ -69,7 +69,7 @@ public final class AccessAutomation {
                     }
                 }
             }
-        } catch (Throwable t) {
+        } catch (RuntimeException t) {  // T-004 (Phase-4.7): catch breit → RuntimeException. Errors (OOM, StackOverflow) propagieren weiter — die globale accessDetectionDisabled-Tonne wird NUR bei recoverable Fehlern gefüllt (Vanilla-API-Drift, NullPointer bei Race).
             accessDetectionDisabled = true;
             lastErrorLogTick = ticks;
             EventLog.log("ACCESS", "AccessAutomation room scan failed: "

@@ -36,13 +36,20 @@ public final class IdentityMapRegistry {
         entries.add(new Registered(owner, fieldName, map::clear));
     }
 
-    /** Cleart alle registrierten Maps und loggt pro Eintrag eine Warnung. */
+    /**
+     * Cleart alle registrierten Maps und loggt pro Eintrag eine Warnung.
+     *
+     * <p><b>T-004 (Phase-4.7):</b> Catch-Type auf {@code RuntimeException} reduziert —
+     * Errors ({@link OutOfMemoryError}, {@link StackOverflowError}, etc.) signalisieren
+     * echte JVM-Probleme und dürfen nicht durch Clear-Logs verschleiert werden. Loop-Isolierung
+     * bleibt: ein fehlgeschlagener clear blockiert nicht die nachfolgenden Einträge.</p>
+     */
     public static void clearOnLoad(String triggerReason) {
         for (Registered r : entries) {
             try {
                 r.clearer().run();
                 System.err.println("[ECON] IdentityMapRegistry: cleared " + tag(r) + " on " + triggerReason);
-            } catch (Throwable t) {
+            } catch (RuntimeException t) {
                 System.err.println("[ECON] IdentityMapRegistry: failed to clear " + tag(r) + " — " + t.getMessage());
             }
         }

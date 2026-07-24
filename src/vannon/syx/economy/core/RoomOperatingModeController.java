@@ -1,7 +1,9 @@
 package vannon.syx.economy.core;
 
-import java.util.IdentityHashMap;
+import java.util.HashMap;
 import java.util.Map;
+import settlement.main.SETT;
+import settlement.room.main.Room;
 import settlement.room.main.RoomBlueprintImp;
 import settlement.room.main.RoomInstance;
 
@@ -20,23 +22,23 @@ import settlement.room.main.RoomInstance;
  */
 public final class RoomOperatingModeController {
 
-    private final Map<RoomInstance, EconConfig.RoomOperatingMode> opModes =
-        new IdentityHashMap<>();
+    private final Map<Long, EconConfig.RoomOperatingMode> opModes = new HashMap<>();
 
     public RoomOperatingModeController() {
-        IdentityMapRegistry.register("RoomOperatingModeController", "opModes", opModes);
+        // No IdentityMapRegistry.register() needed — opModes keyed by stable tile coords.
+        // HashMap<Long, Mode> survives Save/Load because world grid is fixed.
     }
 
     /** Set operating-mode for a room. Caller (UI) decides PRODUCE / PAUSED / MOTHBALLED. */
     public void set(RoomInstance room, EconConfig.RoomOperatingMode mode) {
         if (room == null || mode == null) return;
-        opModes.put(room, mode);
+        opModes.put(RoomCoordinateKey.tileOf(room.mX(), room.mY()), mode);
     }
 
     /** Get operating-mode for a room, defaulting to PRODUCE. */
     public EconConfig.RoomOperatingMode get(RoomInstance room) {
         if (room == null) return EconConfig.RoomOperatingMode.PRODUCE;
-        EconConfig.RoomOperatingMode mode = opModes.get(room);
+        EconConfig.RoomOperatingMode mode = opModes.get(RoomCoordinateKey.tileOf(room.mX(), room.mY()));
         return mode == null ? EconConfig.RoomOperatingMode.PRODUCE : mode;
     }
 
@@ -47,21 +49,25 @@ public final class RoomOperatingModeController {
      * Mittelwert über alle Räume dieses Blueprints. Non-state-funded
      * blueprints: immer 1.0.
      *
-     * @param firms the FirmLedger's firm map (RoomInstance → FirmState)
+     * @param firms the FirmLedger's firm map (long-keyed → FirmState). Phase-4.7/T-008: tiles win.
      */
     public double costScale(RoomBlueprintImp blueprint,
-                            Map<RoomInstance, ?> firms) {
+                            Map<Long, ?> firms) {
         if (blueprint == null || !EconomicRoles.stateFundedPublicWorks(blueprint)) {
             return 1.0;
         }
         int total = 0;
         double scaleSum = 0.0;
-        for (Map.Entry<RoomInstance, ?> entry : firms.entrySet()) {
-            RoomInstance roomInstance = entry.getKey();
+        for (Long key : firms.keySet()) {
+            if (key == null) continue;
+            int tx = RoomCoordinateKey.txOf(key);
+            int ty = RoomCoordinateKey.tyOf(key);
+            Room room = SETT.ROOMS().map.get(tx, ty);
+            RoomInstance roomInstance = room instanceof RoomInstance ? (RoomInstance) room : null;
             if (roomInstance == null || roomInstance.blueprintI() != blueprint) continue;
             ++total;
             EconConfig.RoomOperatingMode mode =
-                opModes.getOrDefault(roomInstance, EconConfig.RoomOperatingMode.PRODUCE);
+                opModes.getOrDefault(key, EconConfig.RoomOperatingMode.PRODUCE);
             switch (mode) {
                 case PRODUCE:
                     scaleSum += 1.0;

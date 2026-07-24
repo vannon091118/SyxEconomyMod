@@ -95,11 +95,11 @@ public final class Purchases {
         Integer prevBox = this.lastHunger.put(indu, now);
         int exactMeals = 0;
         int exactPaid = 0;
-        int bill = gate.consumeSettledMeal(indu);
+        int bill = gate.consumeSettledMeal(h);
         while (bill >= 0) {
             ++exactMeals;
             exactPaid += bill;
-            bill = gate.consumeSettledMeal(indu);
+            bill = gate.consumeSettledMeal(h);
         }
         if (exactMeals > 0) {
             this.meals += exactMeals;
@@ -143,11 +143,11 @@ public final class Purchases {
         EconomySim sim = EconomySim.active();
         AffordabilityGate affordabilityGate = gate = sim == null ? null : sim.affordabilityGate();
         if (gate != null) {
-            int bill = gate.consumeSettledDrink(indu);
+            int bill = gate.consumeSettledDrink(h);
             while (bill >= 0) {
                 exact += bill;
                 ++exactCount;
-                bill = gate.consumeSettledDrink(indu);
+                bill = gate.consumeSettledDrink(h);
             }
         }
         if (exactCount > 0) {
@@ -193,11 +193,11 @@ public final class Purchases {
         if (gate != null) {
             int exact = 0;
             int count = 0;
-            int bill = gate.consumeSettledGoods(indu);
+            int bill = gate.consumeSettledGoods(h);
             while (bill >= 0) {
                 exact += bill;
                 ++count;
-                bill = gate.consumeSettledGoods(indu);
+                bill = gate.consumeSettledGoods(h);
             }
             if (count > 0) {
                 int[] baseline = new int[all.size()];

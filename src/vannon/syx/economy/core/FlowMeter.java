@@ -97,6 +97,28 @@ public final class FlowMeter {
                 state.addExactProduction(industryProduced);
             }
         }
+        // T-005 (Phase 4.7/T-005): Catch-all für Producer-Räume deren Industry nicht in
+        // SETT.ROOMS().industries.all registriert ist (Farms, Pastures, WORKSHOP_POTTERY,
+        // …). Vor diesem Patch hatten solche Räume permanent total_output_value_per_day=0.00.
+        // Wir teilen seen mit dem Industry-Loop oben — Doppel-Sampling ist unmöglich.
+        for (RoomBlueprintIns<?> blueprint : EngineSeams.settRoomsIns()) {
+            for (int i = 0; i < blueprint.instancesSize(); ++i) {
+                RoomInstance room = blueprint.getInstance(i);
+                if (!(room instanceof ROOM_PRODUCER_INSTANCE) || seen.contains(room)) continue;
+                ROOM_PRODUCER_INSTANCE producer = (ROOM_PRODUCER_INSTANCE) room;
+                Industry ind = producer.industry();
+                if (ind == null || (ind.outs().size() == 0 && ind.ins().size() == 0)) continue;
+                seen.add(room);
+                FirmState state = this.firms.get(room);
+                if (state == null || state.industry != ind) {
+                    state = new FirmState(ind);
+                    this.firms.put(room, state);
+                }
+                state.sample(producer, elapsedDays, blend);
+                state.addTo(this.supply, this.firmInputs);
+                state.addExactProduction(industryProduced);
+            }
+        }
         Iterator<RoomInstance> iterator = this.firms.keySet().iterator();
         while (iterator.hasNext()) {
             if (seen.contains(iterator.next())) continue;

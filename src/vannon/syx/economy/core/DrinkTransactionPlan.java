@@ -17,7 +17,6 @@ import settlement.room.main.RoomInstance;
 import settlement.room.service.food.tavern.EconomyTavernAccess;
 import settlement.room.service.food.tavern.ROOM_TAVERN;
 import settlement.room.service.module.RoomServiceAccess;
-import settlement.stats.Induvidual;
 import settlement.stats.STATS;
 import snake2d.util.datatypes.COORDINATE;
 import snake2d.util.rnd.RND;
@@ -27,7 +26,7 @@ import vannon.syx.economy.core.RationOptimizer;
 public final class DrinkTransactionPlan
 extends AIPLAN.PLANRES {
     private final AffordabilityGate gate;
-    private final IdentityHashMap<Induvidual, PendingRound> pending = new IdentityHashMap();
+    private final IdentityHashMap<Humanoid, PendingRound> pending = new IdentityHashMap();
     private final AISUB animation = new AISUB.Simple("ECON_DRINKING"){
 
         protected AISTATE resume(Humanoid h, AIManager d) {
@@ -84,7 +83,8 @@ extends AIPLAN.PLANRES {
 
         protected AISUB.AISubActivation res(Humanoid h, AIManager d) {
             ROOM_TAVERN room = DrinkTransactionPlan.room(d);
-            PendingRound round = DrinkTransactionPlan.this.pending.remove(h.indu());
+            PendingRound round = DrinkTransactionPlan.this.pending.remove(h)
+;
             if (room == null || round == null) {
                 DrinkTransactionPlan.this.release(h, d);
                 return null;
@@ -118,12 +118,13 @@ extends AIPLAN.PLANRES {
     public DrinkTransactionPlan(AffordabilityGate gate) {
         super("ECON_EXACT_DRINK");
         this.gate = gate;
-        // Phase-4.7 (Task 2): register pending Induvidual map for clearOnLoad.
+        // Phase-4.7 (Task 2): register pending Humanoid-keyed map for clearOnLoad.
         IdentityMapRegistry.register("DrinkTransactionPlan", "pending", pending);
     }
 
     protected AISUB.AISubActivation init(Humanoid h, AIManager d) {
-        this.pending.remove(h.indu());
+        this.pending.remove(h)
+;
         d.planByte1 = 0;
         return this.walk.set(h, d);
     }
@@ -142,8 +143,8 @@ extends AIPLAN.PLANRES {
         AffordabilityGate.Admission admission = this.gate.requestDrink(h, result.bundle());
         if (!admission.admitted()) {
             return Prepare.UNAFFORDABLE;
-        }
-        this.pending.put(h.indu(), new PendingRound(result.bundle(), result.servings(), result.preferredServings(), admission));
+        }this.pending.put(h,
+ new PendingRound(result.bundle(), result.servings(), result.preferredServings(), admission));
         d.planByte1 = 1;
         d.planObject = admission.quote();
         return Prepare.READY;

@@ -28,7 +28,6 @@ import settlement.room.service.food.canteen.ROOM_CANTEEN;
 import settlement.room.service.food.eatery.EconomyEateryAccess;
 import settlement.room.service.food.eatery.ROOM_EATERY;
 import settlement.room.service.module.RoomServiceAccess;
-import settlement.stats.Induvidual;
 import settlement.stats.STATS;
 import settlement.thing.THINGS;
 import settlement.thing.ThingsCorpses;
@@ -50,7 +49,7 @@ extends AIPLAN.PLANRES {
     private static final int SCAVENGE_CORPSE = 4;
     private static final int DESPERATE = 5;
     private final AffordabilityGate gate;
-    private final IdentityHashMap<Induvidual, PendingMeal> pending = new IdentityHashMap();
+    private final IdentityHashMap<Humanoid, PendingMeal> pending = new IdentityHashMap();
     private final RBIT.RBITImp rawFoodMask = new RBIT.RBITImp();
     private final SFinderMisc.FinderMiscWithoutDest edibleTerrain = new SFinderMisc.FinderMiscWithoutDest(32){
 
@@ -176,7 +175,8 @@ extends AIPLAN.PLANRES {
                 return FoodTransactionPlan.this.denied.set(humanoid, manager);
             }
             PendingMeal meal = new PendingMeal(quantities, 1, humanoid.race().pref().foodMask.has(manager.resourceCarried()) ? 1 : 0, admission);
-            FoodTransactionPlan.this.pending.put(humanoid.indu(), meal);
+            FoodTransactionPlan.this.pending.put(humanoid,
+ meal);
             manager.planByte1 = 1;
             manager.planObject = admission.quote();
             FoodTransactionPlan.this.complete(humanoid, manager, meal, null);
@@ -301,7 +301,7 @@ extends AIPLAN.PLANRES {
     public FoodTransactionPlan(AffordabilityGate gate) {
         super("ECON_EXACT_FOOD");
         this.gate = gate;
-        // Phase-4.7 (Task 2): register pending Induvidual map for clearOnLoad.
+        // Phase-4.7 (Task 2): register pending Humanoid-keyed map for clearOnLoad.
         // Map is per-AI-plan transient — cleared on plan-init, complete, failure.
         IdentityMapRegistry.register("FoodTransactionPlan", "pending", pending);
     }
@@ -343,8 +343,8 @@ extends AIPLAN.PLANRES {
         return null;
     }
 
-    protected AISUB.AISubActivation init(Humanoid humanoid, AIManager manager) {
-        this.pending.remove(humanoid.indu());
+    protected AISUB.AISubActivation init(Humanoid humanoid, AIManager manager) {this.pending.remove(humanoid)
+;
         manager.planByte1 = 0;
         manager.planByte2 = 0;
         int maximum = Math.max(1, STATS.FOOD().FOOD.decree().get(humanoid));
@@ -414,7 +414,8 @@ extends AIPLAN.PLANRES {
         if (!admission.admitted()) {
             return Prepare.UNAFFORDABLE;
         }
-        this.pending.put(humanoid.indu(), new PendingMeal(result.bundle(), result.servings(), result.preferredServings(), admission));
+        this.pending.put(humanoid,
+ new PendingMeal(result.bundle(), result.servings(), result.preferredServings(), admission));
         manager.planByte1 = 1;
         manager.planObject = admission.quote();
         return Prepare.READY;
@@ -490,7 +491,8 @@ extends AIPLAN.PLANRES {
 
     private PendingMeal refreshPending(Humanoid humanoid, AIManager manager) {
         int[] stock;
-        PendingMeal previous = this.pending.get(humanoid.indu());
+        PendingMeal previous =this.pending.get(humanoid)
+;
         if (previous == null) {
             return null;
         }
@@ -516,14 +518,15 @@ extends AIPLAN.PLANRES {
             return null;
         }
         PendingMeal refreshed = new PendingMeal(result.bundle(), result.servings(), result.preferredServings(), admission);
-        this.pending.put(humanoid.indu(), refreshed);
+        this.pending.put(humanoid,
+ refreshed);
         manager.planObject = admission.quote();
         return refreshed;
     }
 
     private void complete(Humanoid humanoid, AIManager manager, PendingMeal meal, RoomInstance seller) {
-        this.gate.settleFood(humanoid, meal.admission(), meal.bundle(), seller);
-        this.pending.remove(humanoid.indu());
+        this.gate.settleFood(humanoid, meal.admission(), meal.bundle(), seller);this.pending.remove(humanoid)
+;
         manager.planByte1 = 0;
         STATS.FOOD().eat(humanoid, meal.servings(), FoodTransactionPlan.preference(meal));
     }

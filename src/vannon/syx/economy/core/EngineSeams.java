@@ -28,22 +28,9 @@ import settlement.stats.STATS;
 import settlement.stats.colls.StatsReligion;
 import settlement.stats.service.StatService;
 import snake2d.util.sets.LIST;
-import vannon.syx.economy.adapter.ISyxAI;
-import vannon.syx.economy.adapter.VanillaAIAdapter;
 
 public final class EngineSeams {
 
-    /**
-     * AI plan recognition adapter.
-     * Encapsulates the 6 fragile {@code getSimpleName().equals()} checks
-     * that would silently break on a game update. One-shot guards prevent
-     * EventLog spam per session.
-     *
-     * <p>Phase 4 Step 5.1: extracted from inline constants and one-shot
-     * flags into {@link VanillaAIAdapter}. Backward-compatible delegation
-     * through static methods below.</p>
-     */
-    private static final ISyxAI aiAdapter = new VanillaAIAdapter();
 
     public static void overwritePlan(Humanoid humanoid, AIPLAN plan) {
         HAI hAI = humanoid.ai();
@@ -95,24 +82,6 @@ public final class EngineSeams {
 
     public static boolean isSurplusLaborer(Humanoid humanoid) {
         return EngineSeams.isEmployableWorker(humanoid) && EngineSeams.employedRoom(humanoid) == null;
-    }
-
-    /**
-     * @deprecated Phase 4 migration: use {@code sim.aiAdapter().isTavernPlan(plan)} directly.
-     * Kept for backward compatibility with existing callers.
-     */
-    @Deprecated
-    public static boolean isTavernPlan(AIPLAN plan) {
-        return aiAdapter.isTavernPlan(plan);
-    }
-
-    /**
-     * @deprecated Phase 4 migration: use {@code sim.aiAdapter().isMarketPlan(plan)} directly.
-     * Kept for backward compatibility with existing callers.
-     */
-    @Deprecated
-    public static boolean isMarketPlan(AIPLAN plan) {
-        return aiAdapter.isMarketPlan(plan);
     }
 
     public static boolean isEmployableWorker(Humanoid humanoid) {
