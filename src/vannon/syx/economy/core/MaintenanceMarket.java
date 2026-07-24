@@ -60,8 +60,8 @@ public final class MaintenanceMarket implements Saveable {
         ArrayList<Candidate> candidates = new ArrayList<Candidate>();
         Set<RoomInstance> seen = Collections.newSetFromMap(new IdentityHashMap<>());
         long due = 0L;
-        for (RoomBlueprintIns<?> blueprint : SETT.ROOMS().ins()) {
-            if (blueprint == SETT.ROOMS().JANITOR) continue;
+        for (RoomBlueprintIns<?> blueprint : EngineSeams.settRoomsIns()) {
+            if (blueprint == EngineSeams.settRoomsJanitor()) continue;
             for (int i = 0; i < blueprint.instancesSize(); ++i) {
                 long roomDue;
                 int collected;
@@ -98,7 +98,7 @@ public final class MaintenanceMarket implements Saveable {
             return 0L;
         }
         int payable = (int)Math.min(Integer.MAX_VALUE, rawDue);
-        ROOM_JANITOR janitors = SETT.ROOMS().JANITOR;
+        ROOM_JANITOR janitors = EngineSeams.settRoomsJanitor();
         ArrayList<RoomInstance> active = new ArrayList<RoomInstance>();
         for (int i = 0; i < janitors.instancesSize(); ++i) {
             RoomInstance room = janitors.getInstance(i);
@@ -142,7 +142,7 @@ public final class MaintenanceMarket implements Saveable {
 
     private int janitorWorkers() {
         int workers = 0;
-        ROOM_JANITOR janitors = SETT.ROOMS().JANITOR;
+        ROOM_JANITOR janitors = EngineSeams.settRoomsJanitor();
         for (int i = 0; i < janitors.instancesSize(); ++i) {
             RoomInstance room = janitors.getInstance(i);
             if (room == null || room.employees() == null) continue;

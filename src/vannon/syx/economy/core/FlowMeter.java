@@ -207,10 +207,10 @@ public final class FlowMeter {
         if (edible == null) {
             return total;
         }
-        for (ROOM_EATERY eatery : SETT.ROOMS().EATERIES) {
+        for (ROOM_EATERY eatery : EngineSeams.settRoomsEateries()) {
             total += eatery.amount((ResG)edible);
         }
-        for (ROOM_CANTEEN canteen : SETT.ROOMS().CANTEENS) {
+        for (ROOM_CANTEEN canteen : EngineSeams.settRoomsCanteens()) {
             total += canteen.amount((ResG)edible);
         }
         return total;

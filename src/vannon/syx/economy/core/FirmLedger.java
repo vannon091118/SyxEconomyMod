@@ -193,7 +193,7 @@ public final class FirmLedger {
             state.lastIncomePaidThisTick = 0;
             state.workersUnpaidThisTick = 0;
         }
-        for (RoomBlueprintIns<?> blueprint : SETT.ROOMS().ins()) {
+        for (RoomBlueprintIns<?> blueprint : EngineSeams.settRoomsIns()) {
             for (int i = 0; i < blueprint.instancesSize(); ++i) {
                 RoomInstance room = blueprint.getInstance(i);
                 if (room == null || !room.exists() || room.employees() == null || room.employees().max() <= 0 || this.excludedFromMarketSizing(room)) continue;
@@ -271,7 +271,7 @@ public final class FirmLedger {
             aggregate.marginalNumerator += state.marginal * (double)Math.max(1, roomInstance.employees().employed());
             aggregate.marginalWeight += Math.max(1, roomInstance.employees().employed());
         }
-        for (RoomBlueprintIns<?> blueprint : SETT.ROOMS().ins()) {
+        for (RoomBlueprintIns<?> blueprint : EngineSeams.settRoomsIns()) {
             Double serviceVal = this.serviceRevenue.remove(blueprint.key);
             if (serviceVal == null) continue;
             BlueprintState aggregate = this.blueprints.computeIfAbsent(blueprint.key, ignored -> new BlueprintState());
@@ -380,7 +380,7 @@ public final class FirmLedger {
         if (SETT.ROOMS() == null) {
             return;
         }
-        for (RoomBlueprintIns<?> blueprint : SETT.ROOMS().ins()) {
+        for (RoomBlueprintIns<?> blueprint : EngineSeams.settRoomsIns()) {
             if (!EconomicRoles.stateFundedMilitary((RoomBlueprintImp)blueprint)) continue;
             for (int i = 0; i < blueprint.instancesSize(); ++i) {
                 RoomInstance room = blueprint.getInstance(i);
@@ -547,7 +547,7 @@ public final class FirmLedger {
     }
 
     private void applyStateWageMarginals() {
-        for (RoomBlueprintIns<?> blueprint : SETT.ROOMS().ins()) {
+        for (RoomBlueprintIns<?> blueprint : EngineSeams.settRoomsIns()) {
             Double marginalVal = this.stateWageMarginal.get(blueprint.key);
             if (marginalVal == null) continue;
             BlueprintState aggregate = this.blueprints.computeIfAbsent(blueprint.key, ignored -> new BlueprintState());

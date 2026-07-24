@@ -184,8 +184,7 @@ public final class EconomySim {
     private volatile List<RoomBlueprintImp> cachedWorkplaces = Collections.emptyList();
     private volatile List<RESOURCE> cachedAllResources = Collections.emptyList();
     private int ticks = 0;
-    private volatile boolean updateInProgress = false;
-    private static volatile boolean reentryLogged = false;
+    private final ReentryGuard updateGuard = new ReentryGuard("EconomySim.update()");
     private final SimpleHistory treasuryHistory = new SimpleHistory(60);
     private final SimpleHistory giniHistory = new SimpleHistory(60);
     private double encounterCarry = 0.0;
@@ -502,14 +501,7 @@ public final class EconomySim {
         // dem Guard — bei Vanilla-Duplikat-Erkennung (gleicher Tick zweimal
         // angesprochen) akkumulierte der Buffer 2× pro tick, was den in der
         // Live-Diagnose beobachteten mean_wage-/SimpleHistory-Drift verstärkte.
-        if (this.updateInProgress) {
-            if (!reentryLogged) {
-                System.err.println("[ECON] EconomySim.update() re-entry detected — skipping (one-shot log).");
-                reentryLogged = true;
-            }
-            return;
-        }
-        this.updateInProgress = true;
+        if (!this.updateGuard.tryEnter()) return;
         try {
             this.debtDiplomacyBuffer.update();
             if (SETT.ENTITIES() == null) {
@@ -673,7 +665,7 @@ public final class EconomySim {
             this.foreignTradeLedger.dailyTick(this.ticks);
         }
         } finally {
-            this.updateInProgress = false;
+            this.updateGuard.exit();
         }
     }
 

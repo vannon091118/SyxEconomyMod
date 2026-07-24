@@ -22,13 +22,13 @@ public final class FoodRollback {
         int[] stock;
         StallSnapshot nearest = null;
         long bestDistance = Long.MAX_VALUE;
-        for (ROOM_EATERY eatery : SETT.ROOMS().EATERIES) {
+        for (ROOM_EATERY eatery : EngineSeams.settRoomsEateries()) {
             result = FoodRollback.nearestInstance(humanoid, eatery, stock = FoodRollback.eateryStock(eatery), bestDistance);
             if (result == null) continue;
             nearest = result.snapshot;
             bestDistance = result.distanceSquared;
         }
-        for (ROOM_CANTEEN canteen : SETT.ROOMS().CANTEENS) {
+        for (ROOM_CANTEEN canteen : EngineSeams.settRoomsCanteens()) {
             result = FoodRollback.nearestInstance(humanoid, canteen, stock = FoodRollback.canteenStock(canteen), bestDistance);
             if (result == null) continue;
             nearest = result.snapshot;

@@ -70,7 +70,7 @@ public final class HousingMarket implements Saveable {
     }
 
     private void collectFromHomes(Roster roster, Wallets wallets, FirmLedger firmLedger) {
-        ROOM_HOME homeBp = SETT.ROOMS().HOME;
+        ROOM_HOME homeBp = EngineSeams.settRoomsHome();
         if (homeBp == null || homeBp.service == null) {
             return;
         }
@@ -86,7 +86,7 @@ public final class HousingMarket implements Saveable {
     }
 
     private void collectFromChambers(Roster roster, Wallets wallets, FirmLedger firmLedger) {
-        ROOM_CHAMBER chamberBp = SETT.ROOMS().CHAMBER;
+        ROOM_CHAMBER chamberBp = EngineSeams.settRoomsChamber();
         if (chamberBp == null) {
             return;
         }

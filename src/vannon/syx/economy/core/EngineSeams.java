@@ -19,6 +19,10 @@ import settlement.room.main.RoomBlueprintImp;
 import settlement.room.main.RoomInstance;
 import settlement.room.home.chamber.ROOM_CHAMBER;
 import settlement.room.home.house.ROOM_HOME;
+import settlement.room.infra.janitor.ROOM_JANITOR;
+import settlement.room.main.RoomBlueprintIns;
+import settlement.room.service.food.canteen.ROOM_CANTEEN;
+import settlement.room.service.food.eatery.ROOM_EATERY;
 import settlement.room.service.module.RoomService;
 import settlement.stats.STATS;
 import settlement.stats.colls.StatsReligion;
@@ -176,6 +180,29 @@ public final class EngineSeams {
     // Sub-Klassen (RoomBlueprintIns) werden erst beim Iterieren via instanceof gefiltert.
     public static LIST<RoomBlueprintImp> settRoomsImps() {
         return SETT.ROOMS() == null ? null : SETT.ROOMS().imps();
+    }
+
+    // SETT.ROOMS().ins() liefert die bereits sub-typisierten RoomBlueprintIns-Blueprints
+    // (im Unterschied zu .imps() das die Oberklasse liefert). Wird in FirmLedger (4×
+    // Loop über alle Blueprints pro Update) und MaintenanceMarket einmal verwendet.
+    public static LIST<RoomBlueprintIns<?>> settRoomsIns() {
+        return SETT.ROOMS() == null ? null : SETT.ROOMS().ins();
+    }
+
+    // Per-Iter-Loop-Wrapper für EATERIES/CANTEENS Service-Rooms. Werden in
+    // FoodRollback (rollback-iteration) und FlowMeter (industry-sample) iteriert.
+    // Songs-of-Syx liefert hier LIST<X> aus snake2d.util.sets, nicht Array.
+    public static LIST<ROOM_EATERY> settRoomsEateries() {
+        return SETT.ROOMS() == null ? null : SETT.ROOMS().EATERIES;
+    }
+
+    public static LIST<ROOM_CANTEEN> settRoomsCanteens() {
+        return SETT.ROOMS() == null ? null : SETT.ROOMS().CANTEENS;
+    }
+
+    // Wird in MaintenanceMarket 3× als Blueprint-Bezug aufgerufen (update/payJanitors/janitorWorkers).
+    public static ROOM_JANITOR settRoomsJanitor() {
+        return SETT.ROOMS() == null ? null : SETT.ROOMS().JANITOR;
     }
 
     private EngineSeams() {
