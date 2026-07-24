@@ -1,6 +1,8 @@
 # SyxEconomyMod — Architektur-Dokumentation
 
-> Version 0.1.4 | Songs of Syx V71.44 | Stand: 2026-07-24
+> Version 0.1.5-in-progress | Songs of Syx V71.44 | Stand: 2026-07-24
+>
+> **v0.1.5 UI-Refactor:** `vannon.syx.economy.ui` angelegt; `EconWindowBase`, `EconContext`, `EconTab`, `EconWidgets` sowie `WindowOverview`, `WindowEconomy`, `WindowState` mit 9 Tabs implementiert. Legacy `EconomyWindow.java` noch im Baum, wird aber nicht von `InstanceScript` verwendet.
 >
 > **v0.1.4 Extraktionen:** `RoomOperatingModeController` (FirmLedger→79 LOC),
 > `PropertyMarketController` (EconomySim→179 LOC), `CrisisDispatch` (EconomySim→27 LOC).
@@ -18,24 +20,24 @@ Das Mod fügt Songs of Syx eine parallele Wirtschaftsschicht hinzu. Jeder Siedle
 
 ---
 
-## Dateistruktur (Stand v0.1.0)
+## Dateistruktur (Stand v0.1.5-Plan)
 
 ```
 src/vannon/syx/economy/
 │
-├── core/  (96 Dateien, 21.405 LOC)
+├── core/  (98 Dateien, ~21.400 LOC)
 │   ├── EINTRITTS-PUNKTE (vom Spiel aufgerufen)
 │   │   ├── MainScript.java          — Registriert Booster beim Spielstart
-│   │   └── InstanceScript.java      — Erstellt EconomySim + EconomyWindow
+│   │   └── InstanceScript.java      — Erstellt EconomySim + UI-Fenster
 │   │
 │   ├── ORCHESTRATOR
-│   │   ├── EconomySim.java          — Zentrale Instanz, tickt jede Stunde (1.442 LOC)
+│   │   ├── EconomySim.java          — Zentrale Instanz, tickt jede Stunde (~1.442 LOC)
 │   │   ├── PropertyMarketController.java — Phase 5e: Property-Markt-Logik, aus EconomySim extrahiert
 │   │   ├── CrisisDispatch.java      — Phase 5e: TreasuryCrisis-Update-Wrapper
 │   │   └── RoomOperatingModeController.java — Phase 5e: Per-Room Op-Mode + Cost-Scaling
 │   │
-│   ├── UI
-│   │   ├── EconomyWindow.java       — 15 Tabs + Debug-Tab, Zeichnung + Interaktion
+│   ├── UI-LEGACY
+│   │   ├── EconomyWindow.java       — Legacy God-File (3.081 LOC, 18 Tabs) — noch vorhanden, aber unbenutzt; Löschung nach vollständiger Migration
 │   │   └── EconTexts.java           — Alle UI-Strings (DE/EN)
 │   │
 │   ├── KONFIGURATION
@@ -44,7 +46,7 @@ src/vannon/syx/economy/
 │   ├── WIRTSCHAFTS-KERNSYSTEME
 │   │   ├── Wallets.java             — Geldbörsen, Yard-Sale-Transfer (stage-gated)
 │   │   ├── FlowPrices.java          — Angebot/Nachfrage → Preisbildung
-│   │   ├── FlowMeter.java           — Ressourcen-Tracking (V71 Consumption API, nur industries.all)
+│   │   ├── FlowMeter.java           — Ressourcen-Tracking (V71 Consumption API)
 │   │   ├── FirmLedger.java          — Betriebsbuchhaltung, Hillclimber, Income-Tracking
 │   │   │                             — v0.1.4: Cold-Start-Guard + marginal-Cap (wageMax)
 │   │   └── ...
@@ -56,7 +58,7 @@ src/vannon/syx/economy/
 │   │
 │   └── HILFSKLASSEN (30+)
 │
-├── adapter/  (17 Dateien) [NEU v0.1.0 — Phase 4]
+├── adapter/  (17 Dateien) [Phase 4]
 │   ├── INTERFACES (5)
 │   │   ├── ISyxAI.java
 │   │   ├── ISyxTransport.java
@@ -78,13 +80,27 @@ src/vannon/syx/economy/
 │       ├── FallbackBoostingAdapter.java
 │       └── FallbackDiplomacyAdapter.java
 │
-├── benchmark/  (1 Datei) [NEU v0.1.0]
+├── ui/  (10 Dateien implementiert) [Phase 5 UI-Refactor — siehe Plan 2026-07-24-3-window-ux-refactor.md]
+│   ├── EconWindowBase.java          — Abstrakter Interrupter, KPI-Header, Tab-Bar, Input-Blocking
+│   ├── EconContext.java             — Render-Kontext pro Frame
+│   ├── EconTab.java                 — Tab-Interface (inkl. default click-Callback)
+│   ├── EconWidgets.java             — Shared Widgets (Slider, Button, Toggle, Scrollbar, Text)
+│   ├── WindowOverview.java          — Fenster "Übersicht"
+│   ├── WindowEconomy.java           — Fenster "Wirtschaft"
+│   ├── WindowState.java             — Fenster "Staat"
+│   ├── OverviewTabs.java            — DashboardTab, CitizensTab, AdvisorTab
+│   ├── EconomyTabs.java             — PricesTab, WagesFirmsTab, SubsidiesTab
+│   └── StateTabs.java               — WarehouseTab, TaxesTab, SocialTab
+│
+├── benchmark/  (1 Datei)
 │   └── AdapterReflectionBenchmark.java
 │
 └── settlement/room/  (Brücken-Klassen)
     ├── main/employment/LaborMarketAccess.java   — Package-Private Bridge
     └── room/service/food/*/Economy*Access.java   — Service-Zugriffe
 ```
+
+> **Single Source of Truth für UI-Refactor:** `docs/superpowers/plans/2026-07-24-3-window-ux-refactor.md`
 
 ---
 
@@ -107,13 +123,15 @@ src/vannon/syx/economy/
 ╔═══════════════════════════════════════════════════════╗
 ║  SCHICHT 3: Wirtschafts-Logik (eigener Code)          ║
 ║  EconomySim, Wallets, FlowPrices, FirmLedger, etc.    ║
-║  112 Dateien (95 core/ + 17 adapter/), ~21.400 LOC    ║
+║  120 Dateien (98 core/ + 17 adapter/), ~21.400 LOC      ║
 ╚═════════════════════╤═════════════════════════════════╝
                        │
                        ▼
 ╔═══════════════════════════════════════════════════════╗
-║  SCHICHT 4: UI (EconomyWindow)                        ║
-║  15 Tabs + Debug-Tab, Slider, Toggles, Textausgaben   ║
+║  SCHICHT 4: UI (3-Fenster-Refactor)                   ║
+║  WindowOverview (3 Tabs) + WindowEconomy (3 Tabs) +   ║
+║  WindowState (3 Tabs). Single Source of Truth:       ║
+║  docs/superpowers/plans/2026-07-24-3-window-ux-refactor.md ║
 ╚═══════════════════════════════════════════════════════╝
 ```
 
@@ -136,14 +154,16 @@ MainScript.initBeforeGameInited()
 InstanceScript-Konstruktor
     ├── EconConfig.init()            → Lazy Vanilla-Init [NEU v1.7.0]
     ├── EconomySim erstellen
-    ├── EconomyWindow erstellen
+    ├── WindowOverview erstellen       → Hauptfenster (Übersicht)
+    ├── WindowEconomy erstellen      → Wirtschaftsfenster
+    ├── WindowState erstellen        → Staatsfenster
     └── SubjectWallet erstellen
     │
     ▼
 Spiel läuft — jeden Tick:
-    ├── EconomySim.update()    → Wirtschaft tickt
-    ├── EconomyWindow.render() → UI zeichnet
-    └── mouseClick/hover       → Interaktion
+    ├── EconomySim.update()       → Wirtschaft tickt
+    ├── Aktives Fenster render()  → UI zeichnet
+    └── mouseClick/hover          → Interaktion
 ```
 
 ---

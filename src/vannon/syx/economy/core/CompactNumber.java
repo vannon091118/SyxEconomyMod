@@ -1,16 +1,16 @@
 package vannon.syx.economy.core;
 
-final class CompactNumber {
+public final class CompactNumber {
     private static final String[] SUFFIX = new String[]{"", "K", "M", "B", "T", "Q", "E"};
 
     private CompactNumber() {
     }
 
-    static String format(long value) {
+    public static String format(long value) {
         return CompactNumber.format((double)value);
     }
 
-    static String format(double value) {
+    public static String format(double value) {
         double scaled;
         if (!Double.isFinite(value)) {
             return "--";

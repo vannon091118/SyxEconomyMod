@@ -5,6 +5,24 @@
 
 ---
 
+## v0.1.5 — 2026-07-24
+
+### 3-Fenster UI-Refactor
+
+- **`EconomyWindow.java` entfernt:** 3.081-LOC God-File durch drei fokussierte Interrupter-Fenster ersetzt: `WindowOverview`, `WindowEconomy`, `WindowState`.
+- **Neues Package `vannon.syx.economy.ui`:**
+  - `EconContext`, `EconTab`, `EconWidgets`, `EconWindowBase`
+  - `WindowOverview` (Dashboard, Bürger, Berater)
+  - `WindowEconomy` (Preise, Löhne & Firmen, Subventionen)
+  - `WindowState` (Staatslager, Steuern, Soziales)
+- **UI-Bugfixes:** Klick-Handling in `EconWindowBase` (Zoom-Click / Tab-Wechsel), Slider-Grab, GText-Recycling, Button-Auto-Breite.
+- **StateWarehouses TradeMode:** Globale Modi `NORMAL` / `BUY_ONLY` / `SELL_ONLY` für staatliche Lager, persistiert in Save-Format 4.
+- **Standardisieren-Button:** Setzt alle Buy/Sell-Preise auf 80%/110% des aktuellen Ankers.
+- **Konflikt-Hebel-Warnungen:** `EconConfig.conflictWarning()` wird einmal pro Tag in `EconomySim.update()` geloggt.
+- **EconTexts-Labels vereinfacht:** `STAATSLAGER`, `Importpreis`, `Faktor`, `Vorrat %`, `Reichenabgabe`, `Grenzertrag`.
+
+---
+
 ## v0.1.4 — 2026-07-24
 
 ### Bugfixes: Cold-Start-Death-Spiral + mean_wage-Runaway + Re-Entry-Crash

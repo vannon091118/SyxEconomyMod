@@ -11,11 +11,16 @@ import snake2d.util.file.FileGetter;
 import snake2d.util.file.FilePutter;
 import util.gui.misc.GBox;
 import view.keyboard.KEYS;
+import vannon.syx.economy.ui.WindowEconomy;
+import vannon.syx.economy.ui.WindowOverview;
+import vannon.syx.economy.ui.WindowState;
 
 final class InstanceScript implements SCRIPT.SCRIPT_INSTANCE {
 
     private final EconomySim economy;
-    private final EconomyWindow window;
+    private final WindowOverview overview;
+    private final WindowEconomy economyWindow;
+    private final WindowState stateWindow;
     private final SubjectWallet subjectWallet;
     /** Edge detection for hotkey polling (Hk.java pattern). */
     private boolean hotkeyWasDown;
@@ -24,7 +29,9 @@ final class InstanceScript implements SCRIPT.SCRIPT_INSTANCE {
         EconConfig.init();
         EconConfig.resetLaborDefaults();
         this.economy = new EconomySim();
-        this.window = new EconomyWindow();
+        this.overview = new WindowOverview(this.economy);
+        this.economyWindow = new WindowEconomy(this.economy);
+        this.stateWindow = new WindowState(this.economy);
         this.subjectWallet = new SubjectWallet();
     }
 
@@ -48,7 +55,7 @@ final class InstanceScript implements SCRIPT.SCRIPT_INSTANCE {
         // Edge detection: only toggles on key-down edge, not while held
         boolean keyDown = CORE.getInput().getKeyboard().isPressed(334);
         if (keyDown && !this.hotkeyWasDown) {
-            this.window.toggle();
+            this.overview.toggle();
         }
         this.hotkeyWasDown = keyDown;
     }
@@ -66,18 +73,19 @@ final class InstanceScript implements SCRIPT.SCRIPT_INSTANCE {
 
     @Override
     public void render(Renderer renderer, float deltaSeconds) {
-        this.window.render(renderer, deltaSeconds);
+        // The three Interrupter windows are rendered by the engine's InterManager.
+        // SubjectWallet is still rendered manually here.
         this.subjectWallet.render(renderer, deltaSeconds);
     }
 
     @Override
     public void mouseClick(MButt button) {
-        this.window.click(button);
+        // Interrupter click handling is managed by the engine.
     }
 
     @Override
     public void hover(COORDINATE mCoo, boolean mouseHasMoved) {
-        this.window.hover(mCoo);
+        // Interrupter hover handling is managed by the engine.
     }
 
     @Override

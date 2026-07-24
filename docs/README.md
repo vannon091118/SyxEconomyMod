@@ -30,6 +30,7 @@
 | Dokument | Pfad | Status |
 |----------|------|--------|
 | Phase-4.7 Stabilization Plan | [superpowers/plans/2026-07-24-phase47-stabilization.md](superpowers/plans/2026-07-24-phase47-stabilization.md) | ✓ In Arbeit |
+| 3-Fenster UI-Refactor Plan | [superpowers/plans/2026-07-24-3-window-ux-refactor.md](superpowers/plans/2026-07-24-3-window-ux-refactor.md) | ✓ Aktiv — Single Source of Truth für UI |
 | Per-Citizen Training-EXP Plan | [superpowers/plans/2026-07-23-per-citizen-training-exp.md](superpowers/plans/2026-07-23-per-citizen-training-exp.md) | ✓ Phase 5a |
 | Phase-4-Adapter-Plan | [PHASE4_ADAPTER_PLAN.md](PHASE4_ADAPTER_PLAN.md) | ✅ Abgeschlossen |
 | Master Audit Phase 5 | [MASTER_AUDIT_PHASE5.md](MASTER_AUDIT_PHASE5.md) | 📋 Audit-Referenz |
@@ -53,8 +54,8 @@ Playtest-Notizen: `docs/live-notes/YYYY-MM-DD-title.md` → `./tools/consolidate
 |---------|--------------|
 | EconomySim LOC | **1.442** (von 1.553 reduziert) |
 | Neue Extraktions-Klassen | **3** (RoomOperatingModeController, PropertyMarketController, CrisisDispatch) |
-| catch(Throwable) in core/ | **2** (von 27 reduziert) |
+| catch(Throwable) in core/ | **0** |
 | printStackTrace() in core/ | **0** |
-| IdentityHashMap in core/ | **10** Dateien |
-| EngineSeams-Direkt-Calls | **34** (in 15 Dateien — 2 deprecated auf ISyxAI migriert, 34 stabile Vanilla-Wrapper) |
+| IdentityHashMap in core/ | **3** Dateien |
+| EngineSeams-Direkt-Calls | **31** |
 | TreasuryCrisis-Stufen | **5 + Hard Floor** |

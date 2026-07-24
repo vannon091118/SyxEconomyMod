@@ -55,16 +55,23 @@
 | ID | Task | Aufwand | Dateien |
 |----|------|---------|---------|
 | **T-008** | AccessAutomation-Spam: Statusmeldung rate-limit | 0.25d | `AccessAutomation.java` |
-| **T-009** | Advisor-Widerspruch: Defizit/Stabil syncen | 0.25d | `EconomyWindow.java` |
+| **T-009** | Advisor-Widerspruch: Defizit/Stabil syncen | 0.25d | `WindowOverview.AdvisorTab` |
 | **T-010** | Carpenter targetWage=0 in FlowPrices | 0.25d | `FlowPrices.java` |
 
 ---
 
-## Phase 5: Tests & Modularisierung (0/3)
+## Phase 5: 3-Fenster UI-Refactor ✅ Abgeschlossen
 
-- 🔧 JUnit für `ExchangeKernel` (Wealth-Konservierung)
-- 🔧 JUnit für `FlowPrices` Elastizität
-- 🔧 `EconomySim` weitere Module extrahieren (Ziel: <1000 LOC)
+- **Plan:** [`docs/superpowers/plans/2026-07-24-3-window-ux-refactor.md`](superpowers/plans/2026-07-24-3-window-ux-refactor.md)
+- Ziel: `EconomyWindow` God-File (3.081 LOC, 18 Tabs) → 3 Fenster × 3 Tabs, Bug-Fixes, UX-Verbesserungen, Konflikt-Hebel-Warnungen.
+- Status:
+  - ✅ `EconContext`, `EconTab`, `EconWidgets`, `EconWindowBase` implementiert und gegen Vanilla-API validiert.
+  - ✅ `WindowOverview`, `WindowEconomy`, `WindowState` mit je 3 Tabs erstellt.
+  - ✅ `InstanceScript` schaltet auf die neuen Fenster um; Hotkey toggelt `WindowOverview`.
+  - ✅ Tabs mit funktionalen Inhalten (Dashboard, Citizens, Advisor, Preise, Löhne & Firmen, Subventionen, Staatslager, Steuern, Soziales).
+  - ✅ `EconomyWindow.java` entfernt.
+  - ✅ EconTexts-Labels angepasst und Konflikt-Hebel-Warnungen implementiert.
+- Task-Übersicht: 12 Tasks (EconContext, EconTab, EconWidgets, EconWindowBase, 3 Fenster, 3 Tab-Sammeldateien, EconTexts-Renaming, InstanceScript-Wiring, Konflikt-Gating, Integration).
 
 ## Phase 5a: Per-Citizen Training-EXP (0/8 — Plan existiert)
 
@@ -92,12 +99,13 @@ Datenquellen alle im Code vorhanden. Rendering fehlt. 5 Panels: Status-Gauges, P
 
 | Metrik | Wert |
 |--------|------|
-| Java-Dateien (core/) | 96 |
-| EconomySim LOC | 1.442 (−111 von 1.553) |
+| Java-Dateien (core/) | 98 |
+| Java-Dateien (ui/) | 10 |
+| EconomySim LOC | ~1.442 |
 | Neue Extraktionen | 3 (RoomOperatingModeController, PropertyMarketController, CrisisDispatch) |
-| IdentityHashMap in core/ | 10 (3 migriert auf HashMap<String>, 1 Phase-3-ready, 6 Phase-2-pending) |
-| catch(Throwable) in core/ | 2 |
-| EngineSeams-Direkt-Calls | 34 (in 15 Dateien — 2 deprecated migriert auf ISyxAI, 34 stabile Wrapper) |
+| IdentityHashMap in core/ | 9 |
+| catch(Throwable) in core/ | 0 |
+| EngineSeams-Direkt-Calls | 55 |
 | Treasury-Tiers | 5 (+ Hard Floor) |
 | printStackTrace() | 0 |
 

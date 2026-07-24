@@ -650,6 +650,11 @@ public final class EconomySim {
         if (this.ticks % (int)EconConfig.DEFAULT_TICKS_PER_DAY == 0) {
             this.treasuryHistory.push((double)this.treasury());
             this.giniHistory.push(this.stats.gini);
+            // Warn on mutually-exclusive economy levers once per day.
+            String conflict = EconConfig.conflictWarning();
+            if (conflict != null) {
+                EventLog.logSampled("CONFIG", conflict);
+            }
             // Rebalancing-CSV-Export (opt-in via EconConfig.diagnosticsExportEnabled).
             // Schreibt Makro- und Ressourcen-Zeitreihen in das Diagnostik-Verzeichnis
             // für die Offline-Analyse — Hauptaufgabe: Balancing-Entscheidungen

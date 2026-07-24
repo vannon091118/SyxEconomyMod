@@ -15,7 +15,7 @@ housing, and saves wealth. Firms hire workers, optimize output, and distribute
 profits. The state manages treasury, sets policy, and faces escalating crisis
 tiers when spending outruns revenue.
 
-**Current version:** v0.1.4 (Phase 4.7 stabilization)
+**Current version:** v0.1.4 (Phase 4.7 stabilization) → v0.1.5 UI-Refactor in Planung
 
 ### Core subsystems
 
@@ -30,7 +30,7 @@ tiers when spending outruns revenue.
 | Food System | `FoodPlanController.java`, `AffordabilityGate.java` | Meal planning, affordability gates, grain dole |
 | Taxes | `Taxes.java`, `Fiscal.java` | Per-head tax, market tax, religion tax, liturgy |
 | State Industry | `StateWarehouses.java`, `WarehouseMarket.java` | State-run storage, pricing, auto-procurement |
-| Diagnostics | `EconomyWindow.java`, `ChartPanel.java` | In-game economy dashboard, live charts |
+| Diagnostics | `WindowOverview.java`, `WindowEconomy.java`, `WindowState.java`, `ChartPanel.java` | In-game economy dashboard, live charts (3-Fenster-Refactor) |
 | Persistence | `EconomySim.java`, `ChunkedSave.java` | Save/load, chunked serialization, audit trails |
 
 ### v0.1.4 New Classes
@@ -45,8 +45,9 @@ tiers when spending outruns revenue.
 
 ```
 src/vannon/syx/economy/
-├── core/           ← 96 files, ~21.400 LOC (EconomySim: 1.442)
+├── core/           ← 98 files, ~21.400 LOC (EconomySim: ~1.442)
 ├── adapter/        ← Vanilla API abstraction layer (17 files)
+├── ui/             ← 10 files planned (3-Fenster-Refactor)
 └── settlement/     ← Bridge classes for SoS room/service hooks
 ```
 

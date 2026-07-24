@@ -34,7 +34,14 @@ import vannon.syx.economy.core.Roster;
 import vannon.syx.economy.core.Wallets;
 
 public final class StateWarehouses implements Saveable {
-    static final int FORMAT = 3;
+    static final int FORMAT = 4;
+
+    /** Operating mode for state-owned warehouses. */
+    public enum TradeMode {
+        NORMAL,      // buy and sell according to configured prices
+        BUY_ONLY,    // accumulate stock, never sell
+        SELL_ONLY    // liquidate stock, never buy
+    }
 
     public StateWarehouses(ISyxWarehouse warehouseAdapter) {
         this.warehouseAdapter = warehouseAdapter;
@@ -44,6 +51,7 @@ public final class StateWarehouses implements Saveable {
     private final HashSet<Long> liquidating = new HashSet<>();
     private int[] buyPrice = new int[0];
     private int[] sellPrice = new int[0];
+    private TradeMode tradeMode = TradeMode.NORMAL;
     private int[] crownMarketPrice = new int[0];
     private boolean[] hoardingBuyerFor = new boolean[0];
     private int[] constructionDelivered = new int[0];
@@ -60,7 +68,7 @@ public final class StateWarehouses implements Saveable {
     private final ISyxWarehouse warehouseAdapter;
 
     static boolean supportsFormat(int version) {
-        return version >= 1 && version <= 3;
+        return version >= 1 && version <= 4;
     }
 
     public long lastWagesPaid() {
@@ -160,11 +168,29 @@ public final class StateWarehouses implements Saveable {
     }
 
     public boolean isHoarding(RoomInstance warehouse) {
-        return this.isStateOwned(warehouse) && !this.liquidating.contains(StateWarehouses.key(warehouse));
+        if (!this.isStateOwned(warehouse)) {
+            return false;
+        }
+        if (this.tradeMode == TradeMode.SELL_ONLY) {
+            return false;
+        }
+        if (this.tradeMode == TradeMode.BUY_ONLY) {
+            return true;
+        }
+        return !this.liquidating.contains(StateWarehouses.key(warehouse));
     }
 
     public boolean isLiquidating(RoomInstance warehouse) {
-        return this.isStateOwned(warehouse) && this.liquidating.contains(StateWarehouses.key(warehouse));
+        if (!this.isStateOwned(warehouse)) {
+            return false;
+        }
+        if (this.tradeMode == TradeMode.SELL_ONLY) {
+            return true;
+        }
+        if (this.tradeMode == TradeMode.BUY_ONLY) {
+            return false;
+        }
+        return this.liquidating.contains(StateWarehouses.key(warehouse));
     }
 
     public void setLiquidating(RoomInstance warehouse, boolean value) {
@@ -188,10 +214,48 @@ public final class StateWarehouses implements Saveable {
         } else {
             this.liquidating.clear();
         }
+        this.tradeMode = TradeMode.NORMAL;
     }
 
     public boolean allLiquidating() {
+        if (this.tradeMode == TradeMode.SELL_ONLY) {
+            return true;
+        }
+        if (this.tradeMode == TradeMode.BUY_ONLY) {
+            return false;
+        }
         return !this.owned.isEmpty() && this.liquidating.containsAll(this.owned);
+    }
+
+    /** Sets the global trade mode for all state-owned warehouses. */
+    public void setTradeMode(TradeMode mode) {
+        this.tradeMode = mode == null ? TradeMode.NORMAL : mode;
+    }
+
+    /** Returns the current global trade mode. */
+    public TradeMode tradeMode() {
+        return this.tradeMode;
+    }
+
+    /**
+     * Resets all buy/sell prices to 80% / 110% of the current market anchor.
+     * Uses {@link FlowPrices#anchor(int)} for the per-resource anchor value.
+     */
+    public void standardizeAllPrices(FlowPrices prices) {
+        if (prices == null) {
+            return;
+        }
+        this.ensureSized();
+        for (RESOURCE r : RESOURCES.ALL()) {
+            int idx = r.index();
+            int anchor = (int) prices.anchor(idx);
+            if (this.tradeMode != TradeMode.SELL_ONLY) {
+                this.buyPrice[idx] = clampPrice((int) (anchor * 0.80));
+            }
+            if (this.tradeMode != TradeMode.BUY_ONLY) {
+                this.sellPrice[idx] = clampPrice((int) (anchor * 1.10));
+            }
+        }
     }
 
     public int buyPrice(RESOURCE resource) {
@@ -238,11 +302,17 @@ public final class StateWarehouses implements Saveable {
     }
 
     public boolean buysAt(RESOURCE resource, int marketPrice) {
+        if (this.tradeMode == TradeMode.SELL_ONLY) {
+            return false;
+        }
         int floor = this.buyPrice(resource);
         return floor > 0 && marketPrice <= floor && resource != null && resource.index() < this.hoardingBuyerFor.length && this.hoardingBuyerFor[resource.index()];
     }
 
     public boolean sellsAt(RoomInstance warehouse, RESOURCE resource, int marketPrice) {
+        if (this.tradeMode == TradeMode.BUY_ONLY) {
+            return false;
+        }
         int floor = this.sellPrice(resource);
         return floor > 0 && this.isLiquidating(warehouse) && marketPrice >= floor;
     }
@@ -363,17 +433,11 @@ public final class StateWarehouses implements Saveable {
         if (!EconConfig.stateWarehousesEnabled || this.owned.isEmpty() || SETT.ROOMS() == null) {
             return;
         }
-        boolean canLock = this.hasStoringLock();
         for (int i = 0; i < EconProgression.reliableStockpileCount(); ++i) {
-            boolean hoarding;
             StockpileInstance granary = SETT.ROOMS().STOCKPILE.getInstance(i);
             if (granary == null || !granary.exists() || !this.isStateOwned(granary)) continue;
-            boolean bl = hoarding = !this.liquidating.contains(StateWarehouses.key(granary));
-            if (hoarding) {
-                this.warehouseAdapter.setStoring(granary, true);
-            } else {
-                this.warehouseAdapter.setStoring(granary, false);
-            }
+            boolean hoarding = this.isHoarding(granary);
+            this.warehouseAdapter.setStoring(granary, hoarding);
             if (!hoarding) continue;
             for (RESOURCE resource : RESOURCES.ALL()) {
                 if (this.buyPrice[resource.index()] <= 0 || !granary.crateMask.has(resource)) continue;
@@ -544,7 +608,7 @@ public final class StateWarehouses implements Saveable {
     public void save(FilePutter file) {
         int i;
         this.ensureSized();
-        file.i(3);
+        file.i(4);
         file.i(this.lastSeason);
         file.i(this.owned.size());
         for (long tile : this.owned) {
@@ -554,6 +618,7 @@ public final class StateWarehouses implements Saveable {
         for (long tile : this.liquidating) {
             file.l(tile);
         }
+        file.i(this.tradeMode.ordinal());
         int count = 0;
         for (i = 0; i < this.buyPrice.length; ++i) {
             if (this.buyPrice[i] <= 0 && this.sellPrice[i] <= 0 && this.crownMarketPrice[i] == 75) continue;
@@ -588,6 +653,10 @@ public final class StateWarehouses implements Saveable {
                 this.liquidating.add(file.l());
             }
         }
+        if (version >= 4) {
+            int mode = file.i();
+            this.tradeMode = mode >= 0 && mode < TradeMode.values().length ? TradeMode.values()[mode] : TradeMode.NORMAL;
+        }
         int policies = Math.max(0, file.i());
         for (i = 0; i < policies; ++i) {
             String key = file.chars();
@@ -617,6 +686,7 @@ public final class StateWarehouses implements Saveable {
     public void clear() {
         this.owned.clear();
         this.liquidating.clear();
+        this.tradeMode = TradeMode.NORMAL;
         this.buyPrice = new int[0];
         this.sellPrice = new int[0];
         this.crownMarketPrice = new int[0];

@@ -65,7 +65,7 @@ Dies sind die einzigen Dateien im gesamten Projekt, die Vanilla-Klassen direkt i
 | Klasse | Was der Name suggeriert | Was sie tatsächlich tut |
 |--------|----------------------|------------------------|
 | **`EconomySim`** | "Wirtschafts-Simulation" | **Das Herz des Mods.** Zentrale Instanz, tickt jede Stunde (`update()`). Orchestriert ALLE Subsysteme in fester Reihenfolge: Roster → Preise → Firmen → Arbeit → Services → Steuern → Transfers → Audit → Krisen → Export. 600+ Zeilen, ~40 Subsystem-Aufrufe pro Tick. |
-| **`InstanceScript`** | "Instanz-Skript" | Eintrittspunkt vom Spiel: erstellt `EconomySim`, `EconomyWindow`, `SubjectWallet`. Ruft `EconConfig.init()` auf (Lazy-Vanilla-Init). |
+| **`InstanceScript`** | "Instanz-Skript" | Eintrittspunkt vom Spiel: erstellt `EconomySim`, `WindowOverview`, `WindowEconomy`, `WindowState`, `SubjectWallet`. Ruft `EconConfig.init()` auf (Lazy-Vanilla-Init). |
 
 ### Geld & Brieftaschen (7 Dateien)
 
@@ -245,7 +245,7 @@ Dies sind die einzigen Dateien im gesamten Projekt, die Vanilla-Klassen direkt i
 
 | Klasse | Was der Name suggeriert | Was sie tatsächlich tut |
 |--------|----------------------|------------------------|
-| **`EconomyWindow`** | "Wirtschafts-Fenster" | **16 Tabs + Debug-Tab.** ~1500 Zeilen handgeschriebenes UI. Custom Widgets: `toggle()`, `slider()`, `valueField()`, `scrollbar()`. 10 Scroll-Variablen. 15 Farb-Konstanten. 0 Engine-Widgets genutzt (`GButt`, `GSliderInt`, `GMeter`, `GChart` — alles selbst gebaut). |
+| **`EconomyWindow`** | "Wirtschafts-Fenster" | **Legacy God-File (3.081 LOC).** 18 Tabs. Wird durch den 3-Fenster-Refactor ersetzt — siehe Plan `docs/superpowers/plans/2026-07-24-3-window-ux-refactor.md`. |
 | **`ChartPanel`** | "Diagramm-Panel" | Dünner public Wrapper um Vanilla `GChart` (package-private). Ohne diese Klasse: kein Chart im Mod-UI. |
 
 ### Texte & Rollen (2 Dateien)
@@ -276,7 +276,7 @@ Dies sind die einzigen Dateien im gesamten Projekt, die Vanilla-Klassen direkt i
 
 ---
 
-## 📊 Zusammenfassung: **112 Klassen** in 4 Kategorien
+## 📊 Zusammenfassung: **120 Klassen** in 4 Kategorien
 
 | Kategorie | Typ | Anzahl | Leitsatz |
 |-----------|-----|--------|----------|
@@ -293,11 +293,11 @@ Dies sind die einzigen Dateien im gesamten Projekt, die Vanilla-Klassen direkt i
 |------|----------------|----------------------|
 | **`IncomeCarry`** | "Einkommens-Trage" — RPG-Buff? | Nicht ausgeschütteter Gewinn einer Firma (steht in `FirmLedger.FirmState`) |
 | **`CashRate`** | "Bargeld-Rate" — Wechselkurs? | Netto-Geldfluss pro Tag in `FirmLedger`: Einnahmen − Ausgaben |
-| **`Advisor`** | "Berater" — NPC der Tipps gibt? | UI-Tab in `EconomyWindow`: 10 Meilenstein-Indikatoren + KPI-Grid + Warnungen. KEIN NPC, nur Visualisierung. |
+| **`Advisor`** | "Berater" — NPC der Tipps gibt? | UI-Tab in `WindowOverview` (AdvisorTab): 10 Meilenstein-Indikatoren + KPI-Grid + Warnungen. KEIN NPC, nur Visualisierung. |
 | **`FlowMeter`** | "Fluss-Messer" — Sensor/Hardware? | Wrapper um Vanilla `FResources` — liest Materialströme aus der Engine. Kein eigenes Tracking. |
 | **`FirmLedger`** | "Firmen-Hauptbuch" — Buchhaltung? | Buchhaltung PLUS Analytics (Profit-Tracking) PLUS Export-Source (CSV). Drei Rollen in einer Klasse. |
 | **`EconomicRoles`** | "Wirtschafts-Rollen" — RPG-Klassen? | Mapping: Room-Typ → Lohn-Konstante, Slider-Range, Staatsjob-Flag. Reine Konfiguration. |
-| **`MarketTarget`** | "Markt-Ziel" — Trading-Strategie? | UI-Konzept in `EconomyWindow`: der Ziel-Marktpreis den der Spieler per Slider einstellt. |
+| **`MarketTarget`** | "Markt-Ziel" — Trading-Strategie? | UI-Konzept in `WindowEconomy` (PricesTab): der Ziel-Marktpreis den der Spieler per Slider einstellt. |
 | **`DebtDiplomacyBuffer`** | "Schulden-Diplomatie-Puffer" — ??? | Liest `DipWarPlayer`-Felder und berechnet wie viele Fraktionen gerade abgeschreckt sind. Militär-Puffer, nicht Schulden-Puffer. |
 | **`EngineSeams`** | "Engine-Nahtstellen" — Integrations-Layer? | Legacy-Fassade — alle Methoden sind `@Deprecated` und delegieren an Adapter. Wird entfernt sobald alle Caller migriert sind. |
 | **`Yard-Sale`** | "Hof-Flohmarkt" — Event? | Peer-to-Peer-Geldtransfer: Bürger kauft direkt von anderem Bürger, kein Markt. Der Name stammt aus `Wallets.exchange()`. |

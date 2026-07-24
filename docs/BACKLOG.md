@@ -22,9 +22,9 @@
 "AccessAutomation room scan disabled after earlier failure" spammt 14×/Tick ins Spieler-Chronik-Fenster. Der Rate-Limiter aus v0.1.2 greift nur für NPEs, nicht für Statusmeldungen. Fix: Rate-Limit auch auf die Statusmeldung anwenden.
 
 ### B-003: Advisor-Widerspruch — "Defizit" + "Staatskasse stabil"
-**Source:** `ux:papercut` · **Severity:** 🟡 P2 · **Status:** Open
+**Source:** `ux:papercut` · **Severity:** 🟡 P2 · **Status:** Fixed in UI-Refactor
 
-Finanzen-Tab zeigt gleichzeitig "Defizit" (rot) und "Staatskasse stabil" (grün). Zwei Subsysteme, keine Absprache. Fix: Konsistente Status-Aggregation.
+Finanzen-Tab zeigte gleichzeitig "Defizit" (rot) und "Staatskasse stabil" (grün). Zwei Subsysteme, keine Absprache. Fix: `OverviewTabs.AdvisorTab` aggregiert Einnahmen/Ausgaben zentral und zeigt einen einzigen konsistenten Status (Defizit / Knapp / Stabil). — siehe Plan 2026-07-24-3-window-ux-refactor.md (Task 6).
 
 ### B-004: Vermögensklassen-Drift — 24 "Elite" verschwinden
 **Source:** `bug:silent` · **Severity:** 🟠 P1 · **Status:** Open
@@ -36,20 +36,20 @@ Finanzen-Tab zeigt gleichzeitig "Defizit" (rot) und "Staatskasse stabil" (grün)
 
 `setPay()` loggt nur Warnung via `System.err.println`, erzwingt aber keinen Cap. `EconomyWindow`-Slider + Save/Load schreiben direkt ungeclampt. Fix: Harte Grenze im Setter.
 
-### B-006: IdentityHashMap — 12 Dateien, Long-Key-Migration offen
+### B-006: IdentityHashMap — 3 Dateien verbleibend, Long-Key-Migration offen
 **Source:** `gap:net-new` · **Severity:** 🟠 P1 · **Status:** Open
 
-`IdentityMapRegistry` cleart Maps beim Load (lauter Datenverlust statt stiller Korruption), aber echte Long-ID-Migration steht noch aus. 12 Dateien in `core/` nutzen IdentityHashMap. Phase-4.7-Blocker #8.
+`IdentityMapRegistry` cleart Maps beim Load (lauter Datenverlust statt stiller Korruption), aber echte Long-ID-Migration steht noch aus. Aktuell 3 Dateien in `core/` nutzen `IdentityHashMap` (außerhalb von `IdentityMapRegistry.java`). Phase-4.7-Blocker #8.
 
-### B-007: catch(Throwable) — 2 Sites in core/ verbleibend
+### B-007: catch(Throwable) — 0 Sites in core/
+**Source:** `gap:net-new` · **Severity:** 🟡 P2 · **Status:** Done
+
+Von ehemals 27 Sites auf 0 reduziert. `phase47-shield.sh` blockt Regressionen.
+
+### B-008: EngineSeams-Direkt-Calls — 31 in core/ (Ziel: 0)
 **Source:** `gap:net-new` · **Severity:** 🟡 P2 · **Status:** Open
 
-Von ehemals 27 Sites auf 2 reduziert. Restliche 2 Sites auf `catch(RuntimeException)` tighten.
-
-### B-008: EngineSeams-Direkt-Calls — 16 in core/ (Ziel: 0)
-**Source:** `gap:net-new` · **Severity:** 🟡 P2 · **Status:** Open
-
-Phase-5-Blocker #2: 16 direkte EngineSeams-Calls im Core. Ziel: 0.
+Phase-5-Blocker #2: 31 direkte EngineSeams-Calls im Core. Ziel: 0.
 
 ### B-009: Hungersignal ohne Bevölkerungskonsequenz
 **Source:** `balance:drift` · **Severity:** 🟠 P1 · **Status:** Open

@@ -13,7 +13,7 @@ public final class EconTexts {
     public static final String ¤¤tabPrices = "PREISE";
     public static final String ¤¤tabWages = "LÖHNE";
     public static final String ¤¤tabSubsidies = "SUBVENTIONEN";
-    public static final String ¤¤tabGranary = "LAGER";
+    public static final String ¤¤tabGranary = "STAATSLAGER";
     public static final String ¤¤tabMarket = "MARKT";
     public static final String ¤¤tabTaxes = "STEUERN";
     public static final String ¤¤tabFaith = "GLAUBE";
@@ -68,9 +68,9 @@ public final class EconTexts {
     public static final String ¤¤pricesCoverageHint = "Deckungsgrad 1,00 = Zielbestand; darunter Mangel, darüber Überschuss. Rot = 10x+ Anker.";
     public static final String ¤¤pricesColumnResource = "Ressource";
     public static final String ¤¤pricesColumnLocal = "lokal / Einheit";
-    public static final String ¤¤pricesColumnAnchor = "Handelsanker";
-    public static final String ¤¤pricesColumnMultiple = "Vielfaches";
-    public static final String ¤¤pricesColumnCoverage = "Deckung";
+    public static final String ¤¤pricesColumnAnchor = "Importpreis";
+    public static final String ¤¤pricesColumnMultiple = "Faktor";
+    public static final String ¤¤pricesColumnCoverage = "Vorrat %";
     public static final String ¤¤pricesColumnStock = "Bestand";
     public static final String ¤¤pricesColumnSupplyDemand = "Angebot/Nachfrage/Tag";
 
@@ -81,6 +81,10 @@ public final class EconTexts {
     public static final String ¤¤subColumns = "Ressource     Output/Tag     Denari/Einheit";
 
     // GRANARY tab
+    public static final String ¤¤btnStandardize = "Standardisieren";
+    public static final String ¤¤warehouseModeNormal = "Normal";
+    public static final String ¤¤warehouseModeBuy = "Nur Kaufen";
+    public static final String ¤¤warehouseModeSell = "Nur Verkaufen";
     public static final String ¤¤granBought = "Kornspeicher: gekauft ";
     public static final String ¤¤granUnitsFor = " Einheiten für ";
     public static final String ¤¤granSold = "   verkauft ";
@@ -117,7 +121,7 @@ public final class EconTexts {
     public static final String ¤¤wageStateFunded = "STAATLICH FINANZIERT   Auszubildende ";
     public static final String ¤¤wageSalary = "   Gehalt ";
     public static final String ¤¤wageProfitDay = "Profit/Tag ";
-    public static final String ¤¤wageMarginal = "   Marginal ";
+    public static final String ¤wageMarginal = "   Grenzertrag ";
     public static final String ¤¤wageWorkers = "   Arbeiter ";
     public static final String ¤¤wagePrio = "   Prio ";
 
@@ -156,8 +160,8 @@ public final class EconTexts {
     public static final String ¤¤taxLastWealthTake = "Letzte Vermögenssteuer: ";
     public static final String ¤¤taxLastWealthPayers = " von ";
     public static final String ¤¤taxLastWealthPayersSuffix = " Steuerpflichtigen";
-    public static final String ¤¤taxLiturgyOn = "LITURGIE AN";
-    public static final String ¤¤taxLiturgyOff = "Liturgie aus";
+    public static final String ¤¤taxLiturgyOn = "REICHENABGABE AN";
+    public static final String ¤¤taxLiturgyOff = "Reichenabgabe aus";
     public static final String ¤¤taxRichestTaxed = "Reichste besteuert";
     public static final String ¤¤taxShareWealth = "Anteil am Vermögen";
     public static final String ¤¤taxEveryNSeasons = "Alle N Saisons";

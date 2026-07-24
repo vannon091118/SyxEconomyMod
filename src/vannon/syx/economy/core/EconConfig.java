@@ -444,6 +444,21 @@ public final class EconConfig {
     private EconConfig() {
     }
 
+    /**
+     * Returns a human-readable warning when two or more economy levers are set in a way
+     * that can cancel each other out or produce unintended side effects. The check is
+     * read-only; it never changes any config value.
+     */
+    public static String conflictWarning() {
+        if (stateFundedWageRegulationOnly && !wagesEnabled) {
+            return "stateFundedWageRegulationOnly braucht wagesEnabled=true";
+        }
+        if (foodAffordabilityGateEnabled && handoutWalletAmount > 200) {
+            return "foodAffordabilityGate + Handout = doppelte Kosten";
+        }
+        return null;
+    }
+
     public static enum PairMode {
         RANDOM,
         PROXIMITY;
