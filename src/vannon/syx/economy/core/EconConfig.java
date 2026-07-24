@@ -380,6 +380,15 @@ public final class EconConfig {
     public static boolean debugLoggingEnabled = false;
 
     /**
+     * Opt-in: Aktiviert den {@link DebugTracer} Ring-Buffer.
+     * Zeichnet ALLE Interrupter-Callbacks, View-Wechsel, Save/Load und
+     * Economy-State-Changes auf (8.192 Events). Export via {@code DebugTracer.dump()}
+     * oder Numpad / (Division) Hotkey in {@code InstanceScript}.
+     * <p>Default: false — kein Overhead im Normalbetrieb.</p>
+     */
+    public static boolean debugTracing = false;
+
+    /**
      * Schaltet den Rebalancing-Diagnostik-Export ein. Wenn aktiv, schreibt
      * {@link DiagnosticExporter} pro In-Game-Tag zwei CSV-Dateien
      * (Makro- und Ressourcen-Zeitreihen) in das Mod-Diagnostik-Verzeichnis

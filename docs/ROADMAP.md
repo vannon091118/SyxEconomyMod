@@ -1,6 +1,6 @@
 # SyxEconomyMod — Development Roadmap & Master TODO
 
-> **Version:** v0.1.4 | **Stand:** 2026-07-24 | **Spiel:** V71.44
+> **Version:** v0.1.5 | **Stand:** 2026-07-25 | **Spiel:** V71.44
 
 ---
 
@@ -38,7 +38,7 @@
 | ID | Task | Aufwand | Dateien |
 |----|------|---------|---------|
 | **T-001** | IdentityHashMap → Long-Key-Migration | 1.5d | Phase 1: 3/16 done (RoomBlueprintImp→String). Phase 2 (Induvidual→Humanoid) deferred. Phase 3 (RoomInstance) offen. |
-| **T-002** | Oddjob-Clamp: harte Grenze im Setter | 0.5d | `EconConfig.java`, `EconomyWindow.java` |
+| **T-002** | Oddjob-Clamp: harte Grenze im Setter | 0.5d | `EconConfig.java` |
 | **T-003** | EngineSeams-Migration: 36→34 Direkt-Calls | 0.25d done | 2 deprecated AI-Plan-Calls auf ISyxAI migriert. Verbleibende 34 sind stabile Vanilla-Wrapper — EngineSeams IST der Adapter-Layer. |
 | **T-004** | catch(Throwable)-Tightening: 2 Sites | 0.5d | 2 Sites in core/ |
 
@@ -62,12 +62,12 @@
 
 ## Phase 5: 3-Fenster UI-Refactor ✅ Abgeschlossen
 
-- **Plan:** [`docs/superpowers/plans/2026-07-24-3-window-ux-refactor.md`](superpowers/plans/2026-07-24-3-window-ux-refactor.md)
+- **Plan:** [`superpowers/plans/2026-07-24-3-window-ux-refactor.md`](superpowers/plans/2026-07-24-3-window-ux-refactor.md)
 - Ziel: `EconomyWindow` God-File (3.081 LOC, 18 Tabs) → 3 Fenster × 3 Tabs, Bug-Fixes, UX-Verbesserungen, Konflikt-Hebel-Warnungen.
 - Status:
   - ✅ `EconContext`, `EconTab`, `EconWidgets`, `EconWindowBase` implementiert und gegen Vanilla-API validiert.
   - ✅ `WindowOverview`, `WindowEconomy`, `WindowState` mit je 3 Tabs erstellt.
-  - ✅ `InstanceScript` schaltet auf die neuen Fenster um; Hotkey toggelt `WindowOverview`.
+  - ✅ `InstanceScript` schaltet auf die neuen Fenster um; 3 Hotkeys (Numpad +/–/*) mit sauberem Umschalten.
   - ✅ Tabs mit funktionalen Inhalten (Dashboard, Citizens, Advisor, Preise, Löhne & Firmen, Subventionen, Staatslager, Steuern, Soziales).
   - ✅ `EconomyWindow.java` entfernt.
   - ✅ EconTexts-Labels angepasst und Konflikt-Hebel-Warnungen implementiert.
@@ -75,7 +75,7 @@
 
 ## Phase 5a: Per-Citizen Training-EXP (0/8 — Plan existiert)
 
-- Plan: [`docs/superpowers/plans/2026-07-23-per-citizen-training-exp.md`](superpowers/plans/2026-07-23-per-citizen-training-exp.md)
+- Plan: [`superpowers/plans/2026-07-23-per-citizen-training-exp.md`](superpowers/plans/2026-07-23-per-citizen-training-exp.md)
 - 11 Tasks, 8 Klassen, 3 Tests. Aufwand: 2–3 Sessions.
 
 ## Phase 5e: Player-Agency (teilweise abgeschlossen)
@@ -95,7 +95,7 @@ Datenquellen alle im Code vorhanden. Rendering fehlt. 5 Panels: Status-Gauges, P
 
 ---
 
-## Technische Kennzahlen (2026-07-24)
+## Technische Kennzahlen (2026-07-25)
 
 | Metrik | Wert |
 |--------|------|

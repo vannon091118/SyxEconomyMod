@@ -9,8 +9,16 @@ public final class EconWidgets {
 
     private EconWidgets() {}
 
-    /** Single recycled GText instance for widget labels. The UI is single-threaded and immediate-mode. */
-    private static final GText LABEL_TEXT = new GText(UI.FONT().M, 256);
+    /** Single recycled GText instance for widget labels. The UI is single-threaded and immediate-mode.
+     *  Lazy-init: UI.FONT() ist erst nach Engine-Initialisierung verfügbar. */
+    private static GText labelText;
+
+    private static GText labelText() {
+        if (labelText == null) {
+            labelText = new GText(UI.FONT().M, 256);
+        }
+        return labelText;
+    }
 
     @SuppressWarnings("unchecked")
     private static <T> T state(EconContext ctx, String key, T initial) {
@@ -50,9 +58,10 @@ public final class EconWidgets {
     }
 
     public static boolean button(EconContext ctx, String label, int x, int y, int w, int h) {
-        LABEL_TEXT.clear();
-        LABEL_TEXT.add(label);
-        int textW = LABEL_TEXT.width();
+        GText lt = labelText();
+        lt.clear();
+        lt.add(label);
+        int textW = lt.width();
         int pad = 4;
         int actualW = w;
         if (textW + pad * 2 > w) {
@@ -62,8 +71,8 @@ public final class EconWidgets {
                     && ctx.mouseY >= y && ctx.mouseY <= y + h;
         COLOR c = over ? COLOR.WHITE120 : COLOR.WHITE35;
         c.render(ctx.renderer, x, x + actualW, y, y + h);
-        LABEL_TEXT.color(over ? COLOR.WHITE200 : COLOR.WHITE100);
-        LABEL_TEXT.render(ctx.renderer, x + pad, x + actualW - pad, y + 2, y + h - 2);
+        lt.color(over ? COLOR.WHITE200 : COLOR.WHITE100);
+        lt.render(ctx.renderer, x + pad, x + actualW - pad, y + 2, y + h - 2);
         return ctx.consumeClick() && over;
     }
 
@@ -71,9 +80,10 @@ public final class EconWidgets {
                                   int x, int y) {
         int w = 24;
         int h = 12;
-        LABEL_TEXT.clear();
-        LABEL_TEXT.add(label);
-        int labelW = LABEL_TEXT.width();
+        GText lt = labelText();
+        lt.clear();
+        lt.add(label);
+        int labelW = lt.width();
         boolean over = ctx.mouseX >= x && ctx.mouseX <= x + w + labelW
                     && ctx.mouseY >= y && ctx.mouseY <= y + h;
         if (value) {
@@ -81,18 +91,19 @@ public final class EconWidgets {
         } else {
             COLOR.WHITE35.render(ctx.renderer, x, x + w, y, y + h);
         }
-        LABEL_TEXT.color(COLOR.WHITE100);
-        LABEL_TEXT.render(ctx.renderer, x + w + 4, x + w + labelW + 4, y, y + h);
+        lt.color(COLOR.WHITE100);
+        lt.render(ctx.renderer, x + w + 4, x + w + labelW + 4, y, y + h);
         return (ctx.consumeClick() && over) ? !value : value;
     }
 
     /** Render a single line of text using the shared label GText. */
     public static void text(EconContext ctx, CharSequence text, int x, int y, COLOR color) {
-        LABEL_TEXT.clear();
-        LABEL_TEXT.add(text);
-        LABEL_TEXT.color(color);
-        int w = LABEL_TEXT.width();
-        LABEL_TEXT.render(ctx.renderer, x, x + w, y, y + 16);
+        GText lt = labelText();
+        lt.clear();
+        lt.add(text);
+        lt.color(color);
+        int w = lt.width();
+        lt.render(ctx.renderer, x, x + w, y, y + 16);
     }
 
     /** Vertical scrollbar. Returns the new scroll offset. */

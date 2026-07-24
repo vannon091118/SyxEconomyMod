@@ -1,8 +1,8 @@
 # SyxEconomyMod — Architektur-Dokumentation
 
-> Version 0.1.5-in-progress | Songs of Syx V71.44 | Stand: 2026-07-24
+> Version 0.1.5 | Songs of Syx V71.44 | Stand: 2026-07-25
 >
-> **v0.1.5 UI-Refactor:** `vannon.syx.economy.ui` angelegt; `EconWindowBase`, `EconContext`, `EconTab`, `EconWidgets` sowie `WindowOverview`, `WindowEconomy`, `WindowState` mit 9 Tabs implementiert. Legacy `EconomyWindow.java` noch im Baum, wird aber nicht von `InstanceScript` verwendet.
+> **v0.1.5 UI-Refactor:** `vannon.syx.economy.ui` mit 10 Dateien angelegt; `EconWindowBase`, `EconContext`, `EconTab`, `EconWidgets` sowie `WindowOverview`, `WindowEconomy`, `WindowState` mit 9 Tabs. `EconomyWindow.java` (3.081 LOC) entfernt. 3 Hotkeys (Numpad +/-/*) mit sauberem Umschalten. Rechtsklick-Support. `lastSet()` für Rendering über anderen Interruptern.
 >
 > **v0.1.4 Extraktionen:** `RoomOperatingModeController` (FirmLedger→79 LOC),
 > `PropertyMarketController` (EconomySim→179 LOC), `CrisisDispatch` (EconomySim→27 LOC).
@@ -36,8 +36,7 @@ src/vannon/syx/economy/
 │   │   ├── CrisisDispatch.java      — Phase 5e: TreasuryCrisis-Update-Wrapper
 │   │   └── RoomOperatingModeController.java — Phase 5e: Per-Room Op-Mode + Cost-Scaling
 │   │
-│   ├── UI-LEGACY
-│   │   ├── EconomyWindow.java       — Legacy God-File (3.081 LOC, 18 Tabs) — noch vorhanden, aber unbenutzt; Löschung nach vollständiger Migration
+│   ├── UI-TEXTE
 │   │   └── EconTexts.java           — Alle UI-Strings (DE/EN)
 │   │
 │   ├── KONFIGURATION
@@ -100,7 +99,7 @@ src/vannon/syx/economy/
     └── room/service/food/*/Economy*Access.java   — Service-Zugriffe
 ```
 
-> **Single Source of Truth für UI-Refactor:** `docs/superpowers/plans/2026-07-24-3-window-ux-refactor.md`
+> **Single Source of Truth für UI-Refactor:** `superpowers/plans/2026-07-24-3-window-ux-refactor.md`
 
 ---
 
@@ -131,7 +130,7 @@ src/vannon/syx/economy/
 ║  SCHICHT 4: UI (3-Fenster-Refactor)                   ║
 ║  WindowOverview (3 Tabs) + WindowEconomy (3 Tabs) +   ║
 ║  WindowState (3 Tabs). Single Source of Truth:       ║
-║  docs/superpowers/plans/2026-07-24-3-window-ux-refactor.md ║
+║  superpowers/plans/2026-07-24-3-window-ux-refactor.md ║
 ╚═══════════════════════════════════════════════════════╝
 ```
 
@@ -403,7 +402,7 @@ file.bool(boolean) // Boolean speichern
 | LaborMarket.java | ✅ |
 | Wallets.java | ✅ |
 | WarehouseMarket.java | ✅ |
-| EconomyWindow.java | ✅ |
+| EconWindowBase.java | ✅ |
 | EconConfig.java | ✅ |
 | GiniConsequences.java | ✅ |
 | EconIndicators.java | ✅ |
@@ -423,27 +422,12 @@ file.bool(boolean) // Boolean speichern
 
 ```
 <repo-root>/docs/
-├── ARCHITECTURE.md                          # Diese Datei — System-Architektur (v0.1.0)
-├── API_REFERENCE.md                         # Verifizierte Vanilla-APIs + Runtime-Verifikation (V71.44)
-├── CHANGELOG.md                             # Versions-Historie (v0.0.1–v0.1.0)
-├── ROADMAP.md                               # Entwicklungs-Roadmap
-├── ICON_INVENTORY.md                        # Vanilla-Icon-Referenz
-├── PHASE4_ADAPTER_PLAN.md                   # Phase 4 Bauplan ✅ ABGESCHLOSSEN
-├── COVERAGE_AUDIT.md                        # Audit-Ergebnisse
-├── archive/                                 # Eingefrorene Snapshots (siehe [archive/README.md](archive/README.md))
-│   ├── HISTORICAL_BUGFIX_LOG.md             # Frühere Bugfixes
-│   ├── HISTORICAL_FULLSCAN.md               # Früherer Fullscan-Report
-│   ├── HISTORICAL_ORIGINAL_README.md        # Original-Mod-Readme
-│   ├── HISTORICAL_ORIGINAL_INFO.txt         # Original-Mod-Info
-│   ├── HISTORICAL_ORIGINAL_JAR.txt          # Original-JAR-Listing
-│   └── HISTORICAL_SEMANTIC_DIFF.md          # Semantischer Diff (109KB — historisch)
-└── reports/
-    ├── COVERAGE_AUDIT_FINAL_2026-07-23.md   # Audit-Abschlussbericht
-    ├── FULLSCAN_CLEANUP_2026-07-23.md       # Fullscan Cleanup-Report
-    └── GUI_VS_MOD_GAP_ANALYSIS.md           # GUI vs. Mod Gap-Analyse
+├── ARCHITECTURE.md           — System-Architektur
+├── CHANGELOG.md              — Versions-Historie (v0.0.1–v0.1.5)
+├── ROADMAP.md                — Entwicklungs-Roadmap
+├── BACKLOG.md                — Live-Test-Funde, Bugs
+├── GLOSSARY.md               — Klassen-Glossar
+├── README.md                 — Dokumentations-Index
+├── superpowers/plans/        — Aktive Pläne
+└── live-notes/               — Live-Notizen
 ```
-
-> **Hinweis:** `VANILLA_VERIFICATION.md`, `ECONOMY_API_REFERENCE.md`, `ADVISOR_VISUALIZATION_CONCEPT.md`
-> und `04_roadmap.md` wurden im Juli 2026 in andere Dateien integriert oder umbenannt.
-> `docs/reports/` enthält nur aktuelle Reports — historische Dateien sind unter
-> [docs/archive/](archive/README.md) (Konsolidierungs-Schritt 2, 2026-07-23).

@@ -11,7 +11,7 @@ public final class EconContext {
     public final int mouseX;
     public final int mouseY;
     public final boolean leftDown;
-    public boolean leftClicked;
+    public boolean clicked;
     public final int windowX;
     public final int windowY;
     public final int windowW;
@@ -19,7 +19,7 @@ public final class EconContext {
     public final Map<String, Object> state;
 
     public EconContext(Renderer renderer, EconomySim sim,
-                         int mouseX, int mouseY, boolean leftDown, boolean leftClicked,
+                         int mouseX, int mouseY, boolean leftDown, boolean clicked,
                          int windowX, int windowY, int windowW, int windowH,
                          Map<String, Object> state) {
         this.renderer = renderer;
@@ -27,7 +27,7 @@ public final class EconContext {
         this.mouseX = mouseX;
         this.mouseY = mouseY;
         this.leftDown = leftDown;
-        this.leftClicked = leftClicked;
+        this.clicked = clicked;
         this.windowX = windowX;
         this.windowY = windowY;
         this.windowW = windowW;
@@ -35,10 +35,10 @@ public final class EconContext {
         this.state = state;
     }
 
-    /** Consume the current left-click for IMGUI widgets. Only the first widget should get it. */
+    /** Consume the current click for IMGUI widgets. Only the first widget should get it. */
     public boolean consumeClick() {
-        if (leftClicked) {
-            leftClicked = false;
+        if (clicked) {
+            clicked = false;
             return true;
         }
         return false;

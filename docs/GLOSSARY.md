@@ -1,6 +1,6 @@
 # SyxEconomyMod — Glossar
 
-> **Version 0.1.0** | **112 Java-Klassen** | **Stand: 2026-07-23**
+> **Version 0.1.5** | **~125 Java-Klassen** | **Stand: 2026-07-25**
 >
 > Jeder Eintrag: Name, Kategorie, was der Name suggeriert vs. was die Klasse **tatsächlich** tut.
 
@@ -64,8 +64,11 @@ Dies sind die einzigen Dateien im gesamten Projekt, die Vanilla-Klassen direkt i
 
 | Klasse | Was der Name suggeriert | Was sie tatsächlich tut |
 |--------|----------------------|------------------------|
-| **`EconomySim`** | "Wirtschafts-Simulation" | **Das Herz des Mods.** Zentrale Instanz, tickt jede Stunde (`update()`). Orchestriert ALLE Subsysteme in fester Reihenfolge: Roster → Preise → Firmen → Arbeit → Services → Steuern → Transfers → Audit → Krisen → Export. 600+ Zeilen, ~40 Subsystem-Aufrufe pro Tick. |
-| **`InstanceScript`** | "Instanz-Skript" | Eintrittspunkt vom Spiel: erstellt `EconomySim`, `WindowOverview`, `WindowEconomy`, `WindowState`, `SubjectWallet`. Ruft `EconConfig.init()` auf (Lazy-Vanilla-Init). |
+| **`EconomySim`** | "Wirtschafts-Simulation" | **Das Herz des Mods.** Zentrale Instanz, tickt jede Stunde (`update()`). Orchestriert ALLE Subsysteme in fester Reihenfolge. ~1.442 LOC nach Extraktionen. |
+| **`InstanceScript`** | "Instanz-Skript" | Eintrittspunkt vom Spiel: erstellt `EconomySim`, 3 Fenster, `SubjectWallet`. 3 Hotkeys (Numpad +/-/*) mit Edge-Detection und `switchTo()`-Clean-Switching. |
+| **`RoomOperatingModeController`** | "Raum-Betriebsmodus" | Aus `FirmLedger` extrahiert (79 LOC). `opModes` + `effectiveOpModeCostScale` pro Raum. |
+| **`PropertyMarketController`** | "Immobilien-Markt" | Aus `EconomySim` extrahiert (179 LOC). Property-Markt-Logik: Hauskauf, -verkauf, Räumung. |
+| **`CrisisDispatch`** | "Krisen-Dispatch" | Aus `EconomySim` extrahiert (27 LOC). `TreasuryCrisis.update()`-Wrapper. |
 
 ### Geld & Brieftaschen (7 Dateien)
 
@@ -241,11 +244,20 @@ Dies sind die einzigen Dateien im gesamten Projekt, die Vanilla-Klassen direkt i
 
 *Alles was der Spieler sieht. Render-Methoden, Tabs, Texte, Chart-Panel.*
 
-### Fenster & Tabs (2 Dateien)
+### Fenster & Tabs (10 Dateien im ui/-Package)
 
 | Klasse | Was der Name suggeriert | Was sie tatsächlich tut |
 |--------|----------------------|------------------------|
-| **`EconomyWindow`** | "Wirtschafts-Fenster" | **Legacy God-File (3.081 LOC).** 18 Tabs. Wird durch den 3-Fenster-Refactor ersetzt — siehe Plan `docs/superpowers/plans/2026-07-24-3-window-ux-refactor.md`. |
+| **`EconWindowBase`** | "Wirtschafts-Fenster-Basis" | Abstrakter `Interrupter`. KPI-Header, Tab-Bar, Input-Blocking, `lastSet()` für Top-Rendering, 3-Hotkey-Support via `InstanceScript`. `toggle()` mit View-Wechsel-Safety (explizites `isActivated()`-Cleanup). |
+| **`WindowOverview`** | "Übersichts-Fenster" | Fenster "Übersicht" mit 3 Tabs: Dashboard, Bürger, Berater. Hotkey: Numpad +. |
+| **`WindowEconomy`** | "Wirtschafts-Fenster" | Fenster "Wirtschaft" mit 3 Tabs: Preise, Löhne & Firmen, Subventionen. Hotkey: Numpad −. |
+| **`WindowState`** | "Staats-Fenster" | Fenster "Staat" mit 3 Tabs: Staatslager, Steuern, Soziales. Hotkey: Numpad *. |
+| **`EconContext`** | "Render-Kontext" | Pro-Frame Render-Kontext: Renderer, Mauskoordinaten, Klick-Status (`clicked`), Fenster-Bounds. `consumeClick()` für IMGUI-Widgets. |
+| **`EconTab`** | "Tab-Interface" | Interface: `title()`, `onOpen()`, `hover()`, `render()`, `click()`. Default no-op für `click()`. |
+| **`EconWidgets`** | "UI-Widgets" | Shared Widgets: Slider, Button, Toggle, Scrollbar, Text. Lazy-Init `GText`-Instanzen. |
+| **`OverviewTabs`** | "Übersichts-Tabs" | `DashboardTab`, `CitizensTab`, `AdvisorTab` — 3 Tab-Implementierungen. |
+| **`EconomyTabs`** | "Wirtschafts-Tabs" | `PricesTab`, `WagesFirmsTab`, `SubsidiesTab` — 3 Tab-Implementierungen. |
+| **`StateTabs`** | "Staats-Tabs" | `WarehouseTab`, `TaxesTab`, `SocialTab` — 3 Tab-Implementierungen. |
 | **`ChartPanel`** | "Diagramm-Panel" | Dünner public Wrapper um Vanilla `GChart` (package-private). Ohne diese Klasse: kein Chart im Mod-UI. |
 
 ### Texte & Rollen (2 Dateien)
@@ -276,14 +288,14 @@ Dies sind die einzigen Dateien im gesamten Projekt, die Vanilla-Klassen direkt i
 
 ---
 
-## 📊 Zusammenfassung: **120 Klassen** in 4 Kategorien
+## 📊 Zusammenfassung: **~125 Klassen** in 4 Kategorien
 
 | Kategorie | Typ | Anzahl | Leitsatz |
 |-----------|-----|--------|----------|
 | 🟦 **Vanilla Wrapper** | Adapter, Fallbacks, Brücken | 21 | "Das Einzige was Vanilla berührt" |
-| 🟩 **Simulation** | Wirtschaft, Bürger, Firmen, Preise, Krisen | 71 | "Das Herz des Mods" |
+| 🟩 **Simulation** | Wirtschaft, Bürger, Firmen, Preise, Krisen | 74 | "Das Herz des Mods" |
 | 🟨 **Infrastructure** | Config, Export, Log, Utilities, Benchmark | 8 | "Alles was den Betrieb ermöglicht" |
-| 🟥 **UI** | Fenster, Tabs, Texte, Automation | 8 | "Alles was der Spieler sieht" |
+| 🟥 **UI** | Fenster, Tabs, Texte, Widgets | 14 | "Alles was der Spieler sieht" |
 
 ---
 
