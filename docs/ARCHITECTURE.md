@@ -1,6 +1,14 @@
 # SyxEconomyMod — Architektur-Dokumentation
 
-> Version 0.1.0 | Songs of Syx V71.44 | Stand: 2026-07-23
+> Version 0.1.4 | Songs of Syx V71.44 | Stand: 2026-07-24
+>
+> **v0.1.4 Extraktionen:** `RoomOperatingModeController` (FirmLedger→79 LOC),
+> `PropertyMarketController` (EconomySim→179 LOC), `CrisisDispatch` (EconomySim→27 LOC).
+> EconomySim: 1.553→1.442 LOC (−111). Der Re-Entry-Guard von v0.1.4.1 (boolean + try/finally) addierte 3 LOC gegenüber dem 1.439-Stand nach den drei Controller-Extraktionen.
+>
+> **v0.1.4 IdentityHashMap Phase 1:** 3 Maps von `IdentityHashMap<RoomBlueprintImp, …>` auf
+> `HashMap<String, …>` migriert (stabiler Key: `blueprint.key`).
+> `FirmLedger.serviceRevenue`, `FirmLedger.stateWageMarginal`, `StateWageMarket.carry`.
 
 ---
 
@@ -15,13 +23,16 @@ Das Mod fügt Songs of Syx eine parallele Wirtschaftsschicht hinzu. Jeder Siedle
 ```
 src/vannon/syx/economy/
 │
-├── core/  (95 Dateien)
+├── core/  (96 Dateien, 21.405 LOC)
 │   ├── EINTRITTS-PUNKTE (vom Spiel aufgerufen)
 │   │   ├── MainScript.java          — Registriert Booster beim Spielstart
 │   │   └── InstanceScript.java      — Erstellt EconomySim + EconomyWindow
 │   │
 │   ├── ORCHESTRATOR
-│   │   └── EconomySim.java          — Zentrale Instanz, tickt jede Stunde
+│   │   ├── EconomySim.java          — Zentrale Instanz, tickt jede Stunde (1.442 LOC)
+│   │   ├── PropertyMarketController.java — Phase 5e: Property-Markt-Logik, aus EconomySim extrahiert
+│   │   ├── CrisisDispatch.java      — Phase 5e: TreasuryCrisis-Update-Wrapper
+│   │   └── RoomOperatingModeController.java — Phase 5e: Per-Room Op-Mode + Cost-Scaling
 │   │
 │   ├── UI
 │   │   ├── EconomyWindow.java       — 15 Tabs + Debug-Tab, Zeichnung + Interaktion
@@ -33,13 +44,15 @@ src/vannon/syx/economy/
 │   ├── WIRTSCHAFTS-KERNSYSTEME
 │   │   ├── Wallets.java             — Geldbörsen, Yard-Sale-Transfer (stage-gated)
 │   │   ├── FlowPrices.java          — Angebot/Nachfrage → Preisbildung
-│   │   ├── FlowMeter.java           — Ressourcen-Tracking (V71 Consumption API)
-│   │   ├── FirmLedger.java          — Betriebsbuchhaltung + per-Firm-Income-Tracking
+│   │   ├── FlowMeter.java           — Ressourcen-Tracking (V71 Consumption API, nur industries.all)
+│   │   ├── FirmLedger.java          — Betriebsbuchhaltung, Hillclimber, Income-Tracking
+│   │   │                             — v0.1.4: Cold-Start-Guard + marginal-Cap (wageMax)
 │   │   └── ...
 │   │
-│   ├── DIAGNOSTIK & KRISEN [NEU v0.1.0]
-│   │   ├── DiagnosticExporter.java  — 3 CSV-Exporte pro Spieltag
-│   │   └── TreasuryCrisis.java      — 5-stufige Krisenmechanik + Hard-Floor (Tier 5)
+│   ├── DIAGNOSTIK & KRISEN
+│   │   ├── DiagnosticExporter.java  — 3 CSV-Exporte pro Spieltag (opt-in)
+│   │   ├── TreasuryCrisis.java      — 5-stufige Krisenmechanik + Hard-Floor
+│   │   └── AffordabilityGate.java   — Food-Affordability (v0.1.3: gate default=true)
 │   │
 │   └── HILFSKLASSEN (30+)
 │
@@ -94,7 +107,7 @@ src/vannon/syx/economy/
 ╔═══════════════════════════════════════════════════════╗
 ║  SCHICHT 3: Wirtschafts-Logik (eigener Code)          ║
 ║  EconomySim, Wallets, FlowPrices, FirmLedger, etc.    ║
-║  112 Dateien (95 core/ + 17 adapter/), ~21.000 LOC    ║
+║  112 Dateien (95 core/ + 17 adapter/), ~21.400 LOC    ║
 ╚═════════════════════╤═════════════════════════════════╝
                        │
                        ▼
@@ -304,6 +317,14 @@ One-Shot-Guards verhindern EventLog-Spam: jeder Fehler wird nur beim ersten Auft
 ### 27. Catch-Tightening & Code-Audit-Gate [NEU v0.1.0]
 **Problem:** 10 Sites mit `catch(Throwable)`/`catch(Exception)` — stille Fehlerschlucker.
 **Lösung:** Alle auf `catch(RuntimeException)` eingegrenzt. Build-Gate blockt neue `catch(Throwable)` außerhalb adapter/benchmark.
+
+### 28. IdentityHashMap-Migration — Phase 4.7-Blocker #8 (v0.1.4, Teilabschluss)
+**Problem:** 16 persistente `IdentityHashMap<Object, X>` in core/ verlieren Daten nach Save/Load, weil Vanilla `RoomInstance`, `Induvidual`, `Humanoid`, `RoomBlueprintImp` neu instanziiert. `IdentityMapRegistry.clearOnLoad()` aus v0.1.3 machte den Verlust laut, aber die Daten waren trotzdem weg.
+**Lösung Phase 1:** 3 Maps mit `RoomBlueprintImp`-Key auf `HashMap<String, X>` migriert — `blueprint.key` (String) ist save-stabil. Iterations-Pattern von Map-Entry-Iteration auf `SETT.ROOMS().ins()`+Lookup umgestellt (`FirmLedger.serviceRevenue`, `FirmLedger.stateWageMarginal`, `StateWageMarket.carry`).
+**Phase 2 (deferred):** `Induvidual`-keyed Maps (8 persistent) — `Induvidual` hat keine `id()`-Methode, benötigt Refactor auf `Humanoid`-Key mit `humanoid.id()`.
+**Phase 3 (offen):** `RoomInstance`-keyed Maps (4 persistent) — benötigt `RoomCoordinateKey`-Utility aus `PropertyLedger` (tile-Koordinate + blueprintKey als Composite-Long-Key).
+
+**Kausalkette:** Carpenter Cold-Start-Fix (v0.1.4) nutzt `state.hill != null` als Guard. Ohne IdentityHashMap-Fix überlebt `hill` keinen Save/Load → jeder Load ist Cold-Start-Reset → Hillclimber beginnt von Null → Firmen pendeln zwischen 0 und 1 Arbeiter.
 
 ---
 

@@ -1,9 +1,6 @@
 # SyxEconomyMod — Documentation Index
 
-> **Stand:** 2026-07-23 (Truth-Audit-Pass) | **Spiel:** Songs of Syx V71.44 | **Mod-Version:** v0.1.0
->
-> Diese Seite ist der Einstiegspunkt für alle Dokumentation. Sie wurde im Rahmen der
-> Truth-Konsolidierung erstellt (siehe [docs/reports/TRUTH_REPORT.md](reports/TRUTH_REPORT.md)).
+> **Stand:** 2026-07-24 | **Spiel:** Songs of Syx V71.44 | **Mod-Version:** v0.1.4
 
 ---
 
@@ -11,82 +8,53 @@
 
 | Dokument | Pfad | Rolle |
 |----------|------|-------|
-| **Changelog (Root)** | [CHANGELOG.md](../CHANGELOG.md) | ✓ **KANONISCH** — vollständige Release-Historie (10 Einträge) |
-| **Implementation Plan** | [docs/superpowers/plans/2026-07-23-per-citizen-training-exp.md](superpowers/plans/2026-07-23-per-citizen-training-exp.md) | ✓ **KANONISCH** — Phase-5-Plan (Training EXP + Needs Bridge) |
-| **README** | [README.md](../README.md) | ✓ Mod-Übersicht |
+| **Changelog** | [CHANGELOG.md](../CHANGELOG.md) | ✓ **KANONISCH** — vollständige Release-Historie |
+| **README** | [README.md](../README.md) | ✓ Mod-Übersicht, Quick Start, Dev-Tooling |
+| **Roadmap & TODO** | [ROADMAP.md](ROADMAP.md) | ✓ **KANONISCH** — priorisierte TODO-Liste, Phase-Status |
+| **Backlog** | [BACKLOG.md](BACKLOG.md) | ✓ Live-Test-Funde, Papercuts, Bugs |
 | **pom.xml** | [pom.xml](../pom.xml) | ✓ Versions- und Build-Metadaten |
-
-**Beachte:** Es existieren drei redundante Dokumente, die ersetzt wurden:
-- ~~`docs/CHANGELOG.md`~~ — ersetzt durch Redirect-Notice auf [CHANGELOG.md](../CHANGELOG.md)
-- ~~`IMPLEMENTATION_PLAN.md`~~ — verschoben nach `docs/superpowers/plans/2026-07-23-per-citizen-training-exp.md`
-
----
 
 ## Architektur & Design
 
 | Dokument | Pfad | Status |
 |----------|------|--------|
-| Architecture | [docs/ARCHITECTURE.md](ARCHITECTURE.md) | ✓ Schichtenmodell, Orchestrierung |
-| API Reference | [docs/API_REFERENCE.md](API_REFERENCE.md) | ✓ Vanilla- & Mod-APIs (872 Zeilen) |
-| Glossary | [docs/GLOSSARY.md](GLOSSARY.md) | ✓ Klassen-Glossar (**112 Einträge**, 4 Kategorien) |
-| Icon Inventory | [docs/ICON_INVENTORY.md](ICON_INVENTORY.md) | ✓ Icon-Mapping |
+| Architecture | [ARCHITECTURE.md](ARCHITECTURE.md) | ✓ Schichtenmodell, Orchestrierung, neue Extraktionen |
+| API Reference | [API_REFERENCE.md](API_REFERENCE.md) | ✓ Vanilla- & Mod-APIs |
+| Glossary | [GLOSSARY.md](GLOSSARY.md) | ✓ Klassen-Glossar |
+| Icon Inventory | [ICON_INVENTORY.md](ICON_INVENTORY.md) | ✓ Icon-Mapping |
+| Balance Levers | [BALANCE_LEVERS.md](BALANCE_LEVERS.md) | ✓ Alle tunable Konstanten |
+| Persistence Options | [PERSISTENCE_OPTIONS.md](PERSISTENCE_OPTIONS.md) | ✓ H2/SQLite-Persistenz-Design |
 
-## Phase-Pläne (Archivierungs-Wert)
-
-| Dokument | Pfad | Status |
-|----------|------|--------|
-| Phase-4-Adapter-Plan | [docs/PHASE4_ADAPTER_PLAN.md](PHASE4_ADAPTER_PLAN.md) | ✅ ABGESCHLOSSEN |
-| Roadmap | [docs/ROADMAP.md](ROADMAP.md) | ✓ — Truth-korrigiert |
-
-## Session-Berichte (2026-07-23)
+## Pläne & Audits
 
 | Dokument | Pfad | Status |
 |----------|------|--------|
-| Session Summary | [docs/SESSION_SUMMARY_2026-07-23.md](SESSION_SUMMARY_2026-07-23.md) | ✓ — Tier-Count korrigiert (6→5) |
-
-## Audit-Reports (2026-07-23)
-
-| Dokument | Pfad | Status |
-|----------|------|--------|
-| Truth-Report | [docs/reports/TRUTH_REPORT.md](reports/TRUTH_REPORT.md) | ✓ Dieser Konsolidierungs-Pass |
-| Coverage Audit Final | [docs/reports/COVERAGE_AUDIT_FINAL_2026-07-23.md](reports/COVERAGE_AUDIT_FINAL_2026-07-23.md) | ✓ |
-| Fullscan Cleanup | [docs/reports/FULLSCAN_CLEANUP_2026-07-23.md](reports/FULLSCAN_CLEANUP_2026-07-23.md) | ✓ |
-| GUI-vs-Mod-Gap-Analyse | [docs/reports/GUI_VS_MOD_GAP_ANALYSIS.md](reports/GUI_VS_MOD_GAP_ANALYSIS.md) | ✓ |
-| Vanilla-Access-Verifikation | [docs/reports/VANILLA_ACCESS_VERIFICATION.md](reports/VANILLA_ACCESS_VERIFICATION.md) | ✓ |
+| Phase-4.7 Stabilization Plan | [superpowers/plans/2026-07-24-phase47-stabilization.md](superpowers/plans/2026-07-24-phase47-stabilization.md) | ✓ In Arbeit |
+| Per-Citizen Training-EXP Plan | [superpowers/plans/2026-07-23-per-citizen-training-exp.md](superpowers/plans/2026-07-23-per-citizen-training-exp.md) | ✓ Phase 5a |
+| Phase-4-Adapter-Plan | [PHASE4_ADAPTER_PLAN.md](PHASE4_ADAPTER_PLAN.md) | ✅ Abgeschlossen |
+| Master Audit Phase 5 | [MASTER_AUDIT_PHASE5.md](MASTER_AUDIT_PHASE5.md) | 📋 Audit-Referenz |
+| Gap Analysis Phase 5 | [GAP_ANALYSIS_PHASE5.md](GAP_ANALYSIS_PHASE5.md) | 📋 Lücken-Analyse |
 
 ## Historische Snapshots 🗄
 
-Alle historischen, eingefrorenen Snapshots sind seit dem 2026-07-23 in
-**[docs/archive/](archive/)** verschoben. Details + Inhaltsverzeichnis im
-[docs/archive/README.md](archive/README.md) Banner.
+Alle eingefrorenen Snapshots und historischen Reports sind in
+**[docs/archive/](archive/)**. Wer in `archive/` schaut, geht in die Geschichte.
+Wer in `docs/` liest, sieht nur aktive Wahrheit.
 
-Diese Trennung ist **bewusst** — wer in `docs/archive/` schaut, geht in die Geschichte.
-Wer in `docs/` selbst liest, sieht nur noch aktive Wahrheit.
+## Live-Notes-Funnel
 
-## Tools-Verzeichnis
-
-| Skript / Notebook | Pfad | Zweck |
-|-------------------|------|-------|
-| Build-Gate | `tools/build-gate.sh` | Pre-Compile-Code-Audit + Adapter-Signaturen |
-| Code-Audit | `tools/code-audit.sh` | Leere catch-Blöcke + catch(Throwable)-Sites |
-| Version-Consistency | `tools/verify-version-consistency.sh` | pom.xml ↔ CHANGELOG.md ↔ git tags |
-| Rebalance-Plots (Python) | `tools/rebalance_plots.py` | 5 Plots für CSV-Analyse |
-| Rebalance-Dashboard (Jupyter) | `tools/rebalance_dashboard.ipynb` | Visualisierungs-Notebook |
+Playtest-Notizen: `docs/live-notes/YYYY-MM-DD-title.md` → `./tools/consolidate-live-notes.sh` → BACKLOG.md.
 
 ---
 
-## Truth-Status der Mod-Aussagen
+## Truth-Status (2026-07-24)
 
-| Aussage | Quelle | Code-Wahrheit |
-|---------|--------|--------------|
-| Adapter-Dateien = 17 | überall | ✓ |
-| Source-Java-Dateien = 108 | CHANGELOG, ROADMAP | ✗ **112** |
-| TreasuryCrisis-Stufen = 3 | CHANGELOG, README | ✗ **5 Stufen + Hard Floor** |
-| TreasuryCrisis-Stufen = 6 | ROADMAP, SESSION_SUMMARY-Header | ✗ **5 Stufen + Hard Floor** |
-| CSV-Macro-Spalten = 31 | CHANGELOG (Root) | ✗ **32** |
-| CSV-Macro-Spalten = 32 | README, SESSION_SUMMARY | ✓ |
-| Test-Dateien = 0/3 (Phase 5) | ROADMAP | ✗ **1/3** (TreasuryCrisisTest.java) |
-| Phase-5-Klassen implementiert | IMPLEMENTATION_PLAN.md | ✗ **0 von 8** (Plan, nicht implementiert) |
-| pom.xml-Version = 1.7.3 | SESSION_SUMMARY-Vorher | ✗ **0.1.0** |
-
-Details: [docs/reports/TRUTH_REPORT.md](reports/TRUTH_REPORT.md).
+| Aussage | Code-Wahrheit |
+|---------|--------------|
+| EconomySim LOC | **1.442** (von 1.553 reduziert) |
+| Neue Extraktions-Klassen | **3** (RoomOperatingModeController, PropertyMarketController, CrisisDispatch) |
+| catch(Throwable) in core/ | **2** (von 27 reduziert) |
+| printStackTrace() in core/ | **0** |
+| IdentityHashMap in core/ | **10** Dateien |
+| EngineSeams-Direkt-Calls | **34** (in 15 Dateien — 2 deprecated auf ISyxAI migriert, 34 stabile Vanilla-Wrapper) |
+| TreasuryCrisis-Stufen | **5 + Hard Floor** |

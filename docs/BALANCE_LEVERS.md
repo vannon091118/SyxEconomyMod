@@ -190,3 +190,25 @@ minimumWorkersPerWorkplace = 1
 - `src/vannon/syx/economy/core/Fiscal.java` — Steuerlogik inkl. Freigrenze
 - `src/vannon/syx/economy/core/AccessAutomation.java` — globale Rate-Limiting
 - `CHANGELOG.md` — vollständige Versionshistorie
+
+---
+
+## Truth-Status (2026-07-24)
+
+Mirror aus [`docs/ARCHITECTURE.md`](ARCHITECTURE.md) Single-Source-of-Truth. Wird gepflegt
+sobald sich Werte ändern — bei Drift wird `bash tools/phase47-shield.sh` rot.
+
+| Metrik | Wert | Herkunft |
+|--------|------|----------|
+| EconomySim LOC | **1.442** | `wc -l src/.../core/EconomySim.java` (von 1.553 reduziert) |
+| Java-Dateien in core/ | **96** | `find src/.../core -name '*.java' \| wc -l` |
+| EngineSeams-Direkt-Calls in core/ | **34** | `grep -rE 'EngineSeams\\.[a-z]+(' core/` |
+| IdentityHashMap-Dateien in core/ | **10** | `grep -rln 'new IdentityHashMap' core/ \| grep -v IdentityMapRegistry` |
+| `catch (Throwable)` in core/ | **2** | `grep -rE 'catch \\(Throwable' core/` |
+| `printStackTrace()` in core/ | **0** | `grep -rE 'printStackTrace\\(\\)' core/` |
+| TreasuryCrisis-Tiers | **5 + Hard Floor** | `TreasuryCrisis.java` |
+
+**Heuristik-Werte** haben im Vergleich zu **Konstanten-Werten** in §1–§6 andere Lebenszyklen:
+Konstanten werden in v0.x-Releases explizit geändert (Changelog-Eintrag), Heuristik-Werte
+passen sich mit jeder Code-Änderung an. Der Truth-Drift-Test im `phase47-shield.sh` fängt
+es ab, sobald eine Metrik ihren Threshold reißt.

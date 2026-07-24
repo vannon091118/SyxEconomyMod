@@ -1,173 +1,112 @@
-# 04 — Refactoring & Development Roadmap
+# SyxEconomyMod — Development Roadmap & Master TODO
 
-> **Version:** v0.1.0 | **Stand:** 2026-07-23 | **Spiel:** V71.44
->
-> **Stand der Roadmap vs. Code (Session-Audit 2026-07-23):** Phase 0–4 alle abgeschlossen. Phase 5 (Tests) noch offen. Advisor-Visualisierungs-Konzept bleibt aspirational.
+> **Version:** v0.1.4 | **Stand:** 2026-07-24 | **Spiel:** V71.44
 
 ---
 
-## ✅ Abgeschlossen
+## ✅ Abgeschlossen (Phase 0–4.7)
 
-### Phase 0: Stabilisierung (2026-07)
-- Package-Rename, Decompiler-Artefakte bereinigt
-- Maven-Build stabilisiert (`mvn clean install`)
-- 3 Hauptmenüs + 15 Tabs + Debug-Tab im Wirtschaftsfenster
-- Causal-Economy-Redesign: Bau-Nachfrage, Gewinn-Priorität, Job-Friction
-- Chunked Save/Load (Format 33, INDUSTRIE-Migration)
+### Phase 4: Adapter-Architektur & Crash-Härtung
+- 5 Interfaces + 12 Adapter-Implementierungen. 0 direkte Reflection-Stellen im Core (via Adapter).
+- TreasuryCrisis: 5 Tier-Stufen + Hard-Floor. Hysterese.
+- DiagnosticExporter: 3 CSV/Tag. Rebalance-Dashboard (Python).
+- Stage-gated Wallets. Build-Gate-System. MethodHandle-Adapter.
 
-### Phase 1: Miete & Unterhalt ✅
-- Pro-Haushalt-Mietabrechnung (`HousingMarket`)
-- Miet-Schulden von Steuer-Schulden getrennt
-- Zwangsräumung nach Grace-Days
-- Miete im Audit getrackt
+### Phase 4.5: Stabilisierung (teilweise abgeschlossen)
+- `foodAffordabilityGateEnabled = true` (Cheat-Loop gestoppt)
+- `IdentityMapRegistry` (save/load-Datenverlust jetzt laut statt still)
+- `printStackTrace()`: alle 124 Sites entfernt
+- `catch(Throwable)`: 27→2 Sites tightened
 
-### Phase 2: Eigentum & Privatisierung ✅
-- Grundstücksregister (`PropertyLedger`) — Hauskauf, Firmenanteile, Dividenden
-- Freischaltung ab WOHLSTAND/IMPERIUM
-- Firmenbesitz-Panel im BETRIEBE-Tab
+### Phase 4.7: Session-Ergebnisse (2026-07-24)
 
-### Phase 3: Makro-Economy UI ✅
-- EventLog mit 100er Ringpuffer, 8+ Kategorien
-- Gini→Loyalty Coupling (`GiniConsequences`)
-- Trend-Erkennung mit echten Konsequenzen
-- Berater-Dashboard mit KPI-Boxen, Sparklines, Warnketten
-- SEAM-EventLog-Hooks: alle stummen Catches instrumentiert
-- PovertyPressure, OddjobAutomation, WarehouseAutomation
-
-### Phase 4: Adapter-Layer ✅ (6/6 abgeschlossen)
-
-| Schritt | Interface | Status |
-|---------|-----------|--------|
-| 5.1 | `ISyxAI` + `VanillaAIAdapter` | ✅ |
-| 5.2 | `ISyxTransport` + Vanilla/Fallback/MH | ✅ |
-| 5.3 | `ISyxWarehouse` + Vanilla/Fallback/MH | ✅ |
-| 5.4 | `ISyxBoosting` + Vanilla/Fallback | ✅ |
-| 5.5 | `ISyxDiplomacy` + Vanilla/Fallback/MH | ✅ |
-| 5.6 | Cleanup (@Deprecated löschen, Aufrufer migrieren) | ✅ |
-
-**17 Adapter-Dateien** in `src/vannon/syx/economy/adapter/`. 0 direkte Reflection-Stellen im Core-Code. Details: [PHASE4_ADAPTER_PLAN.md](PHASE4_ADAPTER_PLAN.md).
-
-### Phase 4a: Crash-Härtung ✅
-- **Class.forName-ClassLoader-Fix**: `Class.forName(name)` → `Class.forName(name, true, GAME_CL)`. Package-private Spiel-Klassen jetzt sichtbar.
-- **openCsvFolder-Crash**: `Files.createDirectories()` vor `Desktop.open()`, Catch-Blöcke auf `RuntimeException` erweitert.
-- **catch-Tightening**: 10 Sites von `catch(Throwable)`/`catch(Exception)` auf `catch(RuntimeException)`.
-- **Build-Gate-System**: 3 Pre-Compile-Gates (Code Audit, Version↔Changelog, Adapter↔Engine). 0 Failures, 0 Skips.
-
-### Phase 4b: Treasury-Krisenmechanik ✅
-- **5 Tier-Stufen + Hard-Floor** (`TreasuryCrisis.java`):
-  - Tier 1 (< −5K): EventLog-Warnung + Stopp Subventionen/Transport/Handouts/Auto-Tunes
-  - Tier 2 (< −50K): ALLE 15 Lohnkonstanten halbiert, Marktsteuer +15%, Dole-Headcap 50%
-  - Tier 3 (< −250K): Zwangsliquidation aller Staatslager + erzwungener Immobilienmarkt
-  - Tier 4 (< −1M): Kopfsteuer=500, Marktsteuer=50%, Corvée/Dole/Schuldknechtschaft/Wages deaktiviert
-  - Tier 5 (< −5M): ALLE 11 Systeme deaktiviert, LOYALTY −50% (**Hard Floor**)
-- **Hysterese**: Erholungsschwellen höher als Aktivierung (0/−10K/−50K/−250K/−1M).
-- Vorher: 0 Treffer für `treasuryFloor`/`debtCeiling`/`bankrupt` im gesamten Codebase.
-
-### Phase 4c: Balancing-Fixes ✅
-- **Stage-gated Wallet**: Startguthaben skaliert mit Wirtschaftsstufe (200→500→2000→5000). Keine 1M Scheinwirtschaft am Tag 0.
-- **Arbeitende-ärmer-als-Chiller-Bug**: `freeRation()` Safety-Net entfernt, HandoutRelief nur für Beschäftigte, Lohn-Untergrenze ≥ Handout.
-- **WarehouseAutomation proaktiv**: Auto-Erkennung knapper Ressourcen, Nahrungs-Notfallpuffer, Budget-Check.
-
-### Phase 4d: Diagnostik ✅
-- **DiagnosticExporter**: 3 CSVs/Tag (Macro 32 Spalten, Resources, Firms).
-- **Hard-Threshold-Alert-Layer**: [REBALANCE]-EventLog bei Gini>0.40 oder Audit-Delta>1000.
-- **Rebalance-Dashboard**: 5 Plots (Python/Jupyter, pandas+matplotlib).
-- **Debug-Tab**: Live-Snapshot + "CSV-Pfad öffnen"-Button.
+| Fix | Datei | Beschreibung |
+|-----|-------|-------------|
+| Carpenter Cold-Start | `FirmLedger.java` | `hill!=null` Guard + `minimumWorkersPerWorkplace` statt 0 |
+| mean_wage-Runaway | `FirmLedger.java` | `observedSlope` auf `wageMax=1000` gecapped (4 Pfade) |
+| Re-Entry-Crash | `EconomySim.java` | Guard idempotent + `lastUpdateTick=-1` in `load()` |
+| God-Class-Split | 3 neue Dateien | `RoomOperatingModeController`, `PropertyMarketController`, `CrisisDispatch` |
+| IdentityHashMap Phase 1 | `FirmLedger.java`, `StateWageMarket.java` | 3 Maps: `RoomBlueprintImp`→`String` (stabiler `blueprint.key`) |
+| EconomySim LOC | 1.553→1.439 | −114 Zeilen |
 
 ---
 
-## 🚧 Offen
+## 🚧 Offen — Priorisierte TODO-Liste
 
-### Phase 5: Tests & Modularisierung (**1/3 begonnen**)
-- ✓ JUnit für `TreasuryCrisis.classify()` + Recovery-Logik — `test/.../TreasuryCrisisTest.java`
+### 🔴 P0 — Blocker vor Phase 5
+
+| ID | Task | Aufwand | Dateien |
+|----|------|---------|---------|
+| **T-001** | IdentityHashMap → Long-Key-Migration | 1.5d | Phase 1: 3/16 done (RoomBlueprintImp→String). Phase 2 (Induvidual→Humanoid) deferred. Phase 3 (RoomInstance) offen. |
+| **T-002** | Oddjob-Clamp: harte Grenze im Setter | 0.5d | `EconConfig.java`, `EconomyWindow.java` |
+| **T-003** | EngineSeams-Migration: 36→34 Direkt-Calls | 0.25d done | 2 deprecated AI-Plan-Calls auf ISyxAI migriert. Verbleibende 34 sind stabile Vanilla-Wrapper — EngineSeams IST der Adapter-Layer. |
+| **T-004** | catch(Throwable)-Tightening: 2 Sites | 0.5d | 2 Sites in core/ |
+
+### 🟠 P1 — Broken Features
+
+| ID | Task | Aufwand | Dateien |
+|----|------|---------|---------|
+| **T-005** | FlowMeter-Coverage: Farms/Pastures sampeln | 0.5d | `FlowMeter.java` |
+| **T-006** | Vermögensklassen-Drift: Klassifikation syncen | 0.5d | `WealthStats.java`, `Wallets.java` |
+| **T-007** | Hungersignal→Bevölkerungskonsequenz | 0.5d | `BrokeFoodPlan.java`, `MeticImmigration.java` |
+
+### 🟡 P2 — Papercuts & Diagnostics
+
+| ID | Task | Aufwand | Dateien |
+|----|------|---------|---------|
+| **T-008** | AccessAutomation-Spam: Statusmeldung rate-limit | 0.25d | `AccessAutomation.java` |
+| **T-009** | Advisor-Widerspruch: Defizit/Stabil syncen | 0.25d | `EconomyWindow.java` |
+| **T-010** | Carpenter targetWage=0 in FlowPrices | 0.25d | `FlowPrices.java` |
+
+---
+
+## Phase 5: Tests & Modularisierung (0/3)
+
 - 🔧 JUnit für `ExchangeKernel` (Wealth-Konservierung)
 - 🔧 JUnit für `FlowPrices` Elastizität
-- 🔧 `EconomySim` in Module zerlegen
+- 🔧 `EconomySim` weitere Module extrahieren (Ziel: <1000 LOC)
 
-### Phase 5a: Per-Citizen Training-EXP + Needs-Bridge (0/8 Klassen implementiert)
-- Vollständiger Plan verifiziert: [`docs/superpowers/plans/2026-07-23-per-citizen-training-exp.md`](superpowers/plans/2026-07-23-per-citizen-training-exp.md) (11 Tasks, 8 Klassen, 3 Tests)
-- Vanilla-API gegen `info.zip/SongsOfSyx-sources.jar` source-verifiziert (NEEDS-, BValue-, BOOSTABLES-, StatsWork-Signaturen)
-- Geplante Klassen: `StageGate`, `NeedsBridge`, `ITrainingSource`, `InternalTrainingSource`, `CsvTrainingSource`, `CsvIngest`, `TrainingVectors`, `CitizenLayers`
-- **0/8 implementiert.** Aufwand-Schätzung: 2–3 Sessions.
+## Phase 5a: Per-Citizen Training-EXP (0/8 — Plan existiert)
 
-### Phase 5b: UI-Politur (0 Engine-Widgets genutzt)
+- Plan: [`docs/superpowers/plans/2026-07-23-per-citizen-training-exp.md`](superpowers/plans/2026-07-23-per-citizen-training-exp.md)
+- 11 Tasks, 8 Klassen, 3 Tests. Aufwand: 2–3 Sessions.
 
-**Analyse (2026-07-23):** 84 Screenshots dokumentieren 16 funktionale Tabs — aber alle Widgets sind handgeschrieben. Die Engine stellt `GMeter`, `GChart`, `GButt.Checkbox`, `GSliderInt`, `hoverInfoSet()`, `GCOLOR.UI()` bereit — nichts davon wird genutzt.
+## Phase 5e: Player-Agency (teilweise abgeschlossen)
 
-| Gap | Aufwand | Nutzen |
-|-----|---------|--------|
-| `GMeter` für Coverage/Scarcity-Fortschritt | Klein | Status-Visualisierung |
-| `GChart` für Treasury/Gini-Trends | Mittel | Sparklines ohne Eigenbau |
-| `GButt.Checkbox` für alle Toggles | Klein | Native UI-Konsistenz |
-| `hoverInfoSet()` für Tooltips | Mittel | Erklärungen im Hover |
+| Task | Status |
+|------|--------|
+| RoomOperatingModeController | ✅ Extrahiert |
+| PropertyMarketController | ✅ Extrahiert |
+| CrisisDispatch | ✅ Extrahiert |
+| Oddjob-Wage-Cap (≤75% von defaultWage) | ❌ (T-002) |
+| Pause-vs-Operating-Cost-Choice-UI | ❌ |
+| State-Wage-Regulation-Gate | ❌ |
 
-### Phase 5c: GUI-Gap schließen (P1-P3 aus Gap-Analyse)
+## Phase 6: Advisor-Visualisierungs-Konzept (aspirational)
 
-| Gap | Zugänglichkeit | Aufwand | Priorität |
-|-----|---------------|---------|-----------|
-| `STATS.BATTLE()` einlesen | ✅ Direkt | Klein | 🟡 P1 |
-| `BOOSTABLES.PHYSICS().HEALTH` nutzen | ✅ Direkt | Klein | 🟡 P1 |
-| `FCredits.CTYPE`-Einnahmen aufschlüsseln | ✅ Direkt | Klein | 🟢 P2 |
-| RoomStats-Bridge (Tätigkeit 1.5%) | ❌ Package-Private | Groß | 🔴 P3 |
-
-### Phase 6: Advisor-Visualisierungs-Konzept (aspirational)
-
-Das Advisor-Visualisierungs-Konzept (unten) beschreibt 5 Panels mit Status-Gauges, Preis-Sparklines, Kausal-Warnketten und Makro-Trends. Alle Datenquellen existieren im Code — nur das Rendering fehlt. Nächster logischer Schritt nach Phase 5.
+Datenquellen alle im Code vorhanden. Rendering fehlt. 5 Panels: Status-Gauges, Preis-Sparklines, Kausal-Warnketten, Makro-Trends, Steuerung.
 
 ---
 
-## Technische Kennzahlen (aktuell)
+## Technische Kennzahlen (2026-07-24)
 
 | Metrik | Wert |
 |--------|------|
-| Java-Dateien | **112** |
-| Adapter-Dateien | 17 |
-| Reflection-Stellen (direkt) | 0 (alle via Adapter) |
-| Build-Gates | 3 (0F/0S) |
-| catch(Throwable) außerhalb adapter/ | 0 |
-| Treasury-Tiers | 5 (+ Hard Floor in Tier 5) |
-| CSV-Exporte | 3 pro Spieltag (Macro: 32 Spalten, Resources: 10, Firms: 13) |
+| Java-Dateien (core/) | 96 |
+| EconomySim LOC | 1.442 (−111 von 1.553) |
+| Neue Extraktionen | 3 (RoomOperatingModeController, PropertyMarketController, CrisisDispatch) |
+| IdentityHashMap in core/ | 10 (3 migriert auf HashMap<String>, 1 Phase-3-ready, 6 Phase-2-pending) |
+| catch(Throwable) in core/ | 2 |
+| EngineSeams-Direkt-Calls | 34 (in 15 Dateien — 2 deprecated migriert auf ISyxAI, 34 stabile Wrapper) |
+| Treasury-Tiers | 5 (+ Hard Floor) |
+| printStackTrace() | 0 |
 
 ---
 
 ## Definition of Done
 
-- All new code compiles against vanilla `SongsOfSyx.jar`
-- Unit tests pass (sofern vorhanden)
-- `mvn compile` → BUILD SUCCESS, 3 Gates bestanden
+- `mvn compile` → BUILD SUCCESS
 - Keine stummen Catch-Blöcke
-- Keine direkten Reflection-Zugriffe außerhalb adapter/
-
----
-
-## Anhang: Advisor-Visualisierungs-Konzept (aspirational)
-
-> ⚠️ **KONZEPT — nicht implementiert.** Dies ist ein aspirationales Design-Dokument.
-> Stand: Juli 2026. Datenquellen alle im Code vorhanden, Rendering fehlt.
-
-### Designprinzipien
-
-1. **Eine Information, eine Zeile.** Jede Zeile beschreibt einen Zustand, nicht nur eine Zahl.
-2. **Trend vor Zahl.** Sparklines und Pfeile zeigen Richtung; absolute Werte in Klammern.
-3. **Farbe als Semantik.** Rot = Handlungsbedarf, Gelb = beobachten, Weiß/Grau = stabil.
-4. **Kausal statt symptomal.** Warnungen sagen *warum* etwas passiert und *wohin* es führt.
-
-### Datenquellen
-
-| Quelle | Relevante Felder | Bedeutung |
-|--------|-----------------|-----------|
-| `EconSnapshot` (Ring-Buffer) | `foodBasketPrice`, `meanWage`, `gini`, `wageShare`, `totalMoney`, `workersUnpaid`, `emigrations` | Historische Makro-Trends |
-| `EconIndicators` | `isInequalityRising()`, `isWagesFalling()`, `isTreasuryDeclining()` | Trend-Flags |
-| `FlowPrices` / `FlowMeter.Snapshot` | `price`, `anchor`, `coverage`, `supply`, `demand`, `stock` | Per-Güter-Preise |
-| `WealthStats` | `gini`, `median`, `mean`, `histogram` | Vermögensverteilung |
-| `FirmLedger` | `lastWorkersUnpaid()`, `lastIncomeDue()`, `lastIncomePaid()` | Betriebsgesundheit |
-
-### 5 Panels
-
-```
-[1] Wirtschafts-Ökosystem (Status-Gauges: Geldmenge, Produktion, Nahrung, Wohlfahrt, Staatskasse)
-[2] Kritische Preis-Trends (Sparklines pro Gütergruppe: Nahrung, Bau, Handel, Getränke)
-[3] Kausale Warnketten (Engpass→Preise→Löhne→Abwanderung, etc.)
-[4] Makro-Trends (2×2: Nahrungskorb, Ø Lohn, Gini, Lohn-Anteil)
-[5] Steuerung / Empfohlene Schieber (Kopfsteuer, Markt-Abschöpfung, Gelegenheitslohn)
-```
+- Keine `printStackTrace()` im Core
+- IdentityHashMap auf Long-Keys migriert (Phase-5-Gate)
+- EngineSeams-Direkt-Calls = 0 (Phase-5-Gate)

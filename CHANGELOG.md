@@ -5,6 +5,42 @@
 
 ---
 
+## v0.1.4 — 2026-07-24
+
+### Bugfixes: Cold-Start-Death-Spiral + mean_wage-Runaway + Re-Entry-Crash
+
+**Carpenter 0-Output-Bug behoben (`FirmLedger.java`):**
+- Fast-Idle-Check killte neue Firmen sofort: `neededSet(0)` → Vanilla stoppt Produktion → Work-in-Progress verworfen → Output-Counter nie inkrementiert → Firma permanent tot.
+- Fix: `state.hill != null`-Guard (Gnadenfrist bis `size()` evaluiert) + `minimumWorkersPerWorkplace` statt harter 0 als Idle-Target.
+- Betrifft auch Bäckerei, Holzfäller — alle Firmen deren erster Produktionszyklus > 1 Tick dauert.
+
+**mean_wage-Explosion behoben (`FirmLedger.java`):**
+- Hillclimber-Slope `observedSlope` ungecapped → `state.marginal` = 22.564 (finite diff: 966→23.530 / +1 Worker)
+- → `meanPositiveMarginal` → `LaborMarket.meanWage` = 31.337 → Prioritäten aller Produktion auf 0 gecrushed.
+- Fix: `Math.min(observedSlope, EconConfig.wageMax = 1000)` — Cap auf legalem Lohnmaximum.
+- Alle 4 marginal-Pfade (`update`-Loop + `size` beide Branches) jetzt gecapped.
+
+**Re-Entry-Guard-Crash behoben (`EconomySim.java`):**
+- `lastUpdateTick == ticks`-Guard warf `IllegalStateException` — Save/Load-Zyklus konnte `lastUpdateTick == ticks` erzeugen.
+- Fix: Guard idempotent (`log + return` statt `throw`) + `lastUpdateTick = -1L` in `load()`.
+
+**EconomySim God-Class-Reduktion (1.553→1.439 LOC, −114):**
+- `RoomOperatingModeController.java` (79 LOC) — `opModes` + `effectiveOpModeCostScale` aus FirmLedger extrahiert
+- `PropertyMarketController.java` (179 LOC) — Property-Markt-Logik aus EconomySim extrahiert
+- `CrisisDispatch.java` (27 LOC) — `TreasuryCrisis.update()`-Callout aus EconomySim extrahiert
+
+**IdentityHashMap-Phase-1: RoomBlueprintImp→String (3 Maps migriert):**
+- `FirmLedger.serviceRevenue` + `stateWageMarginal` → `HashMap<String, Double>` key=`blueprint.key`
+- `StateWageMarket.carry` → `HashMap<String, Double>` key=`blueprint.key`
+- 3 `IdentityMapRegistry.register()`-Calls entfernt. Phase 2 (Induvidual→Humanoid-Key) deferred — Induvidual hat keine `id()`-Methode.
+
+**Bugs behoben — Kausalketten:**
+1. Carpenter 0-Output → `shouldIdle` auf −75 Profit (Input ohne Output) → `neededSet(0)` → Vanilla bricht Produktion ab → Output-Counter nie inkrementiert → Firma permanent tot. Fix: `hill!=null`-Guard + `minimumWorkersPerWorkplace`.
+2. mean_wage 31.337 → `observedSlope`=22.564 (finite diff 966→23.530) → `meanPositiveMarginal` explodiert → `priority = 10+6·log(marginal/31337)`=0 für ALLE Firmen → "Janitor 10, alles 0". Fix: `Math.min(slope, wageMax=1000)`.
+3. Re-Entry-Crash → `lastUpdateTick==ticks` nach Save/Load (weil `load()` `lastUpdateTick` nicht resetet) → `IllegalStateException`. Fix: idempotenter Guard + Reset in `load()`.
+
+---
+
 ## v0.1.3 — 2026-07-23
 
 ### Cheat-Loop gestoppt + Save/Load-Datenverlust-Audit eingeleitet

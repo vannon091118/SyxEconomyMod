@@ -4,9 +4,65 @@
 > - `tools/consolidate-live-notes.sh` — `gap:net-new` and `ux:papercut` tags
 > - Manual backlog triage during plan reviews
 >
-> Format: each entry is a ### heading with Source, Severity, Status.
+> Format: `### [ID] Title` with Source, Severity, Status.
+> Severity: 🔴 P0 (crash/data-loss) · 🟠 P1 (broken feature) · 🟡 P2 (papercut) · 🟢 P3 (nice-to-have)
 
 ---
 
-<!-- Entries below are appended by consolidate-live-notes.sh integration step -->
-<!-- No entries yet — run the funnel after your next playtest. -->
+## 2026-07-24 Session — Live-Test Findings
+
+### B-001: FlowMeter-Coverage-Gap — Farms/Pastures nicht gesampelt
+**Source:** `gap:net-new` · **Severity:** 🟠 P1 · **Status:** Open
+
+`FlowMeter.sample()` iteriert nur `SETT.ROOMS().industries.all`. FARM_GRAIN, FARM_FRUIT, FARM_COTTON, WORKSHOP_POTTERY sind keine Vanilla-Industries → nie gesampelt → `profit_per_day=0.00` in CSV. ~20 LoC Fix: zusätzlich `SETT.ROOMS().ins()` iterieren für Räume die `ROOM_PRODUCER_INSTANCE` implementieren.
+
+### B-002: AccessAutomation-Spam — 14 Statusmeldungen/Tick
+**Source:** `ux:papercut` · **Severity:** 🟡 P2 · **Status:** Open
+
+"AccessAutomation room scan disabled after earlier failure" spammt 14×/Tick ins Spieler-Chronik-Fenster. Der Rate-Limiter aus v0.1.2 greift nur für NPEs, nicht für Statusmeldungen. Fix: Rate-Limit auch auf die Statusmeldung anwenden.
+
+### B-003: Advisor-Widerspruch — "Defizit" + "Staatskasse stabil"
+**Source:** `ux:papercut` · **Severity:** 🟡 P2 · **Status:** Open
+
+Finanzen-Tab zeigt gleichzeitig "Defizit" (rot) und "Staatskasse stabil" (grün). Zwei Subsysteme, keine Absprache. Fix: Konsistente Status-Aggregation.
+
+### B-004: Vermögensklassen-Drift — 24 "Elite" verschwinden
+**Source:** `bug:silent` · **Severity:** 🟠 P1 · **Status:** Open
+
+"Vermögens-Verteilung" zeigt 30 Mittelstand + 24 Elite = 54. "Bürger-Klassen" zeigt 28 Arm + 23 Mittelstand = 51. 3 Bürger fehlen, 24 Elite tauchen in Kategorie-Ansicht nicht auf. Zwei Klassifikationssysteme, keine Synchronisation.
+
+### B-005: Oddjob-Clamp — Placebo mit Warnetikett
+**Source:** `bug:silent` · **Severity:** 🟠 P1 · **Status:** Open
+
+`setPay()` loggt nur Warnung via `System.err.println`, erzwingt aber keinen Cap. `EconomyWindow`-Slider + Save/Load schreiben direkt ungeclampt. Fix: Harte Grenze im Setter.
+
+### B-006: IdentityHashMap — 12 Dateien, Long-Key-Migration offen
+**Source:** `gap:net-new` · **Severity:** 🟠 P1 · **Status:** Open
+
+`IdentityMapRegistry` cleart Maps beim Load (lauter Datenverlust statt stiller Korruption), aber echte Long-ID-Migration steht noch aus. 12 Dateien in `core/` nutzen IdentityHashMap. Phase-4.7-Blocker #8.
+
+### B-007: catch(Throwable) — 2 Sites in core/ verbleibend
+**Source:** `gap:net-new` · **Severity:** 🟡 P2 · **Status:** Open
+
+Von ehemals 27 Sites auf 2 reduziert. Restliche 2 Sites auf `catch(RuntimeException)` tighten.
+
+### B-008: EngineSeams-Direkt-Calls — 16 in core/ (Ziel: 0)
+**Source:** `gap:net-new` · **Severity:** 🟡 P2 · **Status:** Open
+
+Phase-5-Blocker #2: 16 direkte EngineSeams-Calls im Core. Ziel: 0.
+
+### B-009: Hungersignal ohne Bevölkerungskonsequenz
+**Source:** `balance:drift` · **Severity:** 🟠 P1 · **Status:** Open
+
+Save `48024362381900`: 20 Tage `starving_signal=1`, `food_days=0`, Bevölkerung wächst trotzdem. Entweder zu späte Kopplung oder keine Kopplung an Immigration/Reproduktion.
+
+### B-010: carpenter/targetWage=0 in FlowPrices
+**Source:** `bug:silent` · **Severity:** 🟡 P2 · **Status:** Open
+
+In der FlowMeter-Coverage-Analyse entdeckt: `carpenter.targetWage=0` in FlowPrices (sollte ≈ 50 sein). Wage-Signal für Carpenter-Beruf existiert nicht.
+
+---
+
+## Frühere Backlog-Einträge (vor 2026-07-24)
+
+_Keine — der Backlog wurde mit dieser Session initialisiert. Frühere Plan-Fragmente sind in ROADMAP.md absorbiert._
