@@ -170,7 +170,10 @@ public final class EconomySim {
     private final Escrow escrow = new Escrow(this.wallets);
     private final AffordabilityGate affordabilityGate = new AffordabilityGate(this.escrow, this.flowPrices, this.grainDole);
     private final FoodPlanController foodPlanController = new FoodPlanController(this.affordabilityGate);
-    private final PurchasePlanController purchasePlanController = new PurchasePlanController(this.affordabilityGate);
+    // Phase-4.7/T-003: purchasePlanController braucht ISyxAI (aiAdapter).
+    // aiAdapter wird im Konstruktor-Body zugewiesen → Field-Initializer kann
+    // nicht via this.aiAdapter darauf zugreifen. Daher Constructor-Assign.
+    private final PurchasePlanController purchasePlanController;
     private final ServiceMarket serviceMarket = new ServiceMarket();
     private final ServicePlanController servicePlanController = new ServicePlanController(this.serviceMarket, this.fiscal, this.firmLedger);
     private final HousingMarket housingMarket = new HousingMarket();
@@ -181,7 +184,8 @@ public final class EconomySim {
     private volatile List<RoomBlueprintImp> cachedWorkplaces = Collections.emptyList();
     private volatile List<RESOURCE> cachedAllResources = Collections.emptyList();
     private int ticks = 0;
-    private long lastUpdateTick = -1L;
+    private volatile boolean updateInProgress = false;
+    private static volatile boolean reentryLogged = false;
     private final SimpleHistory treasuryHistory = new SimpleHistory(60);
     private final SimpleHistory giniHistory = new SimpleHistory(60);
     private double encounterCarry = 0.0;
@@ -197,9 +201,7 @@ public final class EconomySim {
     private long warehouseTaxCollected = 0L;
     private long wagesPaid = 0L;
     private long housingRentCollected = 0L;
-    private long propertySalesCollected = 0L;
-    private long propertyDividendsPaid = 0L;
-    private int lastPropertySeason = -1;
+    private final PropertyMarketController propertyMarket;
     private long roundingDrift = 0L;
     private int deaths = 0;
     private int emigrations = 0;
@@ -411,118 +413,11 @@ public final class EconomySim {
     }
 
     public long propertySalesCollected() {
-        return this.propertySalesCollected;
+        return this.propertyMarket.salesCollected();
     }
 
     public long propertyDividendsPaid() {
-        return this.propertyDividendsPaid;
-    }
-
-    /**
-     * Phase 2: Property market tick (per season).
-     * - Checks if citizens can afford to buy their state-owned homes.
-     * - Accrues and pays out firm dividends to shareholders.
-     */
-    private void updatePropertyMarket() {
-        if (!EconConfig.propertyMarketEnabled) return;
-        int season = TIME.seasons().bitsSinceStart();
-        if (this.lastPropertySeason == -1) {
-            this.lastPropertySeason = season;
-            return;
-        }
-        if (season == this.lastPropertySeason) return;
-        this.lastPropertySeason = season;
-
-        PropertyLedger ledger = this.housingMarket.ledger();
-
-        // 0. Remove entries for demolished rooms (monotonically growing map fix)
-        ledger.cleanupGoneRooms();
-
-        // 1. Home purchase: check state-owned homes for occupants who can afford them.
-        if (EconConfig.homePurchaseEnabled && SETT.ROOMS() != null) {
-            // Check houses
-            if (SETT.ROOMS().HOME != null && SETT.ROOMS().HOME.service != null) {
-                int tw = SETT.TWIDTH;
-                int th = SETT.THEIGHT;
-                for (int ty = 0; ty < th; ++ty) {
-                    for (int tx = 0; tx < tw; ++tx) {
-                        settlement.room.home.house.HomeInstance home = SETT.ROOMS().HOME.service.get(tx, ty);
-                        if (home == null || home.occupants() <= 0) continue;
-                        PropertyLedger.Entry e = ledger.get(home, "HOME");
-                        if (e == null || !e.isStateOwned()) continue;
-                        for (int oi = 0; oi < home.occupants(); ++oi) {
-                            Humanoid occupant = home.occupant(oi);
-                            if (occupant == null || occupant.isRemoved()) continue;
-                        long price = ledger.buyHome(occupant, (settlement.room.home.HOME) home, this.wallets);
-                        if (price > 0L) {
-                            this.propertySalesCollected += price;
-                            break; // one buyer per season per home
-                            }
-                        }
-                    }
-                }
-            }
-            // Check chambers
-            if (SETT.ROOMS().CHAMBER != null) {
-                for (int i = 0; i < SETT.ROOMS().CHAMBER.instancesSize(); ++i) {
-                    settlement.room.home.chamber.ChamberInstance chamber = SETT.ROOMS().CHAMBER.getInstance(i);
-                    if (chamber == null || !chamber.exists() || chamber.occupants() <= 0) continue;
-                    PropertyLedger.Entry e = ledger.get(chamber, "CHAMBER");
-                    if (e == null || !e.isStateOwned()) continue;
-                    for (int oi = 0; oi < chamber.occupants(); ++oi) {
-                        Humanoid occupant = chamber.occupant(oi);
-                        if (occupant == null || occupant.isRemoved()) continue;
-                        long price = ledger.buyHome(occupant, (settlement.room.home.HOME) chamber, this.wallets);
-                        if (price > 0L) {
-                            this.propertySalesCollected += price;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
-        // 2. Reclaim property from dead/emigrated citizens
-        this.reclaimOrphanedProperty();
-
-        // 3. Firm share purchases and dividend cycle
-        if (EconConfig.workplaceSharesEnabled) {
-            // Accrue this season's dividends (per-firm, not aggregate)
-            ledger.accrueDividends(this.firmLedger, SETT.ROOMS().imps());
-            // Pay out accumulated dividends
-            this.propertyDividendsPaid += ledger.payDividends(this.wallets, this.roster, season);
-
-            // Check if wealthy citizens want to buy firm shares
-            for (int i = 0; i < this.roster.size(); ++i) {
-                Humanoid citizen = this.roster.get(i);
-                int wealth = this.wallets.spendable(citizen);
-                double firmMult = EconConfig.citizenClassesEnabled ? this.wallets.classOf(citizen).firmBuyThresholdMultiplier : 1.0;
-                if (firmMult >= 999.0) continue; // class never buys firm shares
-                if (wealth < (int)((double)EconConfig.initialWallet * 5.0 * firmMult)) continue; // class-specific threshold
-                // Try to buy shares in firms — iterate all instances, not just the first
-                firmLoop:
-                for (settlement.room.main.RoomBlueprintImp bp : this.cachedWorkplaces) {
-                    if (!(bp instanceof settlement.room.main.RoomBlueprintIns)) continue;
-                    settlement.room.main.RoomBlueprintIns<?> ins = (settlement.room.main.RoomBlueprintIns<?>) bp;
-                    for (int j = 0; j < ins.instancesSize(); ++j) {
-                        RoomInstance room = (RoomInstance) ins.getInstance(j);
-                        if (room == null || !room.exists()) continue;
-                        PropertyLedger.Entry e = ledger.get(room);
-                        if (e == null || e.shares >= 100) continue;
-                        int maxShares = ledger.maxSharesForCitizen((long) citizen.id());
-                        if (maxShares <= 0) continue;
-                        int available = 100 - e.shares;
-                        int toBuy = Math.min(maxShares, Math.min(available, 10)); // buy 10% at a time
-                        if (toBuy <= 0) continue;
-                        long sharePrice = ledger.buyShares(citizen, room, toBuy, this.wallets, this.firmLedger);
-                        if (sharePrice > 0L) {
-                            this.propertySalesCollected += sharePrice;
-                            break firmLoop; // one purchase per citizen per season
-                        }
-                    }
-                }
-            }
-        }
+        return this.propertyMarket.dividendsPaid();
     }
 
     public EconomySim() {
@@ -589,38 +484,50 @@ public final class EconomySim {
         // Phase 4 Step 5.6: ISyxAI in EconomySim statt EngineSeams — konsolidiert
         // alle Adapter unter einer Instanz für konsistente Migration der Aufrufer.
         this.aiAdapter = new VanillaAIAdapter();
+        // Phase-4.7/T-003: PurchasePlanController braucht aiAdapter.
+        this.purchasePlanController = new PurchasePlanController(this.affordabilityGate, this.aiAdapter);
+        this.propertyMarket = new PropertyMarketController(
+            this.housingMarket, this.firmLedger, this.wallets, this.roster);
     }
 
     public void update(double ds) {
-        // Plan-Amendment 5: Re-Entry-Wächter. Ein doppelter update()-Call im selben Tick
-        // würde Diagnose-Werte (auditSupply), Acceptor-State und Subsystem-IDs doppelt
-        // zählen und damit roi-snapshot ersetzen ohne Realität. Wir nutzen die Vanilla-
-        // Aufr ruffrequenz als Truth-of-One — wenn sie gebrochen ist, ist es ein Plugins-
-        // API-Bruch oder eine Reflection-Re-Entry und gehört geloggt statt doppelt ausgeführt.
-        if (this.lastUpdateTick == this.ticks) {
-            throw new IllegalStateException(
-                "[ECON] EconomySim.update() re-entry on tick=" + this.ticks
-                + " — Vanilla-Loop hat denselben Tick zweimal angesprochen. Mod-State bleibt stabil, Call wird geworfen statt wiederholt."
-            );
-        }
-        this.lastUpdateTick = this.ticks;
-        this.debtDiplomacyBuffer.update();
-        if (SETT.ENTITIES() == null) {
+        // Re-Entry-Wächter (v0.1.4-hotfix-2, 2026-07-24).
+        // Boolean-Flag statt tick-basiertem Guard: fängt ALLE Re-Entry-Szenarien
+        // ab (Same-Frame-Duplicates, Roster<2-Cycle, Save/Load-Edge-Cases) ohne
+        // False-Positives und ohne Console-Spam. try/finally garantiert Reset auch
+        // bei RuntimeExceptions im Update-Pfad.
+        //
+        // Phase-4.7/T-005: debtDiplomacyBuffer.update() ist NACH updateInProgress
+        // in den try-Block gewandert. Vorher lief der Buffer-Update UNBEDINGT vor
+        // dem Guard — bei Vanilla-Duplikat-Erkennung (gleicher Tick zweimal
+        // angesprochen) akkumulierte der Buffer 2× pro tick, was den in der
+        // Live-Diagnose beobachteten mean_wage-/SimpleHistory-Drift verstärkte.
+        if (this.updateInProgress) {
+            if (!reentryLogged) {
+                System.err.println("[ECON] EconomySim.update() re-entry detected — skipping (one-shot log).");
+                reentryLogged = true;
+            }
             return;
         }
-        if (ds <= 0.0) {
-            return;
-        }
-        this.roster.rebuild();
-        this.wallets.clearPaidThisTick();
-        if (this.roster.size() < 2) {
-            this.updateRenderCaches();
-            return;
-        }
-        ++this.ticks;
+        this.updateInProgress = true;
+        try {
+            this.debtDiplomacyBuffer.update();
+            if (SETT.ENTITIES() == null) {
+                return;
+            }
+            if (ds <= 0.0) {
+                return;
+            }
+            this.roster.rebuild();
+            this.wallets.clearPaidThisTick();
+            if (this.roster.size() < 2) {
+                this.updateRenderCaches();
+                return;
+            }
+            ++this.ticks;
         // Treasury-Krisenprüfung NACH Game-State-Guards (SETT.ENTITIES != null, ds > 0, roster >= 2)
         // Übergibt 'this' für erzwungene Aktionen (Liquidation, Property-Markt, etc.)
-        TreasuryCrisis.update(this.treasury(), this);
+        CrisisDispatch.update(this.treasury(), this);
         this.workplaceDefaults.update();
         this.warehouseMarket.beginTick();
         this.stateWarehouses.beginTick();
@@ -699,7 +606,7 @@ public final class EconomySim {
         this.religionTaxCollected += this.religionMarket.update(this.roster, this.wallets);
         this.liturgyCollected += this.liturgy.update(this.roster, this.wallets);
         this.housingRentCollected += this.housingMarket.update(this.roster, this.wallets, this.firmLedger);
-        this.updatePropertyMarket();
+        this.propertyMarket.update();
         this.settleTaxSeason();
         this.debtBondage.update(this.roster, this.wallets);
         this.spent += this.purchases.update(this.roster, this.wallets, this.affordabilityGate, this.ticks);
@@ -764,6 +671,9 @@ public final class EconomySim {
             // ein einziges Source-of-Truth ist und Balance-Verschiebungen nicht die
             // Tag/Nacht-Rollover-Stelle verschieben.
             this.foreignTradeLedger.dailyTick(this.ticks);
+        }
+        } finally {
+            this.updateInProgress = false;
         }
     }
 
@@ -975,21 +885,6 @@ public final class EconomySim {
         }
     }
 
-    /**
-     * Phase 2: Reclaim property from dead/emigrated citizens.
-     * Called once per season inside updatePropertyMarket().
-     */
-    private void reclaimOrphanedProperty() {
-        if (!EconConfig.propertyMarketEnabled) return;
-        java.util.HashSet<Integer> alive = new java.util.HashSet<>();
-        for (int i = 0; i < this.roster.size(); ++i) {
-            alive.add(this.roster.get(i).id());
-        }
-        this.housingMarket.ledger().reclaimDeadOwners(alive);
-    }
-
-    // Phase 2 orphaned property reclamation moved into updatePropertyMarket().
-
     private Humanoid findHeir(int deadRef) {
         if (deadRef <= 0) {
             return null;
@@ -1015,7 +910,7 @@ public final class EconomySim {
     }
 
     private AuditKernel.Terms auditTerms() {
-        return new AuditKernel.Terms(this.seedSupply, this.imported, this.guildIncomePaid + this.fiscal.rationOut(), this.roundingDrift, this.exported, this.escheated, this.taxesCollected, this.fiscal.headTaxCollected(), this.fiscal.marketReceipts(), this.spent, this.religionTaxCollected, this.liturgyCollected, this.warehouseTaxCollected, this.wagesPaid, this.housingRentCollected, this.propertySalesCollected, this.propertyDividendsPaid);
+        return new AuditKernel.Terms(this.seedSupply, this.imported, this.guildIncomePaid + this.fiscal.rationOut(), this.roundingDrift, this.exported, this.escheated, this.taxesCollected, this.fiscal.headTaxCollected(), this.fiscal.marketReceipts(), this.spent, this.religionTaxCollected, this.liturgyCollected, this.warehouseTaxCollected, this.wagesPaid, this.housingRentCollected, this.propertyMarket.salesCollected(), this.propertyMarket.dividendsPaid());
     }
 
     private void auditSupply() {
@@ -1028,7 +923,7 @@ public final class EconomySim {
                 // next audit cycle self-corrects. Large residuals still fire a mismatch.
                 this.roundingDrift += delta;
             } else if (delta != this.reportedAuditDelta) {
-                System.err.println("[ECON] SUPPLY MISMATCH: living=" + actual + " expected=" + expected + " (seed=" + this.seedSupply + " +imported=" + this.imported + " +treasuryIncome=" + this.guildIncomePaid + " +rationOut=" + this.fiscal.rationOut() + " +wagesPaid=" + this.wagesPaid + " +propertyDividends=" + this.propertyDividendsPaid + " -exported=" + this.exported + " -escheated=" + this.escheated + " -wealthTax=" + this.taxesCollected + " -headTax=" + this.fiscal.headTaxCollected() + " -market=" + this.fiscal.marketReceipts() + " -legacySpent=" + this.spent + " -religionTax=" + this.religionTaxCollected + " -liturgy=" + this.liturgyCollected + " -warehouseTax=" + this.warehouseTaxCollected + " -housingRent=" + this.housingRentCollected + " -propertySales=" + this.propertySalesCollected + " -roundingDrift=" + this.roundingDrift + ")");
+                System.err.println("[ECON] SUPPLY MISMATCH: living=" + actual + " expected=" + expected + " (seed=" + this.seedSupply + " +imported=" + this.imported + " +treasuryIncome=" + this.guildIncomePaid + " +rationOut=" + this.fiscal.rationOut() + " +wagesPaid=" + this.wagesPaid + " +propertyDividends=" + this.propertyMarket.dividendsPaid() + " -exported=" + this.exported + " -escheated=" + this.escheated + " -wealthTax=" + this.taxesCollected + " -headTax=" + this.fiscal.headTaxCollected() + " -market=" + this.fiscal.marketReceipts() + " -legacySpent=" + this.spent + " -religionTax=" + this.religionTaxCollected + " -liturgy=" + this.liturgyCollected + " -warehouseTax=" + this.warehouseTaxCollected + " -housingRent=" + this.housingRentCollected + " -propertySales=" + this.propertyMarket.salesCollected() + " -roundingDrift=" + this.roundingDrift + ")");
             }
         }
         this.reportedAuditDelta = delta;
@@ -1111,9 +1006,9 @@ public final class EconomySim {
         file.d(this.encounterCarry);
         file.l(this.reportedAuditDelta);
         file.l(this.housingRentCollected);
-        file.l(this.propertySalesCollected);
-        file.l(this.propertyDividendsPaid);
-        file.i(this.lastPropertySeason);
+        file.l(this.propertyMarket.salesCollected());
+        file.l(this.propertyMarket.dividendsPaid());
+        file.i(this.propertyMarket.lastSeason());
         ChunkedSave.endChunk(file, pos);
 
         // EconConfig values that are persisted per-save (not all config)
@@ -1216,6 +1111,7 @@ public final class EconomySim {
         // each registered map and emits a stderr line so the data loss is visible
         // instead of silent. Maps will rebuild on the next tick's update() calls.
         IdentityMapRegistry.clearOnLoad("Load (version " + version + ")");
+
     }
 
     /**
@@ -1264,9 +1160,7 @@ public final class EconomySim {
                         this.encounterCarry = file.d();
                         this.reportedAuditDelta = file.l();
                         this.housingRentCollected = expectedEnd - file.getPosition() >= 8 ? file.l() : 0L;
-                        this.propertySalesCollected = expectedEnd - file.getPosition() >= 8 ? file.l() : 0L;
-                        this.propertyDividendsPaid = expectedEnd - file.getPosition() >= 8 ? file.l() : 0L;
-                        this.lastPropertySeason = expectedEnd - file.getPosition() >= 4 ? file.i() : -1;
+                        this.propertyMarket.load(file, expectedEnd);
                         loadedCore = true;
                         break;
                     case TAG_ECON_CONFIG:
@@ -1518,9 +1412,7 @@ public final class EconomySim {
         this.warehouseTaxCollected = 0L;
         this.wagesPaid = 0L;
         this.housingRentCollected = 0L;
-        this.propertySalesCollected = 0L;
-        this.propertyDividendsPaid = 0L;
-        this.lastPropertySeason = -1;
+        this.propertyMarket.reset();
         this.lastTaxSeason = -1;
         this.roundingDrift = 0L;
         this.reportedAuditDelta = 0L;

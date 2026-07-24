@@ -4,6 +4,7 @@ import settlement.entity.humanoid.Humanoid;
 import settlement.entity.humanoid.ai.main.AIManager;
 import settlement.entity.humanoid.ai.main.AIPLAN;
 import settlement.entity.humanoid.ai.main.HAI;
+import vannon.syx.economy.adapter.ISyxAI;
 import vannon.syx.economy.core.AffordabilityGate;
 import vannon.syx.economy.core.DrinkTransactionPlan;
 import vannon.syx.economy.core.EconConfig;
@@ -14,16 +15,18 @@ import vannon.syx.economy.core.Roster;
 public final class PurchasePlanController {
     private final DrinkTransactionPlan drink;
     private final GoodsTransactionPlan goods;
+    private final ISyxAI ai;
     /** v1.7.2 Perf: Round-Robin-Sharding — nur 1/shardCount des Rosters pro Tick,
      *  aber ueber shardCount Ticks wird jeder Buerger einmal geprueft.
      *  shardCount=1 deaktiviert Sharding (voller Scan wie vorher). */
     private int tickCounter = 0;
     private final int shardCount;
 
-    public PurchasePlanController(AffordabilityGate gate) {
+    public PurchasePlanController(AffordabilityGate gate, ISyxAI ai) {
         this.drink = new DrinkTransactionPlan(gate);
         this.goods = new GoodsTransactionPlan(gate);
         this.shardCount = Math.max(1, EconConfig.planControllerShardCount);
+        this.ai = ai;
     }
 
     public void update(Roster roster) {
@@ -59,11 +62,11 @@ public final class PurchasePlanController {
             || manager.plan() == this.goods)
             return;
         AIPLAN current = manager.plan();
-        if (EngineSeams.isTavernPlan(current)) {
+        if (this.ai.isTavernPlan(current)) {
             EngineSeams.overwritePlan(humanoid, (AIPLAN)this.drink);
             return;
         }
-        if (!EngineSeams.isMarketPlan(current)) return;
+        if (!this.ai.isMarketPlan(current)) return;
         EngineSeams.overwritePlan(humanoid, (AIPLAN)this.goods);
     }
 }

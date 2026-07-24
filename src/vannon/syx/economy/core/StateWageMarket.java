@@ -6,6 +6,7 @@ import game.time.TIME;
 import init.type.HCLASSES;
 import java.lang.invoke.LambdaMetafactory;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -55,14 +56,9 @@ public final class StateWageMarket {
         EconConfig.prisonWagePerDay = w;
     })};
     private final Entry[] laborEntries = StateWageMarket.prepend(this.militaryEntry, this.entries);
-    private final Map<RoomBlueprintImp, Double> carry = new IdentityHashMap<RoomBlueprintImp, Double>();
+    private final Map<String, Double> carry = new HashMap<String, Double>();
 
-    /** Phase-4.7 (Task 2): register the carry map for clearOnLoad.
-     *  NOTE: 'carry' is to be addressed in Phase 5a as Saveable — it currently
-     *  loses fractional payroll-accrements across Save/Load. The register-hook
-     *  here is a placeholder until 5a ships. */
     public StateWageMarket() {
-        IdentityMapRegistry.register("StateWageMarket", "carry", carry);
     }
 
     private static Entry entry(String name, Predicate<RoomBlueprintImp> covers, IntSupplier get, IntConsumer set) {
@@ -118,13 +114,13 @@ public final class StateWageMarket {
             group.entry.lastWorkers += group.workers;
             int wage = group.entry.wage();
             if (wage <= 0) {
-                this.carry.remove(group.blueprint);
+                this.carry.remove(group.blueprint.key);
                 continue;
             }
             if (group.workers <= 0) continue;
-            Accrual accrual = StateWageMarket.accrue(this.carry.getOrDefault(group.blueprint, 0.0), group.workers, wage, ds, daySeconds);
+            Accrual accrual = StateWageMarket.accrue(this.carry.getOrDefault(group.blueprint.key, 0.0), group.workers, wage, ds, daySeconds);
             group.due = accrual.due();
-            this.carry.put(group.blueprint, accrual.carry());
+            this.carry.put(group.blueprint.key, accrual.carry());
             dues[i] = group.due;
             totalDue = StateWageMarket.safeAdd(totalDue, group.due);
             group.entry.lastDue = StateWageMarket.safeAdd(group.entry.lastDue, group.due);

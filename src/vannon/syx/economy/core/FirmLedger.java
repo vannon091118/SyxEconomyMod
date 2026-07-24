@@ -40,8 +40,8 @@ import vannon.syx.economy.core.Wallets;
 public final class FirmLedger {
     private final Map<RoomInstance, FirmState> firms = new IdentityHashMap<RoomInstance, FirmState>();
     private final Map<String, BlueprintState> blueprints = new HashMap<String, BlueprintState>();
-    private final Map<RoomBlueprintImp, Double> serviceRevenue = new IdentityHashMap<RoomBlueprintImp, Double>();
-    private final Map<RoomBlueprintImp, Double> stateWageMarginal = new IdentityHashMap<RoomBlueprintImp, Double>();
+    private final Map<String, Double> serviceRevenue = new HashMap<String, Double>();
+    private final Map<String, Double> stateWageMarginal = new HashMap<String, Double>();
     /**
      * Phase 5e — Per-Room Operating-Mode für die Pause-vs-Operating-Cost-Choice-UI.
      * PRODUCE = vanilla. PAUSED = kein Output, keine Operating-Cost. MOTHBALLED =
@@ -49,7 +49,7 @@ public final class FirmLedger {
      * auf PAUSED/MOTHBALLED. Save/Load nicht in diesem Patch — fällt nach Load auf
      * PRODUCE zurück, wird mit Phase-4.7-Chunk-Migration erfasst.
      */
-    private final Map<RoomInstance, EconConfig.RoomOperatingMode> opModes = new IdentityHashMap<RoomInstance, EconConfig.RoomOperatingMode>();
+    private final RoomOperatingModeController roomOpCtrl = new RoomOperatingModeController();
     private StateWarehouses stateWarehouses;
     private int lastSizingTick = -1073741824;
     private long lastIncomeDue;
@@ -69,11 +69,6 @@ public final class FirmLedger {
      */
     public FirmLedger() {
         IdentityMapRegistry.register("FirmLedger", "firms", firms);
-        IdentityMapRegistry.register("FirmLedger", "serviceRevenue", serviceRevenue);
-        IdentityMapRegistry.register("FirmLedger", "stateWageMarginal", stateWageMarginal);
-        // Phase 5e: opModes mit clearOnLoad-Cover — nach Save/Load fallen alle Modi auf
-        // PRODUCE (Default). Save/Load selbst kommt mit Phase-4.7-Chunk-Migration.
-        IdentityMapRegistry.register("FirmLedger", "opModes", opModes);
     }
     public long lastIncomeDue() {
         return this.lastIncomeDue;
@@ -120,8 +115,18 @@ public final class FirmLedger {
 
     public void recordServiceRevenue(RoomBlueprintImp blueprint, double amount) {
         if (blueprint != null && amount > 0.0 && Double.isFinite(amount)) {
-            this.serviceRevenue.merge(blueprint, amount, Double::sum);
+            this.serviceRevenue.merge(blueprint.key, amount, Double::sum);
         }
+    }
+
+    // Slope-Clamp-Helper: alle marginal-SET-Stellen und die stateWageMarginal-
+    // Aggregation gehen durch diese Funktion. Symmetrische Begrenzung auf
+    // [-EconConfig.wageMax, +EconConfig.wageMax] und NaN/Infinity → 0.0, damit
+    // ein einziger NaN-Upstream nicht die meanPositiveMarginal-Kette vergiftet.
+    private static double slopeClamp(double value) {
+        if (!Double.isFinite(value)) return 0.0;
+        double cap = EconConfig.wageMax;
+        return Math.max(-cap, Math.min(cap, value));
     }
 
     public void recordStateWageMarginal(RoomBlueprintImp blueprint, double marginalPerDay) {
@@ -129,9 +134,12 @@ public final class FirmLedger {
             return;
         }
         if (marginalPerDay > 0.0 && Double.isFinite(marginalPerDay)) {
-            this.stateWageMarginal.put(blueprint, marginalPerDay);
+            // Defense-in-Depth: an der Quelle clampen, damit die Invariante
+            // „alle stateWageMarginal-Map-Werte ≤ wageMax" haltbar ist — auch wenn
+            // ein neuer Caller die Aggregation umgehen würde.
+            this.stateWageMarginal.put(blueprint.key, slopeClamp(marginalPerDay));
         } else {
-            this.stateWageMarginal.remove(blueprint);
+            this.stateWageMarginal.remove(blueprint.key);
         }
     }
 
@@ -153,20 +161,14 @@ public final class FirmLedger {
         state.pendingCash -= amount;
     }
 
-    /**
-     * Phase 5e: Set operating-mode for a room. Caller (UI) decides PRODUCE / PAUSED / MOTHBALLED.
-     * Setting PAUSED does NOT kick workers out — the empty-employee path inside
-     * update() is what freezes operating-cost when paired with no workers.
-     */
+    /** Phase 5e: Delegiert an {@link RoomOperatingModeController}. */
     public void setOperatingMode(RoomInstance room, EconConfig.RoomOperatingMode mode) {
-        if (room == null || mode == null) return;
-        opModes.put(room, mode);
+        roomOpCtrl.set(room, mode);
     }
 
+    /** Phase 5e: Delegiert an {@link RoomOperatingModeController}. */
     public EconConfig.RoomOperatingMode getOperatingMode(RoomInstance room) {
-        if (room == null) return EconConfig.RoomOperatingMode.PRODUCE;
-        EconConfig.RoomOperatingMode mode = opModes.get(room);
-        return mode == null ? EconConfig.RoomOperatingMode.PRODUCE : mode;
+        return roomOpCtrl.get(room);
     }
 
     public UpdateResult update(Roster roster, Wallets wallets, FlowMeter meter, FlowPrices prices, AffordabilityGate gate, double gameSeconds, int ticks) {
@@ -220,6 +222,9 @@ public final class FirmLedger {
         }
         double window = EconConfig.flowSmoothingDays > 0.0 ? EconConfig.flowSmoothingDays : elapsedDays;
         double blend = 1.0 - Math.exp(-elapsedDays / window);
+        // Phase 5e Fix (2026-07-24): marginal-per-worker durch slopeClamp()-Helper,
+        // bounded auf [-wageMax, +wageMax], NaN→0. Sonst: meanPositiveMarginal-
+        // Eskalation → log(marginal/meanWage) drückt alle Firm-Prioritäten auf 0.
         Iterator<Map.Entry<RoomInstance, FirmState>> iterator = this.firms.entrySet().iterator();
         while (iterator.hasNext()) {
             Map.Entry<RoomInstance, FirmState> entry = iterator.next();
@@ -242,15 +247,23 @@ public final class FirmLedger {
             } else {
                 state.profit = state.physicalProfit + state.cashRate;
                 if (state.profit <= 0.0) {
-                    state.marginal = state.profit / (double)Math.max(1, roomInstance.employees().employed());
+                    state.marginal = slopeClamp(state.profit / (double)Math.max(1, roomInstance.employees().employed()));
                 } else if (state.marginal == 0.0 || !Double.isFinite(state.marginal)) {
-                    state.marginal = state.profit / (double)Math.max(1, roomInstance.employees().employed());
+                    state.marginal = slopeClamp(state.profit / (double)Math.max(1, roomInstance.employees().employed()));
                 }
             }
-            if (!this.excludedFromMarketSizing(roomInstance) && EconConfig.firmSizingEnabled && FirmEconomyKernel.shouldIdle(state.profit, EconConfig.firmSizingHysteresis)) {
-                state.marketTarget = 0;
-                state.hill = new FirmEconomyKernel.HillState(0, 0.0, 1, true);
-                EngineSeams.setFirmTarget(roomInstance, 0);
+            // Phase 5e Fix (2026-07-24): Cold-start guard — new firms (hill==null)
+            // get a grace period until size() evaluates them. The idle target
+            // now uses minimumWorkersPerWorkplace (not 0) to match size() behavior
+            // and prevent permanent shutdown of firms that haven't completed their
+            // first production cycle yet. Setting neededSet(0) tells vanilla "don't
+            // operate at all," which discards work-in-progress — a death sentence
+            // for any firm whose output counter hasn't incremented yet.
+            if (state.hill != null && !this.excludedFromMarketSizing(roomInstance) && EconConfig.firmSizingEnabled && FirmEconomyKernel.shouldIdle(state.profit, EconConfig.firmSizingHysteresis)) {
+                int minimum = Math.min(roomInstance.employees().max(), Math.max(0, EconConfig.minimumWorkersPerWorkplace));
+                state.marketTarget = minimum;
+                state.hill = new FirmEconomyKernel.HillState(minimum, 0.0, 1, true);
+                EngineSeams.setFirmTarget(roomInstance, minimum);
             }
             RoomBlueprintIns<?> blueprint = roomInstance.blueprintI();
             BlueprintState aggregate = this.blueprints.computeIfAbsent(blueprint.key, ignored -> new BlueprintState());
@@ -258,23 +271,20 @@ public final class FirmLedger {
             aggregate.marginalNumerator += state.marginal * (double)Math.max(1, roomInstance.employees().employed());
             aggregate.marginalWeight += Math.max(1, roomInstance.employees().employed());
         }
-        for (Map.Entry<RoomBlueprintImp, Double> entry : this.serviceRevenue.entrySet()) {
-            RoomBlueprintImp roomBlueprintImp = (RoomBlueprintImp)entry.getKey();
-            BlueprintState aggregate = this.blueprints.computeIfAbsent(roomBlueprintImp.key, ignored -> new BlueprintState());
-            aggregate.profit += ((Double)entry.getValue()).doubleValue();
+        for (RoomBlueprintIns<?> blueprint : SETT.ROOMS().ins()) {
+            Double serviceVal = this.serviceRevenue.remove(blueprint.key);
+            if (serviceVal == null) continue;
+            BlueprintState aggregate = this.blueprints.computeIfAbsent(blueprint.key, ignored -> new BlueprintState());
+            aggregate.profit += serviceVal.doubleValue();
             int workers = 0;
-            if (roomBlueprintImp instanceof RoomBlueprintIns) {
-                RoomBlueprintIns<?> instances = (RoomBlueprintIns<?>)roomBlueprintImp;
-                for (int i = 0; i < instances.instancesSize(); ++i) {
-                    RoomEmploymentIns employment = instances.getInstance(i).employees();
-                    if (employment == null) continue;
-                    workers += employment.employed();
-                }
+            for (int i = 0; i < blueprint.instancesSize(); ++i) {
+                RoomEmploymentIns employment = blueprint.getInstance(i).employees();
+                if (employment == null) continue;
+                workers += employment.employed();
             }
-            aggregate.marginalNumerator += ((Double)entry.getValue()).doubleValue();
+            aggregate.marginalNumerator += serviceVal.doubleValue();
             aggregate.marginalWeight += Math.max(1, workers);
         }
-        this.serviceRevenue.clear();
         this.applyStateWageMarginals();
         for (BlueprintState blueprintState : this.blueprints.values()) {
             blueprintState.marginal = (blueprintState.marginalWeight == 0 ? 0.0 : blueprintState.marginalNumerator / (double)blueprintState.marginalWeight) + blueprintState.stateWageMarginal;
@@ -295,10 +305,11 @@ public final class FirmLedger {
                 FlowMeter.FirmSnapshot snap = snapshots.get(room);
                 if (snap == null) continue;
                 if (gate.affordFirmInputs(snap, state.profit, prices)) continue;
-                state.marketTarget = 0;
-                state.hill = new FirmEconomyKernel.HillState(0, 0.0, 1, true);
+                int minimum = Math.min(room.employees().max(), Math.max(0, EconConfig.minimumWorkersPerWorkplace));
+                state.marketTarget = minimum;
+                state.hill = new FirmEconomyKernel.HillState(minimum, 0.0, 1, true);
                 if (room.employees() != null) {
-                    EngineSeams.setFirmTarget(room, 0);
+                    EngineSeams.setFirmTarget(room, minimum);
                 }
             }
         }
@@ -498,9 +509,9 @@ public final class FirmLedger {
         FirmEconomyKernel.HillResult result = FirmEconomyKernel.hillStep(before, target, state.profit, minimum, room.employees().max(), EconConfig.firmSizingHillclimbStep, EconConfig.firmSizingHysteresis);
         state.hill = result.state();
         if (target < oldBest && result.observedSlope() > 0.0) {
-            state.marginal = result.observedSlope();
+            state.marginal = slopeClamp(result.observedSlope());
         } else if (result.observedSlope() != 0.0 && target > oldBest) {
-            state.marginal = result.observedSlope();
+            state.marginal = slopeClamp(result.observedSlope());
         }
         state.marketTarget = result.nextTarget();
         EngineSeams.setFirmTarget(room, state.marketTarget);
@@ -527,53 +538,27 @@ public final class FirmLedger {
             aggregate.marginalWeight += weight;
         }
         this.applyStateWageMarginals();
+        // Aggregation auch durch slopeClamp() — additive stateWageMarginal war an
+        // der Quelle un-capped und hätte meanPositiveMarginal über wageMax eskaliert.
         for (BlueprintState state : this.blueprints.values()) {
-            state.marginal = (state.marginalWeight == 0 ? 0.0 : state.marginalNumerator / (double)state.marginalWeight) + state.stateWageMarginal;
+            double base = (state.marginalWeight == 0 ? 0.0 : state.marginalNumerator / (double)state.marginalWeight) + state.stateWageMarginal;
+            state.marginal = slopeClamp(base);
         }
     }
 
     private void applyStateWageMarginals() {
-        for (Map.Entry<RoomBlueprintImp, Double> entry : this.stateWageMarginal.entrySet()) {
-            BlueprintState aggregate = this.blueprints.computeIfAbsent(entry.getKey().key, ignored -> new BlueprintState());
-            // Phase 5e: scale state-wage-marginal by the per-blueprint opMode average.
-            // Per-room PAUSED → 0.0×, MOTHBALLED → 0.3×, PRODUCE → 1.0×. Non-state-funded
-            // blueprints bleiben bei 1.0× (vanilla). Mehrere Räume desselben Blueprints
-            // werden gemittelt.
-            aggregate.stateWageMarginal += entry.getValue().doubleValue()
-                    * this.effectiveOpModeCostScale(entry.getKey());
+        for (RoomBlueprintIns<?> blueprint : SETT.ROOMS().ins()) {
+            Double marginalVal = this.stateWageMarginal.get(blueprint.key);
+            if (marginalVal == null) continue;
+            BlueprintState aggregate = this.blueprints.computeIfAbsent(blueprint.key, ignored -> new BlueprintState());
+            // Multi-Tick-Akkumulation: jeder marginalVal-Beitrag ist an der Quelle
+            // (recordStateWageMarginal) auf wageMax geclampt, aber costScale() kann
+            // >1.0 zurückgeben (MOTHBALLED-Modus) — die Summe überschreitet wageMax.
+            // Sink-Cap in recomputeBlueprintMarginals (zweite Zeile der marginal=Zuweisung)
+            // fängt das. Source-Cap allein reicht nicht.
+            aggregate.stateWageMarginal += marginalVal.doubleValue()
+                    * roomOpCtrl.costScale(blueprint, this.firms);
         }
-    }
-
-    /**
-     * Phase 5e: Per-Blueprint Cost-Faktor für state-wage-marginal accumulation.
-     * 1.0 für PRODUCE-Mode, 0.0 für ausschließlich PAUSED, mothballOperatingCostMultiplier
-     * für MOTHBALLED. Mittelwert über alle Räume dieses Blueprints. Non-state-funded
-     * blueprints: immer 1.0.
-     */
-    private double effectiveOpModeCostScale(RoomBlueprintImp blueprint) {
-        if (blueprint == null || !EconomicRoles.stateFundedPublicWorks(blueprint)) {
-            return 1.0;
-        }
-        int total = 0;
-        double scaleSum = 0.0;
-        for (Map.Entry<RoomInstance, FirmState> entry : this.firms.entrySet()) {
-            RoomInstance roomInstance = entry.getKey();
-            if (roomInstance == null || roomInstance.blueprintI() != blueprint) continue;
-            ++total;
-            EconConfig.RoomOperatingMode mode = opModes.getOrDefault(roomInstance, EconConfig.RoomOperatingMode.PRODUCE);
-            switch (mode) {
-                case PRODUCE:
-                    scaleSum += 1.0;
-                    break;
-                case PAUSED:
-                    scaleSum += 0.0;
-                    break;
-                case MOTHBALLED:
-                    scaleSum += EconConfig.mothballOperatingCostMultiplier;
-                    break;
-            }
-        }
-        return total == 0 ? 1.0 : scaleSum / (double)total;
     }
 
     private void recomputeMeanMarginal() {

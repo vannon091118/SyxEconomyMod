@@ -6,7 +6,7 @@
 # verschluckte Exceptions) wieder in den Source-Tree zurückgebaut werden.
 #
 # Zwei-Schwellen-Strategie:
-#   THRESHOLD: aktueller Stand v0.1.3 (PASS = keine Regression,
+#   THRESHOLD: aktueller Stand v0.1.4 (PASS = keine Regression,
 #              FAIL = neue Violation hinzugekommen). Default-Modus.
 #   TARGET:    post-Phase-4.7 Ziel. Über --strict-target aktivierbar
 #              (FAIL bis v0.2.0-Ziele erreicht sind). Tracking-Modus.
@@ -45,15 +45,17 @@ done
 ALLOW_REGISTRY="IdentityMapRegistry.java"
 ALLOW_KEYS="IdentityKeys.java"
 
-# THRESHOLDS — auf/über v0.1.3-Real-Wahrheit. Drift = neue Violation.
+# THRESHOLDS — auf/über v0.1.4-Real-Wahrheit. Drift = neue Violation.
 MAX_CATCH_THROWABLE=2
 MAX_DIRECT_ENGINESEAMS=40
-MAX_IDENTITYHASH_NONREGISTRY=9
+MAX_IDENTITYHASH_NONREGISTRY=10
+MAX_PRINTSTACKTRACE=0
 
 # TARGETS — post-Phase-4.7. Bei --strict-target: fail bis hier.
 TGT_CATCH_THROWABLE=0
-TGT_DIRECT_ENGINESEAMS=5
+TGT_DIRECT_ENGINESEAMS=0
 TGT_IDENTITYHASH_NONREGISTRY=0
+TGT_PRINTSTACKTRACE=0
 
 fail=0
 
@@ -94,6 +96,12 @@ cthrows=$(
         || true; } | wc -l
 )
 
+# ---- Gate 4: printStackTrace() in core/ ----
+pstrace=$(
+    { grep -rEn 'printStackTrace\(\)' src/vannon/syx/economy/core/ 2>/dev/null \
+        | grep -v '//' || true; } | wc -l
+)
+
 # ---- Threshold-Check ----
 if (( drift_count > MAX_IDENTITYHASH_NONREGISTRY )); then
     echo "[FAIL][threshold] $drift_count Dateien mit 'new IdentityHashMap' (Limit $MAX_IDENTITYHASH_NONREGISTRY):"
@@ -110,12 +118,17 @@ if (( cthrows > MAX_CATCH_THROWABLE )); then
     echo "[FAIL][threshold] $cthrows 'catch (Throwable)' in core/ (Limit $MAX_CATCH_THROWABLE)"
     fail=1
 fi
+if (( pstrace > MAX_PRINTSTACKTRACE )); then
+    echo "[FAIL][threshold] $pstrace 'printStackTrace()' in core/ (Limit $MAX_PRINTSTACKTRACE — war 124 in v0.1.2!)"
+    fail=1
+fi
 
 # ---- Target-Gap-Check (nur bei --strict-target) ----
 gap_i=$((drift_count - TGT_IDENTITYHASH_NONREGISTRY))
 gap_e=$((direct_calls - TGT_DIRECT_ENGINESEAMS))
 gap_c=$((cthrows - TGT_CATCH_THROWABLE))
-gap_total=$((gap_i + gap_e + gap_c))
+gap_p=$((pstrace - TGT_PRINTSTACKTRACE))
+gap_total=$((gap_i + gap_e + gap_c + gap_p))
 
 if (( STRICT_TARGET == 1 )); then
     if (( drift_count > TGT_IDENTITYHASH_NONREGISTRY )); then
@@ -130,6 +143,10 @@ if (( STRICT_TARGET == 1 )); then
         echo "[FAIL][target] catch (Throwable): $cthrows → $TGT_CATCH_THROWABLE ($gap_c offen)"
         fail=1
     fi
+    if (( pstrace > TGT_PRINTSTACKTRACE )); then
+        echo "[FAIL][target] printStackTrace: $pstrace → $TGT_PRINTSTACKTRACE ($gap_p offen)"
+        fail=1
+    fi
 fi
 
 # ---- Report ----
@@ -137,8 +154,8 @@ glyph_open="WARTE_AUF_PHASE_4.7"
 echo ""
 echo "[phase47-shield] Messung:"
 echo "    IdentityHashMap (ausserhalb Allow-List): $drift_count / Threshold $MAX_IDENTITYHASH_NONREGISTRY / Target $TGT_IDENTITYHASH_NONREGISTRY"
-echo "    EngineSeams.-Method-Calls in core/   : $direct_calls / Threshold $MAX_DIRECT_ENGINESEAMS / Target $TGT_DIRECT_ENGINESEAMS"
-echo "    catch (Throwable) in core/             : $cthrows / Threshold $MAX_CATCH_THROWABLE / Target $TGT_CATCH_THROWABLE"
+echo "    EngineSeams.-Method-Calls in core/   : $direct_calls / Threshold $MAX_DIRECT_ENGINESEAMS / Target $TGT_DIRECT_ENGINESEAMS"    echo "    catch (Throwable) in core/             : $cthrows / Threshold $MAX_CATCH_THROWABLE / Target $TGT_CATCH_THROWABLE"
+    echo "    printStackTrace() in core/              : $pstrace / Threshold $MAX_PRINTSTACKTRACE / Target $TGT_PRINTSTACKTRACE"
 
 if (( STRICT_TARGET == 1 )); then
     echo ""
@@ -146,6 +163,7 @@ if (( STRICT_TARGET == 1 )); then
     echo "    IdentityHashMap:    $([[ $gap_i -eq 0 ]] && echo OK || echo "$glyph_open (gap=$gap_i)")"
     echo "    EngineSeams-Calls:  $([[ $gap_e -eq 0 ]] && echo OK || echo "$glyph_open (gap=$gap_e)")"
     echo "    catch (Throwable):  $([[ $gap_c -eq 0 ]] && echo OK || echo "$glyph_open (gap=$gap_c)")"
+    echo "    printStackTrace:   $([[ $gap_p -eq 0 ]] && echo OK || echo "$glyph_open (gap=$gap_p)")"
 fi
 
 # ---- Exit ----

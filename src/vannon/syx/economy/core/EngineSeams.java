@@ -11,10 +11,14 @@ import init.type.NEEDS;
 import init.type.NEED_E;
 import settlement.entity.humanoid.HPoll;
 import settlement.entity.humanoid.Humanoid;
+import settlement.main.SETT;
 import settlement.entity.humanoid.ai.main.AIManager;
 import settlement.entity.humanoid.ai.main.AIPLAN;
 import settlement.entity.humanoid.ai.main.HAI;
+import settlement.room.main.RoomBlueprintImp;
 import settlement.room.main.RoomInstance;
+import settlement.room.home.chamber.ROOM_CHAMBER;
+import settlement.room.home.house.ROOM_HOME;
 import settlement.room.service.module.RoomService;
 import settlement.stats.STATS;
 import settlement.stats.colls.StatsReligion;
@@ -153,6 +157,25 @@ public final class EngineSeams {
 
     public static void enslave(Humanoid humanoid) {
         humanoid.indu().hTypeSet(humanoid, HTYPES.SLAVE(), null, null);
+    }
+
+    // Phase-4.7/T-005: null-safe Wrapper für SETT.ROOMS().HOME/CHAMBER/imps().
+    // PropertyMarketController darf SETT. nicht mehr direkt ansprechen
+    // (Architektur-Drift verhindern). Wrapper liefern null wenn SETT.ROOMS()
+    // selbst null ist — Caller handhaben die null-Path selbst.
+
+    public static ROOM_HOME settRoomsHome() {
+        return SETT.ROOMS() == null ? null : SETT.ROOMS().HOME;
+    }
+
+    public static ROOM_CHAMBER settRoomsChamber() {
+        return SETT.ROOMS() == null ? null : SETT.ROOMS().CHAMBER;
+    }
+
+    // SETT.ROOMS().imps() gibt eine LIST<RoomBlueprintImp> zurück (die Superklasse);
+    // Sub-Klassen (RoomBlueprintIns) werden erst beim Iterieren via instanceof gefiltert.
+    public static LIST<RoomBlueprintImp> settRoomsImps() {
+        return SETT.ROOMS() == null ? null : SETT.ROOMS().imps();
     }
 
     private EngineSeams() {
