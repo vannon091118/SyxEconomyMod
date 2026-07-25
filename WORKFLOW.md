@@ -102,19 +102,26 @@ PHASE 1: BAUEN       PHASE 2: PRÜFEN        PHASE 3: HÄRTEN
 
 ## Commit-Disziplin — Session-übergreifend
 
+**Commit + Push erfolgt AM ENDE JEDER CODE-ÄNDERUNG, die Review
+durchlaufen hat.** Kein Stapeln von reviewed-but-uncommitted Changes.
+Kein „ich mach mehrere Fixes und commit dann alles auf einmal".
+Jeder Review→Fix→Verify-Zyklus endet mit einem atomaren Commit + Push.
+
 ```
 JEDER Commit:
   ├── Enthält Stam-Doc-Updates (wenn .java-Dateien geändert)
   ├── Hat `mvn verify install -DskipTests` = BUILD SUCCESS
   ├── Folgt Schema: type: Phase/Ort — Beschreibung
-  └── Wird gepusht sobald die aktuelle Phase abgeschlossen ist
+  └── Wird gepusht sobald die aktuelle Änderung reviewed und verified ist
       (kein Stapeln mehrerer ungepushter Commits)
 
 NIE:
   ├── „Docs mache ich später"
   ├── „Review mache ich später"
   ├── „Gate fixe ich später"
-  └── Commit ohne Build
+  ├── Commit ohne Build
+  ├── Review abschließen ohne Commit+Push
+  └── Mehrere reviewed Changes in EINEM Commit stapeln
 ```
 
 ---
@@ -142,7 +149,7 @@ Eine Session ist bereit zum Handoff, wenn:
 | **Silent-Zero** | FieldAccessor.get() gibt 0 zurück bei Totalausfall | Wirtschaftssimulation rechnet mit Phantom-Nullen | Phase 3.3: Exception statt silent-fail |
 | **Inkonsistente Geschwister** | FieldAccessor schweigt, MethodAccessor crasht | Selber Fehler, zwei verschiedene Folgen | Phase 3.4: Konsistenz-Prüfung |
 | **Doku-Lüge** | „BypassGate.isAvailable() ersetzt Fallbacks" klingt nach globalem Flag | Agent denkt granulare Degradation sei verloren | Phase 2.3: Claims gegen Code verifizieren |
-| **Self-Generated Lookup** | BypassGate erzeugt eigenen Lookup statt Caller-Lookup | Funktioniert im unnamed module, bricht bei module-info.java | Phase 3.5: Double-Review für Architektur |
+| **Review-ohne-Commit** | code-reviewer-deepseek läuft, Lücken werden gefixt, aber kein Commit+Push | Changes leben nur im Chat, nächster Agent sieht sie nicht | Commit+Push AM ENDE JEDER reviewed Änderung |
 
 ---
 

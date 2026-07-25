@@ -201,6 +201,11 @@ bash tools/verify-doc-sync.sh    # companion sanity
 
 Both MUST exit 0. If not, do not commit.
 
+**Commit + Push folgt AM ENDE JEDER CODE-ÄNDERUNG, die Review
+durchlaufen hat.** Kein Stapeln. Kein „mach ich später".
+Jeder Review→Fix→Verify-Zyklus endet mit einem atomaren Commit + Push.
+Siehe WORKFLOW.md „Commit-Disziplin".
+
 ---
 
 ## Drift symptoms to recognise
