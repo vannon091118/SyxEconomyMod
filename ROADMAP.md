@@ -1,6 +1,6 @@
 # SyxEconomyMod — Entwicklung & Roadmap
 
-> **Version:** v0.13.3 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-25
+> **Version:** v0.13.4 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-25
 >
 > Stam-Doku-Synchron-Anker: Die obenstehende Versions-Zeile MUSS identisch mit `pom.xml` `<version>` sein.
 > Der Sync-Gate `tools/verify-doc-sync.sh` validiert dies vor jedem `mvn compile`.
@@ -39,6 +39,15 @@ Severity: 🔴 P0 = Crash/Datenverlust · 🟠 P1 = broken feature · 🟡 P2 = 
 | **B-007** | `catch(Throwable)`-Sites 27→0 | v0.1.0 |
 
 ---
+
+## Phase A: Bypass-SDK — ✅ DONE (v0.13.4)
+
+- `adapter/seam/BypassGate.java` — Zentraler Entry-Point (MethodHandles.Lookup, typisierte Factories)
+- `adapter/seam/FieldAccessor.java` — IntField, DoubleField, FloatField, RefField<T> mit getStatic/setStatic
+- `adapter/seam/MethodAccessor.java` — VoidMethod, BooleanMethod
+- `adapter/seam/ClassResolver.java` — Class.forName mit Game-ClassLoader
+- Interfaces (ISyx*) bleiben als stabiler Kontrakt erhalten
+- Phase B–F: Thin-Adapter-Migration, Fallback-Löschung, Config-Cleanup
 
 ## Phase-5-Pläne (in [`docs/superpowers/plans/`](docs/superpowers/plans/))
 

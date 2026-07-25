@@ -1,6 +1,6 @@
 # SyxEconomyMod — Architektur
 
-> **Version:** v0.13.3 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-25
+> **Version:** v0.13.4 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-25
 >
 > Stam-Doku-Synchron-Anker: Die obenstehende Versions-Zeile MUSS identisch mit `pom.xml` `<version>` sein.
 > Der Sync-Gate `tools/verify-doc-sync.sh` validiert dies vor jedem `mvn compile`.
@@ -19,7 +19,7 @@ Modul-Bilanz: **128 Java-Dateien, ~22.700 LOC**
 | Modul | Dateien | LOC | Aufgabe |
 |---|---:|---:|---|
 | `vannon/syx/economy/core/` | 100 | ~19.247 | Wirtschafts-Sim + Subsysteme |
-| `vannon/syx/economy/adapter/` | 17 | ~1.162 | Engine-API-Wrapper |
+| `vannon/syx/economy/adapter/` | 21 | ~1.450 | Engine-API-Wrapper + Bypass-SDK |
 | `vannon/syx/economy/ui/` | 5 | ~2.345 | 4 Fenster + Base |
 | `vannon/syx/economy/benchmark/` | 1 | ~200 | Reflection-vs-MethodHandle-Benchmark |
 | `settlement/room/...` | 4 | ~600 | Package-Private Brücken (compile-time-safe) |
@@ -36,7 +36,7 @@ Modul-Bilanz: **128 Java-Dateien, ~22.700 LOC**
                                        │ nur über
                                        ▼
 ╔════════════════════════════════════════════════════════════════╗
-║  SCHICHT 1: Adapter-Layer (17 Dateien)                         ║
+║  SCHICHT 1: Adapter-Layer (21 Dateien)                         ║
 ║  5 Interfaces                                                  ║
 ║   ISyxAI, ISyxTransport, ISyxWarehouse, ISyxBoosting,          ║
 ║   ISyxDiplomacy                                                ║
@@ -97,7 +97,16 @@ Modul-Bilanz: **128 Java-Dateien, ~22.700 LOC**
 
 ---
 
-## Adapter-Layer (17 Dateien, vollständig aufgelistet)
+## Adapter-Layer (21 Dateien, vollständig aufgelistet)
+
+### Bypass-SDK (`adapter/seam/`, 4 Dateien — Phase A, v0.13.3)
+
+Der **BypassGate** ist der zentrale Entry-Point für alle Private-Access-Bypasses.
+Er hält einen `MethodHandles.Lookup`, bietet typisierte Factories für Feld-/Methoden-Zugriffe
+und delegiert an `FieldAccessor` (IntField, DoubleField, FloatField, RefField<T>),
+`MethodAccessor` (VoidMethod, BooleanMethod) und `ClassResolver` (Class.forName mit
+Game-ClassLoader). Primärer Pfad: VarHandle/MethodHandle (JDK 21+, 3–6× Speedup).
+Fallback: java.lang.reflect.*.
 
 ### Interfaces (5)
 | Interface | Vanilla-Zugriff |

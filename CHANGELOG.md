@@ -10,7 +10,17 @@
 
 ---
 
-## v0.13.3 — 2026-07-25
+## v0.13.4 — 2026-07-25
+
+### Phase A — Bypass-SDK (adapter/seam/)
+
+- **BypassGate:** Zentraler Entry-Point für Private-Access-Bypasses (VarHandle/MethodHandle primär, Reflection-Fallback).
+- **FieldAccessor:** Typisierte Feld-Zugriffe — IntField, DoubleField, FloatField, RefField<T>.
+- **MethodAccessor:** Typisierte Methoden-Zugriffe — VoidMethod, BooleanMethod.
+- **ClassResolver:** Class.forName mit Game-ClassLoader für package-private Engine-Klassen.
+- **BuildStamp:** Eindeutige Build-Identität (Git-Hash, Timestamp, Dirty-Flag) in HUD und Fenstertiteln.
+- **Adapter-READY-Logs:** Alle 8 Vanilla-Adapter loggen jetzt Erfolg bei Init (vorher nur Fehler).
+- **Perf:** useMethodHandleAdapters=true (3–6× Speedup, Runtime Java 16+ bestätigt).
 
 ### Phase 3 Tab-Restoration — Bücher, Immobilien, Glaube
 

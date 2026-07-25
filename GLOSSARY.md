@@ -1,6 +1,6 @@
 # SyxEconomyMod — Klassen-Glossar
 
-> **Version:** v0.13.3 | **Stand:** 2026-07-25
+> **Version:** v0.13.4 | **Stand:** 2026-07-25
 >
 > Stam-Doku-Synchron-Anker: Die obenstehende Versions-Zeile MUSS identisch mit `pom.xml` `<version>` sein.
 > Der Sync-Gate `tools/verify-doc-sync.sh` validiert dies vor jedem `mvn compile`.
@@ -10,6 +10,15 @@
 ---
 
 ## 🟦 Kategorie 1: VANILLA WRAPPER (21 Dateien)
+
+### Bypass-SDK (`adapter/seam/`, 4 Dateien — Phase A)
+
+- **BypassGate** — Zentraler Entry-Point für Private-Access-Bypasses. Hält MethodHandles.Lookup, typisierte Factories für FieldAccessor (IntField, DoubleField, FloatField, RefField<T>), MethodAccessor (VoidMethod, BooleanMethod) und ClassResolver. All-or-nothing: ein Feld-Fehler → isAvailable()=false.
+- **FieldAccessor** — Typisierte Feld-Zugriffe mit VarHandle (primär, 3–6× Speedup) und Reflection-Fallback. Statische Varianten via getStatic()/setStatic().
+- **MethodAccessor** — Typisierte Methoden-Zugriffe mit MethodHandle (primär) und Reflection-Fallback (invoke).
+- **ClassResolver** — Class.forName mit Game-ClassLoader (Humanoid.class.getClassLoader()) für package-private Engine-Klassen. isInstance()-Helper.
+
+### Adapter-Interfaces (5)
 
 *Adapter und Brücken-Klassen — die einzigen Dateien, die Vanilla-Klassen direkt importieren oder per Reflection anfassen.*
 
