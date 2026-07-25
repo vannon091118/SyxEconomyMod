@@ -27,6 +27,14 @@
 #   --dry-run    Schreibt nichts, zeigt nur Diff-Plan
 #   --no-tag     Ueberspringt den git-tag (fuer Notfall-Repairs)
 #   --no-commit  Ueberspringt den git-commit (fuer manuelle Review)
+#   --bump-only  (NEU) Nur pom.xml bump, kein CHANGELOG-Prepend, kein Git,
+#                 kein _Info.txt-Checks. Bestimmt den Modus für den
+#                 Maven-antrun-Post-Install-Bump-Hook. Setzt implizit
+#                 --no-commit.
+#   --no-workspace-check   (NEU) Überspringt 'git diff --quiet HEAD' Pruefung.
+#                 Erlaubt Aufruf aus Maven-Phasen heraus (Working-Tree ist
+#                 dann dirty durch den laufenden Build). Setzt implizit
+#                 --no-commit.
 #   --help       Diese Hilfe
 #
 # Exit-Codes:
@@ -56,9 +64,11 @@ MESSAGE=""
 DRY_RUN=0
 NO_TAG=0
 NO_COMMIT=0
+BUMP_ONLY=0
+NO_WORKSPACE_CHECK=0
 
 usage() {
-    sed -n '2,33p' "$0" | sed 's/^# //; s/^#//'
+    sed -n '2,46p' "$0" | sed 's/^# //; s/^#//'
     exit 0
 }
 
@@ -95,6 +105,17 @@ while [[ $# -gt 0 ]]; do
             NO_COMMIT=1
             shift
             ;;
+        --bump-only)
+            BUMP_ONLY=1
+            NO_COMMIT=1   # bump-only impliziert: kein auto-commit durch diesen Hook
+            # CHANGELOG-prepend ueberspringen wir hier ebenfalls:
+            shift
+            ;;
+        --no-workspace-check)
+            NO_WORKSPACE_CHECK=1
+            NO_COMMIT=1   # Maven-Phase-Hook: kein commit erwartet
+            shift
+            ;;
         --help|-h)
             usage
             ;;
@@ -117,7 +138,9 @@ fi
 [[ -f "$POM" ]] || { echo -e "${RED}FEHLER: $POM nicht gefunden${NC}" >&2; exit 2; }
 [[ -f "$CHANGELOG" ]] || { echo -e "${RED}FEHLER: $CHANGELOG nicht gefunden${NC}" >&2; exit 2; }
 
-if [[ $NO_COMMIT -eq 0 ]] && [[ $DRY_RUN -eq 0 ]]; then
+# Working-Tree-Check, ausser Bump-only oder explizit skippen
+# (Maven-antrun-install-Hook laeuft mit dirty tree)
+if [[ $NO_COMMIT -eq 0 ]] && [[ $DRY_RUN -eq 0 ]] && [[ $NO_WORKSPACE_CHECK -eq 0 ]]; then
     if ! command -v git >/dev/null 2>&1; then
         echo -e "${RED}FEHLER: 'git' nicht im PATH${NC}" >&2
         exit 2
@@ -126,7 +149,6 @@ if [[ $NO_COMMIT -eq 0 ]] && [[ $DRY_RUN -eq 0 ]]; then
         echo -e "${RED}FEHLER: kein .git/ gefunden - bitte 'git init' zuerst${NC}" >&2
         exit 2
     fi
-    # Working tree muss sauber sein
     if ! git diff --quiet HEAD 2>/dev/null; then
         echo -e "${RED}FEHLER: Working tree ist dirty - bitte zuerst committen/stashen${NC}" >&2
         git status --short >&2
@@ -194,14 +216,16 @@ echo "=============================================================="
 printf '  SyxEconomyMod \xE2\x80\x94 Version-Bump\n'
 echo "=============================================================="
 echo ""
-printf '  Modus:     \033[0;36m%s\033[0m\n' "${MODE}"
-echo "  Aktuell:   ${CURRENT_VERSION}"
-printf '  Neu:       \033[0;32m%s\033[0m\n' "${NEW_VERSION}"
-echo "  Datum:     ${DATE}"
-echo "  Message:   ${COMMIT_MSG}"
-echo "  Dry-Run:   ${DRY_RUN}"
-echo "  No-Tag:    ${NO_TAG}"
-echo "  No-Commit: ${NO_COMMIT}"
+printf '  Modus:           \033[0;36m%s\033[0m\n' "${MODE}"
+echo "  Aktuell:         ${CURRENT_VERSION}"
+printf '  Neu:             \033[0;32m%s\033[0m\n' "${NEW_VERSION}"
+echo "  Datum:           ${DATE}"
+echo "  Message:         ${COMMIT_MSG}"
+echo "  Dry-Run:         ${DRY_RUN}"
+echo "  No-Tag:          ${NO_TAG}"
+echo "  No-Commit:       ${NO_COMMIT}"
+echo "  Bump-Only:       ${BUMP_ONLY}"
+echo "  No-Workspace:    ${NO_WORKSPACE_CHECK}"
 echo ""
 
 # ── 1. pom.xml aktualisieren ──────────────────────────────────────────
@@ -238,39 +262,45 @@ fi
 
 # ── 2. CHANGELOG.md prepended neuen Eintrag ───────────────────────────
 
-echo ""
-echo -e "${CYAN}[2/5]${NC} CHANGELOG.md wird prependet..."
+if [[ $BUMP_ONLY -eq 1 ]]; then
+    echo ""
+    echo -e "${CYAN}[2/5]${NC} CHANGELOG.md wird uebersprungen (bump-only Modus)"
+else
+    echo ""
+    echo -e "${CYAN}[2/5]${NC} CHANGELOG.md wird prependet..."
 
-NEW_ENTRY="## v${NEW_VERSION} — ${DATE}
+    NEW_ENTRY="## v${NEW_VERSION} — ${DATE}
 
 ${COMMIT_MSG}
 
 ---
+
 "
 
-if [[ $DRY_RUN -eq 1 ]]; then
-    echo "  Wuerde prependen:"
-    echo "$NEW_ENTRY" | sed 's/^/    /'
-else
-    # Backup + Insert: finde das erste "## v" und fuege davor ein
-    cp "$CHANGELOG" "${CHANGELOG}.bak"
-    TMP_ENT=$(mktemp)
-    printf '%s\n' "$NEW_ENTRY" > "$TMP_ENT"
+    if [[ $DRY_RUN -eq 1 ]]; then
+        echo "  Wuerde prependen:"
+        echo "$NEW_ENTRY" | sed 's/^/    /'
+    else
+        # Backup + Insert: finde das erste "## v" und fuege davor ein
+        cp "$CHANGELOG" "${CHANGELOG}.bak"
+        TMP_ENT=$(mktemp)
+        printf '%s\n' "$NEW_ENTRY" > "$TMP_ENT"
 
-    awk -v entry_file="$TMP_ENT" '
-        BEGIN { found = 0 }
-        !found && /^## v[0-9]/ {
-            while ((getline line < entry_file) > 0) print line
-            close(entry_file)
-            found = 1
-            next
-        }
-        { print }
-    ' "$CHANGELOG" > "${CHANGELOG}.new"
+        awk -v entry_file="$TMP_ENT" '
+            BEGIN { found = 0 }
+            !found && /^## v[0-9]/ {
+                while ((getline line < entry_file) > 0) print line
+                close(entry_file)
+                found = 1
+                next
+            }
+            { print }
+        ' "$CHANGELOG" > "${CHANGELOG}.new"
 
-    mv "${CHANGELOG}.new" "$CHANGELOG"
-    rm -f "$TMP_ENT" "${CHANGELOG}.bak"
-    echo "  - Neuer Eintrag nach Header eingefuegt"
+        mv "${CHANGELOG}.new" "$CHANGELOG"
+        rm -f "$TMP_ENT" "${CHANGELOG}.bak"
+        echo "  - Neuer Eintrag nach Header eingefuegt"
+    fi
 fi
 
 # ── 3. mod.version.history aus letzten 5 Git-Tags regenerieren ────────
@@ -279,27 +309,32 @@ fi
 # Build das Property <mod.version.history> aus pom.xml in _Info.txt.
 # Daher aktualisieren wir nur die pom.xml-Eigenschaft.
 
-echo ""
-echo -e "${CYAN}[3/5]${NC} mod.version.history wird regeneriert..."
-
-if [[ -d .git ]] && command -v git >/dev/null 2>&1; then
-    LAST_5_TAGS=$(git tag --sort=-creatordate 2>/dev/null | head -5 | paste -sd ';' - || true)
-    # Wenn noch keine Tags vorhanden, ist LAST_5_TAGS leer
-    if [[ -z "$LAST_5_TAGS" ]]; then
-        LAST_5_TAGS="v${NEW_VERSION}"
-        echo "  - Keine bisherigen Tags, setze auf v${NEW_VERSION}"
-    else
-        echo "  - Letzte 5 Tags: $LAST_5_TAGS"
-    fi
-
-    if [[ $DRY_RUN -eq 1 ]]; then
-        echo "  Wuerde aendern: <mod.version.history>${LAST_5_TAGS}</mod.version.history>"
-    else
-        sed -i "s|<mod.version.history>.*</mod.version.history>|<mod.version.history>${LAST_5_TAGS}</mod.version.history>|" "$POM"
-        echo "  - <mod.version.history>${LAST_5_TAGS}</mod.version.history> gesetzt"
-    fi
+if [[ $BUMP_ONLY -eq 1 ]]; then
+    echo ""
+    echo -e "${CYAN}[3/5]${NC} mod.version.history wird uebersprungen (bump-only Modus)"
 else
-    echo "  - Kein .git/ vorhanden, ueberspringe Tag-basierte History-Regeneration"
+    echo ""
+    echo -e "${CYAN}[3/5]${NC} mod.version.history wird regeneriert..."
+
+    if [[ -d .git ]] && command -v git >/dev/null 2>&1; then
+        LAST_5_TAGS=$(git tag --sort=-creatordate 2>/dev/null | head -5 | paste -sd ';' - || true)
+        # Wenn noch keine Tags vorhanden, ist LAST_5_TAGS leer
+        if [[ -z "$LAST_5_TAGS" ]]; then
+            LAST_5_TAGS="v${NEW_VERSION}"
+            echo "  - Keine bisherigen Tags, setze auf v${NEW_VERSION}"
+        else
+            echo "  - Letzte 5 Tags: $LAST_5_TAGS"
+        fi
+
+        if [[ $DRY_RUN -eq 1 ]]; then
+            echo "  Wuerde aendern: <mod.version.history>${LAST_5_TAGS}</mod.version.history>"
+        else
+            sed -i "s|<mod.version.history>.*</mod.version.history>|<mod.version.history>${LAST_5_TAGS}</mod.version.history>|" "$POM"
+            echo "  - <mod.version.history>${LAST_5_TAGS}</mod.version.history> gesetzt"
+        fi
+    else
+        echo "  - Kein .git/ vorhanden, ueberspringe Tag-basierte History-Regeneration"
+    fi
 fi
 
 # ── 4. git add + commit + tag ────────────────────────────────────────
@@ -314,27 +349,27 @@ if [[ $DRY_RUN -eq 1 ]]; then
     if [[ $NO_TAG -eq 0 ]]; then
         echo "    git tag v${NEW_VERSION}"
     fi
+elif [[ $BUMP_ONLY -eq 1 ]]; then
+    echo "  - bump-only Modus: ueberspringe git add/commit/tag"
+elif [[ $NO_COMMIT -eq 1 ]]; then
+    echo "  - --no-commit: ueberspringe git add/commit/tag"
 else
-    if [[ $NO_COMMIT -eq 1 ]]; then
-        echo "  - --no-commit: ueberspringe git add/commit/tag"
-    else
-        git add "$POM" "$CHANGELOG"
-        echo "  - git add $POM $CHANGELOG"
+    git add "$POM" "$CHANGELOG"
+    echo "  - git add $POM $CHANGELOG"
 
-        git commit -m "$COMMIT_MSG"
-        echo "  - git commit -m \"$COMMIT_MSG\""
+    git commit -m "$COMMIT_MSG"
+    echo "  - git commit -m \"$COMMIT_MSG\""
 
-        if [[ $NO_TAG -eq 0 ]]; then
-            # Pruefe ob Tag bereits existiert
-            if git rev-parse "v${NEW_VERSION}" >/dev/null 2>&1; then
-                echo -e "  ${YELLOW}WARNUNG: Tag v${NEW_VERSION} existiert bereits - ueberspringe${NC}" >&2
-            else
-                git tag "v${NEW_VERSION}"
-                printf '  - \033[0;32mgit tag v%s\033[0m\n' "${NEW_VERSION}"
-            fi
+    if [[ $NO_TAG -eq 0 ]]; then
+        # Pruefe ob Tag bereits existiert
+        if git rev-parse "v${NEW_VERSION}" >/dev/null 2>&1; then
+            echo -e "  ${YELLOW}WARNUNG: Tag v${NEW_VERSION} existiert bereits - ueberspringe${NC}" >&2
         else
-            echo "  - --no-tag: uebersprungen"
+            git tag "v${NEW_VERSION}"
+            printf '  - \033[0;32mgit tag v%s\033[0m\n' "${NEW_VERSION}"
         fi
+    else
+        echo "  - --no-tag: uebersprungen"
     fi
 fi
 
@@ -344,27 +379,25 @@ fi
 # 'mvn package' generiert daraus die deployed-Kopie unter
 # target/out/SyxEconomyMod/_Info.txt. pom.xml-Aenderungen machen die
 # deployed-Kopie erst nach 'mvn package' sichtbar.
-#
-# bump-version.sh REGENERIERT die deployed-Kopie NICHT selbst (mvn ist
-# extern), sondern PRUEFT nur:
-#   5a. _Info.txt-Placeholder ↔ pom.xml-Properties (drift-detect)
-#   5b. target/out/SyxEconomyMod/_Info.txt VERSION freshness (warn)
-#
-# Geteilte Logik in tools/lib/_info-txt-sync.sh.
 
-echo ""
-echo -e "${CYAN}[5/5]${NC} _Info.txt Sync-Status..."
+if [[ $BUMP_ONLY -eq 1 ]]; then
+    echo ""
+    echo -e "${CYAN}[5/5]${NC} _Info.txt Sync-Status wird uebersprungen (bump-only Modus)"
+else
+    echo ""
+    echo -e "${CYAN}[5/5]${NC} _Info.txt Sync-Status..."
 
-SCRIPT_DIR_BV="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=lib/_info-txt-sync.sh
-. "${SCRIPT_DIR_BV}/lib/_info-txt-sync.sh"
+    SCRIPT_DIR_BV="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    # shellcheck source=lib/_info-txt-sync.sh
+    . "${SCRIPT_DIR_BV}/lib/_info-txt-sync.sh"
 
-# 5a. Template ↔ pom.xml Properties (informational — keine Hard-Fail,
-#      weil Hard-Fail bereits in verify-version-consistency.sh passiert)
-sync_info_txt_template_report "warn" "$POM" || true
+    # 5a. Template ↔ pom.xml Properties (informational — keine Hard-Fail,
+    #      weil Hard-Fail bereits in verify-version-consistency.sh passiert)
+    sync_info_txt_template_report "warn" "$POM" || true
 
-# 5b. Deployed-Copy freshness check (warn if stale vs NEW_VERSION)
-sync_info_txt_deployed_report "$NEW_VERSION" || true
+    # 5b. Deployed-Copy freshness check (warn if stale vs NEW_VERSION)
+    sync_info_txt_deployed_report "$NEW_VERSION" || true
+fi
 
 # ── Zusammenfassung ──────────────────────────────────────────────────
 
@@ -374,12 +407,20 @@ printf '  \033[0;32mBUMP ABGESCHLOSSEN\033[0m\n'
 echo "=============================================================="
 echo ""
 echo "  v${CURRENT_VERSION} -> v${NEW_VERSION}"
-echo "  CHANGELOG.md:   +1 Eintrag"
-echo "  pom.xml:        <version>, <mod.info>, <mod.changelog>, <mod.version.history>"
-echo "  _Info.txt:      Template ↔ pom.xml + deployed-Copy geprueft (Schritt 5/5)"
-[[ $NO_COMMIT -eq 0 ]] && echo "  git:            commit + tag v${NEW_VERSION}"
+if [[ $BUMP_ONLY -eq 0 ]]; then
+    echo "  CHANGELOG.md:   +1 Eintrag"
+    echo "  pom.xml:        <version>, <mod.info>, <mod.changelog>, <mod.version.history>"
+    echo "  _Info.txt:      Template ↔ pom.xml + deployed-Copy geprueft (Schritt 5/5)"
+    [[ $NO_COMMIT -eq 0 ]] && echo "  git:            commit + tag v${NEW_VERSION}"
+else
+    echo "  pom.xml:        <version>, <mod.info>, <mod.changelog> (bump-only)"
+    echo "  CHANGELOG.md:   uebersprungen"
+    echo "  _Info.txt:      uebersprungen (wird beim naechsten mvn package regeneriert)"
+    echo "  git:            uebersprungen"
+fi
 echo ""
-echo "Verifikation:"
+echo "Verifikation nach jedem Bump:"
+echo "  bash tools/verify-doc-sync.sh      # 7 Stam-Docs ↔ pom.xml"
 echo "  bash tools/verify-version-consistency.sh"
 echo "  bash tools/docs-truth-consistency.sh"
 echo "  cat target/out/SyxEconomyMod/_Info.txt  # deployed nach 'mvn package'"

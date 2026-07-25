@@ -4,10 +4,10 @@
 # Master-Orchestrator: führt alle Checks vor dem Build aus.
 #
 # Gates (Reihenfolge = Abhängigkeiten):
-#   1. Code Audit           (SKIP_AUDIT=1 zum Überspringen)
-#   2. Version Consistency  (SKIP_VERSION_CHECK=1)
-#   3. Adapter Signaturen   (ADAPTER_JAR=/pfad/zum/sources.jar für JAR-basierte Prüfung;
-#                            ohne JAR: Light-Check an Sourcen gegen adapter/*.java)
+#   1. Stam-Doku-Sync        (NEU — SKIP_SYNC=1)       → verify-doc-sync.sh
+#   2. Code Audit            (SKIP_AUDIT=1)            → code-audit.sh
+#   3. Version Consistency   (SKIP_VERSION_CHECK=1)    → verify-version-consistency.sh
+#   4. Adapter Signaturen    (ADAPTER_JAR=…; sonst Light-Check)
 #
 # Exit-Codes: 0 = alle Gates bestanden, 1 = mindestens ein Gate fehlgeschlagen.
 #
@@ -50,12 +50,25 @@ gate_skip() {
 }
 
 echo -e "${CYAN}╔════════════════════════════════════════════════════════╗${NC}"
-echo -e "${CYAN}║  SyxEconomyMod — Build Gate v0.1.0                     ║${NC}"
+echo -e "${CYAN}║  SyxEconomyMod — Build Gate v0.13.2                   ║${NC}"
 echo -e "${CYAN}╚════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
-# ── Gate 1: Code Audit ──────────────────────────────────────────────────
-echo -e "${CYAN}[1/3] Code Audit (silent failure detection)${NC}"
+# ── Gate 1: Stam-Doku-Sync (NEU) ────────────────────────────────────────
+echo -e "${CYAN}[1/4] Stam-Doku-Sync (7 Dokumente ↔ pom.xml)${NC}"
+if [ "${SKIP_SYNC:-0}" = "1" ]; then
+    gate_skip "Sync-Gate uebersprungen (SKIP_SYNC=1)"
+else
+    if bash tools/verify-doc-sync.sh 2>/dev/null; then
+        gate_pass "Alle 7 Stam-Dokumente sync mit pom.xml"
+    else
+        gate_fail "Stam-Doku-Drift — verify-doc-sync.sh Details"
+    fi
+fi
+echo ""
+
+# ── Gate 2: Code Audit ──────────────────────────────────────────────────
+echo -e "${CYAN}[2/4] Code Audit (silent failure detection)${NC}"
 
 AUDIT_ARGS=""
 if [ "$STRICT" = true ]; then
@@ -74,8 +87,8 @@ else
 fi
 echo ""
 
-# ── Gate 2: Version Consistency ────────────────────────────────────────
-echo -e "${CYAN}[2/3] Version ↔ Changelog Consistency${NC}"
+# ── Gate 3: Version Consistency ────────────────────────────────────────
+echo -e "${CYAN}[3/4] Version ↔ Changelog Consistency${NC}"
 
 if bash tools/verify-version-consistency.sh 2>/dev/null; then
     gate_pass "pom.xml = changelog"
@@ -84,8 +97,8 @@ else
 fi
 echo ""
 
-# ── Gate 3: Adapter Signature Verification ─────────────────────────────
-echo -e "${CYAN}[3/3] Adapter ↔ Engine-Signaturen${NC}"
+# ── Gate 4: Adapter Signature Verification ─────────────────────────────
+echo -e "${CYAN}[4/4] Adapter ↔ Engine-Signaturen${NC}"
 
 ADAPTER_JAR="${ADAPTER_JAR:-}"
 ADAPTER_SRC="src/vannon/syx/economy/adapter/"

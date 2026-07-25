@@ -72,7 +72,8 @@ if [ "$CHANGELOG_NUM" != "$POM_VERSION" ]; then
     exit 1
 fi
 
-echo -e "${GREEN}✓ Version konsistent: pom.xml=${POM_VERSION}, changelog=${CHANGELOG_FIRST}${NC}"
+echo -e "${GREEN}✓ pom.xml-Version (${POM_VERSION}) konsistent mit erstem CHANGELOG-Heading (${CHANGELOG_FIRST})${NC}"
+echo "  (Sync mit README/ARCHITECTURE/ROADMAP/GLOSSARY wird separat in verify-doc-sync.sh geprüft)"
 
 # ── 5+6. _Info.txt Sync (Template ↔ pom.xml + Deployed freshness) ──
 # Geteilte Logik in tools/lib/_info-txt-sync.sh:
