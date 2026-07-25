@@ -1,3 +1,4 @@
+// simulated-micro-fix-2026-07-25
 package vannon.syx.economy.core;
 
 import game.faction.FACTIONS;
