@@ -377,7 +377,7 @@ public final class EconConfig {
     public static int povertyPressureWealthThreshold = 500;
     public static double povertyPressureHappinessMin = 0.5;
 
-    public static boolean debugLoggingEnabled = false;
+    public static boolean debugLoggingEnabled = true;
 
     /**
      * Opt-in: Aktiviert den {@link DebugTracer} Ring-Buffer.
