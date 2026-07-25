@@ -4,6 +4,9 @@ target/
 *.class
 *.war
 
+# ── Auto-generated sources (regenerated at every build) ───────────
+src/vannon/syx/economy/core/BuildStamp.java
+
 # ── IDE ───────────────────────────────────────────────────────────
 .idea/
 *.iml
