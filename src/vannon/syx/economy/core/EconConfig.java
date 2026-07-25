@@ -400,13 +400,14 @@ public final class EconConfig {
 
     /**
      * Aktiviert MethodHandle/VarHandle-basierte Adapter statt
-     * java.lang.reflect.* für V72-Speedup (3–6× auf JDK 21+).
+     * java.lang.reflect.* für 3–6× Speedup auf JDK 21+.
      *
-     * <p>Default: false. Nur aktivieren wenn der Benchmark
-     * ({@code vannon.syx.economy.benchmark.AdapterReflectionBenchmark})
-     * signifikanten Speedup zeigt UND das Spiel sauber läuft.</p>
+     * <p>Seit v0.13.3 per Default aktiv. Die Runtime ist Java 16+,
+     * selber ClassLoader, unnamed module — VarHandle funktioniert
+     * ohne --add-opens. Die READY-Logs im EventLog bestätigen
+     * die erfolgreiche Init bei jedem Spielstart.</p>
      */
-    public static boolean useMethodHandleAdapters = false;
+    public static boolean useMethodHandleAdapters = true;
 
     /**
      * Schreibt pro Tick die Carpenter/Möbel-Firma-Diagnose nach
