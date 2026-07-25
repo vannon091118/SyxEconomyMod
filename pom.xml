@@ -37,8 +37,21 @@
           Maven-Gate-Toggles:
             -Dgate.skip=true   -> ueberspringt den ganzen pre-compile Build-Gate
             -Dskip.bump=true   -> ueberspringt den post-install Patch-Bump (0.0.1+)
+            -Djacoco.check.skip=true -> ueberspringt den JaCoCo-LINE/BRANCH-Check
+                                        (T-COV-6, Sprint "Coverage-Kernel-Pass")
         -->
         <skip.bump>false</skip.bump>
+
+        <!-- T-COV-6 JaCoCo-Coverage-Gate — Sprint "Coverage-Kernel-Pass".
+             Default thresholds sind 0.0 / 0.0 = report-only (Check-Laeuft, bricht
+             nichts). Sprint 5 misst die reale Coverage mit den 7 neuen Test-Suiten
+             (target: line>=10%, branch>=5%) und zieht die Schwellen auf realistische
+             Werte an. Sprint 9 (T-COV-9, Mockito-Inject) hebt sie auf line>=70% /
+             branch>=60%. Property-Override per:
+             mvn verify install -Djacoco.line.minimum=0.10 -Djacoco.branch.minimum=0.05 -->
+        <jacoco.check.skip>false</jacoco.check.skip>
+        <jacoco.line.minimum>0.0</jacoco.line.minimum>
+        <jacoco.branch.minimum>0.0</jacoco.branch.minimum>
     </properties>
 
     <dependencies>
@@ -258,7 +271,13 @@
                 <version>3.5.1</version>
             </plugin>
 
-            <!-- JaCoCo coverage report for the kernel test suite -->
+            <!-- JaCoCo coverage report for the kernel test suite.
+                 T-COV-6 (Sprint "Coverage-Kernel-Pass"): prepare-agent + report laufen
+                 wie bisher. NEU: jacoco-check goal in der verify-Phase prueft
+                 LINE/BRANCH-Coverage gegen ${jacoco.line.minimum} und
+                 ${jacoco.branch.minimum}. Default 0.0 = report-only (kein Break).
+                 Sprint 9 setzt die Schwellen auf line>=70%/branch>=60% (T-COV-9,
+                 Mockito-Inject fuer engine-coupled Branches). -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
@@ -275,6 +294,41 @@
                         <goals>
                             <goal>report</goal>
                         </goals>
+                    </execution>
+                    <execution>
+                        <id>jacoco-check</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${jacoco.check.skip}</skip>
+                            <rules>
+                                <!-- T-COV-6 (Sprint 4): Coverage-Threshold wird auf das
+                                     Production-Package begrenzt — test/-Code und
+                                     adapter/-Reflection-Boilerplate zaehlen NICHT
+                                     in den Threshold. Sprint 9 zieht die Schwellen
+                                     auf line>=70%/branch>=60% an. -->
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <includes>
+                                        <include>vannon.syx.economy.core.*</include>
+                                    </includes>
+                                    <limits>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>${jacoco.line.minimum}</minimum>
+                                        </limit>
+                                        <limit>
+                                            <counter>BRANCH</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>${jacoco.branch.minimum}</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

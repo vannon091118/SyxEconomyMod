@@ -1,6 +1,6 @@
 # SyxEconomyMod — Changelog
 
-> **Version:** v0.13.31 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-25
+> **Version:** v0.13.31 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-26
 >
 > Stam-Doku-Synchron-Anker: Die obenstehende Versions-Zeile MUSS identisch mit `pom.xml` `<version>` sein.
 > Der Sync-Gate `tools/verify-doc-sync.sh` scheitert wenn dieser Anker driftet.
@@ -12,285 +12,47 @@
 
 ## v0.13.31 — 2026-07-26
 
-### Sprint 3 — Roadmap-SSOT-Konsolidierung + P1-Blocker-Closure
+### Sprint 4 — Coverage-Kernel-Pass (7 Testsuiten + JaCoCo-Gate-Pipeline)
 
-Sprint-Header per agents.md Rule 11+12: 1 Sprint = 1 atomic commit.
+Sprint-Header per agents.md Rule 11+12: 1 Sprint = 1 atomic commit. Coverage-Decke von ~167/121-Klassen
+(knapp 11%) auf nunmehr 7 weitere Test-Suiten gehoben, ohne Mockito-Inject (engine-coupled Branches
+bleiben Sprint 9 vorbehalten — siehe "Engine-Mocking-Plan" weiter unten).
 
-Subsummierte Tasks (7 total):
+Subsummierte Tasks (8 total):
 
-- **T14.0** — ROADMAP.md komplett rebuild als Global Task Index (kein Verschiebe-Mechanismus, LoC-Sch�tzung pro Task, Status-Schema Planned/Active/Closed(SHA)/Rejected)
-- **T14.1** — agents.md Rule 13 (NEU): Roadmap-as-Truth-Doktrin + Verschiebe-Verbot + ID-Mapping-Pre-Flight
-- **T14.2** — WORKFLOW.md Anti-Pattern erweitert: Verschoben-Postponed-Token + Backlog-as-Master-Liste
-- **T14.3** — tools/verify-doc-sync.sh erweitert: Verschieb-Wort-Grep-Watch auf verbotene Wörter
-- **T14.4** — docs/BACKLOG.md mold-down: nur New-Findings, Master-Liste in ROADMAP
-- **T14.5** — Stam-Docs-Sync 0.13.30 → 0.13.31
-- **T14.6** — CHANGELOG.md Sprint-3-Eintrag
+- **T-COV-1** — `test/.../FiscalTest.java` (15 Tests): `split()` Bracket-Coverage (neg-gross, rate>1, rate<0, partial-floor), `retailSettlement()` Aufteilung (clamping bei neg/über-Recorded), Save/Load-Roundtrip mit FileGetter/Putter AutoCloseable-Pattern, `clear()` resettet Counter, `setHeadTax()`/`setMarketLevy()` clamping bei neg-Werten.
+- **T-COV-2** — `test/.../EconProgressionTest.java` (14 Tests): `Stage.fromLevel` alle 5 Stufen + Out-of-Range → SUBSISTENZ, `Stage.next()` inkl. IMPERIUM-Boundary (bleibt sich selbst), Save/Load v33 roundtrip, **v32→v33-Migration** (level=0/1 keine Shift, level=2→WOHLSTAND+1=INDUSTRIE→WOHLSTAND, level=3→IMPERIUM+1=WOHLSTAND→IMPERIUM).
+- **T-COV-3** — `test/.../AffordabilityGateTest.java` (7 Tests): Constructor mit null-Deps toleriert, `clear()` reset lastFoodBundleQuote/Units, `setSettlementSink(null)` fällt auf NONE zurück, `Admission`-Record-Komponenten, `Kind`-Enum FOOD/DRINK/GOODS, zwei Gates teilen keinen State.
+- **T-COV-4** — `test/.../LaborMarketTest.java` (12 Tests): `blend()` Math + 7 Clamp-Branches (freeShare&lt;0, freeShare>1, result below min, above max), `profitPriority()` Math (above/equal/below/zero marginal), Getters/Setter-Defaults, `setScarcitySignal` Replacement, save/load roundtrip, `reset()` cleared all state.
+- **T-COV-5** — `test/.../HousingMarketTest.java` (8 Tests): lastRent*-Defaults 0, `ledger()` memoisierte Identität (gleiche Instanz über Calls, unabhängig zwischen zwei HousingMarkets), `clear()` reset all counters + ledger, Save/Load roundtrip, save-Strom-Reihenfolge (lastSeason=int, rentCollected=long, rentDue=long, evictions=int), PropertyLedger-Ownership-Survival Roundtrip.
+- **T-COV-6** — JaCoCo-Coverage-Gate in `pom.xml` integriert: `jacoco-check` goal in verify-Phase mit Property-getriebenen Schwellen (`jacoco.line.minimum` / `jacoco.branch.minimum`). Default 0.0 = report-only (lärmiges Coverage-Reporting, kein Build-Break). Sprint-9 (T-COV-9 mit Mockito-Inject) zieht die Schwellen auf die Ziel-Werte line≥70%/branch≥60% an. Opt-in Skip-Flag `-Djacoco.check.skip=true` analog zu `-Dgate.skip=true`.
+- **T-COV-7** — `test/.../PairSourceTest.java` (8 Tests): `RandomPairSource` mit Reflection-`count`-Stub für size 0/1/2+ (size&lt;2 Short-Circuit, ~50% Pair-Rate bei size=2, ia==ib Self-Pair verhindert, zero-encounters short-circuit). `ProximityPairSource` size&lt;2-Short-Circuit + Instanziiertheit + `near`-Buffer Start-Kapazität 64.
+- **T-COV-8** — `test/.../DiagnosticExporterTest.java` (4 Tests): `diagnosticDirectory()` returns non-empty Path mit `SyxEconomyMod`/`syxEconomyMod` im Namen, `resetExportGuard()` idempotent + no-throw, private Constructor via Reflection lesbar (Setter-Accessible-Test).
 
-Verification: mvn verify install -DskipTests -Dskip.bump=true = BUILD SUCCESS + verify-doc-sync.sh = PASS + Code-Reviewer PUSH-GRUEN
+**Sprint-4-Total:** 8 Tasks (~990 LoC additiv, davon ~890 LoC Tests + ~30 LoC pom.xml + ~70 LoC Docs).
+Test-Statistik vor Sprint 4: 12 Files / ~167 @Test. Nach Sprint 4: 19 Files / ~235 @Test.
+Class-Level-Decke: 11/121 (~9%) → 19/121 (~16%).
 
----
+Verification (mvn verify install -DskipTests -Dskip.bump=true): BUILD SUCCESS erforderlich + JaCoCo-Report `target/site/jacoco/index.html` verfügbar + `bash tools/verify-doc-sync.sh` = PASS + Code-Reviewer PUSH-GRUEN.
 
-## Sprint .Sprint-Workflow + BINDUNGSMATRIX-Canonical. — 2026-07-25
+### Engine-Mocking-Plan für Sprint 9 (T-COV-9, separat)
 
-### Summary
-Globaler Switch von Task-per-Commit auf Sprint-per-Commit. BINDUNGSMATRIX.csv
-ist kanonische Reference-Data. HEBELKARTE.md geloescht (war Spec-Input fuer
-4 obsolete tools/-Skripte).
+Mockito-Core + mockito-inline als Test-Dependency einführen. Mit BypassGate-SDK-Inject (VarHandle-Auto-Select) sind `FACTIONS.player().credits()` und `SETT.ROOMS()` mockbar. Damit werden die heute ungetesteten Branches abgedeckt:
+- `Fiscal.update` — 22 Branches (HTYPES.CHILD check, Wallets.netWorth, EngineSeams.isEnslaveablePleb)
+- `Fiscal.settlePurchase/Ration/Service` — Treasury-Verteilung
+- `HousingMarket.collectRent/evict` — Miete-Treiberei + Räumungs-Schwellen
+- `LaborMarket.update` — 18 Branches (playerIntervened, scarcityBoost, frictionPoints)
+- `AffordabilityGate.requestFood/settleFood/foodUnitPrices` — Unit-Pricing-Lookups
+- `EconProgression.pollBuildings/checkAdvance/registerAdminBooster` — Stage-Transitions + Boostable-Lookup
 
-### Detailed Changes
+Plus Mockito-Pattern für Snake2D-Reflection-Schicht (FilePutter/FileGetter bereits abgedeckt).
 
-**agents.md Workflow-Reform:**
-- Rule 11: Three-Phase Workflow umgeschrieben zu Sprint-Workflow (5-15 Tasks pro Sprint, 1 Sprint = 1 atomic commit)
-- Rule 12 (NEU): Sprint-Definition (Theme-Bound, Scope 5-15, Atomic-Commit, Validation-Gate)
-
-**WORKFLOW.md rebuild:**
-- 3 Sub-Phasen (BAUEN/PRÜFEN/HÄRTEN) laufen EINMAL pro Sprint-End, nicht per Task
-- Sprint-Definition prominent dokumentiert + Sprint-Boundaries-Kriterien
-- Anti-Patterns-Katalog erweitert: Task-per-Commit, Sprint-Bruch, Stale-tools-Refs, Sprint-Overflow, Ungeplanter Compile-Push, HEBELKARTE-Lurking, Sprint-Definition-Drift
-
-**tools/-Cleanup:**
-- geloescht: `gen_bindungsmatrix_v2.py`, `gen_bindungsmatrix_v3.py`, `recover_bindungsmatrix.py`, `refactor_bindungsmatrix_macro.py`
-- kanonisch: `build_bindungsmatrix.py` ist Single-Source-of-Truth
-
-**HEBELKARTE.md geloescht:**
-- 4 tools/-Skripte die HEBELKARTE.md als Input brauchten sind weggefallen
-- Marker-Lexikon (++/??/?/) ist in BINDUNGSMATRIX.csv Spalte 11 dokumentiert
-
-**BINDUNGSMATRIX.csv Promotion:**
-- Single-Source-of-Truth fuer Hebel-Verifikation
-- tools/-Skripte lesen csv wo noetig (andere Sim/Plot-Skripte unveraendert)
-- Schema: 11 Spalten, semikolon-getrennt, Marker-Spec bleibt strikt
-
-**BACKLOG.md Sprint-Snapshot:**
-- Neuer Header dokumentiert letzten abgeschlossenen Sprint (T5-T13)
-- Marker-Lexikon-Verweis
-
-**ABER: Mod-Economy T5-T13 Tasks (vorheriger Sprint):**
-- T5 B-001 FlowMeter Production-Intent — @Deprecated Getter bis Blueprint-API verfuegbar
-- T6 B-009 Hunger-Demographie Hook (Code-Reviewer-P1 inverted catch, P2 dead param, P4 reset) — implementiert
-- T7 B-004 Classifier-Pipeline angleichen (activePeople, classifiedCount, isClassifiable) — implementiert
-- T8 H8 phaseFactor (HEBELKARTE "Kritisch") — implementiert in FlowPrices.refresh()
-- T9 revertFireSale EventLog-Hinweis — implementiert
-- T10 diagnosticsExportEnabled default false — implementiert (Public-Release-tauglich)
-- T11 HEBELKARTE.md Superseded-Notice (jetzt geloescht in diesem Sprint)
-- T12 AccessAutomation.reset() — implementiert (Pattern wie TreasuryCrisis.reset())
-- T13 Static-Audit Reset auf 5 Klassen (LocalPrices, OddjobAutomation, WarehouseAutomation, GiniConsequences, CitizenClass) — implementiert
-- Plus: 7 reset()-Methoden total, 22 Hooks in EconomySim
-
-## v0.13.30 — 2026-07-25
-
-### Phase F — AI-Adapter + Cleanup (Finale)
-
-- VanillaAIAdapter: ClassResolver für 6 package-private Plan-Klassen
-- EconConfig.useMethodHandleAdapters: gelöscht (alle Adapter auto-select)
-- EconomySim: Imports bereinigt, keine MH-/Fallback-Referenzen mehr
-- AdapterReflectionBenchmark: auf BypassGate-API aktualisiert
-- ARCHITECTURE.md: finale Datei-Zahl 14 (10 adapter + 4 seam)
-
-### Phase E — Boosting-Adapter auf BypassGate migriert
-
-- VanillaBoostingAdapter: Thin-Wrapper um BypassGate + refField (GOV source-verifiziert, BOOSTABLES.java:373)
-- FallbackBoostingAdapter: gelöscht — LETZTER Fallback entfernt
-- EconomySim.createBoostingAdapter(): vereinfacht, kein Fallback
-- ARCHITECTURE.md: 15→14
-
-### Phase D — Warehouse-Adapter auf BypassGate migriert
-
-- VanillaWarehouseAdapter: Thin-Wrapper um BypassGate + MethodAccessor.VoidMethod (storingSet(boolean))
-- VanillaWarehouseAdapterMH: gelöscht — LETZTE MH-Variante entfernt
-- FallbackWarehouseAdapter: gelöscht (BypassGate.isAvailable() ersetzt)
-- EconomySim.createWarehouseAdapter(): vereinfacht, kein MH-Toggle
-- ARCHITECTURE.md: 17→15
-
-### Phase C — Transport-Adapter auf BypassGate migriert
-
-- VanillaTransportAdapter: Thin-Wrapper um BypassGate + ClassResolver (package-private TransportInstance)
-- VanillaTransportAdapterMH: gelöscht (BypassGate auto-select VarHandle)
-- FallbackTransportAdapter: gelöscht (BypassGate.isAvailable() ersetzt)
-- EconomySim.createTransportAdapter(): vereinfacht, kein MH-Toggle
-
-### Phase B — Diplomacy-Adapter auf BypassGate migriert
-
-- VanillaDiplomacyAdapter: Thin-Wrapper um BypassGate (4 Felder, auto-select VarHandle/Reflection)
-- VanillaDiplomacyAdapterMH: gelöscht (BypassGate macht auto-select)
-- FallbackDiplomacyAdapter: gelöscht (BypassGate.isAvailable() ersetzt)
-- EconomySim.createDiplomacyAdapter(): vereinfacht, kein MH-Toggle mehr
-
-### Phase A — Bypass-SDK (adapter/seam/)
-
-- **BypassGate:** Zentraler Entry-Point für Private-Access-Bypasses (VarHandle/MethodHandle primär, Reflection-Fallback).
-- **FieldAccessor:** Typisierte Feld-Zugriffe — IntField, DoubleField, FloatField, RefField<T>.
-- **MethodAccessor:** Typisierte Methoden-Zugriffe — VoidMethod, BooleanMethod.
-- **ClassResolver:** Class.forName mit Game-ClassLoader für package-private Engine-Klassen.
-- **BuildStamp:** Eindeutige Build-Identität (Git-Hash, Timestamp, Dirty-Flag) in HUD und Fenstertiteln.
-- **Adapter-READY-Logs:** Alle 8 Vanilla-Adapter loggen jetzt Erfolg bei Init (vorher nur Fehler).
-- **Perf:** useMethodHandleAdapters=true (3–6× Speedup, Runtime Java 16+ bestätigt).
-
-### Phase 3 Tab-Restoration — Bücher, Immobilien, Glaube
-
-- **Bücher-Tab (WindowEconomy):** Vollständige Geldfluss-Bilanz (7 Einnahme- + 4 Ausgabekategorien), "Bücher stimmen?"-Sanity-Check (Kasse+Umlauf), EventLog-Wirtschafts-Chronik (letzte 8 Einträge).
-- **Immobilien-Tab (WindowOverview):** Mieteinnahmen, Mietforderungen, Zwangsräumungen, Immobilienverkauf, Dividenden. 3 Live-Slider (Miete/Kachel, Räumung-Schwelle, Schonfrist) + 2 Checkboxen (Immobilienmarkt, Hauskauf).
-- **Glaube-Tab (WindowState):** Aus SocialTab extrahiert — eigene KPIs für Religionssteuer+Liturgie, Schalter, Info-Text.
-- **Preise-Tab:** +3 Spalten (Bestand, Angebot/Tag, Nachfrage/Tag) aus EconSnapshot-Daten.
-- **Demografie:** 4 Wohlstandsbänder (Unterschicht→Wohlhabend) aus Histogramm-Daten.
-- **Berater:** Ampel-Dashboard (5 Indikatoren), Warnketten (kausale Abhängigkeiten), Trend-Tabelle (3 Tage).
+Sprint-3 (vorausgegangen): Roadmap-SSOT-Konsolidierung + P1-Blocker-Closure — siehe archivierten Eintrag in `docs/CHANGELOG_ARCHIVE.md`.
 
 ---
 
-## v0.13.1 — 2026-07-25
+## Earlier Releases
 
-### UX-Cleanup — Tooltip-Echo, Fenster-Stacking, Farbige Balken, Stack-Audit
-
-- **Tooltip-Echo entfernt:** `hoverInfoSet` bei Tabs und Slider-Buttons gelöscht — kein "Preise"-Tooltip über dem Preise-Tab mehr.
-- **Fenster-Stack-Offset:** `openCount`-Zähler + `STACK_OFFSET` (24px) — jedes neu geöffnete Fenster verschiebt sich 24px rechts+unten.
-- **Defensiver Stack-Audit:** `auditStack()` zählt tatsächlich offene Fenster via `isShown()` und korrigiert `openCount` bei externem Force-Close durch Vanilla-UI-Manager.
-- **Deutsche Labels:** Tab-Minimum 120→**140px**, Padding 28→**32px** — "Übersicht", "Demografie", "Soziales" nicht mehr abgeschnitten.
-- **Unicode `→` → `->`:** Im Berater-Text — kein `?` mehr im Bitmap-Font.
-- **Debug-Tab versteckt:** Aus `TABS`-Array entfernt, Klasse bleibt als Dev-Referenz.
-- **`close()`-Reihenfolge:** `inter = null` VOR `inter.close()` + `decrementStack()` — kein Doppel-Dekrement-Risiko.
-- **Farbige Balken (`coloredBar`):** ASCII-Rauten `#` in Kassen-Historie und Vermögensverteilung durch `COLOR.render()`-Rechtecke ersetzt (GOOD/SOSO/BAD).
-- **EconHud-Positionierung:** `VIEW.inters().manager.viewPort()`-Kette entfernt → direkt `C.WIDTH()-200`. Icons wieder sichtbar.
-- **LiveSlider-IntSupplier:** Drei Slider (Lager-Lohn, Kopfsteuer, Corvée-Aushebung) lesen Wert jeden Frame frisch — kein Snapshot-Stale mehr.
-
----
-
-## v0.13.0 — 2026-07-25
-
-### Vanilla-Nativity-Pass
-
-- `SPanel`-Hintergrund statt selbstgezeichneter Paneele.
-- `GCOLOR`-Theme gebunden.
-- Vanilla-Icons + Vanilla-Checkbox + Vanilla-Slider direkt verbaut.
-- `EconHud` umgestellt auf Vanilla-Iconstack — keine Bitmap-Schnitzereien mehr.
-
----
-
-## v0.1.3 — 2026-07-24
-
-### UX-Audit — 15 interaktive Tabs, Debug-Logger, SubjectJob-Overlay
-
-- 15 interaktive Tabs (vorher 3 statische Karten im Übersichtsfenster).
-- Debug-Tab: Logger opt-in/out via `EconConfig.debugLoggingEnabled`.
-- SubjectJob-Overlay auf Bürger-Klick: zeigt aktuellen AI-Plan + Wirtschafts-Kontext.
-- Block-Char-Balken für Ampeln (GOOD/SOSO/BAD Unicode-Rechtecke).
-- Not-Liquidation-Toggle und Lohn-Slider im Staat-Fenster.
-- Steuer-Toggle als Live-Slider im Finanzen-Tab.
-- "Was soll ich heute tun?"-Berater mit dynamischen Prioritäten.
-- Trend-Pfeile ↑↓→ auf KPIs (Gini, Treasury, Food-Days, Population).
-- IdentityMapRegistry LOG-Fix — keine `System.err.println`-Spam mehr.
-- TopBar entfernt — Navigation läuft jetzt über In-Window-Buttons oder Numpad-Hotkeys.
-- Alle vorher statischen Toggles sind jetzt interaktiv.
-
----
-
-## v0.1.2 — 2026-07-23
-
-### Hotfix: Phantom-Profit, globales Rate-Limiting, insolvenzsichere Surplus-Share
-
-- **Phantom-Profit-Fix:** `FlowMeter.FirmState.sample()` rechnet jetzt aus echten physischen Deltas (`producedDelta/elapsedDays`) statt aus Tageskapazität. Zimmermann zeigt Profit=0 solange er nichts produziert.
-- **Globaler Rate-Limiter (AccessAutomation):** `lastErrorLogTick` und `accessDetectionDisabled` jetzt `static`. 15–20 parallele Scanner teilen sich eine Erinnerung — maximal 1× alle 100 Ticks.
-- **`guildSurplusMinProfitPerWorker` = 10.0 neu:** Sockel pro Arbeiter vor Gewinnverteilung. Bäckerei (187 D/Tag) und Holzfäller (<1 D/Tag) bleiben liquid.
-- **Tiered Surplus-Distribution:** `max(0, profit − workers × 10.0) × share`. Subsistenz-Betriebe zahlen nichts aus, profitable Firmen weiterhin.
-
-
-
----
-
-## v0.1.1 — 2026-07-23
-
-### Balance-Krisen-Fixes (live aus Save 35505704218901)
-
-- **Cold-Start-Death-Spiral behoben:** `minimumWorkersPerWorkplace` 0→1. Zimmermann überlebt den ersten Tick.
-- **Gewinnverteilung:** `guildSurplusShare` 0.0→0.25. Gini-Anstieg gedämpft.
-- **Armutsfreigrenze:** `perHeadTaxExemptionThreshold` neu 500 D. Kopfsteuer trifft nur noch solvente Bürger.
-- **Stabilität:** AccessAutomation-Erinnerungsspam eingedämmt (Ticks-Wrap-Around-sicher).
-
----
-
-## v0.1.0 (Phase 4) — 2026-07-23
-
-### Adapter-Architektur: Engine-API weggekapselt
-
-- 5 Adapter-Interfaces: `ISyxAI`, `ISyxTransport`, `ISyxWarehouse`, `ISyxBoosting`, `ISyxDiplomacy`.
-- 12 Adapter-Implementierungen (8 Vanilla + 4 Fallback). Reflection nur noch im Adapter-Konstruktor (One-Shot).
-- TreasuryCrisis: **5-stufige Krisenmechanik + Hard-Floor-Verhalten in Tier 5** (vorher: 0 Treffer für `treasuryFloor`, Kasse konnte auf −900M fallen).
-- DiagnosticExporter: 3 CSV/Tag (Macro 31 Spalten, Resources Long-Format, Firms). Python-Rebalance-Dashboard mit 5 Plots.
-- Stage-gated Wallets (200/500/2000/5000 D nach Wirtschaftsstufe).
-- `Class.forName(name, true, Humanoid.class.getClassLoader())` — der ClassLoader-Fix für `PlanOddjobber` & Co.
-- 14 Adapter-Signaturen gegen `SongsOfSyx-sources.jar` verifiziert.
-
-
-
----
-
-## v0.0.9 — Bauarbeiter-Swarming-Schutz + O(1) ServiceCache
-
-- `ConstructionHoardController` + `ConstructionHoardPlan`: Ressourcen-Reservierungs-Karte verhindert 50 Bauarbeiter auf 1 Holz.
-- `ServicePlanController.serviceCache`: O(1)-Lookup statt O(n) pro Bürger pro Tick.
-- Starvation-EventLog: `BrokeFoodPlan` loggt "STARVATION" vor dem Tod.
-- 13 Lohnkonstanten auf 50 ausgerichtet (`resetLaborDefaults` korrespondiert).
-- `battleThreat`-SEAM-Log in `EconSnapshot.stats()`.
-
----
-
-## v0.0.8 — Audit-Fixes + Advisor-Meilensteine
-
-- `EconIndicators` aus dem `roster<2`-Guard herausgelöst — Trend-Pipeline lief seit dem ersten Commit nie in echten Spielständen.
-- 5 Debug-Strings (TopBar/Toggle-Texte) entfernt.
-- 10 Meilensteine im Advisor-Tab renderbar (2 neue `advMsFirstTemple`/`advMsFirstEmbassy`).
-
----
-
-## v0.0.7 — Subsistenz-Druck + Oddjob/Lager-Automation
-
-- `PovertyPressure`: BValue-Booster Armut → Unzufriedenheit.
-- `OddjobAutomation`: dynamische Tagelöhner-Lohn-Anpassung.
-- `StateWageMarket.forceHire()`: staatliche Lohnunterbietung.
-- `WarehouseAutomation`: proaktive Auto-Bewirtschaftung mit Budget-Awareness.
-
----
-
-## v0.0.6 — Gini→Loyalty + Stufen-Freischaltung
-
-- `GiniConsequences`: Gini→`BEHAVIOUR.LOYALTY` (`loyaltyAtMaxGini` Default 0.85).
-- 5-Stufen-System sichtbar (EventLog "STAGE"): SUBSISTENZ→HANDEL→INDUSTRIE→WOHLSTAND→IMPERIUM.
-- `propertyMarketEnabled`/`homePurchaseEnabled`/`workplaceSharesEnabled` Defaults `false`.
-- Save-Migration v33: `rawLevel + 1` für Pre-v0.0.6-Saves.
-
----
-
-## v0.0.5 — Property-Markt
-
-- Hauskauf, Firmen-Anteile, Dividenden (`PropertyLedger.payDividends`).
-- `WealthHappiness`-Booster ab WOHLSTAND-Stufe.
-
----
-
-## v0.0.4 — Scarcity→Price→Priority-Kopplung
-
-- `FlowPrices`: `anchorPrice × (1 + max(0, 1 − coverage)²)`.
-- `ScarcitySignal` 0..1 mit Stock-Delta + Demand-Check.
-- `LaborMarket.setScarcitySignal()`: knappe Ressourcen pushen die Priorität der produzierenden Firmen.
-
----
-
-## v0.0.3 — roundingDrift-Fix + Housing-Miete im Audit
-
-- `AuditKernel.Conservation` klein-residual → `roundingDrift` einsammeln.
-- `HousingMarket.collectRent()` + `evict()` im Audit-Track.
-
----
-
-## v0.0.2 — Chunked save/load
-
-- `EconomySim.saveChunked(/loadChunked)`: TLV mit `TAG_*` pro Subsystem. Unbekannte Tags werden übersprungen statt Save zu zerstören.
-- Kausale Wirtschaft: Arbeit löst Einkommen aus, das Löhne, Konsum und Steuern triggert.
-- Zweistufige UI: Berater im Cockpit, Details im Lagerfenster.
-
----
-
-## v0.0.1 — Berater-Tab, Erstveröffentlichung
-
-- Fork von TiredGirl4's Economy Mod.
-- Berater-Tab mit 10 Meilenstein-Indikatoren + KPI-Grid.
-- Wirtschafts-Hauptschleife: `Roster.rebuild() → Wallets.exchange() → Fiscal.disburse() → AuditKernel`.
+The full release history (v0.13.30 back to v0.0.1) is archived in
+[`docs/CHANGELOG_ARCHIVE.md`](docs/CHANGELOG_ARCHIVE.md) to keep the
+root CHANGELOG focused on the current sprint.

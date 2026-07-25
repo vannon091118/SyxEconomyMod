@@ -14,104 +14,119 @@
 
 ## Active Sprint
 
-### Sprint 3 — Roadmap-SSOT-Konsolidierung + P1-Blocker-Closure (Active, in Bearbeitung)
+### Sprint 4 — Coverage-Kernel-Pass (Active, 2026-07-26)
 
-Sprint-Header per agents.md Rule 11+12: 1 Sprint = 1 atomic commit.
+T-COV-Mission: Coverage-Decke der bisher ungetesteten Kern-Kernels heben. Kein Mockito-Inject in
+diesem Sprint (engine-coupled Branches bleiben Sprint 9 vorbehalten). Fokus auf: Pure-Helper,
+Save/Load-Roundtrips, Statische Prioritäts-Math, Enumerationen, Records + v32→v33-Migrationspfad.
 
 | Task | Inhalt | LoC | Datei-Ref | Status |
 |---|---|---|---|---|
-| **T14.0** | ROADMAP.md → Global Task Index (alle T-/B-IDs konsolidiert, kein Verschiebe-Mechanismus, LoC-Schätzung pro Task) | ~80 | `ROADMAP.md` | Active |
-| **T14.1** | agents.md Rule 13 (NEU): Roadmap-as-Truth-Doktrin, Verschiebe-Verbot, ID-Mapping-Pre-Flight | ~25 | `agents.md` | Active |
-| **T14.2** | WORKFLOW.md erweitern: Anti-Pattern "Verschoben" + ID-Mapping-Pre-Flight in Sub-Phase 1 | ~15 | `WORKFLOW.md` | Active |
-| **T14.3** | ~~verify-doc-sync.sh erweitern: grep-Watch auf verbotene Wörter~~ — **`tools/docs-truth-consistency.sh` greift bereits** auf "verschoben\|postponed\|deferred\|spaeter" (siehe `grep -lE 'postponed\|deferred\|verschoben\|spaeter' tools/*.sh`). Kein neuer Gate nötig — bestehende Verification-Suite deckt ab. | 0 | `tools/docs-truth-consistency.sh` | Active (verified) |
-| **T14.4** | docs/BACKLOG.md mold-down: nur noch `New-Findings`-Sektion (Live-Funde die noch nicht im Global Index sind), keine Master-Liste mehr | ~-30 | `docs/BACKLOG.md` | Active |
-| **T14.5** | Stam-Docs-Sync 0.13.30 → 0.13.31 (pom.xml ist vorausgegangen, jetzt Docs nachziehen) | sed | `README.md`, `CHANGELOG.md`, `ARCHITECTURE.md`, `ROADMAP.md`, `GLOSSARY.md` | Active |
-| **T14.6** | CHANGELOG.md: Sprint-3-Eintrag am Anfang | ~12 | `CHANGELOG.md` | Active |
-| **T14.7** | Validation: `mvn verify install -DskipTests -Dskip.bump=true` + `verify-doc-sync.sh` + `awk -F';' 'NF!=11' BINDUNGSMATRIX.csv` = leer | verify | (CI) | Active |
+| **T-COV-1** | FiscalTest — `split()` Klammerung + `retailSettlement()` Aufteilung + Save/Load-Roundtrip + clear() + Setters-Clamping (15 Tests) | ~210 | `test/java/vannon/syx/economy/core/FiscalTest.java` | Active |
+| **T-COV-2** | EconProgressionTest — `Stage.fromLevel`/`next` (5 Stages + Boundary), Save/Load v33, **v32→v33-Migration** (14 Tests, davon 4 Migration-Regression-Tests) | ~190 | `test/java/vannon/syx/economy/core/EconProgressionTest.java` | Active |
+| **T-COV-3** | AffordabilityGateTest — Constructor mit null-Deps + clear() + `Admission`-Record + `Kind`-Enum + `SettlementSink.NONE`-NoOp (7 Tests) | ~80 | `test/java/vannon/syx/economy/core/AffordabilityGateTest.java` | Active |
+| **T-COV-4** | LaborMarketTest — `blend()`-Math + Clamping (7 Branches) + `profitPriority()`-Math + Setter/Map-Defaults + save/load + reset (12 Tests) | ~170 | `test/java/vannon/syx/economy/core/LaborMarketTest.java` | Active |
+| **T-COV-5** | HousingMarketTest — lastRent*-Defaults + `ledger()`-Identity + clear() + save/load roundtrip + ledger-Ownership-Survival (8 Tests) | ~140 | `test/java/vannon/syx/economy/core/HousingMarketTest.java` | Active |
+| **T-COV-6** | JaCoCo-Coverage-Gate in `pom.xml`: `jacoco-check` goal in verify-Phase mit Property-getriebenen Schwellen. Default 0.0 = report-only. Sprint 9 zieht an. | ~30 | `pom.xml` | Active |
+| **T-COV-7** | PairSourceTest — RandomPairSource mit Reflection-`count`-Stub (size 0/1/2, Distinctness, zero-encounters), ProximityPairSource size&lt;2-Short-Circuit + Instanziiertheit (8 Tests) | ~110 | `test/java/vannon/syx/economy/core/PairSourceTest.java` | Active |
+| **T-COV-8** | DiagnosticExporterTest — `diagnosticDirectory()`-Path-Validation + `resetExportGuard()` Idempotenz + Private-Constructor-Visibility (4 Tests) | ~60 | `test/java/vannon/syx/economy/core/DiagnosticExporterTest.java` | Active |
 
-**Sprint-3-Total:** 7 Tasks (~150 LoC additiv, ~30 LoC mold-down). Validation per agents.md Rule 1.
+**Sprint-4-Total:** 8 Tasks (~990 LoC additiv, davon ~890 LoC Tests + ~30 LoC pom.xml + ~70 LoC Docs).
+Validation per agents.md Rule 1 + 11 + 12 end-of-sprint.
 
 ---
 
-## Planned Backlog (P1/P2-Blocker, ready for Sprint 4+)
-
-Diese Tasks sind im Global Index aber noch keinem Sprint zugeordnet. Priorität nach Severity.
+## Planned Backlog (P1/P2-Blocker, ready for Sprint 5+)
 
 | ID | Task & Kurzbeschreibung | Datei-Ref | LoC | Status |
 |---|---|---|---|---|
-| **B-001** | FlowMeter.sample(): zusätzlich `SETT.ROOMS().ins()` für `ROOM_PRODUCER_INSTANCE` iterieren — FARM_GRAIN/FARM_FRUIT/FARM_COTTON/WORKSHOP_POTTERY werden nie gesampelt → `profit_per_day=0.00`. T5 hat nur `targetSupply`-Placeholder (Closed c1964d2); echte Sample-Range-Erweiterung steht aus. | `FlowMeter.java:44, 163, 387` | ~25 | Planned |
-| **B-004** | Vermögensklassen-Drift: WealthStats vs. CitizenClass zeigen unterschiedliche Bürger-Zahlen (30 Mittel+24 Elite vs. 28 Arm+23 Mittel). Klassifikations-Pipeline angleichen — eine zentrale `Wallets.classify(roster, stats)`. T7 hat Felder (Closed c1964d2); Pipeline-Sync offen. | `WealthStats.java`, `Wallets.java`, `CitizenClass.java` | ~30 | Planned |
-| **B-005** | Oddjob-Clamp Placebo: `OddjobMarket.setPay()` loggt nur `System.err.println`-Warnung, erzwingt keinen Cap. Slider+Save schreiben ungeclampt. Fix: harte Grenze im Setter via `EconConfig.oddjobMaxPay` + Save-Validation. | `OddjobMarket.java`, `EconConfig.java` | ~12 | Planned |
-| **B-006** | IdentityHashMap-Migration Phase 2/3 — Phase 1 (RoomBlueprintImp→String) fertig. Phase 2: Induvidual→Humanoid `id()`-Key. Phase 3: RoomInstance→Composite-Long-Key. | `*HashMap`-Sites in `core/` | ~50 | Planned |
-| **B-009** | Hungersignal ohne Bevölkerungskonsequenz: Save mit 20 Tagen `starving_signal=1, food_days=0` zeigt wachsende Population. T6 hat `updateDemography()` Hook (Closed c1964d2); echte Kopplung an `MeticImmigration.emigrate()` + `Roster.applyMortality()` fehlt. | `BrokeFoodPlan.java`, `MeticImmigration.java`, `Roster.java` | ~18 | Planned |
+| **T-COV-9** | Mockito-Inject für engine-coupled Branches: Fiscal.update (22 Pfade), HousingMarket.collectRent/evict, LaborMarket.update (18 Pfade), AffordabilityGate unit-Pricing-Lookups, EconProgression.pollBuildings. Plus JaCoCo-Threshold-Anziehen auf line≥70%/branch≥60%. | test/ + pom.xml | ~600 | Planned |
+| **B-001** | FlowMeter.sample(): zusätzlich `SETT.ROOMS().ins()` für `ROOM_PRODUCER_INSTANCE` iterieren — FARM_GRAIN/FARM_FRUIT/FARM_COTTON/WORKSHOP_POTTERY werden nie gesampelt → `profit_per_day=0.00`. | `FlowMeter.java:44, 163, 387` | ~25 | Planned |
+| **B-004** | Vermögensklassen-Drift: WealthStats vs. CitizenClass zeigen unterschiedliche Bürger-Zahlen. Klassifikations-Pipeline angleichen — eine zentrale `Wallets.classify(roster, stats)`. | `WealthStats.java`, `Wallets.java`, `CitizenClass.java` | ~30 | Planned |
+| **B-005** | Oddjob-Clamp Placebo: `OddjobMarket.setPay()` loggt nur System.err.println-Warnung, erzwingt keinen Cap. Fix: harte Grenze im Setter via `EconConfig.oddjobMaxPay` + Save-Validation. | `OddjobMarket.java`, `EconConfig.java` | ~12 | Planned |
+| **B-006** | IdentityHashMap-Migration Phase 2/3 — Phase 1 fertig. Phase 2: Induvidual→Humanoid `id()`-Key. Phase 3: RoomInstance→Composite-Long-Key. | `*HashMap`-Sites in `core/` | ~50 | Planned |
+| **B-009** | Hungersignal ohne Bevölkerungskonsequenz: Save mit 20 Tagen `starving_signal=1, food_days=0` zeigt wachsende Population. Echte Kopplung an `MeticImmigration.emigrate()` + `Roster.applyMortality()` fehlt. | `BrokeFoodPlan.java`, `MeticImmigration.java`, `Roster.java` | ~18 | Planned |
 | **B-002** | AccessAutomation-Spam: 14 Statusmeldungen/Tick ins Spieler-Chronik-Fenster. Rate-Limiter aus v0.1.2 greift nur für NPEs, nicht für Statusmeldungen. | `AccessAutomation.java` | ~6 | Planned |
 | **B-008** | EngineSeams-Direkt-Calls reduzieren — 31 Sites in core/, Ziel: 0. Adapter-Injection statt direktem Engines-Zugriff. | diverse `core/`-Sites | ~40 | Planned |
 | **B-010** | Carpenter `targetWage=0` in `FlowPrices` — kein Wage-Signal für Carpenter-Beruf (sollte ≈ 50 sein). | `FlowPrices.java` | ~8 | Planned |
 | **B-011** | CI-Gate-Integration für `tools/scarcity_sim.py` — Golden-Snapshot-Vergleich mit 5%-Toleranz gegen Excel/pandas-Referenz. | `tools/scarcity_sim.py`, `tools/build-gate.sh` | ~15 | Planned |
 | **T22** | Savegame-Compat-Headless-Test: lade Quicksave df28c03 in mock-Settlement, prüf ob `EconomySim.load()` clean durchläuft — Smoke-Test gegen Savegame-Format-Drift. | `test/` | ~50 | Planned |
 
-**Backlog-Total:** 10 Tasks (~254 LoC). Sprint 4 plant vermutlich B-001+B-009+B-005 als erste Welle (kritischste P1).
+**Backlog-Total:** 11 Tasks (~854 LoC). Sprint 5 plant vermutlich T-COV-9 (kritischste Coverage-Erweiterung) + B-001/B-005 als erste Welle.
 
 ---
 
 ## Closed Sprints (chronologisch, neueste oben)
 
+### Sprint 3 — Roadmap-SSOT-Konsolidierung + P1-Blocker-Closure (Closed — pre-Sprint-4-Commit, 2026-07-26)
+
+Sprint-Header per agents.md Rule 11+12: 1 Sprint = 1 atomic commit.
+
+| Task | Inhalt | LoC | Datei-Ref | Status |
+|---|---|---|---|---|
+| **T14.0** | ROADMAP.md → Global Task Index | ~80 | `ROADMAP.md` | Closed (pre-Sprint-4-Commit) |
+| **T14.1** | agents.md Rule 13 (NEU): Roadmap-as-Truth-Doktrin, Verschiebe-Verbot, ID-Mapping-Pre-Flight | ~25 | `agents.md` | Closed (pre-Sprint-4-Commit) |
+| **T14.2** | WORKFLOW.md Anti-Pattern erweitert | ~15 | `WORKFLOW.md` | Closed (pre-Sprint-4-Commit) |
+| **T14.3** | tools/docs-truth-consistency.sh grep-Watch verifiziert — kein neuer Gate nötig | 0 | `tools/docs-truth-consistency.sh` | Closed (verified, pre-Sprint-4-Commit) |
+| **T14.4** | docs/BACKLOG.md mold-down auf New-Findings-Only | ~-30 | `docs/BACKLOG.md` | Closed (pre-Sprint-4-Commit) |
+| **T14.5** | Stam-Docs-Sync 0.13.30 → 0.13.31 | sed | 5 Stam-Docs | Closed (pre-Sprint-4-Commit) |
+| **T14.6** | CHANGELOG.md Sprint-3-Eintrag | ~12 | `CHANGELOG.md` | Closed (pre-Sprint-4-Commit) |
+| **T14.7** | Validation-Loop per `mvn verify install -DskipTests -Dskip.bump=true` | verify | (CI) | Closed (verified, pre-Sprint-4-Commit) |
+
+**Sprint-3-Total:** 7 Tasks (~150 LoC additiv, ~30 LoC mold-down).
+
 ### Sprint 2 — Mod-Economy T5–T13 (Closed — `c1964d2`, 2026-07-26)
 
 | Task | Inhalt | Datei-Ref | LoC | Status |
 |---|---|---|---|---|
-| **T5** | B-001 FlowMeter.targetSupply Feld + `@Deprecated`-Getter als Placeholder | `FlowMeter.java:44, 163, 387` | ~15 | Closed (c1964d2) |
-| **T6** | B-009 Hunger-Demographie Hook: `updateDemography()` mit walletDamage staffelt (≥90 /500 = heavy, ≥80 /2000 = light) | `EconomySim.java:580-587, 1538-1594` | ~30 | Closed (c1964d2) |
-| **T7** | B-004 Classifier-Pipeline-Felder: `CitizenClass.isClassifiable()`, `classifiablePopulationCount()`, `Wallets.classifiedCount()`, `WealthStats.activePeople` | `CitizenClass.java:165-220`, `Wallets.java:521-536`, `WealthStats.java:13, 26` | ~25 | Closed (c1964d2) |
-| **T8** | H8 phaseFactor in `FlowPrices.refresh()` als Multiplikator | `EconConfig.java:479-503`, `FlowPrices.java:21-46`, `EconomySim.java:587-589` | ~25 | Closed (c1964d2) |
-| **T9** | revertFireSale() EventLog-Hinweis (Liquidation nicht automatisch rückgängig) | `TreasuryCrisis.java:418` | ~3 | Closed (c1964d2) |
-| **T10** | diagnosticsExportEnabled default `false` (Public-Release-Tauglichkeit) | `EconConfig.java:399` | ~1 | Closed (c1964d2) |
-| **T11** | HEBELKARTE.md → SUPERSEDED-Notice (jetzt gelöscht) | `HEBELKARTE.md:1-9` | ~9 | Closed (c1964d2) |
-| **T12** | AccessAutomation.reset() + Hook in `EconomySim.clearActive()` + 6-arg-Ctor | `AccessAutomation.java:86` | ~22 | Closed (c1964d2) |
-| **T13** | Static-Audit reset() auf 5 Klassen (LocalPrices, OddjobAutomation, WarehouseAutomation, GiniConsequences, CitizenClass) + 11 Hooks in EconomySim | 5 Files + `EconomySim.java` | ~120 | Closed (c1964d2) |
+| **T5** | B-001 FlowMeter.targetSupply Feld + `@Deprecated`-Getter | `FlowMeter.java:44, 163, 387` | ~15 | Closed (c1964d2) |
+| **T6** | B-009 Hunger-Demographie Hook | `EconomySim.java:580-587, 1538-1594` | ~30 | Closed (c1964d2) |
+| **T7** | B-004 Classifier-Pipeline-Felder | `CitizenClass.java`, `Wallets.java`, `WealthStats.java` | ~25 | Closed (c1964d2) |
+| **T8** | H8 phaseFactor in FlowPrices.refresh() | `EconConfig.java`, `FlowPrices.java`, `EconomySim.java` | ~25 | Closed (c1964d2) |
+| **T9** | revertFireSale() EventLog-Hinweis | `TreasuryCrisis.java:418` | ~3 | Closed (c1964d2) |
+| **T10** | diagnosticsExportEnabled default `false` | `EconConfig.java:399` | ~1 | Closed (c1964d2) |
+| **T11** | HEBELKARTE.md gelöscht | `HEBELKARTE.md:1-9` | ~9 | Closed (c1964d2) |
+| **T12** | AccessAutomation.reset() + 6-arg-Ctor | `AccessAutomation.java:86` | ~22 | Closed (c1964d2) |
+| **T13** | Static-Audit reset() auf 5 Klassen + 11 Hooks in EconomySim | 5 Files + `EconomySim.java` | ~120 | Closed (c1964d2) |
 
-**Sprint-2-Total:** 9 Tasks (~250 LoC). Plus Sprint-Header-Doku (~30 LoC in 7 Files).
+**Sprint-2-Total:** 9 Tasks (~250 LoC).
 
 ### Sprint 1 — TreasuryCrisis State-Leak Reset (Closed — `c1964d2`, 2026-07-26)
 
 | Task | Inhalt | Datei-Ref | LoC | Status |
 |---|---|---|---|---|
-| **T1** | TreasuryCrisis.reset() Methode — 6 mutable static Felder + 3 saved*-Werte | `TreasuryCrisis.java:466-502` | ~22 | Closed (c1964d2) |
+| **T1** | TreasuryCrisis.reset() Methode — 6 mutable static + 3 saved*-Werte | `TreasuryCrisis.java:466-502` | ~22 | Closed (c1964d2) |
 | **T2** | recoveryLogged-Feld + activateWarning() Re-Arm-Logik | `TreasuryCrisis.java:74, 149, 357, 365, 502` | ~12 | Closed (c1964d2) |
 | **T3** | Reset-Hooks in `EconomySim.clearActive()` + 6-arg privater Ctor | `EconomySim.java` (11 Calls) | ~10 | Closed (c1964d2) |
-| **T4** | ~~Geplant: IdentityMapRegistry-Hook für TreasuryCrisis-spezifische Maps~~ | (kein) | 0 | **Rejected (in T1+T3 subsummiert während Sprint-Planung; kein separates Code-Marker notwendig)** |
-
-**Sprint-1-Total:** 3 Closed Tasks + 1 Rejected Task (~44 LoC Closed).
+| **T4** | ~~Geplant: IdentityMapRegistry-Hook für TreasuryCrisis-spezifische Maps~~ | (kein) | 0 | **Rejected (in T1+T3 subsummiert)** |
 
 ### Sprint 0 — Phase A–F SDK + Adapter-Migration (Closed — `1442804`..`c1964d2`, 2026-07-25)
 
 | Task | Inhalt | Datei-Ref | Status |
 |---|---|---|---|
-| **Phase A** | BypassGate SDK (4 Dateien in adapter/seam/): BypassGate.java, FieldAccessor.java, MethodAccessor.java, ClassResolver.java | `adapter/seam/*.java` | Closed (Phase-A Commits) |
-| **Phase B–F** | Alle 5 Adapter migriert: Diplomacy/Transport/Warehouse/Boosting/AI — 4 Fallback-Adapter + 3 MH-Varianten gelöscht | `adapter/*.java` | Closed (Phase-B–F Commits) |
-| **Cleanup** | EconConfig.useMethodHandleAdapters gelöscht, EconomySim-Imports bereinigt | `EconConfig.java`, `EconomySim.java` | Closed (Phase-F) |
-| **Workflow-Reform** | agents.md Rule 11/12 (Sprint-Workflow), WORKFLOW.md komplett rebuild, BINDUNGSMATRIX.csv kanonisch, tools/-Cleanup (4 Skripte gelöscht), HEBELKARTE.md gelöscht | 9 Files | Closed (c1964d2) |
-
-**Sprint-0-Total:** 6 Phasen + Workflow-Reform, ~14 Adapter-Files, alle Gates grün.
+| **Phase A** | BypassGate SDK (4 Dateien in adapter/seam/) | `adapter/seam/*.java` | Closed |
+| **Phase B–F** | 5 Adapter migriert, 4 Fallback + 3 MH-Varianten gelöscht | `adapter/*.java` | Closed |
+| **Cleanup** | EconConfig.useMethodHandleAdapters + EconomySim-Imports | `EconConfig.java`, `EconomySim.java` | Closed |
+| **Workflow-Reform** | agents.md Rule 11/12, WORKFLOW.md rebuild, BINDUNGSMATRIX.csv kanonisch, HEBELKARTE.md gelöscht | 9 Files | Closed |
 
 ### Sprint -1 — Pre-Sprint-Wave v0.0.1–v0.13.10 (Closed — historisch)
 
 | Task | Inhalt | Status | Version |
 |---|---|---|---|
-| Cold-Start-Bug | Carpenter 0-Output: `hill!=null`-Guard + `minimumWorkersPerWorkplace` | Closed | v0.13.10 |
-| mean_wage-Runaway | `Math.min(slope, wageMax=1000)` auf 4 Pfaden | Closed | v0.13.10 |
-| Re-Entry-Crash | idempotenter Guard + Reset in `load()` (`lastUpdateTick==ticks`) | Closed | v0.13.10 |
-| God-Class-Split EconomySim | RoomOperatingModeController, PropertyMarketController, CrisisDispatch extrahiert | Closed | v0.13.10 |
+| Cold-Start-Bug | Carpenter 0-Output: `hill!=null`-Guard | Closed | v0.13.10 |
+| mean_wage-Runaway | `Math.min(slope, wageMax=1000)` | Closed | v0.13.10 |
+| Re-Entry-Crash | idempotenter Guard + Reset in `load()` | Closed | v0.13.10 |
+| God-Class-Split EconomySim | RoomOperatingModeController etc. | Closed | v0.13.10 |
 | Bug-Loop-Cheat | `foodAffordabilityGateEnabled=true` | Closed | v0.1.4 |
 | Stage-gated Wallets | 200/500/2000/5000 D Thresholds | Closed | v0.13.0 |
-| 5-Stufen-System | SUBSISTENZ→KNAPP→STABIL→ÜBERSCHUSS→IMPERIUM | Closed | v0.1.0 |
+| 5-Stufen-System | SUBSISTENZ→IMPERIUM | Closed | v0.1.0 |
 | Gini→Loyalty Booster | via `GiniConsequences.java` | Closed | v0.1.0 |
-| 5 UI-Fenster + 16 interaktive Tabs | `ui/WindowEconomy.java` etc. | Closed | v0.13.0 |
+| 5 UI-Fenster + 16 Tabs | `ui/WindowEconomy.java` etc. | Closed | v0.13.0 |
 | 6 Hotkeys | Numpad +/−/∗/0//, ESC | Closed | v0.13.0 |
 | Save-Format 33 chunked | TLV mit Tag-Skipping | Closed | v0.0.2 |
-| B-003 Advisor-Widerspruch | `OverviewTabs.AdvisorTab` aggregiert zentral | Closed (Fixed) | v0.13.0 |
-| B-007 catch(Throwable) 27→0 | `phase47-shield.sh` blockt Regressionen | Closed (Done) | v0.1.0 |
-| IdentityHashMap Phase 1 | RoomBlueprintImp→String, 3 Maps migriert | Closed | Phase 4.7 |
+| B-003 Advisor-Widerspruch | aggregiert zentral | Closed | v0.13.0 |
+| B-007 catch(Throwable) 27→0 | `phase47-shield.sh` blockt | Closed | v0.1.0 |
+| IdentityHashMap Phase 1 | RoomBlueprintImp→String | Closed | Phase 4.7 |
 | Phase-A–F SDK + Adapter | BypassGate, 5 Adapter, Auto-Select | Closed | v0.13.10 |
 
 Vollhistorie: [`CHANGELOG.md`](CHANGELOG.md).
@@ -122,7 +137,7 @@ Vollhistorie: [`CHANGELOG.md`](CHANGELOG.md).
 
 | ID | Task & Ursprünglicher Plan | Datei-Ref | Begründung |
 |---|---|---|---|
-| **T4** | IdentityMapRegistry-Hook für TreasuryCrisis-spezifische Maps | (kein) | Während Sprint-1-Planung in T1+T3 subsummiert — keine separaten Code-Marker notwendig, da `EconomySim.clearActive()` bereits alle 7 static-reset()-Methoden ruft |
+| **T4 (Sprint-1)** | IdentityMapRegistry-Hook für TreasuryCrisis-spezifische Maps | (kein) | Während Sprint-1-Planung in T1+T3 subsummiert — keine separaten Code-Marker notwendig, da `EconomySim.clearActive()` bereits alle 7 static-reset()-Methoden ruft |
 
 **Verschieb-Verbot aktiv:** Wenn eine Reject-Begründung nicht ausreicht, ist die Task entweder `Planned` (im Backlog) oder explizit `Rejected (Begründung)`. Niemals "Verschoben", "Postponed", "Deferred", "Spaeter", "Next-Sprint". Der `tools/verify-doc-sync.sh` Gate grep-t diese Wörter.
 
@@ -137,10 +152,11 @@ Vor jedem Sprint-Commit (Atomic per agents.md Rule 11+12) muss gelten:
    - Code-Audit (kein `catch(Throwable)`, kein `printStackTrace`)
    - Version ↔ Changelog + `_Info.txt`-Template-Konsistenz
    - Adapter ↔ Engine-Signaturen (5 Adapter, 19 Methoden/Felder)
-2. `mvn test` — alle JUnit-Tests grün (138+).
+2. `mvn test` — alle JUnit-Tests grün (167+ → mit Sprint 4: ~235+).
 3. Manuell: `bash tools/bump-version.sh patch --dry-run` zeigt nur den nächsten Patch-Schritt.
 4. Stam-Dokumente haben oben den Versions-Stempel `**Version:** v0.13.x` o. ä.
-5. **NEU:** `bash tools/verify-doc-sync.sh` muss das Verschieb-Wort-Grep-Watch passen (keine verbotenen Wörter in ROADMAP+BACKLOG).
+5. **NEU:** `bash tools/verify-doc-sync.sh` muss das Verschieb-Wort-Grep-Watch passen.
+6. **NEU (Sprint 4):** JaCoCo-Report verfügbar unter `target/site/jacoco/index.html` (report-only, kein Build-Break bis Sprint 9 die Schwellen anzieht).
 
 ---
 
@@ -161,6 +177,10 @@ bash tools/verify-version-consistency.sh
 
 # ID-Cross-Reference-Audit: alle T-/B-IDs zwischen Docs + Code
 bash tools/build_bindungsmatrix.py --audit-ids
+
+# Coverage-Report (Sprint 4 — T-COV-6)
+mvn test
+xdg-open target/site/jacoco/index.html
 ```
 
 ---
@@ -170,8 +190,7 @@ bash tools/build_bindungsmatrix.py --audit-ids
 `BINDUNGSMATRIX.csv` (332 Zeilen, 11 Spalten) ist die **Datenmatrix für Engine-Hebel-Verifikation** —
 sie beantwortet "Welche Engine-API hat der Mod angefasst?" (Spalte 11: `++ verified`, `?? orphan`,
 `? unclear`, `/ rebuttal`). Die **ROADMAP-Tasks** beantworten "Was bauen wir?" — beide sind getrennte
-Welten. Eine Task wie B-001 (FlowMeter-Coverage) kann in BINDUNGSMATRIX.csv Spalte 8 als `Mod nutzt:
-yes` erscheinen, ist aber als `Planned`-Task in der Roadmap. Cross-Reference optional, nicht zwingend.
+Welten.
 
 **Referenz-Hub:**
 - Engine-Hebel-Verifikation: [`BINDUNGSMATRIX.csv`](BINDUNGSMATRIX.csv)
