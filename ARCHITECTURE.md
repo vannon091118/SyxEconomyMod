@@ -1,6 +1,6 @@
 # SyxEconomyMod — Architektur
 
-> **Version:** v0.13.9 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-25
+> **Version:** v0.13.10 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-25
 >
 > Stam-Doku-Synchron-Anker: Die obenstehende Versions-Zeile MUSS identisch mit `pom.xml` `<version>` sein.
 > Der Sync-Gate `tools/verify-doc-sync.sh` validiert dies vor jedem `mvn compile`.
@@ -40,10 +40,11 @@ Modul-Bilanz: **128 Java-Dateien, ~22.700 LOC**
 ║  5 Interfaces                                                  ║
 ║   ISyxAI, ISyxTransport, ISyxWarehouse, ISyxBoosting,          ║
 ║   ISyxDiplomacy                                                ║
-║  8 Vanilla-Implementierungen (Reflection nur im Konstruktor,    ║
-║   One-Shot per Adapter)                                        ║
-║  4 Fallback-Implementierungen (No-Op wenn Reflection scheitert) ║
-║  Reflection auf Vanilla erlaubt AUSSCHLIESSLICH hier           ║
+║  5 Vanilla-Implementierungen (via BypassGate SDK,               ║
+║   VarHandle/MethodHandle auto-select)                           ║
+║  4 Bypass-SDK-Klassen (FieldAccessor, MethodAccessor,           ║
+║   ClassResolver, BypassGate)                                    ║
+║  Engine-Zugriff erlaubt AUSSCHLIESSLICH hier                    ║
 ╚═════════════════════════════════════╤══════════════════════════╝
                                        ▼
 ╔════════════════════════════════════════════════════════════════╗
@@ -117,12 +118,11 @@ Fallback: java.lang.reflect.*.
 | `ISyxBoosting` | `BOOSTABLES.CIVICS().GOV` Boostable für den INDUSTRIE-Stufen-Admin-Boost |
 | `ISyxDiplomacy` | 4 Felder + Bitmap auf `DipWarPlayer`: `upI`, `pPow`, `coalitionPow`, `bWilling`; `willing()` über Public-Getter |
 
-### Vanilla-Implementierungen (8)
-Reflection-Variante: `VanillaAIAdapter`, `VanillaTransportAdapter`, `VanillaWarehouseAdapter`, `VanillaBoostingAdapter`, `VanillaDiplomacyAdapter`.
-MethodHandle-Variante (3-6× schneller): `VanillaTransportAdapterMH`, `VanillaWarehouseAdapterMH`, `VanillaDiplomacyAdapterMH`.
+### Vanilla-Implementierungen (5)
+Alle via BypassGate SDK: `VanillaAIAdapter`, `VanillaTransportAdapter`, `VanillaWarehouseAdapter`, `VanillaBoostingAdapter`, `VanillaDiplomacyAdapter`. VarHandle/MethodHandle wird automatisch bevorzugt (3–6× Speedup), Reflection als Fallback. Keine separaten MH-Varianten mehr (Phase B–D, v0.13.10).
 
-### Fallback-Implementierungen (4)
-`FallbackTransportAdapter` (Distance=0), `FallbackWarehouseAdapter` (No-Op), `FallbackBoostingAdapter` (null), `FallbackDiplomacyAdapter` (alle Getter 0/null).
+### Fallback-Implementierungen (0)
+Keine. `BypassGate.isAvailable()` ersetzt alle 4 Fallback-Adapter (Phase B–E, v0.13.10). Consumer prüfen `ISyx*.isAvailable()` statt Fallback-Instanzen zu erzeugen.
 
 ### Package-Private Brücken (4, in `src/settlement/room/`)
 | Datei | Vanilla-Klasse | Zweck |

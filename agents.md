@@ -272,3 +272,114 @@ token as "the rules were processed, only the pun layer failed".
    mal inne — 200, 500, 2000, 5000, und immer wieder.'"*
 
 These are unit examples. Your turn.
+
+---
+
+## Rule 8 — Two bypass layers, never mix them
+
+The project has two distinct bypass layers with different entry points
+and lifecycles. Agents MUST assign work to the correct layer before
+writing code.
+
+| Layer | Package | Entry Point | When | For |
+|---|---|---|---|---|
+| **Runtime** | `adapter/seam/` | `BypassGate` → `ISyx*` | `EconomySim` constructor (lazy, once) | Live game objects (`DipWarPlayer`, `StockpileInstance`, `TransportInstance`, `BOOSTABLES.CIVICS()`, AI plan classes) |
+| **Init-Time** | `core/` | `MainScript.initBeforeGameCreated()` / `initBeforeGameInited()` | Engine lifecycle callbacks | Engine defaults (`HTYPE`, `RACES`, `CRIME`, `CAUSE_ARRIVE`) |
+
+Runtime adapters use the BypassGate SDK. Init-time patches use raw
+VarHandle with `initBeforeGameInited` for post-constructor fields
+(like `RACES.i` which is set in the `RACES()` constructor).
+
+**Never put runtime bypasses in init hooks.** (The adapter wouldn't
+exist yet and the game objects aren't alive.)
+**Never put init patches in adapters.** (The engine defaults are
+already set by then.)
+
+---
+
+## Rule 9 — BypassGate SDK (available since Phase A, v0.13.4)
+
+Four files in `adapter/seam/`. Agents writing or modifying adapter
+code MUST use these, not raw `java.lang.reflect.*` or `VarHandle`.
+
+| File | Key API |
+|---|---|
+| `BypassGate.java` | `new BypassGate(name)` → `.intField(owner, name)`, `.doubleField(owner, name)`, `.floatField(owner, name)`, `.refField(owner, name, type)`, `.voidMethod(owner, name, argTypes...)`, `.boolMethod(owner, name, argTypes...)`, `.classResolver(gameCL)`, `.isAvailable()` |
+| `FieldAccessor.java` | `IntField.get/set(obj, val)`, `DoubleField.get/set(obj, val)`, `FloatField.get/set(obj, val)`, `RefField<T>.get/set(obj, val)` — all with `getStatic()/setStatic()` variants for static fields |
+| `MethodAccessor.java` | `VoidMethod.invoke(instance, args...)`, `BooleanMethod.invoke(instance, args...)` |
+| `ClassResolver.java` | `new ClassResolver(Humanoid.class.getClassLoader())` → `.resolve(fqcn)`, `.isInstance(obj, fqcn)` |
+
+**DO NOT write `java.lang.reflect.Field`, `java.lang.reflect.Method`,
+`Class.forName`, `VarHandle`, or `MethodHandles` in new adapter code.**
+Use BypassGate SDK exclusively.
+
+BypassGate internally tries VarHandle/MethodHandle first (3–6× faster),
+falls back to java.lang.reflect if the engine JVM doesn't support it.
+The auto-select happens transparently.
+
+**Post-Phase F (v0.13.10):** `EconConfig.useMethodHandleAdapters` does
+NOT exist. All adapters auto-select. Any agent prompt referencing this
+flag will produce dead code.
+
+---
+
+## Rule 10 — Adapter pattern rules (hard-won, Phase B–E)
+
+These patterns were discovered through reviewer feedback and build
+failures during Phase B–E. Every new adapter MUST follow them.
+
+1. **initOk local flag, NOT markFailed.** `markFailed` is package-private
+   in `adapter/seam/`. Adapters in `adapter/` cannot call it. Use:
+
+   ```java
+   boolean ok = false;
+   try {
+       accessor = gate.floatField(owner, name);
+       ok = gate.isAvailable();
+   } catch (Throwable t) {
+       ok = false;
+       EventLog.log("SEAM", "AdapterName init failed: " + t.getMessage());
+   }
+   this.initOk = ok;
+   ```
+
+2. **Stam-docs in the SAME commit as code changes.** The gate fires at
+   `mvn install` (validate phase), not at `mvn compile`. If you add or
+   remove .java files, update ARCHITECTURE.md file count in the same
+   commit. The gate will catch you if you don't.
+
+3. **No Fallback adapters exist (post-Phase E).** `BypassGate.isAvailable()`
+   replaces all 4 Fallback classes (`FallbackTransportAdapter`,
+   `FallbackWarehouseAdapter`, `FallbackBoostingAdapter`,
+   `FallbackDiplomacyAdapter`). Never create new Fallback implementations.
+   Consumers check `ISyx*.isAvailable()` and degrade gracefully.
+
+4. **No MH adapter variants exist (post-Phase D).** The `*MH.java` files
+   (`VanillaTransportAdapterMH`, `VanillaWarehouseAdapterMH`,
+   `VanillaDiplomacyAdapterMH`) are deleted. BypassGate internally
+   selects VarHandle/MethodHandle or Reflection automatically.
+
+5. **runtimeFailed + runtimeFailedLogged for adapters with runtime access.**
+   Adapters that call VarHandle.get/set or Method.invoke at runtime
+   (not just construction) need a runtime-failure flag that permanently
+   deactivates the adapter after the first runtime failure. Pattern:
+
+   ```java
+   private boolean runtimeFailed;
+   private boolean runtimeFailedLogged;
+
+   private boolean logRuntime(Throwable t, String op) {
+       if (!runtimeFailedLogged) {
+           runtimeFailedLogged = true;
+           EventLog.log("SEAM", adapterName + ": " + op + " failed — " + t.getMessage());
+       }
+       runtimeFailed = true;
+       return false;
+   }
+   ```
+
+6. **ClassResolver for package-private classes only.** `TransportInstance`
+   is package-private and needs `ClassResolver`. `StockpileInstance`
+   and `DipWarPlayer` are public — no ClassResolver needed.
+   `Humanoid.class.getClassLoader()` is the canonical ClassLoader
+   source (verified in `VanillaAIAdapter.java:46`).

@@ -1,6 +1,6 @@
 # SyxEconomyMod — Entwicklung & Roadmap
 
-> **Version:** v0.13.9 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-25
+> **Version:** v0.13.10 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-25
 >
 > Stam-Doku-Synchron-Anker: Die obenstehende Versions-Zeile MUSS identisch mit `pom.xml` `<version>` sein.
 > Der Sync-Gate `tools/verify-doc-sync.sh` validiert dies vor jedem `mvn compile`.
@@ -40,7 +40,7 @@ Severity: 🔴 P0 = Crash/Datenverlust · 🟠 P1 = broken feature · 🟡 P2 = 
 
 ---
 
-## Phase A–F: Bypass-SDK + Adapter-Migration — ✅ DONE (v0.13.8)
+## Phase A–F: Bypass-SDK + Adapter-Migration — ✅ DONE (v0.13.10)
 
 - **Phase A:** BypassGate SDK (4 Dateien in adapter/seam/)
 - **Phase B–F:** Alle 5 Adapter migriert, 4 Fallbacks gelöscht, 3 MH-Varianten gelöscht
@@ -67,11 +67,11 @@ Severity: 🔴 P0 = Crash/Datenverlust · 🟠 P1 = broken feature · 🟡 P2 = 
 
 ---
 
-## Abgeschlossen (v0.0.1 → v0.13.2)
+## Abgeschlossen (v0.0.1 → v0.13.10)
 
 | Bereich | Status |
 |---|---|
-| **Adapter-Layer** (Phase 4) | ✅ 5 Interfaces + 12 Implementierungen, 0 direkte Reflection-Stellen im Core |
+| **Adapter-Layer** (Phase 4 → A–F) | ✅ 5 Interfaces + 5 Vanilla-Adapter + 4 Bypass-SDK + 4 Package-Brücken, 0 direkte Reflection-Stellen im Core |
 | **TreasuryCrisis** (5-stufig + Hard-Floor) | ✅ |
 | **DiagnosticExporter** (3 CSV/Tag + Python-Dashboard) | ✅ |
 | **IdentityHashMap Phase 1** (RoomBlueprintImp→String) | ✅ 3 Maps migriert |
@@ -102,7 +102,7 @@ Vor jedem Merge/Build muss gelten:
    - Adapter ↔ Engine-Signaturen (5 Adapter, 19 Methoden/Felder)
 2. `mvn test` — alle JUnit-Tests grün (138+).
 3. Manuell: `bash tools/bump-version.sh patch --dry-run` zeigt nur den nächsten Patch-Schritt.
-4. Stam-Dokumente haben oben den Versions-Stempel `**Version:** v0.13.2` o. ä.
+4. Stam-Dokumente haben oben den Versions-Stempel `**Version:** v0.13.10` o. ä.
 
 ---
 

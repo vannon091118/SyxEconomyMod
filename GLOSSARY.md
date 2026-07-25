@@ -1,6 +1,6 @@
 # SyxEconomyMod — Klassen-Glossar
 
-> **Version:** v0.13.9 | **Stand:** 2026-07-25
+> **Version:** v0.13.10 | **Stand:** 2026-07-25
 >
 > Stam-Doku-Synchron-Anker: Die obenstehende Versions-Zeile MUSS identisch mit `pom.xml` `<version>` sein.
 > Der Sync-Gate `tools/verify-doc-sync.sh` validiert dies vor jedem `mvn compile`.
@@ -9,7 +9,7 @@
 
 ---
 
-## 🟦 Kategorie 1: VANILLA WRAPPER (21 Dateien)
+## 🟦 Kategorie 1: VANILLA WRAPPER (18 Dateien)
 
 ### Bypass-SDK (`adapter/seam/`, 4 Dateien — Phase A)
 
@@ -29,23 +29,16 @@
 | **`ISyxAI`** | Kapselt 6 `Class.forName(name, true, Humanoid.class.getClassLoader())`-Aufrufe zur Erkennung package-privater AI-Pläne (`PlanOddjobber`, `F_SPlanEatery`, `F_SPlanCanteen`, `F_PlanEat`, `PlanTavern`, `M_PlanMarket`). |
 | **`ISyxTransport`** | Liest das private `distance`-Feld (float) von `TransportInstance`. |
 | **`ISyxWarehouse`** | Ruft `storingSet(boolean)` auf `StockpileInstance` auf — sperrt/entsperrt Einlagerung. |
-| **`ISyxBoosting`** | Sucht per `getDeclaredFields()` nach `GOV`-Boostable in `BOOSTABLES.CIVICS()` (für INDUSTRIE-Stufen-Admin-Boost). |
+| **`ISyxBoosting`** | Liest `BOOSTABLES.CIVICS().GOV` Boostable per BypassGate.refField() (für INDUSTRIE-Stufen-Admin-Boost). |
 | **`ISyxDiplomacy`** | Liest/schreibt 4 Felder von `DipWarPlayer`: `upI`, `pPow`, `coalitionPow`, `bWilling`; `willing()` via Public-Getter. |
 
-### Vanilla-Implementierungen (8 Dateien)
+### Vanilla-Implementierungen (5 Dateien)
 
-Reflection-Variante (5): `VanillaAIAdapter`, `VanillaTransportAdapter`, `VanillaWarehouseAdapter`, `VanillaBoostingAdapter`, `VanillaDiplomacyAdapter`.
+Alle via BypassGate SDK: `VanillaAIAdapter`, `VanillaTransportAdapter`, `VanillaWarehouseAdapter`, `VanillaBoostingAdapter`, `VanillaDiplomacyAdapter`. VarHandle/MethodHandle wird automatisch bevorzugt, Reflection als Fallback. Keine separaten MH-Varianten mehr (Phase B–D).
 
-MethodHandle-Variante (3, 3–6× schneller): `VanillaTransportAdapterMH`, `VanillaWarehouseAdapterMH`, `VanillaDiplomacyAdapterMH`.
+### Fallback-Implementierungen (0 Dateien)
 
-### Fallback-Implementierungen (4 Dateien)
-
-| Klasse | Bei Reflection-Scheitern |
-|---|---|
-| `FallbackTransportAdapter` | Distance = 0 |
-| `FallbackWarehouseAdapter` | No-Op (Pricing-Lock übernimmt) |
-| `FallbackBoostingAdapter` | kein Admin-Boost |
-| `FallbackDiplomacyAdapter` | keine Diplomatie-Pufferung |
+Keine. `BypassGate.isAvailable()` ersetzt alle 4 Fallback-Adapter (Phase B–E, v0.13.10).
 
 ### Package-Private Brücken (4 Dateien in `src/settlement/room/`)
 
@@ -284,7 +277,7 @@ Jede Tab-Klasse implementiert das `TabContent`-Interface, das in `EconWindowBase
 
 | Kategorie | Anzahl Dateien | Schicht |
 |---|---:|---|
-| 🟦 Vanilla Wrapper | 21 | Adapter + Brücken |
+| 🟦 Vanilla Wrapper | 18 | Adapter + Brücken |
 | 🟩 Simulation | 100 | Wirtschaftslogik |
 | 🟥 UI | 5 | 4 Fenster + Base |
 | 🟨 Entry + Benchmark | 2 | Main + Benchmark |
@@ -294,7 +287,7 @@ Diese Zahlen sind **maschinell** verifizierbar:
 ```bash
 find src -name '*.java' | wc -l                                       # 128
 ls src/vannon/syx/economy/core/*.java | wc -l                         # 100
-ls src/vannon/syx/economy/adapter/*.java | wc -l                       # 17
+ls src/vannon/syx/economy/adapter/*.java | wc -l                       # 14
 ls src/vannon/syx/economy/ui/*.java | wc -l                            # 5
 grep -rE 'class [A-Z][A-Za-z]+Tab' src/vannon/syx/economy/ui/ | wc -l  # 16
 ```

@@ -10,7 +10,7 @@
 
 ---
 
-## v0.13.9 — 2026-07-25
+## v0.13.10 — 2026-07-25
 
 ### Phase F — AI-Adapter + Cleanup (Finale)
 
