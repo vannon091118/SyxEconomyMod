@@ -10,7 +10,14 @@
 
 ---
 
-## v0.13.4 — 2026-07-25
+## v0.13.5 — 2026-07-25
+
+### Phase B — Diplomacy-Adapter auf BypassGate migriert
+
+- VanillaDiplomacyAdapter: Thin-Wrapper um BypassGate (4 Felder, auto-select VarHandle/Reflection)
+- VanillaDiplomacyAdapterMH: gelöscht (BypassGate macht auto-select)
+- FallbackDiplomacyAdapter: gelöscht (BypassGate.isAvailable() ersetzt)
+- EconomySim.createDiplomacyAdapter(): vereinfacht, kein MH-Toggle mehr
 
 ### Phase A — Bypass-SDK (adapter/seam/)
 

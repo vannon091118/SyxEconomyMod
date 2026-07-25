@@ -58,7 +58,6 @@ import vannon.syx.economy.core.ServiceMarket;
 import vannon.syx.economy.core.ServicePlanController;
 import vannon.syx.economy.core.StateWageMarket;
 import vannon.syx.economy.adapter.FallbackBoostingAdapter;
-import vannon.syx.economy.adapter.FallbackDiplomacyAdapter;
 import vannon.syx.economy.adapter.FallbackTransportAdapter;
 import vannon.syx.economy.adapter.FallbackWarehouseAdapter;
 import vannon.syx.economy.adapter.ISyxAI;
@@ -69,7 +68,6 @@ import vannon.syx.economy.adapter.ISyxWarehouse;
 import vannon.syx.economy.adapter.VanillaAIAdapter;
 import vannon.syx.economy.adapter.VanillaBoostingAdapter;
 import vannon.syx.economy.adapter.VanillaDiplomacyAdapter;
-import vannon.syx.economy.adapter.VanillaDiplomacyAdapterMH;
 import vannon.syx.economy.adapter.VanillaTransportAdapter;
 import vannon.syx.economy.adapter.VanillaTransportAdapterMH;
 import vannon.syx.economy.adapter.VanillaWarehouseAdapter;
@@ -439,8 +437,9 @@ public final class EconomySim {
     }
 
     private static ISyxDiplomacy createDiplomacyAdapter() {
-        ISyxDiplomacy diplomacy = EconConfig.useMethodHandleAdapters ? new VanillaDiplomacyAdapterMH() : new VanillaDiplomacyAdapter();
-        return diplomacy.isAvailable() ? diplomacy : new FallbackDiplomacyAdapter();
+        // Phase B: BypassGate SDK — VarHandle/Reflection auto-select, kein MH-Toggle nötig.
+        // Fallback entfällt: BypassGate.isAvailable() ersetzt FallbackDiplomacyAdapter.
+        return new VanillaDiplomacyAdapter();
     }
 
     /**
