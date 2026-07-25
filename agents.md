@@ -471,3 +471,52 @@ ist nur im Agent-Chat rekonstruierbar, nicht via git log. Stattdessen:
 **Sprint-Naming:** Wähle einen Theme-Namen (z.B. "TreasuryCrisis Reset",
 "BINDUNGSMATRIX-Canonical", "Phase-A–F SDK"). Sprint-Header in
 CHANGELOG.md nennt den Namen + die subsummierten Tasks.
+
+---
+
+## Rule 13 — Roadmap-as-Truth + Verschiebe-Verbot (verbindlich ab v0.13.31)
+
+`ROADMAP.md` ist die **alleinige Single-Source-of-Truth** für alle
+Entwicklungs-Tasks. Das gilt für Sprint-Tasks (T1, T2, …), für
+Live-Findings (B-001, B-002, …) und für jede andere Task-ID.
+
+**Verschiebe-Verbot:** Tasks werden **nicht** verschoben, postponiert,
+deferred oder als "später" / "next sprint" markiert. Stattdessen gilt
+genau einer von vier Zuständen:
+
+| Zustand | Bedeutung |
+|---|---|
+| `Planned` | Im Backlog (keinem Sprint zugeordnet), ready for Sprint-Plan |
+| `Active` | Im aktuellen Sprint, noch nicht committed |
+| `Closed (SHA)` | Implementiert, Sprint-Commit referenziert (z.B. `Closed (c1964d2)`) |
+| `Rejected (Begründung)` | Abgelehnt/obsolet, mit kurzer Begründung |
+
+`Verschoben`, `Postponed`, `Deferred`, `Spaeter`, `Next-Sprint` und
+alle Variationen sind **verboten** in ROADMAP.md und docs/BACKLOG.md.
+Der `tools/verify-doc-sync.sh` Gate grep-t diese Wörter und bricht
+bei Treffer in der Maven `validate`-Phase ab.
+
+**ID-System-Harmonisierung:** Alle Task-IDs (T- für Sprint-Tasks,
+B- für Live-Findings) werden in ROADMAP.md §Global Task Index
+konsolidiert mit:
+
+- **Datei-Ref** — `File.java:Line` (oder Pfad) wo implementiert
+- **LoC** — Aufwands-Schätzung in Lines of Code
+- **Status** — einer der vier Zustände oben
+
+Cross-Referenzen zwischen T-Tasks und B-Items werden in der Task-
+Beschreibung explizit gemacht (z.B. "T5 coverte B-001 partial").
+Doppel-Tracking in docs/BACKLOG.md ist verboten — Backlog wird auf
+**New-Findings-Only** mold-down (siehe T14.4).
+
+**Pre-Flight ID-Mapping:** Vor jedem Sprint-Plan listet der Agent
+explizit auf:
+1. Welche B-Items werden in diesem Sprint geschlossen?
+2. Welche T-Tasks gehören thematisch dazu?
+3. Welche Status-Übergänge passieren?
+
+Diese Pre-Flight-Antwort ist Teil des User-facing-Sprint-Vorschlags.
+
+**BINDUNGSMATRIX.csv ist KEINE Task-Liste** — sie ist Datenmatrix
+für Engine-Hebel-Verifikation (332 Zeilen, 11 Spalten). Beide
+Welten sind getrennt.

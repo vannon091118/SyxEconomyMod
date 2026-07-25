@@ -158,6 +158,8 @@ Eine AI-Session ist bereit zum Handoff, wenn:
 | **Ungeplanter Compile-Push** | Per-Task `mvn install` ohne Sprint-End-Validation | Mehrere potentielle Drift-Punkte, sync-gate feuert unkontrolliert | Sprint-Erlaubnis für compile nur via Sub-Phase-2-Gate |
 | **HEBELKARTE-Lurking** | HEBELKARTE.md bleibt + tools/ lesen es + SUPERSEDED-Notice | Zwei Wahrheits-Quellen, Drift possible | Sprint "HEBELKARTE-Loeschung" → tools/-Migration → file-delete |
 | **Sprint-Definition-Drift** | agents.md spricht von "Tasks", WORKFLOW.md von "Sub-Phasen", Code von "Phases" | Drei Terminologien, Reviewer verwirrt | Sprint-Vokabular canonical: Sprint > Task > Sub-Phase |
+| **Verschoben-Postponed-Token** | Tasks als "Postponed", "Deferred", "Später", "Next-Sprint" markiert statt als Planned/Active/Closed/Rejected | Versteckte Tasks, Roadmap nicht Single-Source-of-Truth, verify-doc-sync.sh bricht ab | ROADMAP.md ist SSOT: nur die 4 Zustände (Planned/Active/Closed(SHA)/Rejected(Begründung)) — agents.md Rule 13 |
+| **Backlog-as-Master-Liste** | docs/BACKLOG.md enthält Master-Task-Liste statt nur New-Findings-Inbox | Tasks doppelt in ROADMAP+BACKLOG, Drift-Risiko | BACKLOG mold-down: nur Inbox für noch-nicht-erfasste Findings, alle T-/B-IDs in ROADMAP § Global Task Index |
 
 ---
 

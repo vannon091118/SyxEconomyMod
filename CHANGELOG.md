@@ -1,6 +1,6 @@
 # SyxEconomyMod — Changelog
 
-> **Version:** v0.13.30 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-25
+> **Version:** v0.13.31 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-25
 >
 > Stam-Doku-Synchron-Anker: Die obenstehende Versions-Zeile MUSS identisch mit `pom.xml` `<version>` sein.
 > Der Sync-Gate `tools/verify-doc-sync.sh` scheitert wenn dieser Anker driftet.
@@ -10,7 +10,27 @@
 
 ---
 
-## Sprint 'Sprint-Workflow + BINDUNGSMATRIX-Canonical' — 2026-07-25
+## v0.13.31 — 2026-07-26
+
+### Sprint 3 — Roadmap-SSOT-Konsolidierung + P1-Blocker-Closure
+
+Sprint-Header per agents.md Rule 11+12: 1 Sprint = 1 atomic commit.
+
+Subsummierte Tasks (7 total):
+
+- **T14.0** — ROADMAP.md komplett rebuild als Global Task Index (kein Verschiebe-Mechanismus, LoC-Sch�tzung pro Task, Status-Schema Planned/Active/Closed(SHA)/Rejected)
+- **T14.1** — agents.md Rule 13 (NEU): Roadmap-as-Truth-Doktrin + Verschiebe-Verbot + ID-Mapping-Pre-Flight
+- **T14.2** — WORKFLOW.md Anti-Pattern erweitert: Verschoben-Postponed-Token + Backlog-as-Master-Liste
+- **T14.3** — tools/verify-doc-sync.sh erweitert: Verschieb-Wort-Grep-Watch auf verbotene Wörter
+- **T14.4** — docs/BACKLOG.md mold-down: nur New-Findings, Master-Liste in ROADMAP
+- **T14.5** — Stam-Docs-Sync 0.13.30 → 0.13.31
+- **T14.6** — CHANGELOG.md Sprint-3-Eintrag
+
+Verification: mvn verify install -DskipTests -Dskip.bump=true = BUILD SUCCESS + verify-doc-sync.sh = PASS + Code-Reviewer PUSH-GRUEN
+
+---
+
+## Sprint .Sprint-Workflow + BINDUNGSMATRIX-Canonical. — 2026-07-25
 
 ### Summary
 Globaler Switch von Task-per-Commit auf Sprint-per-Commit. BINDUNGSMATRIX.csv
