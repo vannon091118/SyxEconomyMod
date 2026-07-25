@@ -14,6 +14,7 @@ import view.keyboard.KEYS;
 import vannon.syx.economy.ui.EconWindowBase;
 import vannon.syx.economy.ui.WindowEconomy;
 import vannon.syx.economy.ui.WindowOverview;
+import vannon.syx.economy.ui.WindowQuickview;
 import vannon.syx.economy.ui.WindowState;
 
 final class InstanceScript implements SCRIPT.SCRIPT_INSTANCE {
@@ -22,12 +23,16 @@ final class InstanceScript implements SCRIPT.SCRIPT_INSTANCE {
     private final WindowOverview overview;
     private final WindowEconomy economyWindow;
     private final WindowState stateWindow;
+    private final WindowQuickview quickview;
     private final SubjectWallet subjectWallet;
+    private final SubjectJob subjectJob;
+    private final EconHud econHud;
     /** Edge detection for hotkey polling (Hk.java pattern).
      *  GLFW key codes: 334 = Numpad +, 333 = Numpad -, 332 = Numpad *, 331 = Numpad /. */
     private boolean overviewWasDown;
     private boolean economyWasDown;
     private boolean stateWasDown;
+    private boolean quickviewWasDown;
     private boolean dumpWasDown;
     private boolean escWasDown;
     /** View-change detection: compare VIEW.current() against last known class name. */
@@ -40,7 +45,10 @@ final class InstanceScript implements SCRIPT.SCRIPT_INSTANCE {
         this.overview = new WindowOverview(this.economy);
         this.economyWindow = new WindowEconomy(this.economy);
         this.stateWindow = new WindowState(this.economy);
+        this.quickview = new WindowQuickview(this.economy);
         this.subjectWallet = new SubjectWallet();
+        this.subjectJob = new SubjectJob();
+        this.econHud = new EconHud(this.overview, this.economyWindow, this.stateWindow, this.quickview);
         EconWindowBase.setSiblings(this.overview, this.economyWindow, this.stateWindow);
         DebugTracer.trace(DebugTracer.SCRP, "InstanceScript created");
     }
@@ -84,20 +92,24 @@ final class InstanceScript implements SCRIPT.SCRIPT_INSTANCE {
 
     /** Hotkey polling with edge detection (Hk.java pattern from ListMenus mod).
      *  Numpad + → Overview, Numpad - → Economy, Numpad * → State.
+     *  Numpad 0 → Quickview (compact control panel).
      *  ESC → close all open windows.
      *  Clean switching: pressing a hotkey hides all other windows first. */
     private void pollHotkeys() {
         boolean add  = CORE.getInput().getKeyboard().isPressed(334); // Numpad +
         boolean sub  = CORE.getInput().getKeyboard().isPressed(333); // Numpad -
         boolean mul  = CORE.getInput().getKeyboard().isPressed(332); // Numpad *
+        boolean num0 = CORE.getInput().getKeyboard().isPressed(320); // Numpad 0
         boolean esc  = CORE.getInput().getKeyboard().isPressed(256); // ESC
 
         if (add && !this.overviewWasDown) {
-            switchTo(this.overview, this.economyWindow, this.stateWindow);
+            switchTo(this.overview, this.economyWindow, this.stateWindow, this.quickview);
         } else if (sub && !this.economyWasDown) {
-            switchTo(this.economyWindow, this.overview, this.stateWindow);
+            switchTo(this.economyWindow, this.overview, this.stateWindow, this.quickview);
         } else if (mul && !this.stateWasDown) {
-            switchTo(this.stateWindow, this.overview, this.economyWindow);
+            switchTo(this.stateWindow, this.overview, this.economyWindow, this.quickview);
+        } else if (num0 && !this.quickviewWasDown) {
+            switchTo(this.quickview, this.overview, this.economyWindow, this.stateWindow);
         } else if (esc && !this.escWasDown) {
             closeAllWindows();
         }
@@ -106,13 +118,15 @@ final class InstanceScript implements SCRIPT.SCRIPT_INSTANCE {
         this.economyWasDown = sub;
         this.stateWasDown  = mul;
         this.escWasDown    = esc;
+        this.quickviewWasDown = num0;
     }
 
     /** Close all open economy windows. */
     private void closeAllWindows() {
-        if (overview.isShown()) overview.toggle();
-        if (economyWindow.isShown()) economyWindow.toggle();
-        if (stateWindow.isShown()) stateWindow.toggle();
+        if (overview.isShown()) overview.close();
+        if (economyWindow.isShown()) economyWindow.close();
+        if (stateWindow.isShown()) stateWindow.close();
+        if (quickview.isShown()) quickview.close();
     }
 
     /** Numpad / (GLFW_KEY_KP_DIVIDE = 331) → dump DebugTracer buffer to game log. */
@@ -142,8 +156,8 @@ final class InstanceScript implements SCRIPT.SCRIPT_INSTANCE {
 
     @Override
     public void keyPush(KEYS keys) {
-        // Hotkey handled via keyboard polling in update() (Hk.java pattern).
-        // keyPush kept as no-op to avoid double-trigger with polling.
+        // Hotkey handled via keyboard polling in update()
+        // TopBar removed — use in-window nav buttons (Übersicht|Wirtschaft|Staat) or Numpad hotkeys.
     }
 
     @Override
@@ -151,22 +165,27 @@ final class InstanceScript implements SCRIPT.SCRIPT_INSTANCE {
         if (DebugTracer.on()) {
             DebugTracer.trace(DebugTracer.SCRP, "hoverTimer t=" + (long)mouseTimer);
         }
+        this.econHud.pollHoverTimer(text);
     }
 
     @Override
     public void render(Renderer renderer, float deltaSeconds) {
         DebugTracer.traceEvery(120, DebugTracer.SCRP, "render");
         this.subjectWallet.render(renderer, deltaSeconds);
+        this.subjectJob.render(renderer, deltaSeconds);
+        this.econHud.render(renderer, deltaSeconds);
     }
 
     @Override
     public void mouseClick(MButt button) {
         DebugTracer.trace(DebugTracer.SCRP, "mouseClick btn=" + button);
+        this.econHud.pollClick(button);
     }
 
     @Override
     public void hover(COORDINATE mCoo, boolean mouseHasMoved) {
         DebugTracer.traceEvery(120, DebugTracer.SCRP, "hover x=" + mCoo.x() + " y=" + mCoo.y());
+        this.econHud.pollHover(mCoo, null);
     }
 
     @Override

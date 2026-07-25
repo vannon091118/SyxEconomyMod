@@ -2,6 +2,7 @@ package vannon.syx.economy.core;
 
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import snake2d.LOG;
 
 /**
  * v0.1.3 (Phase-4.7-Blocker #8) — Save/Load-Schutznetz für Karten mit
@@ -48,9 +49,9 @@ public final class IdentityMapRegistry {
         for (Registered r : entries) {
             try {
                 r.clearer().run();
-                System.err.println("[ECON] IdentityMapRegistry: cleared " + tag(r) + " on " + triggerReason);
+                LOG.ln("[ECON] IdentityMapRegistry: cleared " + tag(r) + " on " + triggerReason);
             } catch (RuntimeException t) {
-                System.err.println("[ECON] IdentityMapRegistry: failed to clear " + tag(r) + " — " + t.getMessage());
+                LOG.ln("[ECON] IdentityMapRegistry: failed to clear " + tag(r) + " — " + t.getMessage());
             }
         }
     }

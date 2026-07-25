@@ -2,312 +2,298 @@ package vannon.syx.economy.ui;
 
 import init.constant.C;
 import init.sprite.UI.UI;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import snake2d.CORE;
-import snake2d.LOG;
-import snake2d.MButt;
-import snake2d.Renderer;
+import snake2d.SPRITE_RENDERER;
 import snake2d.util.color.COLOR;
-import snake2d.util.datatypes.COORDINATE;
-import util.gui.misc.GBox;
+import snake2d.util.datatypes.Rec;
+import snake2d.util.gui.GuiSection;
+import snake2d.util.gui.renderable.RENDEROBJ;
+import snake2d.util.misc.ACTION;
+import snake2d.util.sprite.SPRITE;
+import util.colors.GCOLOR;
+import util.gui.misc.GButt;
 import util.gui.misc.GText;
-import vannon.syx.economy.core.DebugTracer;
+import util.gui.panel.GPanel;
+import view.interrupter.InterGuisection;
+import view.interrupter.InterManager;
+import vannon.syx.economy.core.CompactNumber;
 import vannon.syx.economy.core.EconomySim;
-import view.interrupter.Interrupter;
 
-public abstract class EconWindowBase extends Interrupter {
+/**
+ * Vanilla-Komponenten-basierte Basis für alle Economy-Fenster.
+ * Unterstützt 1–3 Tabs via {@link TabContent}. Fenster ohne Tabs
+ * überschreiben einfach {@link #build(GPanel, GuiSection)} direkt.
+ */
+public abstract class EconWindowBase {
+
     protected final EconomySim sim;
-    private final List<EconTab> tabs = new ArrayList<>();
-    private final Map<String, Object> state = new HashMap<>();
-    private boolean pendingClick = false;
-    private MButt pendingButton = null;
-    private int activeTab = 0;
-    private int x, y, w, h;
-    private boolean shown = false;
-    /** Tracks hover state changes for DebugTracer — avoids logging every frame. */
-    private boolean wasHovered = false;
 
-    // ─── Window switcher (static cross-window references) ─────────────────
-    private static EconWindowBase winOverview, winEconomy, winState;
+    private static EconWindowBase winOverview;
+    private static EconWindowBase winEconomy;
+    private static EconWindowBase winState;
 
-    /** Called once by InstanceScript after all three windows are constructed. */
     public static void setSiblings(EconWindowBase overview, EconWindowBase economy, EconWindowBase state) {
         winOverview = overview;
         winEconomy = economy;
         winState = state;
     }
 
-    private final GText titleText;
-    private final GText tabLabelText;
-    private final GText kpiText;
+    private InterGuisection inter;
+    private int activeTab = 0;
+
+    /** Interface for tab-based content. Implement in inner classes. */
+    public interface TabContent {
+        CharSequence title();
+        void build(EconomySim sim, GuiSection content, int x, int y, int w, int h);
+    }
 
     protected EconWindowBase(EconomySim sim) {
         this.sim = sim;
-        this.titleText = new GText(UI.FONT().M, 128);
-        this.tabLabelText = new GText(UI.FONT().S, 64);
-        this.kpiText = new GText(UI.FONT().S, 128);
-        lastSet(); // Render über allen anderen Interruptern (addLast statt addFirst)
     }
 
-    public final boolean isShown() {
-        return this.shown;
-    }
-
-    @Override
-    protected void deactivateAction() {
-        DebugTracer.trace(DebugTracer.INTR, windowTitle() + ".deactivate");
-        this.shown = false;
-    }
-
-    protected final void addTab(EconTab tab) {
-        this.tabs.add(tab);
-    }
-
-    @Override
-    public final boolean hover(COORDINATE mCoo, boolean mouseHasMoved) {
-        if (!this.shown) return false;
-        computeWindowBounds();
-        int mx = mCoo.x();
-        int my = mCoo.y();
-        boolean now = mx >= x && mx <= x + w && my >= y && my <= y + h;
-        if (DebugTracer.on() && now != this.wasHovered) {
-            DebugTracer.trace(DebugTracer.INTR, windowTitle() + ".hover=" + now);
-            this.wasHovered = now;
-        }
-        return now;
-    }
-
-    @Override
-    public final void mouseClick(MButt button) {
-        DebugTracer.trace(DebugTracer.INTR, windowTitle() + ".mouseClick btn=" + button);
-        this.pendingClick = true;
-        this.pendingButton = button;
-    }
-
-    @Override
-    public final boolean otherClick(MButt button) {
-        // Wenn das Fenster sichtbar ist, alle externen Klicks konsumieren
-        // damit der Spieler nicht versehentlich auf die Welt klickt.
-        if (DebugTracer.on() && this.shown) {
-            DebugTracer.trace(DebugTracer.INTR, windowTitle() + ".otherClick consumed");
-        }
-        return this.shown;
-    }
-
-    @Override
-    public final void hoverTimer(GBox text) {
-        // Tooltip rendering can be hooked here if needed.
-    }
-
-    @Override
-    public final boolean update(float ds) {
-        // false = View-Update blockieren (Spiel pausiert).
-        // Vanilla InterManager.update() iteriert OHNE break über alle Interrupter
-        // und setzt ret=false wenn IRGENDEIN Interrupter false returned.
-        // Erst danach entscheidet VIEW.update(): true → current.update(ds, true),
-        // false → current.update(ds, false). Andere Interrupter werden NICHT blockiert.
-        DebugTracer.traceEvery(300, DebugTracer.INTR, windowTitle() + ".update shown=" + this.shown);
-        return false;
-    }
-
-    /** Toggle this window on the current view's InterManager.
-     *  <p>
-     *  View-switch safety: Vanilla does NOT clear uiManager on view switch.
-     *  If this Interrupter was shown on a previous view, {@code isActivated()}
-     *  still returns true because {@code addManager} is still set. We explicitly
-     *  call {@code hide()} to remove it from the stale manager before showing
-     *  it on the current view's manager. */
+    /** Toggles the window open/closed. Preserves activeTab for tab switching. */
     public void toggle() {
-        DebugTracer.trace(DebugTracer.ECON, windowTitle() + ".toggle shown=" + this.shown);
-        if (this.shown) {
-            hide();
-            this.shown = false;                       // explizit (auch wenn deactivateAction es setzt)
+        if (isShown()) {
+            close();
         } else {
-            if (isActivated()) hide();                // aus altem Manager entfernen
-            view.main.VIEW.ViewSubSimple current = view.main.VIEW.current();
-            if (current != null) {
-                if (current.uiManager != null) {
-                    this.shown = show(current.uiManager);
-                    DebugTracer.trace(DebugTracer.INTR, windowTitle() + ".show ok=" + this.shown);
-                } else {
-                    LOG.ln("[ECONOMY MOD] toggle() failed: VIEW.current().uiManager is null");
+            InterManager manager = currentManager();
+            if (manager == null) return;
+            inter = new InterGuisection(manager);
+
+            GPanel panel = new GPanel();
+            panel.setTitle(title());
+            panel.setCloseAction(new ACTION() {
+                @Override
+                public void exe() {
+                    close();
                 }
-            } else {
-                LOG.ln("[ECONOMY MOD] toggle() failed: VIEW.current() is null");
-            }
+            });
+
+            GuiSection content = new GuiSection();
+            build(panel, content);
+
+            GuiSection root = new GuiSection() {
+                @Override
+                public void render(SPRITE_RENDERER r, float ds) {
+                    Rec inner = panel.inner();
+                    GCOLOR.UI().panBG.render(r, inner.x1(), inner.x2(), inner.y1(), inner.y2());
+                    GCOLOR.UI().borderH(r, inner, 0);
+                    super.render(r, ds);
+                }
+            };
+            root.add(panel, 0, 0);
+            root.add(content, panel.inner().x1(), panel.inner().y1());
+
+            position(root);
+            inter.activate(root);
         }
     }
 
-    @Override
-    public final boolean render(Renderer renderer, float ds) {
-        // InterManager: if (!i.render(r, ds)) return false → false = Welt blockieren.
-        // Wenn das Fenster nicht sichtbar ist, durchlassen damit die Welt rendert.
-        if (!this.shown) return true;
-
-        computeWindowBounds();
-        int mx = CORE.getInput().getMouse().getCoo().x();
-        int my = CORE.getInput().getMouse().getCoo().y();
-        EconContext ctx = buildContext(renderer, ds, mx, my);
-
-        // Tab bar click handling (IMGUI)
-        handleTabBarClick(ctx);
-
-        renderWindow(ctx);
-
-        // Remaining click goes to the active tab
-        if (ctx.clicked && this.activeTab < this.tabs.size()) {
-            this.tabs.get(this.activeTab).click(ctx, this.pendingButton != null ? this.pendingButton : MButt.LEFT);
-        }
-
-        // Hover/tooltip handling after rendering so overlays stay on top
-        if (this.activeTab < this.tabs.size()) {
-            this.tabs.get(this.activeTab).hover(ctx);
-        }
-
-        // End of frame: reset transient click state
-        this.pendingClick = false;
-        this.pendingButton = null;
-        DebugTracer.traceEvery(60, DebugTracer.INTR, windowTitle() + ".render shown=true");
-        return false;
-    }
-
-    private void computeWindowBounds() {
-        this.x = (int) (C.WIDTH() * 0.1);
-        this.y = (int) (C.HEIGHT() * 0.1);
-        this.w = (int) (C.WIDTH() * 0.8);
-        this.h = (int) (C.HEIGHT() * 0.8);
-    }
-
-    private void handleTabBarClick(EconContext ctx) {
-        if (!ctx.clicked || this.tabs.isEmpty()) {
-            return;
-        }
-        int tabX = this.x + 8;
-        int tabY = this.y + 28;
-        if (ctx.mouseY < tabY || ctx.mouseY > tabY + 20) {
-            return;
-        }
-        for (int i = 0; i < this.tabs.size(); i++) {
-            int tw = 90;
-            if (ctx.mouseX >= tabX + i * tw && ctx.mouseX <= tabX + (i + 1) * tw) {
-                if (i == this.activeTab) return;   // kein Re-Open des aktiven Tabs
-                this.activeTab = i;
-                this.tabs.get(i).onOpen();
-                ctx.consumeClick();
-                return;
-            }
+    /** Closes the window if open. */
+    public void close() {
+        if (inter != null) {
+            inter.close();
+            inter = null;
         }
     }
 
-    private EconContext buildContext(Renderer renderer, float ds, int mx, int my) {
-        return new EconContext(
-            renderer,
-            this.sim,
-            ds,
-            mx, my,
-            MButt.LEFT.isDown(),
-            this.pendingClick,
-            this.x, this.y, this.w, this.h,
-            this.state);
+    /** True if this window is currently active/open. */
+    public boolean isShown() {
+        return inter != null && inter.current() != null;
     }
 
-    private void renderWindow(EconContext ctx) {
-        // Semi-transparent dark background (world visible underneath)
-        COLOR.WHITE10.render(ctx.renderer, this.x, this.x + this.w, this.y, this.y + this.h);
-        // 4-sided border
-        COLOR.WHITE100.render(ctx.renderer, this.x, this.x + this.w, this.y, this.y + 2);
-        COLOR.WHITE35.render(ctx.renderer, this.x, this.x + this.w, this.y + this.h - 2, this.y + this.h);
-        COLOR.WHITE35.render(ctx.renderer, this.x, this.x + 2, this.y, this.y + this.h);
-        COLOR.WHITE35.render(ctx.renderer, this.x + this.w - 2, this.x + this.w, this.y, this.y + this.h);
+    private InterManager currentManager() {
+        try {
+            return view.main.VIEW.current().uiManager;
+        } catch (Exception e) {
+            return null;
+        }
+    }
 
-        // Title (left side)
-        titleText.clear();
-        titleText.add(windowTitle());
-        titleText.color(COLOR.WHITE100);
-        titleText.render(ctx.renderer, this.x + 8, this.x + 200, this.y + 6, this.y + 24);
+    /** Override to position the root section; default centers on screen.
+     *  snake2d {@link Rec#centerIn} takes (left, right, top, bottom). An older call
+     *  passed (0, 0, WIDTH(), HEIGHT()) — degenerate X-range + off-screen Y-range —
+     *  which placed the panel at a negative-X / below-screen position invisible to
+     *  the player. Quickview bypasses this by overriding position(). */
+    protected void position(GuiSection root) {
+        Rec b = (Rec) root.body();
+        b.centerIn(0, C.WIDTH(), 0, C.HEIGHT());
+    }
 
-        // Window-switcher buttons (right side of title bar)
-        int swX = this.x + this.w - 310;
-        int swY = this.y + 6;
-        renderWindowSwitcher(ctx, swX, swY);
-        handleWindowSwitcherClick(ctx, swX, swY);
+    /** Window title shown in the GPanel header. */
+    protected abstract CharSequence title();
+
+    /**
+     * Build the panel content. Default implementation renders tabs if
+     * {@link #tabs()} returns a non-empty array; subclasses can override
+     * for non-tabbed windows.
+     */
+    protected void build(GPanel background, GuiSection content) {
+        int panelW = panelWidth();
+        int panelH = panelHeight();
+        background.setDim(panelW, panelH);
+
+        TabContent[] tabs = tabs();
+        if (tabs == null || tabs.length == 0) return;
+
+        int innerW = panelW - 24;
+
+        // Tab bar layout constants (used by both nav strip and tab bar)
+        int tabY = 6;
+        int tabH = 22;
+        int tabGap = 4;
+
+        // ── Navigation strip (top-right, below tab bar) ───────
+        int navY = tabY + tabH + 4;
+        int navGap = 4;
+        String[] navLabels = {"Uebersicht", "Wirtschaft", "Staat"};
+        EconWindowBase[] navTargets = {winOverview, winEconomy, winState};
+        int navX = panelW - 12;
+        for (int i = navLabels.length - 1; i >= 0; i--) {
+            if (navTargets[i] == null || navTargets[i] == this) continue;
+            final EconWindowBase target = navTargets[i];
+            GButt.ButtPanel navBtn = new GButt.ButtPanel(navLabels[i], 80);
+            navBtn.hoverInfoSet("Oeffne " + navLabels[i] + "-Fenster");
+            navBtn.clickActionSet(new ACTION() {
+                @Override public void exe() { target.toggle(); }
+            });
+            content.add(navBtn, navX - 80 - navGap, navY);
+            navX -= (80 + navGap);
+        }
 
         // Tab bar
-        int tabX = this.x + 8;
-        int tabY = this.y + 28;
-        for (int i = 0; i < this.tabs.size(); i++) {
-            COLOR c = (i == this.activeTab) ? COLOR.WHITE100 : COLOR.WHITE35;
-            c.render(ctx.renderer, tabX + i * 90, tabX + (i + 1) * 90 - 4, tabY, tabY + 20);
-            tabLabelText.clear();
-            tabLabelText.add(this.tabs.get(i).title());
-            tabLabelText.color(COLOR.WHITE200);
-            tabLabelText.render(ctx.renderer, tabX + i * 90 + 4, tabX + (i + 1) * 90 - 8, tabY + 2, tabY + 18);
-        }
-
-        // KPI header — skip when the active tab draws its own landing surface.
-        int kpiY = tabY + 24;
-        if (this.activeTab < this.tabs.size() && !this.tabs.get(this.activeTab).drawsOwnHeader()) {
-            renderKpiHeader(ctx, this.x + 8, kpiY, this.w - 16);
-        } else {
-            // The tab paints its own header; advance kpiY by the same amount so
-            // yStart handed to render() respects the original layout.
-            kpiY += 16;
-        }
-
-        // Tab content
-        if (this.activeTab < this.tabs.size()) {
-            // yStart is "first drawable y below the KPI header". Tabs that
-            // draw their own header (drawsOwnHeader()) reserve the same vertical
-            // band so the coordinates line up across all tabs.
-            int yStart = this.tabs.get(this.activeTab).drawsOwnHeader() ? kpiY + 4 : kpiY + 32;
-            this.tabs.get(this.activeTab).render(ctx, yStart);
-        }
-    }
-
-    /** Render three window-switching buttons in the title bar. */
-    private void renderWindowSwitcher(EconContext ctx, int x, int y) {
-        String[] labels = {"Übersicht", "Wirtschaft", "Staat"};
-        EconWindowBase[] wins = {winOverview, winEconomy, winState};
-        for (int i = 0; i < 3; i++) {
-            int bx = x + i * 102;
-            boolean active = (wins[i] == this);
-            COLOR bg = active ? COLOR.WHITE35 : COLOR.WHITE15;
-            bg.render(ctx.renderer, bx, bx + 98, y, y + 18);
-            tabLabelText.clear();
-            tabLabelText.add(labels[i]);
-            tabLabelText.color(active ? COLOR.WHITE200 : COLOR.WHITE100);
-            tabLabelText.render(ctx.renderer, bx + 4, bx + 94, y + 2, y + 16);
-        }
-    }
-
-    /** Handle clicks on window-switcher buttons. */
-    private void handleWindowSwitcherClick(EconContext ctx, int x, int y) {
-        if (!ctx.clicked || ctx.mouseY < y || ctx.mouseY > y + 18) return;
-        EconWindowBase[] wins = {winOverview, winEconomy, winState};
-        for (int i = 0; i < 3; i++) {
-            int bx = x + i * 102;
-            if (ctx.mouseX >= bx && ctx.mouseX <= bx + 98) {
-                EconWindowBase target = wins[i];
-                if (target == null || target == this) return;
-                ctx.consumeClick();
-                hide();
-                this.shown = false;
-                if (!target.isShown()) target.toggle();
-                return;
+        int tabX = 12;
+        for (int i = 0; i < tabs.length; i++) {
+            final int idx = i;
+            GText label = new GText(UI.FONT().S, 64);
+            label.clear().add(tabs[i].title());
+            // Minimum 120px wide — prevents truncation of labels like "Demografie", "Soziales"
+            int tw = Math.max(120, label.width() + 28);
+            boolean active = (i == this.activeTab);
+            GButt.ButtPanel tabBtn = new GButt.ButtPanel(tabs[i].title(), tw);
+            tabBtn.hoverInfoSet(tabs[i].title());
+            tabBtn.clickActionSet(new ACTION() {
+                @Override
+                public void exe() {
+                    activeTab = idx;
+                    close();
+                    toggle();
+                }
+            });
+            if (active) {
+                tabBtn.selectedSet(true);
             }
+            content.add(tabBtn, tabX, tabY);
+            tabX += tw + tabGap;
         }
+
+        // Active tab content
+        int contentY = tabY + tabH + 8;
+        int contentH = panelH - contentY - 8;
+        tabs[this.activeTab].build(this.sim, content, 12, contentY, innerW, contentH);
     }
 
-    protected void renderKpiHeader(EconContext ctx, int x, int y, int w) {
-        // Default KPI header: treasury, gini, stage.
-        kpiText.clear();
-        kpiText.add("Treasury: ").add(sim.treasury()).add(" | Gini: ").add(String.format("%.2f", sim.stats().gini)).add(" | Stage: ").add(sim.progression().stage.displayName);
-        kpiText.color(COLOR.WHITE150);
-        kpiText.render(ctx.renderer, x, x + w, y, y + 16);
+    /** Override to provide tabs. Default: null (no tabs). */
+    protected TabContent[] tabs() {
+        return null;
     }
 
-    protected abstract CharSequence windowTitle();
+    /** Override for window width. Default: 780. */
+    protected int panelWidth() {
+        return 780;
+    }
+
+    /** Override for window height. Default: 520. */
+    protected int panelHeight() {
+        return 520;
+    }
+
+    // ─── Shared widget helpers ───────────────────────────────────────
+
+    /** KPI label+value pair. Label in UI.FONT().S, value in UI.FONT().M. */
+    protected static void addKpi(GuiSection section, int x, int y, String label, String value, COLOR valueColor) {
+        GText lbl = new GText(UI.FONT().S, 128);
+        lbl.set(label);
+        lbl.color(GCOLOR.T().NORMAL);
+        section.add(lbl, x, y);
+
+        GText val = new GText(UI.FONT().M, 128);
+        val.set(value);
+        val.color(valueColor);
+        section.add(val, x, y + 14);
+    }
+
+    /** KPI with a leading vanilla icon. Icon renders at (x, y+2), label + value shift right by 28px. */
+    protected static void addKpi(GuiSection section, int x, int y, SPRITE icon, String label, String value, COLOR valueColor) {
+        section.add(new RENDEROBJ.Sprite(icon), x, y + 2);
+        GText lbl = new GText(UI.FONT().S, 128);
+        lbl.set(label);
+        lbl.color(GCOLOR.T().NORMAL);
+        section.add(lbl, x + 28, y);
+
+        GText val = new GText(UI.FONT().M, 128);
+        val.set(value);
+        val.color(valueColor);
+        section.add(val, x + 28, y + 14);
+    }
+
+    /** Visual slider: [-] button + bar + value + [+] button. Denari suffix.
+     *  Bar uses ASCII # and - (safe for game's bitmap font). */
+    protected static void addSlider(GuiSection section, int x, int y,
+                                     String label, int current, int min, int max, int step,
+                                     ACTION plusAction, ACTION minusAction) {
+        addSlider(section, x, y, label, current, min, max, step, plusAction, minusAction, " D");
+    }
+
+    /** Visual slider with custom value suffix (e.g. "%", " D", ""). */
+    protected static void addSlider(GuiSection section, int x, int y,
+                                     String label, int current, int min, int max, int step,
+                                     ACTION plusAction, ACTION minusAction, String suffix) {
+        GText lbl = new GText(UI.FONT().S, 128);
+        lbl.set(label);
+        lbl.color(GCOLOR.T().NORMAL);
+        section.add(lbl, x, y);
+
+        GButt.ButtPanel minus = new GButt.ButtPanel("-", 24);
+        minus.clickActionSet(minusAction);
+        minus.hoverInfoSet(label + " senken");
+        section.add(minus, x, y + 14);
+
+        double ratio = max > min ? (double)(current - min) / (double)(max - min) : 0;
+        int filled = Math.max(0, Math.min(10, (int)(ratio * 10)));
+        StringBuilder barStr = new StringBuilder();
+        for (int i = 0; i < 10; i++) barStr.append(i < filled ? '#' : '-');
+        COLOR barColor = filled >= 8 ? GCOLOR.UI().GOOD.normal : filled >= 4 ? GCOLOR.UI().SOSO.normal : filled > 0 ? GCOLOR.UI().BAD.normal : GCOLOR.T().INACTIVE;
+
+        GText bar = new GText(UI.FONT().M, 32);
+        bar.set(barStr.toString());
+        bar.color(barColor);
+        section.add(bar, x + 32, y + 16);
+
+        GText val = new GText(UI.FONT().M, 64);
+        val.set(CompactNumber.format(current) + suffix);
+        val.color(GCOLOR.T().NORMAL);
+        section.add(val, x + 120, y + 16);
+
+        GButt.ButtPanel plus = new GButt.ButtPanel("+", 24);
+        plus.clickActionSet(plusAction);
+        plus.hoverInfoSet(label + " erhöhen");
+        section.add(plus, x + 200, y + 14);
+    }
+
+    /** Column header in UI.FONT().S for table layouts. */
+    protected static void addColHeader(GuiSection section, int x, int y, String label, int w) {
+        GText hdr = new GText(UI.FONT().S, 64);
+        hdr.set(label);
+        hdr.color(GCOLOR.T().NORMAL);
+        section.add(hdr, x, y);
+    }
+
+    // ─── Switcher helpers (unused by quickview) ──────────────────────
+
+    /** Returns the overview window reference (for switcher buttons). */
+    protected static EconWindowBase winOverview() { return winOverview; }
+    /** Returns the economy window reference. */
+    protected static EconWindowBase winEconomy() { return winEconomy; }
+    /** Returns the state window reference. */
+    protected static EconWindowBase winState() { return winState; }
 }
