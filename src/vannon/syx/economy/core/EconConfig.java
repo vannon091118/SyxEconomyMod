@@ -399,17 +399,6 @@ public final class EconConfig {
     public static boolean diagnosticsExportEnabled = false;
 
     /**
-     * Aktiviert MethodHandle/VarHandle-basierte Adapter statt
-     * java.lang.reflect.* für 3–6× Speedup auf JDK 21+.
-     *
-     * <p>Seit v0.13.3 per Default aktiv. Die Runtime ist Java 16+,
-     * selber ClassLoader, unnamed module — VarHandle funktioniert
-     * ohne --add-opens. Die READY-Logs im EventLog bestätigen
-     * die erfolgreiche Init bei jedem Spielstart.</p>
-     */
-    public static boolean useMethodHandleAdapters = true;
-
-    /**
      * Schreibt pro Tick die Carpenter/Möbel-Firma-Diagnose nach
      * {@code ~/.local/share/songsofsyx/mods/SyxEconomyMod/diagnostics/furniture_debug.csv}.
      * Diagnostiziert ob employed_target &gt; 0 und ob das out-Resource richtig gemappt

@@ -1,6 +1,6 @@
 # SyxEconomyMod — Entwicklung & Roadmap
 
-> **Version:** v0.13.8 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-25
+> **Version:** v0.13.9 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-25
 >
 > Stam-Doku-Synchron-Anker: Die obenstehende Versions-Zeile MUSS identisch mit `pom.xml` `<version>` sein.
 > Der Sync-Gate `tools/verify-doc-sync.sh` validiert dies vor jedem `mvn compile`.
@@ -40,7 +40,14 @@ Severity: 🔴 P0 = Crash/Datenverlust · 🟠 P1 = broken feature · 🟡 P2 = 
 
 ---
 
-## Phase A: Bypass-SDK — ✅ DONE (v0.13.4)
+## Phase A–F: Bypass-SDK + Adapter-Migration — ✅ DONE (v0.13.8)
+
+- **Phase A:** BypassGate SDK (4 Dateien in adapter/seam/)
+- **Phase B–F:** Alle 5 Adapter migriert, 4 Fallbacks gelöscht, 3 MH-Varianten gelöscht
+- **Cleanup:** EconConfig.useMethodHandleAdapters gelöscht, EconomySim-Imports bereinigt
+- **Final:** 14 Dateien (10 adapter + 4 seam), alle Gates grün
+
+### Archiviert: Phase A Detail (v0.13.4)
 
 - `adapter/seam/BypassGate.java` — Zentraler Entry-Point (MethodHandles.Lookup, typisierte Factories)
 - `adapter/seam/FieldAccessor.java` — IntField, DoubleField, FloatField, RefField<T> mit getStatic/setStatic

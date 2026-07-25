@@ -10,27 +10,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 /**
- * Standalone Microbenchmark der 5 Vanilla*Adapter-Reflection-Pfade.
+ * Standalone Microbenchmark der BypassGate-SDK-Zugriffspfade.
  *
- * <p><b>Warum kein JMH/JUnit:</b> Dieses Projekt nutzt {@code <sourceDirectory>src</sourceDirectory>}
- * (kein Standard-Maven-Layout). JMH benötigt Annotation-Processing + separate
- * Test-Source-Roots, was mit dieser Konfiguration nicht kompiliert. Stattdessen
- * manuelles nanoTime-Timing mit Warmup-Phase — liefert dieselben Metriken
- * (Mean/P99/JIT-Warmup) ohne externe Abhängigkeiten.</p>
- *
- * <p>Misst Mean/P99/P99.9-Latenz (ns), Allokationen (MB/s), und JIT-Warmup-Charakteristik
- * für jeden Reflection-Operationstyp der 5 Adapter. Vergleicht Reflection mit
- * {@link MethodHandle} / {@link VarHandle} für die Hot-Pfade.</p>
- *
- * <h3>Adapter-Reflection-Matrix</h3>
- * <table>
- *   <tr><th>Adapter</th><th>Konstruktor (1×)</th><th>Runtime (heiß)</th><th>Frequenz</th></tr>
- *   <tr><td>VanillaAIAdapter</td><td>6× Class.forName</td><td>Class.isInstance()</td><td>pro Bürger/Tick ★★★</td></tr>
- *   <tr><td>VanillaTransportAdapter</td><td>Class.forName + Field</td><td>Field.getFloat()</td><td>pro Transport ★★</td></tr>
- *   <tr><td>VanillaWarehouseAdapter</td><td>getDeclaredMethod</td><td>Method.invoke()</td><td>pro Toggle ★</td></tr>
- *   <tr><td>VanillaBoostingAdapter</td><td>getDeclaredFields-Iteration</td><td>— (gecached)</td><td>—</td></tr>
- *   <tr><td>VanillaDiplomacyAdapter</td><td>5× getDeclaredField</td><td>get/setDouble/setInt</td><td>pro Diplo-Tick ★★</td></tr>
- * </table>
+ * <p>Seit Phase F (v0.13.8) nutzen alle 5 Adapter den BypassGate-SDK
+ * ({@code adapter/seam/}) mit auto-select VarHandle/MethodHandle vs. Reflection.
+ * Dieser Benchmark misst die zugrundeliegenden Zugriffsmuster.</p>
  *
  * <h3>Ausführung</h3>
  * <pre>
@@ -134,7 +118,7 @@ public final class AdapterReflectionBenchmark {
     public static void main(String[] args) throws Throwable {
         System.out.println();
         System.out.println("═══════════════════════════════════════════════════════════════════");
-        System.out.println("  SyxEconomyMod — Adapter Reflection Benchmark (Phase 4)");
+        System.out.println("  SyxEconomyMod — BypassGate SDK Benchmark (Phase F)");
         System.out.println("  Java: " + System.getProperty("java.version")
                 + " | VM: " + System.getProperty("java.vm.name"));
         System.out.println("  Warmup: " + WARMUP_ITERS + " calls | Measure: " + MEASURE_ITERS + " calls");
@@ -332,13 +316,9 @@ public final class AdapterReflectionBenchmark {
         System.out.println("    Method.invoke(boolean)     ~8-12 ns (MH: ~2-3 ns, 3-5× Speedup)");
         System.out.println();
         System.out.println("  EMPFEHLUNG:");
-        System.out.println("    ★★★ VanillaAIAdapter:     isInstance ist bereits schnell (C2 intrinsified).");
-        System.out.println("                               Umstellung auf MH bringt <30% — nicht lohnend.");
-        System.out.println("    ★★  VanillaTransportAdapter: Field.getFloat → VarHandle lohnt sich (3-5×).");
-        System.out.println("    ★   VanillaWarehouseAdapter: Method.invoke → MH lohnt sich (3-5×).");
-        System.out.println("                               Aber niedrige Frequenz → geringer Gesamtgewinn.");
-        System.out.println("    ★★  VanillaDiplomacyAdapter: Field.get/setDouble/setInt → VarHandle lohnt sich.");
-        System.out.println("    —   VanillaBoostingAdapter:  Kein Hot-Path (gecached) → keine Änderung nötig.");
+        System.out.println("    Alle 5 Adapter nutzen jetzt BypassGate-SDK (auto-select VarHandle/MethodHandle).");
+        System.out.println("    EconConfig.useMethodHandleAdapters wurde gelöscht (Phase F).");
+        System.out.println("    Dieser Benchmark dient als Referenz für zukünftige Engine-Updates.");
         System.out.println();
         System.out.println("═══════════════════════════════════════════════════════════════════");
         System.out.println();

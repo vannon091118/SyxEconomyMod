@@ -10,7 +10,15 @@
 
 ---
 
-## v0.13.8 — 2026-07-25
+## v0.13.9 — 2026-07-25
+
+### Phase F — AI-Adapter + Cleanup (Finale)
+
+- VanillaAIAdapter: ClassResolver für 6 package-private Plan-Klassen
+- EconConfig.useMethodHandleAdapters: gelöscht (alle Adapter auto-select)
+- EconomySim: Imports bereinigt, keine MH-/Fallback-Referenzen mehr
+- AdapterReflectionBenchmark: auf BypassGate-API aktualisiert
+- ARCHITECTURE.md: finale Datei-Zahl 14 (10 adapter + 4 seam)
 
 ### Phase E — Boosting-Adapter auf BypassGate migriert
 
