@@ -663,7 +663,7 @@ public final class FirmLedger {
                     int maxEmp = room.employees().max();
                     int hardTarget = room.employees().hardTarget();
                     int marketTarget = s.targetInitialized ? s.marketTarget : 0;
-                    double day = gameSeconds / Math.max(1.0, TIME.secondsPerDay());
+                    double day = (double) ticks / EconConfig.DEFAULT_TICKS_PER_DAY;
                     String inKey = "";
                     double inRate = 0.0;
                     int inConsumed = 0;

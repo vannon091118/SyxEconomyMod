@@ -165,9 +165,9 @@ final class InstanceScript implements SCRIPT.SCRIPT_INSTANCE {
 
     @Override
     public void hoverTimer(double mouseTimer, GBox text) {
-        if (DebugTracer.on()) {
-            DebugTracer.trace(DebugTracer.SCRP, "hoverTimer t=" + (long)mouseTimer);
-        }
+        // Trace only every 120th frame (matching render/hover sampling) to prevent
+        // hoverTimer from filling the 8192-event buffer with idle noise.
+        DebugTracer.traceEvery(120, DebugTracer.SCRP, "hoverTimer t=" + (long)mouseTimer);
         this.econHud.pollHoverTimer(text);
     }
 
