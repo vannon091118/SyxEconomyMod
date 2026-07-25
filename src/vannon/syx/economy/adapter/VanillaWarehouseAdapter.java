@@ -1,61 +1,64 @@
 package vannon.syx.economy.adapter;
 
-import java.lang.reflect.Method;
 import settlement.room.infra.stockpile.StockpileInstance;
+import vannon.syx.economy.adapter.seam.BypassGate;
+import vannon.syx.economy.adapter.seam.MethodAccessor;
 import vannon.syx.economy.core.EventLog;
 
 /**
- * V71.44-Adapter: ruft die private Methode {@code storingSet(boolean)} der
- * {@code StockpileInstance} per Reflection auf. Ein Fehlschlag führt zu
- * {@link FallbackWarehouseAdapter} (vom Aufrufer zu prüfen via
- * {@link #isStoringLockAvailable()}).
+ * V71.44-Adapter powered by {@link BypassGate}: ruft die private Methode
+ * {@code storingSet(boolean)} der {@code StockpileInstance} per MethodHandle
+ * (primär) mit Reflection-Fallback auf.
  *
- * <p>One-Shot-Guards verhindern EventLog-Spam. Runtime-Fehler setzen
- * {@code available} dauerhaft auf false, damit Folge-Aufrufe ohne
- * Reflection-Crash zum No-Op-Pfad wechseln.</p>
+ * <p>Der BypassGate wählt automatisch die schnellste verfügbare Zugriffsstrategie
+ * (MethodHandle auf JDK 21+, sonst Reflection). Kein manueller MH-Toggle nötig.</p>
  */
 public final class VanillaWarehouseAdapter implements ISyxWarehouse {
 
     private static final String STORING_SET_METHOD = "storingSet";
 
-    private Method storingSetMethod;
-    private boolean available;
-    private boolean initFailedLogged;
+    private final MethodAccessor.VoidMethod storingSet;
+    private final boolean initOk;
+
+    private boolean runtimeFailed;
     private boolean runtimeFailedLogged;
 
     public VanillaWarehouseAdapter() {
-        this.storingSetMethod = null;
-        this.available = false;
+        BypassGate gate = new BypassGate("VanillaWarehouseAdapter");
+        MethodAccessor.VoidMethod method = null;
+        boolean ok = false;
         try {
-            this.storingSetMethod = StockpileInstance.class.getDeclaredMethod(STORING_SET_METHOD, boolean.class);
-            this.storingSetMethod.setAccessible(true);
-            this.available = true;
-            EventLog.log("SEAM", "VanillaWarehouseAdapter: READY (storingSet-Methode)");
+            method = gate.voidMethod(StockpileInstance.class, STORING_SET_METHOD, boolean.class);
+            ok = gate.isAvailable();
         } catch (Throwable t) {
-            this.available = false;
-            if (!this.initFailedLogged) {
-                this.initFailedLogged = true;
-                EventLog.log("SEAM", "VanillaWarehouseAdapter init failed — "
-                        + t.getClass().getSimpleName() + ": " + t.getMessage()
-                        + ". Staatslager-Sperre ist nur Pricing-Lock (Merchants beachten Sell-Preis).");
-            }
+            ok = false;
+            EventLog.log("SEAM", "VanillaWarehouseAdapter init failed — "
+                    + t.getClass().getSimpleName() + ": " + t.getMessage()
+                    + ". Staatslager-Sperre ist nur Pricing-Lock.");
+        }
+
+        this.storingSet = method;
+        this.initOk = ok;
+
+        if (this.initOk) {
+            EventLog.log("SEAM", "VanillaWarehouseAdapter: READY (storingSet via BypassGate)");
         }
     }
 
     @Override
     public boolean isStoringLockAvailable() {
-        return this.available;
+        return this.initOk && !this.runtimeFailed;
     }
 
     @Override
     public void setStoring(StockpileInstance granary, boolean locked) {
-        if (!this.available || granary == null || this.storingSetMethod == null) {
+        if (!isStoringLockAvailable() || granary == null || storingSet == null) {
             return;
         }
         try {
-            this.storingSetMethod.invoke(granary, locked);
+            storingSet.invoke(granary, locked);
         } catch (Throwable t) {
-            this.available = false;
+            this.runtimeFailed = true;
             if (!this.runtimeFailedLogged) {
                 this.runtimeFailedLogged = true;
                 EventLog.log("SEAM", "VanillaWarehouseAdapter runtime invoke failed — "

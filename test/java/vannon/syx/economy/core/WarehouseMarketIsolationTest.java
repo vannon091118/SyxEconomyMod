@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import vannon.syx.economy.adapter.FallbackWarehouseAdapter;
+import settlement.room.infra.stockpile.StockpileInstance;
 import vannon.syx.economy.adapter.ISyxWarehouse;
 
 /**
@@ -23,7 +23,10 @@ class WarehouseMarketIsolationTest {
 
     @BeforeEach
     void setUp() {
-        ISyxWarehouse warehouseAdapter = new FallbackWarehouseAdapter();
+        ISyxWarehouse warehouseAdapter = new ISyxWarehouse() {
+            public boolean isStoringLockAvailable() { return false; }
+            public void setStoring(StockpileInstance g, boolean l) {}
+        };
         state = new StateWarehouses(warehouseAdapter);
         prices = new FlowPrices();
         market = new WarehouseMarket(state, prices);

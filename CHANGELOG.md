@@ -10,7 +10,15 @@
 
 ---
 
-## v0.13.6 — 2026-07-25
+## v0.13.7 — 2026-07-25
+
+### Phase D — Warehouse-Adapter auf BypassGate migriert
+
+- VanillaWarehouseAdapter: Thin-Wrapper um BypassGate + MethodAccessor.VoidMethod (storingSet(boolean))
+- VanillaWarehouseAdapterMH: gelöscht — LETZTE MH-Variante entfernt
+- FallbackWarehouseAdapter: gelöscht (BypassGate.isAvailable() ersetzt)
+- EconomySim.createWarehouseAdapter(): vereinfacht, kein MH-Toggle
+- ARCHITECTURE.md: 17→15
 
 ### Phase C — Transport-Adapter auf BypassGate migriert
 

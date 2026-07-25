@@ -58,7 +58,6 @@ import vannon.syx.economy.core.ServiceMarket;
 import vannon.syx.economy.core.ServicePlanController;
 import vannon.syx.economy.core.StateWageMarket;
 import vannon.syx.economy.adapter.FallbackBoostingAdapter;
-import vannon.syx.economy.adapter.FallbackWarehouseAdapter;
 import vannon.syx.economy.adapter.ISyxAI;
 import vannon.syx.economy.adapter.ISyxBoosting;
 import vannon.syx.economy.adapter.ISyxDiplomacy;
@@ -69,7 +68,6 @@ import vannon.syx.economy.adapter.VanillaBoostingAdapter;
 import vannon.syx.economy.adapter.VanillaDiplomacyAdapter;
 import vannon.syx.economy.adapter.VanillaTransportAdapter;
 import vannon.syx.economy.adapter.VanillaWarehouseAdapter;
-import vannon.syx.economy.adapter.VanillaWarehouseAdapterMH;
 import vannon.syx.economy.core.StateWarehouses;
 import vannon.syx.economy.core.Taxes;
 import vannon.syx.economy.core.TransportMarket;
@@ -425,8 +423,8 @@ public final class EconomySim {
     }
 
     private static ISyxWarehouse createWarehouseAdapter() {
-        ISyxWarehouse wh = EconConfig.useMethodHandleAdapters ? new VanillaWarehouseAdapterMH() : new VanillaWarehouseAdapter();
-        return wh.isStoringLockAvailable() ? wh : new FallbackWarehouseAdapter();
+        // Phase D: BypassGate SDK — MethodAccessor.VoidMethod für storingSet(boolean).
+        return new VanillaWarehouseAdapter();
     }
 
     private static ISyxBoosting createBoostingAdapter() {

@@ -1,6 +1,6 @@
 # SyxEconomyMod — Architektur
 
-> **Version:** v0.13.6 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-25
+> **Version:** v0.13.7 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-25
 >
 > Stam-Doku-Synchron-Anker: Die obenstehende Versions-Zeile MUSS identisch mit `pom.xml` `<version>` sein.
 > Der Sync-Gate `tools/verify-doc-sync.sh` validiert dies vor jedem `mvn compile`.
@@ -19,7 +19,7 @@ Modul-Bilanz: **128 Java-Dateien, ~22.700 LOC**
 | Modul | Dateien | LOC | Aufgabe |
 |---|---:|---:|---|
 | `vannon/syx/economy/core/` | 100 | ~19.247 | Wirtschafts-Sim + Subsysteme |
-| `vannon/syx/economy/adapter/` | 17 | ~1.250 | Engine-API-Wrapper + Bypass-SDK |
+| `vannon/syx/economy/adapter/` | 15 | ~1.150 | Engine-API-Wrapper + Bypass-SDK |
 | `vannon/syx/economy/ui/` | 5 | ~2.345 | 4 Fenster + Base |
 | `vannon/syx/economy/benchmark/` | 1 | ~200 | Reflection-vs-MethodHandle-Benchmark |
 | `settlement/room/...` | 4 | ~600 | Package-Private Brücken (compile-time-safe) |

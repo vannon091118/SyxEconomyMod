@@ -2,7 +2,8 @@ package vannon.syx.economy.core;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import vannon.syx.economy.adapter.FallbackWarehouseAdapter;
+import settlement.room.infra.stockpile.StockpileInstance;
+import vannon.syx.economy.adapter.ISyxWarehouse;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -16,7 +17,10 @@ class StateWarehousesTest {
 
     @BeforeEach
     void setUp() {
-        warehouses = new StateWarehouses(new FallbackWarehouseAdapter());
+        warehouses = new StateWarehouses(new ISyxWarehouse() {
+            public boolean isStoringLockAvailable() { return false; }
+            public void setStoring(StockpileInstance g, boolean l) {}
+        });
     }
 
     @Test
