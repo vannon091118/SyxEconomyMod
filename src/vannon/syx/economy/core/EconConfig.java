@@ -331,7 +331,7 @@ public final class EconConfig {
     public static PairMode pairMode = PairMode.PROXIMITY;
     public static int proximityRadiusPx = 32;
     public static double dumpIntervalDays = 0.0;
-    public static boolean checkConservation = false;
+    public static boolean checkConservation = true;
     // Max absolute delta that auditSupply() silently absorbs into roundingDrift.
     // Larger deltas still fire SUPPLY MISMATCH. Set to 0 to disable drift absorption.
     public static int roundingDriftThreshold = 20;
@@ -386,7 +386,7 @@ public final class EconConfig {
      * oder Numpad / (Division) Hotkey in {@code InstanceScript}.
      * <p>Default: false — kein Overhead im Normalbetrieb.</p>
      */
-    public static boolean debugTracing = false;
+    public static boolean debugTracing = true;
 
     /**
      * Schaltet den Rebalancing-Diagnostik-Export ein. Wenn aktiv, schreibt
@@ -396,7 +396,7 @@ public final class EconConfig {
      *
      * <p>Default: false — Opt-in, um Datei-IO f\u00fcr Endnutzer zu vermeiden.</p>
      */
-    public static boolean diagnosticsExportEnabled = false;
+    public static boolean diagnosticsExportEnabled = true;
 
     /**
      * Schreibt pro Tick die Carpenter/Möbel-Firma-Diagnose nach
@@ -406,7 +406,7 @@ public final class EconConfig {
      * out_name, out_per_day, out_producedTotal, in_name, in_per_day.
      * <p>Default false — Opt-in wegen File-IO pro Tick.</p>
      */
-    public static boolean debugFurnitureDump = false;
+    public static boolean debugFurnitureDump = true;
 
     /**
      * Throttle für {@link #debugFurnitureDump}: schreibt maximal alle N Ticks
