@@ -121,6 +121,43 @@ bash tools/bump-version.sh patch --dry-run  # Patch-Bump simulieren (ohne Schrei
 
 Jeder `mvn clean install` ruft den Antrun-Hook der install-Phase auf, der `tools/bump-version.sh patch --bump-only` ausführt. Skip mit `-Dskip.bump=true`.
 
+### Diagnostic Tools (Python)
+
+Nicht-Gate-Tools für tiefergehende Wirtschafts-Analyse. Reine Berechnung, kein Java-Build nötig.
+
+| Tool | Zweck | Aufruf |
+|---|---|---|
+| `scarce_sim.py` — `tools/scarcity_sim.py` | Validiert 4 Scarcity-Kaskaden gegen die echten FlowPrices/LocalPrices/EconConfig-Formeln. Druckt Tick-by-Tick-Tabellen + Gini-Trajektorien + Clamp-Feuer-Detection. | `python3 tools/scarcity_sim.py` |
+| `rebalance_plots.py` / `rebalance_dashboard.ipynb` | Pandas/Notebook-Auswertung der `DiagnosticExporter`-CSV-Snapshots. | `jupyter notebook tools/rebalance_dashboard.ipynb` |
+
+#### Scarcity-Simulator (v0.13.10)
+
+Simuliert vier Szenarien mit echten Java-Parametern (grep-verifiziert aus `EconConfig.java`, `FlowPrices.java`, `LocalPrices.java`):
+
+- **Scenario A — Drought (Scarcity-Dominanz):** Storage- und Supply-Drain gegen `targetStock=d demand × coverageDays`. Prüft, ob `priceClampHi=100` greift, wann Konvergenz eintritt.
+- **Scenario B — Gini-Tsunami:** TANH-basierte `LocalPrices.scarcity()` koppelt mit AffordabilityGate-Deny-Counter. Misst Gini-Drift über 5+-Tage-Drought.
+- **Scenario C — Edge-Case 6 (Fallback-Kollision):** Leontief-Anchor leer → `FACTIONS.PRICE().edible()` als Fallback. Misst Drift zwischen synchronisiertem Anker und NPC-Lag.
+- **Scenario D — Edge-Case 7 (Zero-Default):** Custom-Resource ohne `worldgenScarcity` → `anchor=0` → `price=0` (Hard-Failure-Pfad, NICHT durch `priceClampLo=0.001` aufgefangen).
+
+**Quelle der Formeln:** `src/vannon/syx/economy/core/FlowPrices.java:scarcityMultiplier()`, `LocalPrices.java:scarcity()`, `EconConfig.scarcityElasticityUp/Down`. Werte (UP=0.8, DOWN=1.375, Clamp=100) sind im Header der Sim-Datei als Konstanten gelistet — bei jeder Änderung in `EconConfig.java` bitte `tools/scarcity_sim.py` mit-diffen.
+
+**Verwendung:**
+
+```bash
+python3 tools/scarcity_sim.py
+# Output: 4 Tick-by-Tick-Tabellen + Summary aller Clamp-Feuer, Gini-Peaks, Fallback-Drifts.
+```
+
+Sim-Ergebnisse als PDF-Report für jeden Live-Test-Save-Slot exportieren:
+
+```bash
+python3 tools/scarcity_sim.py > diagnostics/run-$(date +%Y%m%d-%H%M).log
+```
+
+#### Exit-Codes
+
+Das Skript hat aktuell keinen Exit-Code-Bound (kein CI-Gate-Verhalten). Zukünftig: Integration in `tools/build-gate.sh --strict` als optionaler Schritt mit Golden-Snapshot-Vergleich (siehe `BACKLOG.md`).
+
 ---
 
 ## Build-Gates (Reihenfolge = Abhängigkeiten)
