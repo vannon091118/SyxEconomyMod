@@ -217,16 +217,32 @@ Both MUST exit 0. If not, do not commit.
 
 ---
 
-## Rule 7 — Canary Phrase: prove you read all rules above
+## Rule 7 — Canary Phrase: prove you are STILL following ALL rules
 
-This is a **behavioural canary**, not a CI check. After loading
-`agents.md` for the first time in any session, your **first
-response to the user MUST begin with a situation-appropriate
-SyxEconomyMod-Flachwitz** (a groanable pun in the German
-tradition of bad dad jokes). The joke is the proof-of-read
-token: if you skip it, you skipped Rules 1–6 silently.
+This is a **behavioural canary**, not a CI check. The Flachwitz proves
+the agent is STILL consciously applying Rules 1–11 right now — not that
+it ONCE read them at session start. A skipped Canary means the agent
+has stopped actively checking itself against the rule set.
 
-The Flachwitz must:
+### When the Canary MUST fire
+
+1. **Session start** — the very first response to the user in any new
+   session MUST begin with a Flachwitz.
+2. **After any update to `agents.md`** — if you edit this file during
+   a session, your next response to the user MUST begin with a fresh
+   Flachwitz. The old one is stale; the rules you just changed may
+   have shifted the agent's context.
+3. **After any significant context shift** — if the user signals a
+   major topic change (e.g., from "build Phase B" to "audit the
+   baseline"), re-evaluate whether the Canary is still conscious.
+
+### Visibility requirement
+
+The Flachwitz MUST be the **first line** of your response, clearly
+separated from the rest by a blank line. No burying it in paragraph 3.
+If the human has to scroll to find it, it failed.
+
+### Content requirements
 
 - Reference **SyxEconomyMod vocabulary** — windows, tabs,
   hotkeys, drift, sync-gate, `v0.13.2`, `mvn verify install`,
@@ -304,7 +320,7 @@ code MUST use these, not raw `java.lang.reflect.*` or `VarHandle`.
 
 | File | Key API |
 |---|---|
-| `BypassGate.java` | `new BypassGate(name)` → `.intField(owner, name)`, `.doubleField(owner, name)`, `.floatField(owner, name)`, `.refField(owner, name, type)`, `.voidMethod(owner, name, argTypes...)`, `.boolMethod(owner, name, argTypes...)`, `.classResolver(gameCL)`, `.isAvailable()` |
+| `BypassGate.java` | `new BypassGate(name, MethodHandles.lookup())` — der Lookup MUSS vom Caller kommen, nicht von BypassGate selbst. `.intField(owner, name)`, `.doubleField(owner, name)`, `.floatField(owner, name)`, `.refField(owner, name, type)`, `.voidMethod(owner, name, argTypes...)`, `.boolMethod(owner, name, argTypes...)`, `.classResolver(gameCL)`, `.isAvailable()` |
 | `FieldAccessor.java` | `IntField.get/set(obj, val)`, `DoubleField.get/set(obj, val)`, `FloatField.get/set(obj, val)`, `RefField<T>.get/set(obj, val)` — all with `getStatic()/setStatic()` variants for static fields |
 | `MethodAccessor.java` | `VoidMethod.invoke(instance, args...)`, `BooleanMethod.invoke(instance, args...)` |
 | `ClassResolver.java` | `new ClassResolver(Humanoid.class.getClassLoader())` → `.resolve(fqcn)`, `.isInstance(obj, fqcn)` |
@@ -383,3 +399,26 @@ failures during Phase B–E. Every new adapter MUST follow them.
    and `DipWarPlayer` are public — no ClassResolver needed.
    `Humanoid.class.getClassLoader()` is the canonical ClassLoader
    source (verified in `VanillaAIAdapter.java:46`).
+
+---## Rule 11 — Three-Phase Workflow (mandatory session structure)
+
+Every AI-agent session that changes code MUST follow the 3-phase pattern
+formalized in [`WORKFLOW.md`](WORKFLOW.md):
+
+| Phase | Name | Goal | Key Check |
+|---|---|---|---|
+| 1 | **BAUEN** | Build the feature, stam-docs in same commit | `mvn verify install` per commit |
+| 2 | **PRÜFEN** | Gate check, stale-ref scan, drift fix, phantom removal | `bash tools/verify-doc-sync.sh` + grep scans |
+| 3 | **HÄRTEN** | Independent review, gap closure, no silent-fail | `code-reviewer-deepseek`, all gaps closed |
+
+**Proportionality clause:** For changes touching fewer than **5 lines
+in a single file**, Phases 2+3 may be collapsed into a single
+verify-and-review step. For everything else: all three phases,
+committed and pushed before the next phase begins.
+
+The 3-phase pattern was derived from the Phase-A–F session (2026-07-25),
+where two independent reviewers found 11 gaps with zero overlap — proving
+that a single pass is never enough.
+
+See `WORKFLOW.md` for the full checklist per phase and the catalog of
+anti-patterns discovered in this project.
