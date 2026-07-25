@@ -5,6 +5,36 @@
 
 ---
 
+## v0.13.2 — 2026-07-25
+
+### Phase 3 Tab-Restoration — Bücher, Immobilien, Glaube
+
+- **Bücher-Tab (WindowEconomy):** Vollständige Geldfluss-Bilanz (7 Einnahme- + 4 Ausgabekategorien), "Bücher stimmen?"-Sanity-Check (Kasse+Umlauf), EventLog-Wirtschafts-Chronik (letzte 8 Einträge).
+- **Immobilien-Tab (WindowOverview):** Mieteinnahmen, Mietforderungen, Zwangsräumungen, Immobilienverkauf, Dividenden. 3 Live-Slider (Miete/Kachel, Räumung-Schwelle, Schonfrist) + 2 Checkboxen (Immobilienmarkt, Hauskauf).
+- **Glaube-Tab (WindowState):** Aus SocialTab extrahiert — eigene KPIs für Religionssteuer+Liturgie, Schalter, Info-Text.
+- **Preise-Tab:** +3 Spalten (Bestand, Angebot/Tag, Nachfrage/Tag) aus EconSnapshot-Daten.
+- **Demografie:** 4 Wohlstandsbänder (Unterschicht→Wohlhabend) aus Histogramm-Daten.
+- **Berater:** Ampel-Dashboard (5 Indikatoren), Warnketten (kausale Abhängigkeiten), Trend-Tabelle (3 Tage).
+
+---
+
+## v0.13.1 — 2026-07-25
+
+### UX-Cleanup — Tooltip-Echo, Fenster-Stacking, Farbige Balken, Stack-Audit
+
+- **Tooltip-Echo entfernt:** `hoverInfoSet` bei Tabs und Slider-Buttons gelöscht — kein "Preise"-Tooltip über dem Preise-Tab mehr.
+- **Fenster-Stack-Offset:** `openCount`-Zähler + `STACK_OFFSET` (24px) — jedes neu geöffnete Fenster verschiebt sich 24px rechts+unten.
+- **Defensiver Stack-Audit:** `auditStack()` zählt tatsächlich offene Fenster via `isShown()` und korrigiert `openCount` bei externem Force-Close durch Vanilla-UI-Manager.
+- **Deutsche Labels:** Tab-Minimum 120→**140px**, Padding 28→**32px** — "Übersicht", "Demografie", "Soziales" nicht mehr abgeschnitten.
+- **Unicode `→` → `->`:** Im Berater-Text — kein `?` mehr im Bitmap-Font.
+- **Debug-Tab versteckt:** Aus `TABS`-Array entfernt, Klasse bleibt als Dev-Referenz.
+- **`close()`-Reihenfolge:** `inter = null` VOR `inter.close()` + `decrementStack()` — kein Doppel-Dekrement-Risiko.
+- **Farbige Balken (`coloredBar`):** ASCII-Rauten `#` in Kassen-Historie und Vermögensverteilung durch `COLOR.render()`-Rechtecke ersetzt (GOOD/SOSO/BAD).
+- **EconHud-Positionierung:** `VIEW.inters().manager.viewPort()`-Kette entfernt → direkt `C.WIDTH()-200`. Icons wieder sichtbar.
+- **LiveSlider-IntSupplier:** Drei Slider (Lager-Lohn, Kopfsteuer, Corvée-Aushebung) lesen Wert jeden Frame frisch — kein Snapshot-Stale mehr.
+
+---
+
 ## v0.1.5 — 2026-07-24
 
 ### Phase-3 Kernel Regression Tests — QA-Pass & Refactor

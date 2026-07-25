@@ -54,15 +54,15 @@ public final class WindowQuickview extends EconWindowBase {
         int y = 8;
 
         // Treasury
-        addKpi(content, x, y, "Staatskasse",
+        addKpi(content, x, y, UI.icons().m.coins, "Staatskasse",
             CompactNumber.format(treasury) + " D",
             !hasPop ? GCOLOR.T().INACTIVE : treasury >= 0 ? GCOLOR.UI().GOOD.normal : GCOLOR.UI().BAD.normal);
         y += 38;
 
         // Population & Gini
-        addKpi(content, x, y, "Bevölkerung",
+        addKpi(content, x, y, UI.icons().m.citizen, "Bevölkerung",
             String.valueOf(stats.people), hasPop ? GCOLOR.T().NORMAL : GCOLOR.T().INACTIVE);
-        addKpi(content, x + 170, y, "Gini",
+        addKpi(content, x + 170, y, UI.icons().m.heart, "Gini",
             hasPop ? String.format("%.3f", stats.gini) : "N/A",
             !hasPop ? GCOLOR.T().INACTIVE : stats.gini > 0.40 ? GCOLOR.UI().BAD.normal : stats.gini > 0.35 ? GCOLOR.UI().SOSO.normal : GCOLOR.UI().GOOD.normal);
         y += 38;
@@ -71,7 +71,7 @@ public final class WindowQuickview extends EconWindowBase {
         addKpi(content, x, y, "Median",
             CompactNumber.format(stats.median) + " D",
             !hasPop ? GCOLOR.T().INACTIVE : GCOLOR.T().NORMAL);
-        addKpi(content, x + 170, y, "Lohn/Tag",
+        addKpi(content, x + 170, y, UI.icons().m.pickaxe, "Lohn/Tag",
             CompactNumber.format((long)sim.laborMarket().meanWage()) + " D",
             !hasPop ? GCOLOR.T().INACTIVE : sim.laborMarket().meanWage() > 0 ? GCOLOR.UI().GOOD.normal : GCOLOR.UI().BAD.normal);
         y += 38;
@@ -79,7 +79,7 @@ public final class WindowQuickview extends EconWindowBase {
         // Stage
         addKpi(content, x, y, "Stufe",
             sim.progression().stage.displayName, GCOLOR.T().NORMAL);
-        addKpi(content, x + 170, y, "Unbezahlte",
+        addKpi(content, x + 170, y, UI.icons().m.skull, "Unbezahlte",
             String.valueOf(sim.firmLedger().lastWorkersUnpaid()),
             sim.firmLedger().lastWorkersUnpaid() > 0 ? GCOLOR.UI().BAD.normal : GCOLOR.UI().GOOD.normal);
         y += 38;
@@ -98,7 +98,7 @@ public final class WindowQuickview extends EconWindowBase {
         content.add(modeLabel, x, y);
         y += 20;
 
-        GButt.ButtPanel normal = new GButt.ButtPanel("Normal", 90) {
+        GButt.ButtPanel normal = new GButt.ButtPanel("Normal", 110) {
             @Override protected void render(snake2d.SPRITE_RENDERER r, float ds,
                                               boolean isActive, boolean isSelected, boolean isHovered) {
                 selectedSet(wh.tradeMode() == StateWarehouses.TradeMode.NORMAL);
@@ -111,7 +111,7 @@ public final class WindowQuickview extends EconWindowBase {
         normal.hoverInfoSet("Normal handeln");
         content.add(normal, x, y);
 
-        GButt.ButtPanel buy = new GButt.ButtPanel("Kaufen", 90) {
+        GButt.ButtPanel buy = new GButt.ButtPanel("Kaufen", 110) {
             @Override protected void render(snake2d.SPRITE_RENDERER r, float ds,
                                               boolean isActive, boolean isSelected, boolean isHovered) {
                 selectedSet(wh.tradeMode() == StateWarehouses.TradeMode.BUY_ONLY);
@@ -122,9 +122,9 @@ public final class WindowQuickview extends EconWindowBase {
             @Override public void exe() { wh.setTradeMode(StateWarehouses.TradeMode.BUY_ONLY); }
         });
         buy.hoverInfoSet("Nur einkaufen");
-        content.add(buy, x + 100, y);
+        content.add(buy, x + 120, y);
 
-        GButt.ButtPanel sell = new GButt.ButtPanel("Verkaufen", 90) {
+        GButt.ButtPanel sell = new GButt.ButtPanel("Verkaufen", 110) {
             @Override protected void render(snake2d.SPRITE_RENDERER r, float ds,
                                               boolean isActive, boolean isSelected, boolean isHovered) {
                 selectedSet(wh.tradeMode() == StateWarehouses.TradeMode.SELL_ONLY);
@@ -135,7 +135,7 @@ public final class WindowQuickview extends EconWindowBase {
             @Override public void exe() { wh.setTradeMode(StateWarehouses.TradeMode.SELL_ONLY); }
         });
         sell.hoverInfoSet("Nur verkaufen");
-        content.add(sell, x + 200, y);
+        content.add(sell, x + 240, y);
         y += 36;
 
         // Warehouse stats
@@ -171,25 +171,25 @@ public final class WindowQuickview extends EconWindowBase {
         y += 16;
 
         if (winOverview() != null) {
-            GButt.ButtPanel ovBtn = new GButt.ButtPanel("Uebersicht", 100);
+            GButt.ButtPanel ovBtn = new GButt.ButtPanel("Uebersicht", 120);
             ovBtn.clickActionSet(new ACTION() {
                 @Override public void exe() { winOverview().toggle(); }
             });
             content.add(ovBtn, x, y);
         }
         if (winEconomy() != null) {
-            GButt.ButtPanel ecBtn = new GButt.ButtPanel("Wirtschaft", 100);
+            GButt.ButtPanel ecBtn = new GButt.ButtPanel("Wirtschaft", 120);
             ecBtn.clickActionSet(new ACTION() {
                 @Override public void exe() { winEconomy().toggle(); }
             });
-            content.add(ecBtn, x + 110, y);
+            content.add(ecBtn, x + 130, y);
         }
         if (winState() != null) {
             GButt.ButtPanel stBtn = new GButt.ButtPanel("Staat", 100);
             stBtn.clickActionSet(new ACTION() {
                 @Override public void exe() { winState().toggle(); }
             });
-            content.add(stBtn, x + 220, y);
+            content.add(stBtn, x + 260, y);
         }
     }
 }

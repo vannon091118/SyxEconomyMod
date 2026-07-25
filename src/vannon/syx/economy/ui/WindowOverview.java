@@ -1,6 +1,8 @@
 package vannon.syx.economy.ui;
 
 import init.sprite.UI.UI;
+import snake2d.SPRITE_RENDERER;
+import snake2d.util.color.COLOR;
 import snake2d.util.gui.GuiSection;
 import snake2d.util.misc.ACTION;
 import util.colors.GCOLOR;
@@ -8,12 +10,12 @@ import util.gui.misc.GButt;
 import util.gui.misc.GText;
 import util.gui.panel.GPanel;
 import vannon.syx.economy.core.CompactNumber;
+import vannon.syx.economy.core.EconConfig;
 import vannon.syx.economy.core.EconIndicators;
 import vannon.syx.economy.core.EconProgression;
 import vannon.syx.economy.core.EconSnapshot;
 import vannon.syx.economy.core.EconomySim;
 import vannon.syx.economy.core.WealthStats;
-import snake2d.util.color.COLOR;
 
 /**
  * Übersicht-Fenster: Dashboard, Demografie, Berater.
@@ -23,7 +25,8 @@ public final class WindowOverview extends EconWindowBase {
     private static final TabContent[] TABS = {
         new DashboardTab(),
         new DemographicsTab(),
-        new AdvisorTab()
+        new AdvisorTab(),
+        new PropertyTab()
     };
 
     public WindowOverview(EconomySim sim) {
@@ -104,7 +107,7 @@ public final class WindowOverview extends EconWindowBase {
             status.color(!hasPop ? GCOLOR.T().INACTIVE : hasWarnings ? GCOLOR.UI().SOSO.normal : GCOLOR.UI().GOOD.normal);
             content.add(status, x, y);
 
-            // History chart — ASCII vertical bars for treasury timeline
+            // History chart — colored bars for treasury timeline
             y += 26;
             if (ind.count() > 0) {
                 GText histHeader = new GText(UI.FONT().S, 256);
@@ -120,25 +123,25 @@ public final class WindowOverview extends EconWindowBase {
                     if (s != null && s.treasuryCurrent > maxVal) maxVal = s.treasuryCurrent;
                 }
 
+                int barSpacing = 14;
+                int barW = 10;
+                int maxH = 14;
                 for (int i = 0; i < maxBars; i++) {
                     EconSnapshot s = ind.get(i);
                     int level = 0;
                     if (s != null && maxVal > 0) {
-                        level = (int)((s.treasuryCurrent * 5) / maxVal);
-                        if (level < 0) level = 0;
-                        if (level > 5) level = 5;
+                        level = Math.max(0, Math.min(5, (int)((s.treasuryCurrent * 5) / maxVal)));
                     }
-                    StringBuilder barStr = new StringBuilder();
-                    for (int row = 0; row < 5; row++) {
-                        barStr.append(row >= (5 - level) ? '#' : '.');
-                    }
+                    int barH = maxH * level / 5;
+                    COLOR barColor;
+                    if (level >= 5)       barColor = GCOLOR.UI().GOOD.normal;
+                    else if (level >= 3)  barColor = GCOLOR.UI().SOSO.normal;
+                    else if (level >= 1)  barColor = GCOLOR.UI().BAD.normal;
+                    else                  { y += barSpacing; continue; }
 
-                    GText bar = new GText(UI.FONT().S, 32);
-                    bar.set(barStr.toString());
-                    bar.color(level > 0 ? GCOLOR.UI().GOOD.normal : GCOLOR.T().INACTIVE);
-                    content.add(bar, x + i * 14, y);
+                    content.add(coloredBar(barColor, barW, barH), x + i * barSpacing, y + maxH - barH);
                 }
-                y += 18;
+                y += maxH + 4;
 
                 GText chartLabel = new GText(UI.FONT().S, 256);
                 chartLabel.set(CompactNumber.format(maxVal) + " D max — " + maxBars + " Tage");
@@ -179,11 +182,14 @@ public final class WindowOverview extends EconWindowBase {
 
             if (stats.people > 0 && stats.tallest > 0) {
                 int barMaxW = 300;
+                int barH = 12;
+                int labelX = x + 100;
                 for (int i = 0; i < WealthStats.BUCKETS && y < 450; i++) {
                     int from = i * stats.bucketWidth;
                     int to = (i + 1) * stats.bucketWidth;
                     int count = stats.histogram[i];
                     int barW = (int)((long)count * barMaxW / stats.tallest);
+                    if (barW <= 0) { y += 16; continue; }
 
                     // Bucket label
                     GText lbl = new GText(UI.FONT().S, 64);
@@ -191,17 +197,15 @@ public final class WindowOverview extends EconWindowBase {
                     lbl.color(GCOLOR.T().NORMAL);
                     content.add(lbl, x, y);
 
-                    GText bar = new GText(UI.FONT().S, 256);
-                    StringBuilder sb = new StringBuilder();
-                    for (int b = 0; b < Math.min(barW / 6, 50); b++) sb.append('#');
-                    bar.set(sb.toString());
-                    bar.color(count > stats.tallest / 2 ? GCOLOR.UI().SOSO.normal : GCOLOR.UI().GOOD.normal);
-                    content.add(bar, x + 100, y);
+                    // Colored bar (replaces ASCII # hashes)
+                    COLOR barColor = count > stats.tallest / 2 ? GCOLOR.UI().SOSO.normal : GCOLOR.UI().GOOD.normal;
+                    content.add(coloredBar(barColor, barW, barH), labelX, y + 2);
 
-                    GText cnt = new GText(UI.FONT().S, 32);
+                    // Count label after the bar
+                    GText cnt = new GText(UI.FONT().S, 48);
                     cnt.set(String.valueOf(count));
                     cnt.color(GCOLOR.T().NORMAL);
-                    content.add(cnt, x + 100 + barW + 8, y);
+                    content.add(cnt, labelX + barW + 6, y);
 
                     y += 16;
                 }
@@ -212,8 +216,67 @@ public final class WindowOverview extends EconWindowBase {
                 content.add(empty, x, y);
             }
 
+            // Wealth bands (4-Klassen-Aufschlüsselung)
+            GText bandLabel = new GText(UI.FONT().M, 256);
+            bandLabel.set("--- Wohlstandsbänder ---");
+            bandLabel.lablify();
+            content.add(bandLabel, x, y);
+            y += 22;
+
+            addColHeader(content, x, y, "Klasse", 100);
+            addColHeader(content, x + 110, y, "Bürger", 60);
+            addColHeader(content, x + 180, y, "Bereich", 100);
+            addColHeader(content, x + 290, y, "Ø-Vermögen", 90);
+            y += 18;
+
+            if (stats.people > 0 && stats.tallest > 0) {
+                String[] bands = {"Unterschicht", "Untere Mitte", "Obere Mitte", "Wohlhabend"};
+                for (int b = 0; b < 4 && y < 440; b++) {
+                    int bFrom = b * 4;
+                    int bTo = Math.min((b + 1) * 4, WealthStats.BUCKETS);
+                    int bandCount = 0;
+                    long bandTotal = 0;
+                    for (int j = bFrom; j < bTo && j < stats.histogram.length; j++) {
+                        bandCount += stats.histogram[j];
+                        int midW = (j * stats.bucketWidth + (j + 1) * stats.bucketWidth) / 2;
+                        bandTotal += (long)stats.histogram[j] * midW;
+                    }
+                    int bandAvg = bandCount > 0 ? (int)(bandTotal / bandCount) : 0;
+                    long fromW = bFrom * stats.bucketWidth;
+                    long toW = Math.min((long)(bTo - 1) * stats.bucketWidth + stats.bucketWidth - 1, stats.max);
+
+                    GText bandName = new GText(UI.FONT().S, 100);
+                    bandName.set(bands[b]);
+                    bandName.color(bandCount > 0 ? GCOLOR.T().NORMAL : GCOLOR.T().INACTIVE);
+                    content.add(bandName, x, y);
+
+                    GText bandCnt = new GText(UI.FONT().S, 48);
+                    bandCnt.set(String.valueOf(bandCount));
+                    bandCnt.color(GCOLOR.T().NORMAL);
+                    content.add(bandCnt, x + 110, y);
+
+                    GText bandRange = new GText(UI.FONT().S, 100);
+                    bandRange.set(CompactNumber.format(fromW) + "-" + CompactNumber.format(toW) + " D");
+                    bandRange.color(GCOLOR.T().INACTIVE);
+                    content.add(bandRange, x + 180, y);
+
+                    GText bandAvgT = new GText(UI.FONT().S, 64);
+                    bandAvgT.set(CompactNumber.format(bandAvg) + " D");
+                    bandAvgT.color(bandAvg > stats.median ? GCOLOR.UI().GOOD.normal : GCOLOR.UI().SOSO.normal);
+                    content.add(bandAvgT, x + 290, y);
+
+                    y += 14;
+                }
+            } else {
+                GText noBands = new GText(UI.FONT().S, 128);
+                noBands.set("Keine Vermögensdaten.");
+                noBands.color(GCOLOR.T().INACTIVE);
+                content.add(noBands, x, y);
+                y += 14;
+            }
+
             // Housing info
-            y += 20;
+            y += 8;
             GText housing = new GText(UI.FONT().M, 256);
             housing.set("Mieteinnahmen: " + CompactNumber.format(sim.housingMarket().lastRentCollected()) + " D  |  Zwangsraeumungen: " + sim.housingMarket().lastEvictions());
             housing.color(GCOLOR.T().NORMAL);
@@ -231,72 +294,157 @@ public final class WindowOverview extends EconWindowBase {
             EconProgression prog = sim.progression();
             WealthStats stats = sim.stats();
             EconIndicators ind = sim.econIndicators();
-            EconSnapshot snap = ind.latest();
+            long treasury = sim.treasury();
+            boolean hasPop = stats.people > 0;
 
-            // Stage info
+            // === AMPEL-DASHBOARD (5 Indikatoren) ===
+            GText ampelHdr = new GText(UI.FONT().M, 256);
+            ampelHdr.set("--- Ampel-Status ---");
+            ampelHdr.lablify();
+            content.add(ampelHdr, x, y);
+            y += 22;
+
+            addTrafficLight(content, x, y, "Finanzen",
+                !hasPop ? -1 : treasury > 10000 ? 2 : treasury > 0 ? 1 : 0);
+            addTrendArrow(content, x + 160, y, ind, "treasuryCurrent");
+            addTrafficLight(content, x + 220, y, "Arbeit",
+                !hasPop ? -1 : ind.isWagesFalling() ? 0 : sim.firmLedger().lastWorkersUnpaid() == 0 ? 2 : 1);
+            addTrafficLight(content, x + 440, y, "Versorgung",
+                !hasPop ? -1 : !ind.isFurnishingCrisis() ? 2 : 1);
+            y += 24;
+
+            addTrafficLight(content, x, y, "Gleichheit",
+                !hasPop ? -1 : stats.gini < 0.30 ? 2 : stats.gini < 0.40 ? 1 : 0);
+            addTrendArrow(content, x + 160, y, ind, "gini");
+            addTrafficLight(content, x + 220, y, "Wachstum",
+                !hasPop ? -1 : !ind.isTreasuryDeclining() ? 2 : treasury > -5000 ? 1 : 0);
+            addTrafficLight(content, x + 440, y, "Abwanderung",
+                !hasPop ? -1 : ind.isEmigrationSpike() ? 0 : 2);
+            y += 32;
+
+            // === WARNKETTEN (kausale Abhängigkeiten) ===
+            String chains = buildWarningChains(ind, treasury, stats);
+            if (!chains.isEmpty()) {
+                GText warnHdr = new GText(UI.FONT().M, 256);
+                warnHdr.set("--- Warnketten ---");
+                warnHdr.lablify();
+                content.add(warnHdr, x, y);
+                y += 20;
+
+                GText chainsText = new GText(UI.FONT().S, 512);
+                chainsText.set(chains);
+                chainsText.color(GCOLOR.UI().SOSO.normal);
+                content.add(chainsText, x, y);
+                y += 20 + countLines(chains) * 14;
+            }
+
+            // === TREND-TABELLE (letzte 3 Tage) ===
+            if (ind.count() >= 2) {
+                GText trendHdr = new GText(UI.FONT().M, 256);
+                trendHdr.set("--- Trend (letzte 3 Tage) ---");
+                trendHdr.lablify();
+                content.add(trendHdr, x, y);
+                y += 18;
+
+                addColHeader(content, x, y, "Tag", 35);
+                addColHeader(content, x + 45, y, "Kasse", 75);
+                addColHeader(content, x + 130, y, "Gini", 55);
+                addColHeader(content, x + 195, y, "Lohn", 60);
+                addColHeader(content, x + 265, y, "Nahrung", 55);
+                addColHeader(content, x + 330, y, "Unpaid", 45);
+                y += 16;
+
+                int maxRows = Math.min(ind.count(), 3);
+                for (int i = ind.count() - maxRows; i < ind.count(); i++) {
+                    EconSnapshot s = ind.get(i);
+                    if (s == null) continue;
+                    int dayLabel = i - (ind.count() - 1);
+
+                    GText dayT = new GText(UI.FONT().S, 32);
+                    dayT.set(dayLabel == 0 ? "Heute" : "D" + dayLabel);
+                    dayT.color(dayLabel == 0 ? GCOLOR.T().NORMAL : GCOLOR.T().INACTIVE);
+                    content.add(dayT, x, y);
+
+                    GText treasuryT = new GText(UI.FONT().S, 64);
+                    treasuryT.set(CompactNumber.format(s.treasuryCurrent));
+                    treasuryT.color(s.treasuryCurrent >= 0 ? GCOLOR.UI().GOOD.normal : GCOLOR.UI().BAD.normal);
+                    content.add(treasuryT, x + 45, y);
+
+                    GText giniT = new GText(UI.FONT().S, 48);
+                    giniT.set(String.format("%.3f", s.gini));
+                    giniT.color(s.gini > 0.40 ? GCOLOR.UI().BAD.normal : s.gini > 0.35 ? GCOLOR.UI().SOSO.normal : GCOLOR.UI().GOOD.normal);
+                    content.add(giniT, x + 130, y);
+
+                    GText wageT = new GText(UI.FONT().S, 56);
+                    wageT.set(CompactNumber.format((long)s.actualMeanWage));
+                    wageT.color(GCOLOR.T().NORMAL);
+                    content.add(wageT, x + 195, y);
+
+                    GText foodT = new GText(UI.FONT().S, 48);
+                    foodT.set(String.format("%.1fd", s.foodDays));
+                    foodT.color(s.foodDays > 3 ? GCOLOR.UI().GOOD.normal : s.foodDays > 1 ? GCOLOR.UI().SOSO.normal : GCOLOR.UI().BAD.normal);
+                    content.add(foodT, x + 265, y);
+
+                    GText unpaidT = new GText(UI.FONT().S, 48);
+                    unpaidT.set(String.valueOf(s.workersUnpaid));
+                    unpaidT.color(s.workersUnpaid > 0 ? GCOLOR.UI().BAD.normal : GCOLOR.UI().GOOD.normal);
+                    content.add(unpaidT, x + 330, y);
+
+                    y += 14;
+                }
+                y += 8;
+            }
+
+            // === STUFE & MEILENSTEINE ===
+            GText stageHdr = new GText(UI.FONT().M, 256);
+            stageHdr.set("--- Stufe & Meilensteine ---");
+            stageHdr.lablify();
+            content.add(stageHdr, x, y);
+            y += 22;
+
             addKpi(content, x, y, "Stufe", prog.stage.displayName, GCOLOR.T().NORMAL);
             addKpi(content, x + 380, y, "Tage in Stufe", String.valueOf(prog.stageDays), GCOLOR.T().NORMAL);
-            y += 40;
+            y += 30;
 
             addKpi(content, x, y, "Bevölkerung", String.valueOf(stats.people), GCOLOR.T().NORMAL);
             addKpi(content, x + 240, y, "Unbezahlte", String.valueOf(sim.firmLedger().lastWorkersUnpaid()),
                 sim.firmLedger().lastWorkersUnpaid() > 0 ? GCOLOR.UI().BAD.normal : GCOLOR.UI().GOOD.normal);
             addKpi(content, x + 480, y, "Tote", String.valueOf(sim.deaths()), GCOLOR.T().NORMAL);
-            y += 40;
+            y += 30;
 
             addKpi(content, x, y, "Ausgewandert", String.valueOf(sim.emigrations()),
                 sim.emigrations() > 0 ? GCOLOR.UI().SOSO.normal : GCOLOR.T().NORMAL);
             addKpi(content, x + 240, y, "Erben", String.valueOf(sim.inherited()), GCOLOR.T().NORMAL);
             addKpi(content, x + 480, y, "Erblos", String.valueOf(sim.heirless()), GCOLOR.T().NORMAL);
-            y += 50;
+            y += 30;
 
-            // Milestones
-            GText msHeader = new GText(UI.FONT().M, 256);
-            msHeader.set("--- Meilensteine ---");
-            msHeader.lablify();
-            content.add(msHeader, x, y);
-            y += 24;
+            addMilestoneIcon(content, x, y, "Lagerhaus", prog.msFirstStockpile);
+            addMilestoneIcon(content, x + 220, y, "Export", prog.msFirstExport);
+            addMilestoneIcon(content, x + 440, y, "Taverne/Markt", prog.msFirstTavern || prog.msFirstMarket);
+            y += 18;
+            addMilestoneIcon(content, x, y, "Stabile Löhne", prog.msStableWages);
+            addMilestoneIcon(content, x + 220, y, "Tempel", prog.msFirstTemple);
+            addMilestoneIcon(content, x + 440, y, "Labor", prog.msFirstLaboratory);
+            y += 18;
+            addMilestoneIcon(content, x, y, "Botschaft", prog.msFirstEmbassy);
+            y += 22;
 
-            addMilestoneIcon(content, x, y, "Erstes Lagerhaus", prog.msFirstStockpile); y += 16;
-            addMilestoneIcon(content, x, y, "Erster Export", prog.msFirstExport); y += 16;
-            addMilestoneIcon(content, x, y, "Taverne/Markt", prog.msFirstTavern || prog.msFirstMarket); y += 16;
-            addMilestoneIcon(content, x, y, "Stabile Loehne (100d)", prog.msStableWages); y += 16;
-            addMilestoneIcon(content, x, y, "Erster Tempel", prog.msFirstTemple); y += 16;
-            addMilestoneIcon(content, x, y, "Erstes Labor", prog.msFirstLaboratory); y += 16;
-            addMilestoneIcon(content, x, y, "Erste Botschaft", prog.msFirstEmbassy); y += 24;
-
-            // Next stage requirements
-            GText nextHeader = new GText(UI.FONT().M, 256);
-            nextHeader.set("--- Nächste Stufe ---");
-            nextHeader.lablify();
-            content.add(nextHeader, x, y);
-            y += 24;
-
+            // Nächste Stufe
             String nextReqs = nextStageReqs(prog, stats);
-            GText reqs = new GText(UI.FONT().M, 512);
-            reqs.set(nextReqs);
-            reqs.color(GCOLOR.UI().SOSO.normal);
-            content.add(reqs, x, y);
+            GText nextText = new GText(UI.FONT().S, 512);
+            nextText.set("Naechste Stufe: " + nextReqs);
+            nextText.color(GCOLOR.UI().SOSO.normal);
+            content.add(nextText, x, y);
+            y += 24;
 
-            // Trend snapshot
-            if (snap != null) {
-                y += 30;
-                GText trends = new GText(UI.FONT().M, 512);
-                trends.set("Lohn: " + CompactNumber.format((long)snap.actualMeanWage) + "  Gini: " + String.format("%.3f", snap.gini) + "  Kasse: " + CompactNumber.format(snap.treasuryCurrent));
-                trends.color(GCOLOR.T().NORMAL);
-                content.add(trends, x, y);
-            }
-
-            // ── "Was soll ich heute tun?" priority advisor ──────────
-            y += 28;
-            long treasuryAdv = sim.treasury();
-            String advice = buildAdvice(sim, stats, ind, treasuryAdv);
-            GText adviceHeader = new GText(UI.FONT().M, 256);
-            adviceHeader.set("--- Was soll ich heute tun? ---");
-            adviceHeader.lablify();
-            content.add(adviceHeader, x, y);
+            // === WAS SOLL ICH TUN? ===
+            GText adviceHdr = new GText(UI.FONT().M, 256);
+            adviceHdr.set("--- Was soll ich heute tun? ---");
+            adviceHdr.lablify();
+            content.add(adviceHdr, x, y);
             y += 20;
 
+            String advice = buildAdvice(sim, stats, ind, treasury);
             GText adviceText = new GText(UI.FONT().M, 512);
             adviceText.set(advice);
             adviceText.color(GCOLOR.UI().SOSO.normal);
@@ -306,26 +454,39 @@ public final class WindowOverview extends EconWindowBase {
 
     // ─── Helpers ─────────────────────────────────────────────────────
 
+    // ─── Helpers ─────────────────────────────────────────────────────
+
+    /** Creates a plain colored rectangle (no text, no border).
+     *  Uses COLOR.render() in its render override — no bitmap font dependency. */
+    private static GuiSection coloredBar(final COLOR color, int w, int h) {
+        GuiSection bar = new GuiSection() {
+            @Override
+            public void render(SPRITE_RENDERER r, float ds) {
+                color.render(r, body());
+                super.render(r, ds);
+            }
+        };
+        bar.body().setDim(w, h);
+        return bar;
+    }
+
     private static void addTrafficLight(GuiSection section, int x, int y, String label, int state) {
         // state: -1=gray, 0=red, 1=yellow, 2=green
-        // Fixed-width 5-char block bar with varying density + color
-        String bar;
         COLOR barColor;
-        switch (state) {                case 2:  bar = "#####"; barColor = GCOLOR.UI().GOOD.normal; break;
-                case 1:  bar = "###--"; barColor = GCOLOR.UI().SOSO.normal; break;
-                case 0:  bar = "#----"; barColor = GCOLOR.UI().BAD.normal; break;
-                default: bar = "-----"; barColor = GCOLOR.T().INACTIVE; break;
+        switch (state) {
+            case 2:  barColor = GCOLOR.UI().GOOD.normal; break;
+            case 1:  barColor = GCOLOR.UI().SOSO.normal; break;
+            case 0:  barColor = GCOLOR.UI().BAD.normal; break;
+            default: barColor = GCOLOR.T().INACTIVE; break;
         }
 
-        GText barText = new GText(UI.FONT().M, 64);
-        barText.set(bar);
-        barText.color(barColor);
-        section.add(barText, x, y);
+        // Colored rectangle replaces ASCII # bars
+        section.add(coloredBar(barColor, 50, 10), x, y + 4);
 
         GText lbl = new GText(UI.FONT().M, 128);
         lbl.set(label);
         lbl.color(state >= 0 ? GCOLOR.T().NORMAL : GCOLOR.T().INACTIVE);
-        section.add(lbl, x + 65, y);
+        section.add(lbl, x + 55, y);
     }
 
     private static void addMilestoneIcon(GuiSection section, int x, int y, String label, boolean achieved) {
@@ -411,7 +572,7 @@ public final class WindowOverview extends EconWindowBase {
         // Priority 4: Empty state warehouses
         int whCount = sim.stateWarehouses().ownedCount();
         if (whCount == 0) {
-            return "Keine Staatslager gebaut. Ein Lagerhaus als Staat uebernehmen (Rechtsklick → Staatlich).";
+            return "Keine Staatslager gebaut. Lagerhaus als Staat uebernehmen (Rechtsklick -> Staatlich).";
         }
 
         // Priority 5: Furnishing crisis
@@ -460,5 +621,124 @@ public final class WindowOverview extends EconWindowBase {
             case "gini": return snap.gini;
             default: return 0;
         }
+    }
+
+    /** Builds causal warning chains from the current indicator state.
+     *  Returns empty string if all clear. */
+    private static String buildWarningChains(EconIndicators ind, long treasury, WealthStats stats) {
+        StringBuilder sb = new StringBuilder();
+        if (treasury < -10000) {
+            sb.append("Schuldenkrise >> Sparzwang >> Lohnsenkung >> Abwanderung\n");
+        } else if (treasury < 0) {
+            sb.append("Kasse negativ >> Export noetig >> Steueranpassung\n");
+        }
+        if (ind.isFurnishingCrisis()) {
+            sb.append("Holzmangel >> Einrichtungskrise >> Produktionsstillstand\n");
+        }
+        if (ind.isWagesFalling() && ind.isInequalityRising()) {
+            sb.append("Lohnrueckgang + Gini-Anstieg >> Kaufkraftverlust >> Nachfragerueckgang\n");
+        } else if (ind.isWagesFalling()) {
+            sb.append("Lohnrueckgang >> Kaufkraftverlust >> Firmen-Umsatzrueckgang\n");
+        } else if (ind.isInequalityRising()) {
+            sb.append("Gini-Anstieg >> Vermoegenskonzentration >> Loyalitaetsverlust");
+            if (stats.people > 0 && stats.gini > 0.40) sb.append(" (kritisch)");
+            sb.append("\n");
+        }
+        if (ind.isEmigrationSpike() && ind.isWagesFalling()) {
+            sb.append("Lohnrueckgang + Abwanderung >> Arbeitskraeftemangel >> Produktionseinbruch\n");
+        } else if (ind.isEmigrationSpike()) {
+            sb.append("Abwanderung >> Arbeitskraeftemangel >> Loehne erhoehen\n");
+        }
+        if (ind.isTreasuryDeclining() && !ind.isFurnishingCrisis()) {
+            sb.append("Einnahmen ruecklaeufig >> Pruefe Steuersaetze >> Marktsteuer/Liturgie aktivieren\n");
+        }
+        return sb.toString().trim();
+    }
+
+    // ─── Tab 4: Property ─────────────────────────────────────────────
+
+    private static final class PropertyTab implements TabContent {
+        @Override public CharSequence title() { return "Immobilien"; }
+
+        @Override
+        public void build(EconomySim sim, GuiSection content, int x, int y, int w, int h) {
+            GText header = new GText(UI.FONT().M, 256);
+            header.set("--- Immobilienmarkt ---");
+            header.lablify();
+            content.add(header, x, y);
+            y += 24;
+
+            addKpi(content, x, y, "Mieteinnahmen",
+                CompactNumber.format(sim.housingMarket().lastRentCollected()) + " D", GCOLOR.UI().GOOD.normal);
+            addKpi(content, x + 380, y, "Mietforderungen",
+                CompactNumber.format(sim.housingMarket().lastRentDue()) + " D", GCOLOR.T().NORMAL);
+            y += 30;
+
+            addKpi(content, x, y, "Zwangsraeumungen",
+                String.valueOf(sim.housingMarket().lastEvictions()),
+                sim.housingMarket().lastEvictions() > 3 ? GCOLOR.UI().BAD.normal : GCOLOR.UI().GOOD.normal);
+            addKpi(content, x + 380, y, "Immobilienverkauf",
+                CompactNumber.format(sim.propertySalesCollected()) + " D", GCOLOR.T().NORMAL);
+            y += 30;
+
+            addKpi(content, x, y, "Dividenden",
+                CompactNumber.format(sim.propertyDividendsPaid()) + " D", GCOLOR.T().NORMAL);
+            y += 50;
+
+            GText sliderHdr = new GText(UI.FONT().M, 256);
+            sliderHdr.set("--- Hebel ---");
+            sliderHdr.lablify();
+            content.add(sliderHdr, x, y);
+            y += 22;
+
+            addSlider(content, x, y, "Miete/Kachel", () -> EconConfig.housingBaseRentPerTile, 0, 500, 5,
+                new ACTION() { @Override public void exe() { EconConfig.housingBaseRentPerTile = Math.min(500, EconConfig.housingBaseRentPerTile + 5); } },
+                new ACTION() { @Override public void exe() { EconConfig.housingBaseRentPerTile = Math.max(0, EconConfig.housingBaseRentPerTile - 5); } });
+            y += 38;
+
+            addSlider(content, x, y, "Raeumung bei Schulden >", () -> EconConfig.housingEvictionDebtThreshold, 0, 5000, 100,
+                new ACTION() { @Override public void exe() { EconConfig.housingEvictionDebtThreshold = Math.min(5000, EconConfig.housingEvictionDebtThreshold + 100); } },
+                new ACTION() { @Override public void exe() { EconConfig.housingEvictionDebtThreshold = Math.max(0, EconConfig.housingEvictionDebtThreshold - 100); } });
+            y += 38;
+
+            addSlider(content, x, y, "Schonfrist (Tage)", () -> EconConfig.housingGraceDays, 0, 30, 1,
+                new ACTION() { @Override public void exe() { EconConfig.housingGraceDays = Math.min(30, EconConfig.housingGraceDays + 1); } },
+                new ACTION() { @Override public void exe() { EconConfig.housingGraceDays = Math.max(0, EconConfig.housingGraceDays - 1); } });
+            y += 50;
+
+            GText toggleHdr = new GText(UI.FONT().M, 256);
+            toggleHdr.set("--- Schalter ---");
+            toggleHdr.lablify();
+            content.add(toggleHdr, x, y);
+            y += 22;
+
+            addCheckbox(content, x, y, "Immobilienmarkt aktiv", EconConfig.housingMarketEnabled,
+                b -> EconConfig.housingMarketEnabled = b);
+            y += 22;
+            addCheckbox(content, x, y, "Hauskauf erlaubt", EconConfig.homePurchaseEnabled,
+                b -> EconConfig.homePurchaseEnabled = b);
+        }
+    }
+
+    private static void addCheckbox(GuiSection section, int x, int y, String label, boolean initial, java.util.function.Consumer<Boolean> setter) {
+        GButt.Checkbox cb = new GButt.Checkbox(label);
+        cb.selectedSet(initial);
+        cb.clickActionSet(new ACTION() {
+            @Override public void exe() {
+                boolean next = !cb.selectedIs();
+                setter.accept(next);
+                cb.selectedSet(next);
+            }
+        });
+        section.add(cb, x, y);
+    }
+
+    private static int countLines(String s) {
+        if (s == null || s.isEmpty()) return 0;
+        int n = 1;
+        for (int i = 0; i < s.length(); i++) {
+            if (s.charAt(i) == '\n') n++;
+        }
+        return n;
     }
 }

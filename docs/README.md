@@ -1,6 +1,6 @@
 # SyxEconomyMod — Documentation Index
 
-> **Stand:** 2026-07-25 | **Spiel:** Songs of Syx V71.44 | **Mod-Version:** v0.1.5
+> **Stand:** 2026-07-25 | **Spiel:** Songs of Syx V71.44 | **Mod-Version:** v0.13.1
 
 ---
 

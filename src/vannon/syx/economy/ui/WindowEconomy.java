@@ -8,7 +8,9 @@ import util.colors.GCOLOR;
 import util.gui.misc.GText;
 import util.gui.panel.GPanel;
 import vannon.syx.economy.core.CompactNumber;
+import vannon.syx.economy.core.EconSnapshot;
 import vannon.syx.economy.core.EconomySim;
+import vannon.syx.economy.core.EventLog;
 import vannon.syx.economy.core.FirmLedger;
 import vannon.syx.economy.core.FlowPrices;
 import snake2d.util.color.COLOR;
@@ -23,7 +25,8 @@ public final class WindowEconomy extends EconWindowBase {
         new PricesTab(),
         new FirmsTab(),
         new WagesTab(),
-        new SubsidiesTab()
+        new SubsidiesTab(),
+        new BooksTab()
     };
 
     public WindowEconomy(EconomySim sim) {
@@ -57,7 +60,7 @@ public final class WindowEconomy extends EconWindowBase {
             content.add(laborHeader, x, y);
             y += 28;
 
-            addKpi(content, x, y, "Ø-Lohn",
+            addKpi(content, x, y, UI.icons().m.pickaxe, "Ø-Lohn",
                 CompactNumber.format((long)sim.laborMarket().meanWage()) + " D/Tag",
                 !hasPop ? GCOLOR.T().INACTIVE : GCOLOR.T().NORMAL);
             addKpi(content, x + 380, y, "Marginal",
@@ -78,7 +81,7 @@ public final class WindowEconomy extends EconWindowBase {
             content.add(fiscalHeader, x, y);
             y += 28;
 
-            addKpi(content, x, y, "Staatskasse",
+            addKpi(content, x, y, UI.icons().m.coins, "Staatskasse",
                 CompactNumber.format(sim.treasury()) + " D",
                 sim.treasury() >= 0 ? GCOLOR.UI().GOOD.normal : GCOLOR.UI().BAD.normal);
             addKpi(content, x + 380, y, "Umlauf",
@@ -133,52 +136,72 @@ public final class WindowEconomy extends EconWindowBase {
             content.add(header, x, y);
             y += 24;
 
-            addColHeader(content, x, y, "Ressource", 120);
-            addColHeader(content, x + 130, y, "Lokal/E", 80);
-            addColHeader(content, x + 220, y, "Anker", 80);
-            addColHeader(content, x + 310, y, "Faktor", 60);
-            addColHeader(content, x + 380, y, "Deckung", 70);
-            addColHeader(content, x + 460, y, "Status", 80);
+            addColHeader(content, x, y, "Ressource", 100);
+            addColHeader(content, x + 110, y, "Lokal", 55);
+            addColHeader(content, x + 175, y, "Anker", 55);
+            addColHeader(content, x + 240, y, "Faktor", 45);
+            addColHeader(content, x + 295, y, "Deckung", 50);
+            addColHeader(content, x + 355, y, "Bestand", 55);
+            addColHeader(content, x + 420, y, "+Tag", 55);
+            addColHeader(content, x + 485, y, "-Tag", 55);
+            addColHeader(content, x + 550, y, "Status", 55);
             y += 20;
 
             // Resource rows
             if (fp.ready()) {
-                int rows = Math.min(RESOURCES.ALL().size(), (h - 60) / 16);
+                EconSnapshot snap = sim.econIndicators().latest();
+                int rows = Math.min(RESOURCES.ALL().size(), Math.min(25, (h - 60) / 14));
                 for (int i = 0; i < rows; i++) {
                     RESOURCE r = (RESOURCE) RESOURCES.ALL().get(i);
                     double local = fp.price(i);
                     double anchor = fp.anchor(i);
                     double coverage = fp.coverage(i);
                     double factor = anchor > 0 ? local / anchor : 0;
+                    double stock = (snap != null && i < snap.stock.length) ? snap.stock[i] : 0;
+                    double supply = (snap != null && i < snap.supplyPerDay.length) ? snap.supplyPerDay[i] : 0;
+                    double demand = (snap != null && i < snap.demandPerDay.length) ? snap.demandPerDay[i] : 0;
 
                     // Resource name
-                    GText name = new GText(UI.FONT().S, 128);
+                    GText name = new GText(UI.FONT().S, 100);
                     name.set(r.key);
                     name.color(GCOLOR.T().NORMAL);
                     content.add(name, x, y);
 
-                    GText localT = new GText(UI.FONT().S, 64);
+                    GText localT = new GText(UI.FONT().S, 48);
                     localT.set(String.format("%.1f", local));
                     localT.color(GCOLOR.T().NORMAL);
-                    content.add(localT, x + 130, y);
+                    content.add(localT, x + 110, y);
 
-                    GText anchorT = new GText(UI.FONT().S, 64);
+                    GText anchorT = new GText(UI.FONT().S, 48);
                     anchorT.set(String.format("%.1f", anchor));
                     anchorT.color(GCOLOR.T().NORMAL);
-                    content.add(anchorT, x + 220, y);
+                    content.add(anchorT, x + 175, y);
 
-                    GText factorT = new GText(UI.FONT().S, 64);
+                    GText factorT = new GText(UI.FONT().S, 48);
                     factorT.set(String.format("%.1fx", factor));
                     factorT.color(factor > 10 ? GCOLOR.UI().BAD.normal : factor > 3 ? GCOLOR.UI().SOSO.normal : GCOLOR.T().NORMAL);
-                    content.add(factorT, x + 310, y);
+                    content.add(factorT, x + 240, y);
 
-                    // Coverage
-                    GText covT = new GText(UI.FONT().S, 64);
+                    GText covT = new GText(UI.FONT().S, 48);
                     covT.set(String.format("%.2f", coverage));
                     covT.color(coverage < 0.5 ? GCOLOR.UI().BAD.normal : coverage < 1.0 ? GCOLOR.UI().SOSO.normal : GCOLOR.UI().GOOD.normal);
-                    content.add(covT, x + 380, y);
+                    content.add(covT, x + 295, y);
 
-                    // Status indicator
+                    GText stockT = new GText(UI.FONT().S, 48);
+                    stockT.set(CompactNumber.format((long)stock));
+                    stockT.color(stock > 0 ? GCOLOR.T().NORMAL : GCOLOR.UI().BAD.normal);
+                    content.add(stockT, x + 355, y);
+
+                    GText supplyT = new GText(UI.FONT().S, 48);
+                    supplyT.set(CompactNumber.format((long)supply));
+                    supplyT.color(supply > 0 ? GCOLOR.T().NORMAL : GCOLOR.T().INACTIVE);
+                    content.add(supplyT, x + 420, y);
+
+                    GText demandT = new GText(UI.FONT().S, 48);
+                    demandT.set(CompactNumber.format((long)demand));
+                    demandT.color(GCOLOR.T().NORMAL);
+                    content.add(demandT, x + 485, y);
+
                     String status;
                     COLOR statusColor;
                     if (coverage < 0.3) { status = "MANGL"; statusColor = GCOLOR.UI().BAD.normal; }
@@ -186,12 +209,12 @@ public final class WindowEconomy extends EconWindowBase {
                     else if (coverage > 3.0) { status = "UEBERSCH."; statusColor = GCOLOR.UI().GOOD.normal; }
                     else { status = "ok"; statusColor = GCOLOR.UI().GOOD.normal; }
 
-                    GText statusT = new GText(UI.FONT().S, 64);
+                    GText statusT = new GText(UI.FONT().S, 48);
                     statusT.set(status);
                     statusT.color(statusColor);
-                    content.add(statusT, x + 460, y);
+                    content.add(statusT, x + 550, y);
 
-                    y += 16;
+                    y += 14;
                 }
             } else {
                 GText noData = new GText(UI.FONT().M, 128);
@@ -223,7 +246,7 @@ public final class WindowEconomy extends EconWindowBase {
             content.add(header, x, y);
             y += 28;
 
-            addKpi(content, x, y, "Einnahmen",
+            addKpi(content, x, y, UI.icons().m.coins, "Einnahmen",
                 CompactNumber.format(ledger.lastIncomeDue()) + " D", GCOLOR.T().NORMAL);
             addKpi(content, x + 380, y, "Bezahlt",
                 CompactNumber.format(ledger.lastIncomePaid()) + " D", GCOLOR.T().NORMAL);
@@ -258,12 +281,12 @@ public final class WindowEconomy extends EconWindowBase {
                 key.color(GCOLOR.T().NORMAL);
                 content.add(key, x, y);
 
-                GText emp = new GText(UI.FONT().S, 32);
+                GText emp = new GText(UI.FONT().S, 48);
                 emp.set(String.valueOf(f.employees()));
                 emp.color(GCOLOR.T().NORMAL);
                 content.add(emp, x + 150, y);
 
-                GText tgt = new GText(UI.FONT().S, 32);
+                GText tgt = new GText(UI.FONT().S, 48);
                 tgt.set(String.valueOf(f.employedTarget()));
                 tgt.color(GCOLOR.T().NORMAL);
                 content.add(tgt, x + 200, y);
@@ -278,7 +301,7 @@ public final class WindowEconomy extends EconWindowBase {
                 marginal.color(f.marginalPerWorker() > 0 ? GCOLOR.UI().GOOD.normal : GCOLOR.UI().BAD.normal);
                 content.add(marginal, x + 340, y);
 
-                GText unpaid = new GText(UI.FONT().S, 32);
+                GText unpaid = new GText(UI.FONT().S, 48);
                 unpaid.set(String.valueOf(f.workersUnpaid()));
                 unpaid.color(f.workersUnpaid() > 0 ? GCOLOR.UI().BAD.normal : GCOLOR.UI().GOOD.normal);
                 content.add(unpaid, x + 430, y);
@@ -317,7 +340,7 @@ public final class WindowEconomy extends EconWindowBase {
                 ledger.lastWorkersUnpaid() > 0 ? GCOLOR.UI().BAD.normal : GCOLOR.UI().GOOD.normal);
             y += 40;
 
-            addKpi(content, x, y, "Tagelohn",
+            addKpi(content, x, y, UI.icons().m.pickaxe, "Tagelohn",
                 CompactNumber.format((long)sim.laborMarket().meanWage()) + " D", GCOLOR.T().NORMAL);
             addKpi(content, x + 380, y, "Lohnsumme/Tag",
                 CompactNumber.format(sim.wagesPaid()) + " D", GCOLOR.T().NORMAL);
@@ -380,6 +403,108 @@ public final class WindowEconomy extends EconWindowBase {
             summary.set(subsidized + " von " + RESOURCES.ALL().size() + " Ressourcen subventioniert.");
             summary.color(subsidized > 0 ? GCOLOR.UI().GOOD.normal : GCOLOR.T().INACTIVE);
             content.add(summary, x, y);
+        }
+    }
+
+    // ─── Tab 6: Books (Audit) ────────────────────────────────────────
+
+    private static final class BooksTab implements TabContent {
+        @Override public CharSequence title() { return "Bücher"; }
+
+        @Override
+        public void build(EconomySim sim, GuiSection content, int x, int y, int w, int h) {
+            // === Geldfluss-Bilanz ===
+            GText flowHdr = new GText(UI.FONT().M, 256);
+            flowHdr.set("--- Geldfluss-Bilanz (letzte Saison) ---");
+            flowHdr.lablify();
+            content.add(flowHdr, x, y);
+            y += 24;
+
+            long inTotal = sim.fiscal().headTaxCollected() + sim.fiscal().marketReceipts()
+                + sim.religionTaxCollected() + sim.liturgyCollected()
+                + sim.housingMarket().lastRentCollected() + sim.warehouseMarket().lastSold()
+                + sim.propertySalesCollected() + sim.propertyDividendsPaid();
+            long outTotal = sim.wagesPaid() + sim.fiscal().rationOut()
+                + sim.warehouseMarket().lastBought() + sim.warehouseMarket().lastConstructionPaid();
+            long treasury = sim.treasury();
+
+            addKpi(content, x, y, "Einnahmen gesamt", CompactNumber.format(inTotal) + " D",
+                inTotal > 0 ? GCOLOR.UI().GOOD.normal : GCOLOR.UI().BAD.normal);
+            addKpi(content, x + 380, y, "Ausgaben gesamt", CompactNumber.format(outTotal) + " D", GCOLOR.T().NORMAL);
+            y += 40;
+
+            addKpi(content, x, y, "Staatskasse", CompactNumber.format(treasury) + " D",
+                treasury >= 0 ? GCOLOR.UI().GOOD.normal : GCOLOR.UI().BAD.normal);
+            addKpi(content, x + 380, y, "Saldo", CompactNumber.format(inTotal - outTotal) + " D",
+                inTotal >= outTotal ? GCOLOR.UI().GOOD.normal : GCOLOR.UI().BAD.normal);
+            y += 50;
+
+            // Detail-Aufschlüsselung
+            GText detailHdr = new GText(UI.FONT().M, 256);
+            detailHdr.set("--- Einnahmen-Detail ---");
+            detailHdr.lablify();
+            content.add(detailHdr, x, y);
+            y += 22;
+
+            addKpi(content, x, y, "Kopfsteuer", CompactNumber.format(sim.fiscal().headTaxCollected()) + " D", GCOLOR.T().NORMAL);
+            addKpi(content, x + 240, y, "Marktsteuer", CompactNumber.format(sim.fiscal().marketReceipts()) + " D", GCOLOR.T().NORMAL);
+            addKpi(content, x + 480, y, "Religionssteuer", CompactNumber.format(sim.religionTaxCollected()) + " D", GCOLOR.T().NORMAL);
+            y += 30;
+            addKpi(content, x, y, "Liturgie", CompactNumber.format(sim.liturgyCollected()) + " D", GCOLOR.T().NORMAL);
+            addKpi(content, x + 240, y, "Miete", CompactNumber.format(sim.housingMarket().lastRentCollected()) + " D", GCOLOR.T().NORMAL);
+            addKpi(content, x + 480, y, "Lagerverkauf", CompactNumber.format(sim.warehouseMarket().lastSold()) + " D", GCOLOR.T().NORMAL);
+            y += 30;
+            addKpi(content, x, y, "Immobilien", CompactNumber.format(sim.propertySalesCollected()) + " D", GCOLOR.T().NORMAL);
+            addKpi(content, x + 240, y, "Dividenden", CompactNumber.format(sim.propertyDividendsPaid()) + " D", GCOLOR.T().NORMAL);
+            y += 50;
+
+            GText outHdr = new GText(UI.FONT().M, 256);
+            outHdr.set("--- Ausgaben-Detail ---");
+            outHdr.lablify();
+            content.add(outHdr, x, y);
+            y += 22;
+
+            addKpi(content, x, y, "Löhne gesamt", CompactNumber.format(sim.wagesPaid()) + " D", GCOLOR.T().NORMAL);
+            addKpi(content, x + 240, y, "Rationen", CompactNumber.format(sim.fiscal().rationOut()) + " D", GCOLOR.T().NORMAL);
+            addKpi(content, x + 480, y, "Lagereinkauf", CompactNumber.format(sim.warehouseMarket().lastBought()) + " D", GCOLOR.T().NORMAL);
+            y += 30;
+            addKpi(content, x, y, "Baustoffe", CompactNumber.format(sim.warehouseMarket().lastConstructionPaid()) + " D", GCOLOR.T().NORMAL);
+            y += 40;
+
+            // Sanity-Check
+            GText sanityHdr = new GText(UI.FONT().M, 256);
+            sanityHdr.set("--- Bücher stimmen? ---");
+            sanityHdr.lablify();
+            content.add(sanityHdr, x, y);
+            y += 20;
+
+            long circulating = sim.wallets().circulating();
+            long discrepancy = treasury + circulating;
+            GText sanity = new GText(UI.FONT().M, 512);
+            sanity.set("Kasse + Umlauf = " + CompactNumber.format(discrepancy) + " D");
+            sanity.color(Math.abs(discrepancy) < 1000 ? GCOLOR.UI().GOOD.normal : GCOLOR.UI().SOSO.normal);
+            content.add(sanity, x, y);
+            y += 24;
+
+            // Event-Chronik
+            java.util.List<EventLog.EventEntry> events = EventLog.getRecentEvents();
+            if (events != null && !events.isEmpty()) {
+                GText chronHdr = new GText(UI.FONT().M, 256);
+                chronHdr.set("--- Wirtschafts-Chronik ---");
+                chronHdr.lablify();
+                content.add(chronHdr, x, y);
+                y += 18;
+
+                int shown = Math.min(events.size(), 8);
+                for (int i = events.size() - shown; i < events.size() && y < 480; i++) {
+                    EventLog.EventEntry e = events.get(i);
+                    GText evt = new GText(UI.FONT().S, 512);
+                    evt.set("[" + e.category + "] " + e.message + " (t=" + e.timestamp + ")");
+                    evt.color(GCOLOR.T().INACTIVE);
+                    content.add(evt, x, y);
+                    y += 14;
+                }
+            }
         }
     }
 }

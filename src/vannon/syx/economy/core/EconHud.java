@@ -1,103 +1,83 @@
 package vannon.syx.economy.core;
 
 import init.constant.C;
-import init.sprite.UI.UI;
+import init.sprite.SPRITES;
 import snake2d.MButt;
 import snake2d.Renderer;
 import snake2d.SPRITE_RENDERER;
-import snake2d.util.color.COLOR;
 import snake2d.util.datatypes.COORDINATE;
-import util.gui.misc.GText;
+import snake2d.util.gui.GuiSection;
+import snake2d.util.misc.ACTION;
 import util.gui.misc.GBox;
+import util.gui.misc.GButt;
 import vannon.syx.economy.ui.EconWindowBase;
 
 /**
- * Minimal persistent HUD — 4 tiny window-switcher buttons at the top-right
- * of the screen. Rendered through InstanceScript lifecycle.
- * No counters, no clutter. Only 4 single-letter buttons: Ü W S Q.
+ * Vanilla-konforme HUD-Buttons: GButt.ButtPanel mit echten Icons
+ * in der Naehe der Top-Leiste. Kein Eigen-Render, kein manuelles Hover.
+ *
+ * Da VIEW.java keinen oeffentlichen UIPanelTop-Zugriff hat, positioniert
+ * EconHud die Buttons selbst — aber MIT den echten Vanilla-ButtPanel-
+ * Komponenten (automatischer Hover/Selected/Border/Sound).
  */
 public final class EconHud {
 
-    private final EconWindowBase overview;
-    private final EconWindowBase economy;
-    private final EconWindowBase state;
-    private final EconWindowBase quickview;
-
-    private static final int BTN_W = 44;
-    private static final int BTN_H = 22;
-    private static final int GAP = 4;
-    private static final int TOTAL_W = 4 * BTN_W + 3 * GAP;
-    private final int x0;
-    private static final int Y = 8;
-
-    private final GText[] labels;
-    private int hoveredIdx = -1;
+    private final GuiSection section = new GuiSection();
+    private static final int BTN_DIM = 36;
+    private static final int BTN_GAP = 2;
 
     public EconHud(EconWindowBase overview, EconWindowBase economy,
-                    EconWindowBase state, EconWindowBase quickview) {
-        this.overview = overview;
-        this.economy = economy;
-        this.state = state;
-        this.quickview = quickview;
+                   EconWindowBase state, EconWindowBase quickview) {
 
-        x0 = C.WIDTH() - TOTAL_W - 340;
+        GButt.ButtPanel ovBtn = new GButt.ButtPanel(SPRITES.icons().l.gov);
+        ovBtn.clickActionSet(new ACTION() { @Override public void exe() { overview.toggle(); } });
+        ovBtn.hoverInfoSet("Wirtschafts-Uebersicht (Numpad +)");
+        ovBtn.setDim(BTN_DIM, 48);
 
-        labels = new GText[4];
-        String[] names = {"Ü", "W", "S", "Q"};
-        for (int i = 0; i < 4; i++) {
-            labels[i] = new GText(UI.FONT().S, 16);
-            labels[i].set(names[i]);
-        }
+        GButt.ButtPanel ecBtn = new GButt.ButtPanel(SPRITES.icons().m.coins);
+        ecBtn.clickActionSet(new ACTION() { @Override public void exe() { economy.toggle(); } });
+        ecBtn.hoverInfoSet("Wirtschaftsfenster (Numpad -)");
+        ecBtn.setDim(BTN_DIM, 48);
+
+        GButt.ButtPanel stBtn = new GButt.ButtPanel(SPRITES.icons().m.admin);
+        stBtn.clickActionSet(new ACTION() { @Override public void exe() { state.toggle(); } });
+        stBtn.hoverInfoSet("Staatsfenster (Numpad *)");
+        stBtn.setDim(BTN_DIM, 48);
+
+        GButt.ButtPanel qvBtn = new GButt.ButtPanel(SPRITES.icons().m.cog);
+        qvBtn.clickActionSet(new ACTION() { @Override public void exe() { quickview.toggle(); } });
+        qvBtn.hoverInfoSet("Quickview (Numpad 0)");
+        qvBtn.setDim(BTN_DIM, 48);
+
+        section.add(ovBtn, 0, 0);
+        section.add(ecBtn, BTN_DIM + BTN_GAP, 0);
+        section.add(stBtn, 2 * (BTN_DIM + BTN_GAP), 0);
+        section.add(qvBtn, 3 * (BTN_DIM + BTN_GAP), 0);
+    }
+
+    /** Called once to position the button strip.
+     *  Positions ~200px from the right screen edge, clear of vanilla icons. */
+    public void initPosition() {
+        section.body().moveX2(C.WIDTH() - 200);
+        section.body().moveY1(2);
     }
 
     public void render(Renderer r, float ds) {
         SPRITE_RENDERER sr = (SPRITE_RENDERER) r;
-        for (int i = 0; i < 4; i++) {
-            int bx = x0 + i * (BTN_W + GAP);
-            boolean hov = (i == hoveredIdx);
-            // Button background
-            (hov ? COLOR.WHITE35 : COLOR.WHITE15).render(sr, bx, bx + BTN_W, Y, Y + BTN_H);
-            // Border
-            COLOR.WHITE35.render(sr, bx, bx + BTN_W, Y, Y + 1);
-            COLOR.WHITE35.render(sr, bx, bx + BTN_W, Y + BTN_H - 1, Y + BTN_H);
-            COLOR.WHITE35.render(sr, bx, bx + 1, Y, Y + BTN_H);
-            COLOR.WHITE35.render(sr, bx + BTN_W - 1, bx + BTN_W, Y, Y + BTN_H);
-            // Label
-            labels[i].color(hov ? COLOR.WHITE200 : COLOR.WHITE100);
-            labels[i].render(sr, bx + 4, bx + BTN_W - 4, Y + 3, Y + BTN_H - 3);
-        }
+        section.render(sr, ds);
     }
 
-    private static final String[] TIPS = {"Uebersicht (Numpad +)", "Wirtschaft (Numpad -)",
-                                          "Staat (Numpad *)", "Quickview (Numpad 0)"};
-    private final GText tipText = new GText(UI.FONT().S, 128);
-
-    public boolean pollHover(COORDINATE mCoo, GBox tooltipText) {
-        hoveredIdx = -1;
-        for (int i = 0; i < 4; i++) {
-            int bx = x0 + i * (BTN_W + GAP);
-            if (mCoo.x() >= bx && mCoo.x() <= bx + BTN_W
-                && mCoo.y() >= Y && mCoo.y() <= Y + BTN_H) {
-                hoveredIdx = i;
-                return true;
-            }
-        }
-        return false;
+    public void pollHover(COORDINATE mCoo, GBox tooltipText) {
+        section.hover(mCoo);
     }
 
-    public boolean pollClick(MButt button) {
-        if (button != MButt.LEFT || hoveredIdx < 0) return false;
-        EconWindowBase[] wins = {overview, economy, state, quickview};
-        if (hoveredIdx < wins.length && wins[hoveredIdx] != null) {
-            wins[hoveredIdx].toggle();
+    public void pollClick(MButt button) {
+        if (button == MButt.LEFT) {
+            section.click();
         }
-        return true;
     }
 
     public void pollHoverTimer(GBox text) {
-        if (hoveredIdx >= 0) {
-            tipText.clear().add(TIPS[hoveredIdx]);
-            text.add(tipText);
-        }
+        section.hoverInfoGet(text);
     }
 }

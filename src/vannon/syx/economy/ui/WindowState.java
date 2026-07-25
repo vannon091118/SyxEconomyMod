@@ -20,7 +20,7 @@ public final class WindowState extends EconWindowBase {
         new FiscalTab(),
         new PublicWorksTab(),
         new SocialTab(),
-        new DebugTab()
+        new FaithTab()
     };
 
     public WindowState(EconomySim sim) {
@@ -28,7 +28,12 @@ public final class WindowState extends EconWindowBase {
     }
 
     @Override protected CharSequence title() { return "Staat"; }
-    @Override protected TabContent[] tabs() { return TABS; }
+    @Override protected TabContent[] tabs() {
+        if (EconConfig.debugLoggingEnabled) {
+            return new TabContent[]{new WarehousesTab(), new FiscalTab(), new PublicWorksTab(), new SocialTab(), new DebugTab()};
+        }
+        return TABS;
+    }
 
     // ─── Tab 1: Warehouses ───────────────────────────────────────────
 
@@ -39,8 +44,8 @@ public final class WindowState extends EconWindowBase {
         public void build(EconomySim sim, GuiSection content, int x, int y, int w, int h) {
             StateWarehouses wh = sim.stateWarehouses();
 
-            addKpi(content, x, y, "Staatslager", String.valueOf(wh.ownedCount()), GCOLOR.T().NORMAL);
-            addKpi(content, x + 380, y, "Modus", wh.tradeMode().name(), GCOLOR.T().NORMAL);
+            addKpi(content, x, y, UI.icons().m.admin, "Staatslager", String.valueOf(wh.ownedCount()), GCOLOR.T().NORMAL);
+            addKpi(content, x + 380, y, UI.icons().s.trade, "Modus", wh.tradeMode().name(), GCOLOR.T().NORMAL);
             y += 50;
 
             GText modeHeader = new GText(UI.FONT().M, 256);
@@ -114,13 +119,13 @@ public final class WindowState extends EconWindowBase {
             content.add(statsHeader, x, y);
             y += 24;
 
-            addKpi(content, x, y, "Gekauft",
+            addKpi(content, x, y, UI.icons().m.coins, "Gekauft",
                 wh.lastUnitsBought() + " Einh. / " + CompactNumber.format(wh.lastBought()) + " D", GCOLOR.T().NORMAL);
             y += 30;
-            addKpi(content, x, y, "Verkauft",
+            addKpi(content, x, y, UI.icons().m.coins, "Verkauft",
                 wh.lastUnitsSold() + " Einh. / " + CompactNumber.format(wh.lastSold()) + " D", GCOLOR.T().NORMAL);
             y += 30;
-            addKpi(content, x, y, "Kronmarkt",
+            addKpi(content, x, y, UI.icons().s.crown, "Kronmarkt",
                 wh.lastCrownMarketUnitsSold() + " Einh. / " + CompactNumber.format(wh.lastCrownMarketSold()) + " D", GCOLOR.T().NORMAL);
             y += 40;
 
@@ -130,16 +135,16 @@ public final class WindowState extends EconWindowBase {
             content.add(wageHeader, x, y);
             y += 24;
 
-            addSlider(content, x, y, "Lohn/Arbeiter", wh.wage(), 0, EconConfig.wageMax, EconConfig.wageStep,
+            addSlider(content, x, y, "Lohn/Arbeiter", wh::wage, 0, EconConfig.wageMax, EconConfig.wageStep,
                 new ACTION() { @Override public void exe() { wh.setWage(wh.wage() + EconConfig.wageStep); } },
                 new ACTION() { @Override public void exe() { wh.setWage(Math.max(0, wh.wage() - EconConfig.wageStep)); } });
 
-            addKpi(content, x + 380, y, "Bezahlt",
+            addKpi(content, x + 380, y, UI.icons().s.human, "Bezahlt",
                 String.valueOf(wh.lastWorkersPaid()), GCOLOR.UI().GOOD.normal);
             y += 30;
-            addKpi(content, x, y, "Lohnsumme",
+            addKpi(content, x, y, UI.icons().m.coins, "Lohnsumme",
                 CompactNumber.format(wh.lastWagesPaid()) + " D", GCOLOR.T().NORMAL);
-            addKpi(content, x + 380, y, "Unbezahlt",
+            addKpi(content, x + 380, y, UI.icons().s.angry, "Unbezahlt",
                 String.valueOf(wh.lastWorkersUnpaid()),
                 wh.lastWorkersUnpaid() > 0 ? GCOLOR.UI().BAD.normal : GCOLOR.UI().GOOD.normal);
         }
@@ -159,16 +164,16 @@ public final class WindowState extends EconWindowBase {
             y += 28;
 
             // Kopfsteuer slider (replaces static KPI)
-            addSlider(content, x, y, "Kopfsteuer/Saison", EconConfig.perHeadTax, 0, 500, 5,
+            addSlider(content, x, y, "Kopfsteuer/Saison", () -> EconConfig.perHeadTax, 0, 500, 5,
                 new ACTION() { @Override public void exe() { EconConfig.perHeadTax = Math.min(500, EconConfig.perHeadTax + 5); } },
                 new ACTION() { @Override public void exe() { EconConfig.perHeadTax = Math.max(0, EconConfig.perHeadTax - 5); } });
-            addKpi(content, x + 380, y, "Freigrenze",
+            addKpi(content, x + 380, y, UI.icons().s.shield, "Freigrenze",
                 EconConfig.perHeadTaxExemptionThreshold + " D", GCOLOR.T().NORMAL);
             y += 38;
 
-            addKpi(content, x, y, "Marktsteuer",
+            addKpi(content, x, y, UI.icons().s.trade, "Marktsteuer",
                 String.format("%.1f%%", EconConfig.marketTaxRate * 100), GCOLOR.T().NORMAL);
-            addKpi(content, x + 380, y, "Rücklagen",
+            addKpi(content, x + 380, y, UI.icons().s.storage, "Rücklagen",
                 EconConfig.warehouseTaxPercent + "%", GCOLOR.T().NORMAL);
             y += 40;
 
@@ -178,19 +183,19 @@ public final class WindowState extends EconWindowBase {
             content.add(collHeader, x, y);
             y += 24;
 
-            addKpi(content, x, y, "Kopfsteuer",
+            addKpi(content, x, y, UI.icons().m.law, "Kopfsteuer",
                 CompactNumber.format(sim.fiscal().headTaxCollected()) + " D", GCOLOR.T().NORMAL);
-            addKpi(content, x + 380, y, "Marktsteuer",
+            addKpi(content, x + 380, y, UI.icons().s.trade, "Marktsteuer",
                 CompactNumber.format(sim.fiscal().marketReceipts()) + " D", GCOLOR.T().NORMAL);
             y += 30;
 
-            addKpi(content, x, y, "Religionssteuer",
+            addKpi(content, x, y, UI.icons().s.temple, "Religionssteuer",
                 CompactNumber.format(sim.religionTaxCollected()) + " D", GCOLOR.T().NORMAL);
-            addKpi(content, x + 380, y, "Liturgie",
+            addKpi(content, x + 380, y, UI.icons().s.shrine, "Liturgie",
                 CompactNumber.format(sim.liturgyCollected()) + " D", GCOLOR.T().NORMAL);
             y += 30;
 
-            addKpi(content, x, y, "Rationen",
+            addKpi(content, x, y, UI.icons().s.plate, "Rationen",
                 CompactNumber.format(sim.fiscal().rationOut()) + " D", GCOLOR.T().NORMAL);
             y += 50;
 
@@ -235,9 +240,9 @@ public final class WindowState extends EconWindowBase {
             content.add(swHeader, x, y);
             y += 28;
 
-            addKpi(content, x, y, "Staatslöhne",
+            addKpi(content, x, y, UI.icons().m.pickaxe, "Staatslöhne",
                 CompactNumber.format(sim.wagesPaid()) + " D", GCOLOR.T().NORMAL);
-            addKpi(content, x + 380, y, "Bevölkerung",
+            addKpi(content, x + 380, y, UI.icons().m.citizen, "Bevölkerung",
                 String.valueOf(sim.roster().size()), GCOLOR.T().NORMAL);
             y += 40;
 
@@ -252,13 +257,13 @@ public final class WindowState extends EconWindowBase {
             y += 22;
 
             // Corvée-Draft slider
-            addSlider(content, x, y, "Aushebung %", EconConfig.corveeDraftPercent, 0, 100, 5,
+            addSlider(content, x, y, "Aushebung %", () -> EconConfig.corveeDraftPercent, 0, 100, 5,
                 new ACTION() { @Override public void exe() { EconConfig.corveeDraftPercent = Math.min(100, EconConfig.corveeDraftPercent + 5); } },
                 new ACTION() { @Override public void exe() { EconConfig.corveeDraftPercent = Math.max(0, EconConfig.corveeDraftPercent - 5); } }, "%");
-            addKpi(content, x + 380, y, "Max Personen",
+            addKpi(content, x + 380, y, UI.icons().s.human, "Max Personen",
                 String.valueOf(EconConfig.corveeDraftMax), GCOLOR.T().NORMAL);
             y += 38;
-            addKpi(content, x, y, "Letzte Fraktion",
+            addKpi(content, x, y, UI.icons().m.gov, "Letzte Fraktion",
                 String.format("%.1f%%", sim.corveeDraftFractionLast() * 100), GCOLOR.T().NORMAL);
             y += 40;
 
@@ -271,7 +276,7 @@ public final class WindowState extends EconWindowBase {
             addCheckbox(content, x, y, "Oddjob aktiv", EconConfig.oddjobWageEnabled,
                 b -> EconConfig.oddjobWageEnabled = b);
             y += 22;
-            addKpi(content, x, y, "Lohn/Aufgabe",
+            addKpi(content, x, y, UI.icons().m.pickaxe, "Lohn/Aufgabe",
                 EconConfig.oddjobWagePerTask + " D", GCOLOR.T().NORMAL);
             y += 40;
 
@@ -284,7 +289,7 @@ public final class WindowState extends EconWindowBase {
             addCheckbox(content, x, y, "Transport aktiv", EconConfig.transportFeeEnabled,
                 b -> EconConfig.transportFeeEnabled = b);
             y += 22;
-            addKpi(content, x, y, "Pauschale",
+            addKpi(content, x, y, UI.icons().s.speed, "Pauschale",
                 EconConfig.transportFeePer100TileDay + " D / 100t / Tag", GCOLOR.T().NORMAL);
             y += 40;
 
@@ -294,9 +299,9 @@ public final class WindowState extends EconWindowBase {
             content.add(gdHeader, x, y);
             y += 24;
 
-            addKpi(content, x, y, "Mahlzeiten",
+            addKpi(content, x, y, UI.icons().s.plate, "Mahlzeiten",
                 String.valueOf(sim.grainDole().mealsDoled()), GCOLOR.T().NORMAL);
-            addKpi(content, x + 380, y, "Auf Liste",
+            addKpi(content, x + 380, y, UI.icons().s.human, "Auf Liste",
                 String.valueOf(sim.grainDole().rollSize()), GCOLOR.T().NORMAL);
         }
     }
@@ -339,7 +344,7 @@ public final class WindowState extends EconWindowBase {
             long religionToday = sim.religionTaxCollected();
             long liturgyToday = sim.liturgyCollected();
 
-            addKpi(content, x, y, "Religionssteuer",
+            addKpi(content, x, y, UI.icons().m.heart, "Religionssteuer",
                 CompactNumber.format(religionToday) + " D",
                 religionToday > 0 ? GCOLOR.UI().GOOD.normal : GCOLOR.T().NORMAL);
             addKpi(content, x + 380, y, "Liturgie",
@@ -430,6 +435,79 @@ public final class WindowState extends EconWindowBase {
             pathNote.set("CSVs: macro, resources, firms. Im Dateimanager öffnen.");
             pathNote.color(GCOLOR.T().INACTIVE);
             content.add(pathNote, x, y);
+        }
+    }
+
+    // ─── Tab 5: Faith ────────────────────────────────────────────────
+
+    private static final class FaithTab implements TabContent {
+        @Override public CharSequence title() { return "Glaube"; }
+
+        @Override
+        public void build(EconomySim sim, GuiSection content, int x, int y, int w, int h) {
+            GText header = new GText(UI.FONT().M, 256);
+            header.set("--- Religion & Liturgie ---");
+            header.lablify();
+            content.add(header, x, y);
+            y += 24;
+
+            long religionToday = sim.religionTaxCollected();
+            long liturgyToday = sim.liturgyCollected();
+
+            addKpi(content, x, y, UI.icons().m.heart, "Religionssteuer",
+                CompactNumber.format(religionToday) + " D",
+                religionToday > 0 ? GCOLOR.UI().GOOD.normal : GCOLOR.T().NORMAL);
+            addKpi(content, x + 380, y, "Liturgie",
+                CompactNumber.format(liturgyToday) + " D",
+                liturgyToday > 0 ? GCOLOR.UI().GOOD.normal : GCOLOR.T().NORMAL);
+            y += 40;
+
+            long total = religionToday + liturgyToday;
+            GText totalText = new GText(UI.FONT().M, 256);
+            totalText.set("Gesamte Sammlungen heute: " + CompactNumber.format(total) + " D");
+            totalText.color(total > 0 ? GCOLOR.UI().GOOD.normal : GCOLOR.T().INACTIVE);
+            content.add(totalText, x, y);
+            y += 36;
+
+            GText toggleHdr = new GText(UI.FONT().M, 256);
+            toggleHdr.set("--- Schalter ---");
+            toggleHdr.lablify();
+            content.add(toggleHdr, x, y);
+            y += 22;
+
+            addCheckbox(content, x, y, "Religionssteuer aktiv", EconConfig.religionTaxEnabled,
+                b -> EconConfig.religionTaxEnabled = b);
+            GText relInfo = new GText(UI.FONT().S, 256);
+            relInfo.set("Treibt Geld fuer Tempel und Glaube ein.");
+            relInfo.color(GCOLOR.T().INACTIVE);
+            content.add(relInfo, x + 20, y + 16);
+            y += 36;
+
+            addCheckbox(content, x, y, "Liturgie abhalten", EconConfig.liturgyEnabled,
+                b -> EconConfig.liturgyEnabled = b);
+            GText litInfo = new GText(UI.FONT().S, 256);
+            litInfo.set("Sammelt Spenden — Stimmung der Buerger steigt.");
+            litInfo.color(GCOLOR.T().INACTIVE);
+            content.add(litInfo, x + 20, y + 16);
+            y += 36;
+
+            // Liturgy interval display only (no toggle — controlled by EconConfig)
+            GText litInt = new GText(UI.FONT().S, 256);
+            litInt.set("Liturgie-Turnus: alle " + EconConfig.liturgyIntervalSeasons + " Saison(en)");
+            litInt.color(GCOLOR.T().INACTIVE);
+            content.add(litInt, x, y);
+            y += 28;
+
+            GText infoHdr = new GText(UI.FONT().M, 256);
+            infoHdr.set("--- Info ---");
+            infoHdr.lablify();
+            content.add(infoHdr, x, y);
+            y += 18;
+
+            GText info = new GText(UI.FONT().S, 512);
+            info.set("Religionssteuer: Pro-Kopf-Abgabe an Tempel. Liturgie: Freiwillige Spenden sammeln. Beide verbessern Stimmung und Loyalitaet.");
+            info.color(GCOLOR.T().INACTIVE);
+            content.add(info, x, y);
         }
     }
 

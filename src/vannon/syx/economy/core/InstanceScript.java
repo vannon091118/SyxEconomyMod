@@ -49,6 +49,7 @@ final class InstanceScript implements SCRIPT.SCRIPT_INSTANCE {
         this.subjectWallet = new SubjectWallet();
         this.subjectJob = new SubjectJob();
         this.econHud = new EconHud(this.overview, this.economyWindow, this.stateWindow, this.quickview);
+        this.econHud.initPosition();
         EconWindowBase.setSiblings(this.overview, this.economyWindow, this.stateWindow);
         DebugTracer.trace(DebugTracer.SCRP, "InstanceScript created");
     }

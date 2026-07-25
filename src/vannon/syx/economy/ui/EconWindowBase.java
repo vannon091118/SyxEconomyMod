@@ -9,6 +9,7 @@ import snake2d.util.gui.GuiSection;
 import snake2d.util.gui.renderable.RENDEROBJ;
 import snake2d.util.misc.ACTION;
 import snake2d.util.sprite.SPRITE;
+import java.util.function.IntSupplier;
 import util.colors.GCOLOR;
 import util.gui.misc.GButt;
 import util.gui.misc.GText;
@@ -36,6 +37,10 @@ public abstract class EconWindowBase {
         winEconomy = economy;
         winState = state;
     }
+
+    /** Counter for window stacking offset. Each open window shifts slightly right+down. */
+    private static int openCount = 0;
+    private static final int STACK_OFFSET = 24;
 
     private InterGuisection inter;
     private int activeTab = 0;
@@ -83,6 +88,8 @@ public abstract class EconWindowBase {
             root.add(panel, 0, 0);
             root.add(content, panel.inner().x1(), panel.inner().y1());
 
+            auditStack();
+            incrementStack();
             position(root);
             inter.activate(root);
         }
@@ -91,8 +98,10 @@ public abstract class EconWindowBase {
     /** Closes the window if open. */
     public void close() {
         if (inter != null) {
-            inter.close();
+            InterGuisection old = inter;
             inter = null;
+            decrementStack();
+            old.close();
         }
     }
 
@@ -109,14 +118,33 @@ public abstract class EconWindowBase {
         }
     }
 
-    /** Override to position the root section; default centers on screen.
-     *  snake2d {@link Rec#centerIn} takes (left, right, top, bottom). An older call
-     *  passed (0, 0, WIDTH(), HEIGHT()) — degenerate X-range + off-screen Y-range —
-     *  which placed the panel at a negative-X / below-screen position invisible to
-     *  the player. Quickview bypasses this by overriding position(). */
+    /** Override to position the root section; default centers on screen with
+     *  stacking offset — each successive open window shifts right+down by 24px. */
     protected void position(GuiSection root) {
         Rec b = (Rec) root.body();
         b.centerIn(0, C.WIDTH(), 0, C.HEIGHT());
+        b.moveX1Y1(STACK_OFFSET * openCount, STACK_OFFSET * openCount);
+    }
+
+    /** Called by toggle() when opening — increments the shared window counter. */
+    private void incrementStack() {
+        // Don't double-count if already shown (tab switching re-opens)
+        if (!isShown()) openCount++;
+    }
+
+    /** Called by close() — decrements the shared window counter. */
+    private void decrementStack() {
+        if (openCount > 0) openCount--;
+    }
+
+    /** Defensive: zaehlt tatsaechlich offene Fenster und korrigiert openCount.
+     *  Faengt Faeble ab, wo Vanilla-UI-Manager Fenster schliesst ohne close(). */
+    private static void auditStack() {
+        int actual = 0;
+        if (winOverview != null && winOverview.isShown()) actual++;
+        if (winEconomy != null && winEconomy.isShown()) actual++;
+        if (winState != null && winState.isShown()) actual++;
+        openCount = actual;
     }
 
     /** Window title shown in the GPanel header. */
@@ -135,42 +163,23 @@ public abstract class EconWindowBase {
         TabContent[] tabs = tabs();
         if (tabs == null || tabs.length == 0) return;
 
+        // Safety: if activeTab exceeds tab count (e.g. Debug tab removed), reset to 0
+        if (this.activeTab >= tabs.length) this.activeTab = 0;
+
         int innerW = panelW - 24;
 
-        // Tab bar layout constants (used by both nav strip and tab bar)
         int tabY = 6;
         int tabH = 22;
         int tabGap = 4;
-
-        // ── Navigation strip (top-right, below tab bar) ───────
-        int navY = tabY + tabH + 4;
-        int navGap = 4;
-        String[] navLabels = {"Uebersicht", "Wirtschaft", "Staat"};
-        EconWindowBase[] navTargets = {winOverview, winEconomy, winState};
-        int navX = panelW - 12;
-        for (int i = navLabels.length - 1; i >= 0; i--) {
-            if (navTargets[i] == null || navTargets[i] == this) continue;
-            final EconWindowBase target = navTargets[i];
-            GButt.ButtPanel navBtn = new GButt.ButtPanel(navLabels[i], 80);
-            navBtn.hoverInfoSet("Oeffne " + navLabels[i] + "-Fenster");
-            navBtn.clickActionSet(new ACTION() {
-                @Override public void exe() { target.toggle(); }
-            });
-            content.add(navBtn, navX - 80 - navGap, navY);
-            navX -= (80 + navGap);
-        }
-
-        // Tab bar
         int tabX = 12;
         for (int i = 0; i < tabs.length; i++) {
             final int idx = i;
             GText label = new GText(UI.FONT().S, 64);
             label.clear().add(tabs[i].title());
             // Minimum 120px wide — prevents truncation of labels like "Demografie", "Soziales"
-            int tw = Math.max(120, label.width() + 28);
+            int tw = Math.max(140, label.width() + 32);
             boolean active = (i == this.activeTab);
             GButt.ButtPanel tabBtn = new GButt.ButtPanel(tabs[i].title(), tw);
-            tabBtn.hoverInfoSet(tabs[i].title());
             tabBtn.clickActionSet(new ACTION() {
                 @Override
                 public void exe() {
@@ -236,48 +245,108 @@ public abstract class EconWindowBase {
         section.add(val, x + 28, y + 14);
     }
 
-    /** Visual slider: [-] button + bar + value + [+] button. Denari suffix.
-     *  Bar uses ASCII # and - (safe for game's bitmap font). */
+    // ─── Live Slider ────────────────────────────────────────────
+
+    /**
+     * Live-updating slider. Bar and value text re-read the current value
+     * from {@link IntSupplier} every frame, so external changes (e.g.
+     * Numpad commands) are reflected immediately without closing/reopening.
+     *
+     * Layout: label, [-] button, 10-char bar, value, [+] button.
+     * Bar uses ASCII '#' (filled) and '-' (empty) — safe for bitmap font.
+     */
+    private static final class LiveSlider extends GuiSection {
+        private final GText bar;
+        private final GText val;
+        private final IntSupplier supplier;
+        private final int min, max;
+        private final String suffix;
+
+        LiveSlider(GuiSection parent, int x, int y, String label,
+                    IntSupplier supplier, int min, int max,
+                    String suffix, ACTION plusAction, ACTION minusAction) {
+            this.supplier = supplier;
+            this.min = min;
+            this.max = max;
+            this.suffix = suffix;
+
+            GText lbl = new GText(UI.FONT().S, 128);
+            lbl.set(label);
+            lbl.color(GCOLOR.T().NORMAL);
+            add(lbl, 0, 0);
+
+            GButt.ButtPanel minus = new GButt.ButtPanel("-", 24);
+            minus.clickActionSet(minusAction);
+            add(minus, 0, 14);
+
+            bar = new GText(UI.FONT().M, 120);
+            add(bar, 32, 16);
+
+            val = new GText(UI.FONT().M, 80);
+            add(val, 120, 16);
+
+            GButt.ButtPanel plus = new GButt.ButtPanel("+", 24);
+            plus.clickActionSet(plusAction);
+            add(plus, 200, 14);
+
+            // Initial render with current value
+            updateDisplay(supplier.getAsInt());
+
+            parent.add(this, x, y);
+        }
+
+        @Override
+        public void render(SPRITE_RENDERER r, float ds) {
+            updateDisplay(supplier.getAsInt());
+            super.render(r, ds);
+        }
+
+        private void updateDisplay(int current) {
+            double ratio = max > min ? (double)(current - min) / (double)(max - min) : 0;
+            int filled = Math.max(0, Math.min(10, (int)(ratio * 10)));
+            StringBuilder sb = new StringBuilder(10);
+            for (int i = 0; i < 10; i++) sb.append(i < filled ? '#' : '-');
+            bar.set(sb.toString());
+            bar.color(filled >= 8 ? GCOLOR.UI().GOOD.normal
+                   : filled >= 4 ? GCOLOR.UI().SOSO.normal
+                   : filled > 0  ? GCOLOR.UI().BAD.normal
+                   :                GCOLOR.T().INACTIVE);
+
+            val.set(CompactNumber.format(current) + suffix);
+        }
+    }
+
+    // ─── Slider entry points ────────────────────────────────────────
+
+    /** Live slider — value is re-read every frame via IntSupplier. */
+    protected static void addSlider(GuiSection section, int x, int y,
+                                     String label, IntSupplier currentSupplier,
+                                     int min, int max, int step,
+                                     ACTION plusAction, ACTION minusAction, String suffix) {
+        new LiveSlider(section, x, y, label, currentSupplier, min, max, suffix, plusAction, minusAction);
+    }
+
+    /** Live slider with " D" suffix. */
+    protected static void addSlider(GuiSection section, int x, int y,
+                                     String label, IntSupplier currentSupplier,
+                                     int min, int max, int step,
+                                     ACTION plusAction, ACTION minusAction) {
+        addSlider(section, x, y, label, currentSupplier, min, max, step, plusAction, minusAction, " D");
+    }
+
+    /** Static snapshot slider (non-live). Value captured once at creation. */
+    protected static void addSlider(GuiSection section, int x, int y,
+                                     String label, int current, int min, int max, int step,
+                                     ACTION plusAction, ACTION minusAction, String suffix) {
+        int captured = current;
+        new LiveSlider(section, x, y, label, () -> captured, min, max, suffix, plusAction, minusAction);
+    }
+
+    /** Static snapshot with " D" suffix. */
     protected static void addSlider(GuiSection section, int x, int y,
                                      String label, int current, int min, int max, int step,
                                      ACTION plusAction, ACTION minusAction) {
         addSlider(section, x, y, label, current, min, max, step, plusAction, minusAction, " D");
-    }
-
-    /** Visual slider with custom value suffix (e.g. "%", " D", ""). */
-    protected static void addSlider(GuiSection section, int x, int y,
-                                     String label, int current, int min, int max, int step,
-                                     ACTION plusAction, ACTION minusAction, String suffix) {
-        GText lbl = new GText(UI.FONT().S, 128);
-        lbl.set(label);
-        lbl.color(GCOLOR.T().NORMAL);
-        section.add(lbl, x, y);
-
-        GButt.ButtPanel minus = new GButt.ButtPanel("-", 24);
-        minus.clickActionSet(minusAction);
-        minus.hoverInfoSet(label + " senken");
-        section.add(minus, x, y + 14);
-
-        double ratio = max > min ? (double)(current - min) / (double)(max - min) : 0;
-        int filled = Math.max(0, Math.min(10, (int)(ratio * 10)));
-        StringBuilder barStr = new StringBuilder();
-        for (int i = 0; i < 10; i++) barStr.append(i < filled ? '#' : '-');
-        COLOR barColor = filled >= 8 ? GCOLOR.UI().GOOD.normal : filled >= 4 ? GCOLOR.UI().SOSO.normal : filled > 0 ? GCOLOR.UI().BAD.normal : GCOLOR.T().INACTIVE;
-
-        GText bar = new GText(UI.FONT().M, 32);
-        bar.set(barStr.toString());
-        bar.color(barColor);
-        section.add(bar, x + 32, y + 16);
-
-        GText val = new GText(UI.FONT().M, 64);
-        val.set(CompactNumber.format(current) + suffix);
-        val.color(GCOLOR.T().NORMAL);
-        section.add(val, x + 120, y + 16);
-
-        GButt.ButtPanel plus = new GButt.ButtPanel("+", 24);
-        plus.clickActionSet(plusAction);
-        plus.hoverInfoSet(label + " erhöhen");
-        section.add(plus, x + 200, y + 14);
     }
 
     /** Column header in UI.FONT().S for table layouts. */
