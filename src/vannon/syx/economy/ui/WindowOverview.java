@@ -15,4 +15,7 @@ public final class WindowOverview extends EconWindowBase {
     protected CharSequence windowTitle() {
         return "Übersicht";
     }
+    // DashboardTab overrides EconTab.drawsOwnHeader() → true → base window
+    // skips its default KPI strip only when this tab is active. Vermögen and
+    // Ratgeber keep their KPI headers.
 }

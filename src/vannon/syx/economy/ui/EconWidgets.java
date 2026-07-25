@@ -11,9 +11,9 @@ public final class EconWidgets {
 
     /** Single recycled GText instance for widget labels. The UI is single-threaded and immediate-mode.
      *  Lazy-init: UI.FONT() ist erst nach Engine-Initialisierung verfügbar. */
-    private static GText labelText;
+    static GText labelText;
 
-    private static GText labelText() {
+    static GText labelText() {
         if (labelText == null) {
             labelText = new GText(UI.FONT().M, 256);
         }

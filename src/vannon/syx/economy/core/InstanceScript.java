@@ -29,6 +29,7 @@ final class InstanceScript implements SCRIPT.SCRIPT_INSTANCE {
     private boolean economyWasDown;
     private boolean stateWasDown;
     private boolean dumpWasDown;
+    private boolean escWasDown;
     /** View-change detection: compare VIEW.current() against last known class name. */
     private String lastViewClassName = "(startup)";
 
@@ -40,6 +41,7 @@ final class InstanceScript implements SCRIPT.SCRIPT_INSTANCE {
         this.economyWindow = new WindowEconomy(this.economy);
         this.stateWindow = new WindowState(this.economy);
         this.subjectWallet = new SubjectWallet();
+        EconWindowBase.setSiblings(this.overview, this.economyWindow, this.stateWindow);
         DebugTracer.trace(DebugTracer.SCRP, "InstanceScript created");
     }
 
@@ -82,11 +84,13 @@ final class InstanceScript implements SCRIPT.SCRIPT_INSTANCE {
 
     /** Hotkey polling with edge detection (Hk.java pattern from ListMenus mod).
      *  Numpad + → Overview, Numpad - → Economy, Numpad * → State.
+     *  ESC → close all open windows.
      *  Clean switching: pressing a hotkey hides all other windows first. */
     private void pollHotkeys() {
         boolean add  = CORE.getInput().getKeyboard().isPressed(334); // Numpad +
         boolean sub  = CORE.getInput().getKeyboard().isPressed(333); // Numpad -
         boolean mul  = CORE.getInput().getKeyboard().isPressed(332); // Numpad *
+        boolean esc  = CORE.getInput().getKeyboard().isPressed(256); // ESC
 
         if (add && !this.overviewWasDown) {
             switchTo(this.overview, this.economyWindow, this.stateWindow);
@@ -94,11 +98,21 @@ final class InstanceScript implements SCRIPT.SCRIPT_INSTANCE {
             switchTo(this.economyWindow, this.overview, this.stateWindow);
         } else if (mul && !this.stateWasDown) {
             switchTo(this.stateWindow, this.overview, this.economyWindow);
+        } else if (esc && !this.escWasDown) {
+            closeAllWindows();
         }
 
         this.overviewWasDown = add;
         this.economyWasDown = sub;
         this.stateWasDown  = mul;
+        this.escWasDown    = esc;
+    }
+
+    /** Close all open economy windows. */
+    private void closeAllWindows() {
+        if (overview.isShown()) overview.toggle();
+        if (economyWindow.isShown()) economyWindow.toggle();
+        if (stateWindow.isShown()) stateWindow.toggle();
     }
 
     /** Numpad / (GLFW_KEY_KP_DIVIDE = 331) → dump DebugTracer buffer to game log. */

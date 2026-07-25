@@ -8,6 +8,7 @@ import vannon.syx.economy.core.EconomySim;
 public final class EconContext {
     public final Renderer renderer;
     public final EconomySim sim;
+    public final float ds;
     public final int mouseX;
     public final int mouseY;
     public final boolean leftDown;
@@ -18,12 +19,13 @@ public final class EconContext {
     public final int windowH;
     public final Map<String, Object> state;
 
-    public EconContext(Renderer renderer, EconomySim sim,
+    public EconContext(Renderer renderer, EconomySim sim, float ds,
                          int mouseX, int mouseY, boolean leftDown, boolean clicked,
                          int windowX, int windowY, int windowW, int windowH,
                          Map<String, Object> state) {
         this.renderer = renderer;
         this.sim = sim;
+        this.ds = ds;
         this.mouseX = mouseX;
         this.mouseY = mouseY;
         this.leftDown = leftDown;

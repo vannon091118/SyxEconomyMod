@@ -13,4 +13,13 @@ public interface EconTab {
     default void click(EconContext ctx, snake2d.MButt button) {
         // default: no-op
     }
+    /**
+     * If {@code true}, the base window skips its default KPI header strip on this
+     * tab. Used by tabs that draw their own landing surface — e.g. DashboardTab
+     * draws a master banner that already covers the same numbers.
+     * <p>Default: {@code false} (legacy tabs keep the KPI strip).
+     */
+    default boolean drawsOwnHeader() {
+        return false;
+    }
 }
