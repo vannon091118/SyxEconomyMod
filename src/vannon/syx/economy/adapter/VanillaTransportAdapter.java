@@ -1,23 +1,24 @@
 package vannon.syx.economy.adapter;
 
-import java.lang.reflect.Field;
+import settlement.entity.humanoid.Humanoid;
 import settlement.room.infra.station.ROOM_STATION;
-import settlement.room.infra.transport.ROOM_TRANSPORT;
 import settlement.room.main.RoomInstance;
-import vannon.syx.economy.core.EventLog;    /**
-     * V71.44-Adapter: liest das interne {@code distance}-Feld (float) der
-     * {@code TransportInstance} per Reflection. Field-Zugriff erfolgt einmalig
-     * im Konstruktor; ein Fehlschlag führt zu {@link FallbackTransportAdapter}
-     * (vom Aufrufer zu prüfen via {@link #isDistanceAvailable()}).
-     *
-     * <p>One-Shot-Guard im Konstruktor verhindert EventLog-Spam bei wiederholten
-     * Initialisierungen. Runtime-Lese-Fehler setzen {@code distanceAvailable}
-     * dauerhaft auf false und signalisieren zusätzlich via EventLog.</p>
-     *
-     * <p><b>V71.44-verifiziert:</b> {@code TransportInstance.distance} ist
-     * {@code float} — NICHT {@code double}. {@link #getReflectedDistance}
-     * nutzt daher {@link Field#getFloat} mit explizitem {@code (double)} Cast.</p>
-     */
+import vannon.syx.economy.adapter.seam.BypassGate;
+import vannon.syx.economy.adapter.seam.ClassResolver;
+import vannon.syx.economy.adapter.seam.FieldAccessor;
+import vannon.syx.economy.core.EventLog;
+
+/**
+ * V71.44-Adapter powered by {@link BypassGate}: liest das interne
+ * {@code distance}-Feld (float) der package-private
+ * {@code TransportInstance} per VarHandle (primär) mit Reflection-Fallback.
+ *
+ * <p>{@link ClassResolver} löst die package-private Klasse mit dem
+ * Game-ClassLoader ({@code Humanoid.class.getClassLoader()}) auf.</p>
+ *
+ * <p>Geometrische Distanzberechnung bleibt unverändert — reine Mathematik,
+ * kein Engine-Zugriff.</p>
+ */
 public final class VanillaTransportAdapter implements ISyxTransport {
 
     private static final String TRANSPORT_INSTANCE_CLASS = "settlement.room.infra.transport.TransportInstance";
@@ -25,52 +26,55 @@ public final class VanillaTransportAdapter implements ISyxTransport {
 
     private static final ClassLoader GAME_CL;
     static {
-        ClassLoader cl = RoomInstance.class.getClassLoader();
+        ClassLoader cl = Humanoid.class.getClassLoader();
         GAME_CL = cl != null ? cl : ClassLoader.getSystemClassLoader();
     }
 
-    private Field distanceField;
-    private boolean distanceAvailable;
-    private boolean initFailedLogged;
+    private final FieldAccessor.FloatField distanceAccessor;
+    private final boolean initOk;
+
+    private boolean runtimeFailed;
     private boolean runtimeFailedLogged;
 
     public VanillaTransportAdapter() {
-        this.distanceField = null;
-        this.distanceAvailable = false;
+        BypassGate gate = new BypassGate("VanillaTransportAdapter");
+        ClassResolver resolver = gate.classResolver(GAME_CL);
+
+        FieldAccessor.FloatField dist = null;
+        boolean ok = false;
         try {
-            Class<?> transportClass = Class.forName(TRANSPORT_INSTANCE_CLASS, true, GAME_CL);
-            this.distanceField = transportClass.getDeclaredField(DISTANCE_FIELD);
-            this.distanceField.setAccessible(true);
-            this.distanceAvailable = true;
-            EventLog.log("SEAM", "VanillaTransportAdapter: READY (distance-Feld)");
+            Class<?> tc = resolver.resolve(TRANSPORT_INSTANCE_CLASS);
+            dist = gate.floatField(tc, DISTANCE_FIELD);
+            ok = gate.isAvailable();
         } catch (Throwable t) {
-            this.distanceAvailable = false;
-            if (!this.initFailedLogged) {
-                this.initFailedLogged = true;
-                EventLog.log("SEAM", "VanillaTransportAdapter init failed — "
-                        + t.getClass().getSimpleName() + ": " + t.getMessage()
-                        + ". Fallback auf geometrische Distanz.");
-            }
+            ok = false;
+            EventLog.log("SEAM", "VanillaTransportAdapter init failed — "
+                    + t.getClass().getSimpleName() + ": " + t.getMessage()
+                    + ". Fallback auf geometrische Distanz.");
+        }
+
+        this.distanceAccessor = dist;
+        this.initOk = ok;
+
+        if (this.initOk) {
+            EventLog.log("SEAM", "VanillaTransportAdapter: READY (distance-Feld via BypassGate)");
         }
     }
 
     @Override
     public boolean isDistanceAvailable() {
-        return this.distanceAvailable;
+        return this.initOk && !this.runtimeFailed;
     }
 
     @Override
     public double getReflectedDistance(RoomInstance loadingStation) {
-        if (!this.distanceAvailable || loadingStation == null || this.distanceField == null) {
+        if (!isDistanceAvailable() || loadingStation == null || distanceAccessor == null) {
             return -1.0;
         }
-        // The vanilla field lives on TransportInstance, but ROOM_TRANSPORT.getInstance()
-        // already returns TransportInstance. V71.44-verified: distance is float, NOT double.
-        // Field.getFloat() + explicit (double) cast avoids IllegalArgumentException.
         try {
-            return (double) this.distanceField.getFloat(loadingStation);
+            return (double) distanceAccessor.get(loadingStation);
         } catch (Throwable t) {
-            this.distanceAvailable = false;
+            this.runtimeFailed = true;
             if (!this.runtimeFailedLogged) {
                 this.runtimeFailedLogged = true;
                 EventLog.log("SEAM", "VanillaTransportAdapter runtime read failed — "

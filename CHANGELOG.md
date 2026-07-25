@@ -10,7 +10,14 @@
 
 ---
 
-## v0.13.5 — 2026-07-25
+## v0.13.6 — 2026-07-25
+
+### Phase C — Transport-Adapter auf BypassGate migriert
+
+- VanillaTransportAdapter: Thin-Wrapper um BypassGate + ClassResolver (package-private TransportInstance)
+- VanillaTransportAdapterMH: gelöscht (BypassGate auto-select VarHandle)
+- FallbackTransportAdapter: gelöscht (BypassGate.isAvailable() ersetzt)
+- EconomySim.createTransportAdapter(): vereinfacht, kein MH-Toggle
 
 ### Phase B — Diplomacy-Adapter auf BypassGate migriert
 

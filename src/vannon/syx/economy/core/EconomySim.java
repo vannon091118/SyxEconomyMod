@@ -58,7 +58,6 @@ import vannon.syx.economy.core.ServiceMarket;
 import vannon.syx.economy.core.ServicePlanController;
 import vannon.syx.economy.core.StateWageMarket;
 import vannon.syx.economy.adapter.FallbackBoostingAdapter;
-import vannon.syx.economy.adapter.FallbackTransportAdapter;
 import vannon.syx.economy.adapter.FallbackWarehouseAdapter;
 import vannon.syx.economy.adapter.ISyxAI;
 import vannon.syx.economy.adapter.ISyxBoosting;
@@ -69,7 +68,6 @@ import vannon.syx.economy.adapter.VanillaAIAdapter;
 import vannon.syx.economy.adapter.VanillaBoostingAdapter;
 import vannon.syx.economy.adapter.VanillaDiplomacyAdapter;
 import vannon.syx.economy.adapter.VanillaTransportAdapter;
-import vannon.syx.economy.adapter.VanillaTransportAdapterMH;
 import vannon.syx.economy.adapter.VanillaWarehouseAdapter;
 import vannon.syx.economy.adapter.VanillaWarehouseAdapterMH;
 import vannon.syx.economy.core.StateWarehouses;
@@ -422,8 +420,8 @@ public final class EconomySim {
     }
 
     private static ISyxTransport createTransportAdapter() {
-        ISyxTransport tx = EconConfig.useMethodHandleAdapters ? new VanillaTransportAdapterMH() : new VanillaTransportAdapter();
-        return tx.isDistanceAvailable() ? tx : new FallbackTransportAdapter();
+        // Phase C: BypassGate SDK — ClassResolver für package-private TransportInstance.
+        return new VanillaTransportAdapter();
     }
 
     private static ISyxWarehouse createWarehouseAdapter() {
