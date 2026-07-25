@@ -8,6 +8,8 @@ import vannon.syx.economy.adapter.seam.ClassResolver;
 import vannon.syx.economy.adapter.seam.FieldAccessor;
 import vannon.syx.economy.core.EventLog;
 
+import java.lang.invoke.MethodHandles;
+
 /**
  * V71.44-Adapter powered by {@link BypassGate}: liest das interne
  * {@code distance}-Feld (float) der package-private
@@ -37,7 +39,7 @@ public final class VanillaTransportAdapter implements ISyxTransport {
     private boolean runtimeFailedLogged;
 
     public VanillaTransportAdapter() {
-        BypassGate gate = new BypassGate("VanillaTransportAdapter");
+        BypassGate gate = new BypassGate("VanillaTransportAdapter", MethodHandles.lookup());
         ClassResolver resolver = gate.classResolver(GAME_CL);
 
         FieldAccessor.FloatField dist = null;

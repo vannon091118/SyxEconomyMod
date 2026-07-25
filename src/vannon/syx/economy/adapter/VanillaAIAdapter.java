@@ -50,6 +50,8 @@ public final class VanillaAIAdapter implements ISyxAI {
     private boolean tavernPlanFailedLogged;
     private boolean marketPlanFailedLogged;
 
+    private final int loadedClassCount;
+
     public VanillaAIAdapter() {
         this.oddjobberClass  = resolveClass(ODDJOBBER_CLASS);
         this.foodEateryClass  = resolveClass(FOOD_EATERY_CLASS);
@@ -65,9 +67,17 @@ public final class VanillaAIAdapter implements ISyxAI {
         if (this.foodRawClass != null) loaded++;
         if (this.tavernClass != null) loaded++;
         if (this.marketClass != null) loaded++;
+        this.loadedClassCount = loaded;
         if (loaded > 0) {
             EventLog.log("SEAM", "VanillaAIAdapter: READY (" + loaded + "/6 Plan-Klassen via ClassResolver)");
+        } else {
+            EventLog.log("SEAM", "VanillaAIAdapter: KEINE Plan-Klassen geladen — AI-Erkennung inaktiv");
         }
+    }
+
+    @Override
+    public boolean isAvailable() {
+        return this.loadedClassCount > 0;
     }
 
     private static Class<?> resolveClass(String fqcn) {

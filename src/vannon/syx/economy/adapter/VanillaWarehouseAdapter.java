@@ -5,6 +5,8 @@ import vannon.syx.economy.adapter.seam.BypassGate;
 import vannon.syx.economy.adapter.seam.MethodAccessor;
 import vannon.syx.economy.core.EventLog;
 
+import java.lang.invoke.MethodHandles;
+
 /**
  * V71.44-Adapter powered by {@link BypassGate}: ruft die private Methode
  * {@code storingSet(boolean)} der {@code StockpileInstance} per MethodHandle
@@ -24,7 +26,7 @@ public final class VanillaWarehouseAdapter implements ISyxWarehouse {
     private boolean runtimeFailedLogged;
 
     public VanillaWarehouseAdapter() {
-        BypassGate gate = new BypassGate("VanillaWarehouseAdapter");
+        BypassGate gate = new BypassGate("VanillaWarehouseAdapter", MethodHandles.lookup());
         MethodAccessor.VoidMethod method = null;
         boolean ok = false;
         try {

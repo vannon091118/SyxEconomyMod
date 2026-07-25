@@ -7,6 +7,8 @@ import vannon.syx.economy.adapter.seam.BypassGate;
 import vannon.syx.economy.adapter.seam.FieldAccessor;
 import vannon.syx.economy.core.EventLog;
 
+import java.lang.invoke.MethodHandles;
+
 /**
  * V71.44-Adapter powered by {@link BypassGate}: liest/schreibt vier private
  * Felder der {@code DipWarPlayer} per VarHandle (primär) mit Reflection-Fallback.
@@ -34,7 +36,7 @@ public final class VanillaDiplomacyAdapter implements ISyxDiplomacy {
     private boolean runtimeFailedLogged;
 
     public VanillaDiplomacyAdapter() {
-        this.gate = new BypassGate("VanillaDiplomacyAdapter");
+        this.gate = new BypassGate("VanillaDiplomacyAdapter", MethodHandles.lookup());
         this.updateIndex   = gate.intField(DipWarPlayer.class, UPDATE_INDEX_FIELD);
         this.playerPower   = gate.doubleField(DipWarPlayer.class, PLAYER_POWER_FIELD);
         this.coalitionPower = gate.doubleField(DipWarPlayer.class, COALITION_POWER_FIELD);
@@ -73,6 +75,15 @@ public final class VanillaDiplomacyAdapter implements ISyxDiplomacy {
                                  double playerPowerValue, double coalitionPowerValue) {
         if (!isAvailable() || war == null) return;
         try {
+            // Validate all three fields are readable before writing —
+            // if any VarHandle is stale, fail fast before partial writes.
+            playerPower.get(war);
+            coalitionPower.get(war);
+            updateIndex.get(war);
+            // All readable → write most-critical first:
+            // playerPower is the critical game value, coalitionPower
+            // is secondary, updateIndex is a counter. If a later write
+            // fails, the important values are already persisted.
             playerPower.set(war, playerPowerValue);
             coalitionPower.set(war, coalitionPowerValue);
             updateIndex.set(war, updateIndexValue);

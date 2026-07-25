@@ -6,6 +6,8 @@ import vannon.syx.economy.adapter.seam.BypassGate;
 import vannon.syx.economy.adapter.seam.FieldAccessor;
 import vannon.syx.economy.core.EventLog;
 
+import java.lang.invoke.MethodHandles;
+
 /**
  * V71.44-Adapter powered by {@link BypassGate}: liest das {@code GOV}-Feld
  * (Boostable) der {@code BOOSTABLES.CIVICS()}-Instanz per VarHandle (primär)
@@ -20,7 +22,7 @@ public final class VanillaBoostingAdapter implements ISyxBoosting {
     private final boolean initOk;
 
     public VanillaBoostingAdapter() {
-        BypassGate gate = new BypassGate("VanillaBoostingAdapter");
+        BypassGate gate = new BypassGate("VanillaBoostingAdapter", MethodHandles.lookup());
         Boostable found = null;
         boolean ok = false;
         try {

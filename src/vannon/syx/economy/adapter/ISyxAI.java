@@ -45,4 +45,11 @@ public interface ISyxAI {
      * @return true wenn es ein Marktplan ist
      */
     boolean isMarketPlan(AIPLAN plan);
+
+    /**
+     * Gibt an ob mindestens eine der 6 Plan-Klassen erfolgreich geladen wurde.
+     * Consumer sollten diesen Check vor der Plan-Erkennung durchführen.
+     * @return true wenn AI-Plan-Erkennung verfügbar ist
+     */
+    boolean isAvailable();
 }

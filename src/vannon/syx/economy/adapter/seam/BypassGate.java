@@ -18,13 +18,21 @@ import vannon.syx.economy.core.EventLog;
  */
 public final class BypassGate {
 
-    private final MethodHandles.Lookup lookup = MethodHandles.lookup();
+    private final MethodHandles.Lookup lookup;
     private final String adapterName;
     private boolean initOk = true;
     private boolean initFailedLogged;
 
-    public BypassGate(String adapterName) {
+    /**
+     * @param adapterName   human-readable name for EventLog entries
+     * @param callerLookup  the {@link MethodHandles.Lookup} from the
+     *                      adapter's own class, NOT from BypassGate.
+     *                      The caller owns the lookup context;
+     *                      BypassGate merely forwards it to accessors.
+     */
+    public BypassGate(String adapterName, MethodHandles.Lookup callerLookup) {
         this.adapterName = adapterName;
+        this.lookup = callerLookup;
     }
 
     /** True if all registered fields/methods resolved successfully. */
