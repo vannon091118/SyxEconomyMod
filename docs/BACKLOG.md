@@ -65,4 +65,11 @@ In der FlowMeter-Coverage-Analyse entdeckt: `carpenter.targetWage=0` in FlowPric
 
 ## Frühere Backlog-Einträge (vor 2026-07-24)
 
+### B-011: CI-Gate-Integration für `tools/scarcity_sim.py`
+**Source:** `gap:tools` · **Severity:** 🟢 P3 · **Status:** Open
+
+Sim (`python3 tools/scarcity_sim.py`) derzeit ohne Exit-Code-Bound. Geplant: Golden-Snapshot-Vergleich in `tools/build-gate.sh --strict` mit 5%-Toleranz gegen Excel/pandas-Referenz. Aktuell nicht zugesagt — kann live in `tools/scarcity_sim.py` manuell ausgeführt werden (siehe README §Diagnostic Tools). Owner: TBD.
+
+---
+
 _Keine — der Backlog wurde mit dieser Session initialisiert. Frühere Plan-Fragmente sind in ROADMAP.md absorbiert._

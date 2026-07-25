@@ -148,7 +148,7 @@ python3 tools/scarcity_sim.py
 # Output: 4 Tick-by-Tick-Tabellen + Summary aller Clamp-Feuer, Gini-Peaks, Fallback-Drifts.
 ```
 
-Sim-Ergebnisse als PDF-Report für jeden Live-Test-Save-Slot exportieren:
+Sim-Ergebnisse als Output-Log für jeden Live-Test-Save-Slot exportieren (Plain-Text, kein PDF — das aktuelle Skript schreibt rohe Tick-Tabellen nach stdout):
 
 ```bash
 mkdir -p diagnostics && python3 tools/scarcity_sim.py > diagnostics/run-$(date +%Y%m%d-%H%M).log
@@ -158,7 +158,7 @@ Wenn der Ordner `diagnostics/` noch nicht existiert (frischer Clone), schlägt d
 
 #### Exit-Codes
 
-Das Skript hat aktuell keinen Exit-Code-Bound (kein CI-Gate-Verhalten). Zukünftig: Integration in `tools/build-gate.sh --strict` als optionaler Schritt mit Golden-Snapshot-Vergleich (siehe `BACKLOG.md`).
+Das Skript hat aktuell keinen Exit-Code-Bound (kein CI-Gate-Verhalten). Eventuelle CI-Integration ist ein Roadmap-Item in `docs/BACKLOG.md` ([B-011]), nicht eine zugesagte Eigenschaft dieses Releases.
 
 ---
 
