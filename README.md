@@ -127,7 +127,7 @@ Nicht-Gate-Tools für tiefergehende Wirtschafts-Analyse. Reine Berechnung, kein 
 
 | Tool | Zweck | Aufruf |
 |---|---|---|
-| `scarce_sim.py` — `tools/scarcity_sim.py` | Validiert 4 Scarcity-Kaskaden gegen die echten FlowPrices/LocalPrices/EconConfig-Formeln. Druckt Tick-by-Tick-Tabellen + Gini-Trajektorien + Clamp-Feuer-Detection. | `python3 tools/scarcity_sim.py` |
+| `scarcity_sim.py` — `tools/scarcity_sim.py` | Validiert 4 Scarcity-Kaskaden gegen die echten FlowPrices/LocalPrices/EconConfig-Formeln. Druckt Tick-by-Tick-Tabellen + Gini-Trajektorien + Clamp-Feuer-Detection. | `python3 tools/scarcity_sim.py` |
 | `rebalance_plots.py` / `rebalance_dashboard.ipynb` | Pandas/Notebook-Auswertung der `DiagnosticExporter`-CSV-Snapshots. | `jupyter notebook tools/rebalance_dashboard.ipynb` |
 
 #### Scarcity-Simulator (v0.13.10)
@@ -151,8 +151,10 @@ python3 tools/scarcity_sim.py
 Sim-Ergebnisse als PDF-Report für jeden Live-Test-Save-Slot exportieren:
 
 ```bash
-python3 tools/scarcity_sim.py > diagnostics/run-$(date +%Y%m%d-%H%M).log
+mkdir -p diagnostics && python3 tools/scarcity_sim.py > diagnostics/run-$(date +%Y%m%d-%H%M).log
 ```
+
+Wenn der Ordner `diagnostics/` noch nicht existiert (frischer Clone), schlägt der Redirect ohne `mkdir -p` fehl.
 
 #### Exit-Codes
 
