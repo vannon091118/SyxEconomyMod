@@ -31,6 +31,23 @@ import snake2d.util.sets.LIST;
 
 public final class EngineSeams {
 
+    private static volatile boolean engineUnavailable = false;
+
+    /** Returns true if the Songs of Syx engine singletons (SETT, TIME, etc.) are
+     *  available. Returns false and swallows LinkageError-derived failures
+     *  (ExceptionInInitializerError, NoClassDefFoundError, ...) so that unit tests
+     *  without a running engine do not poison the JVM class state. */
+    public static boolean entitiesAvailable() {
+        if (engineUnavailable) {
+            return false;
+        }
+        try {
+            return SETT.ENTITIES() != null;
+        } catch (LinkageError e) {
+            engineUnavailable = true;
+            return false;
+        }
+    }
 
     public static void overwritePlan(Humanoid humanoid, AIPLAN plan) {
         HAI hAI = humanoid.ai();
@@ -155,7 +172,15 @@ public final class EngineSeams {
     // (im Unterschied zu .imps() das die Oberklasse liefert). Wird in FirmLedger (4×
     // Loop über alle Blueprints pro Update) und MaintenanceMarket einmal verwendet.
     public static LIST<RoomBlueprintIns<?>> settRoomsIns() {
-        return SETT.ROOMS() == null ? null : SETT.ROOMS().ins();
+        if (engineUnavailable) {
+            return null;
+        }
+        try {
+            return SETT.ROOMS() == null ? null : SETT.ROOMS().ins();
+        } catch (LinkageError e) {
+            engineUnavailable = true;
+            return null;
+        }
     }
 
     // Per-Iter-Loop-Wrapper für EATERIES/CANTEENS Service-Rooms. Werden in

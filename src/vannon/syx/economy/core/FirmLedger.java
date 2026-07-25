@@ -19,6 +19,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.Map;
+import snake2d.util.sets.LIST;
 import settlement.entity.humanoid.Humanoid;
 import settlement.main.SETT;
 import settlement.room.infra.stockpile.StockpileInstance;
@@ -406,10 +407,19 @@ public final class FirmLedger {
     }
 
     private static void restoreMilitaryCapacity() {
-        if (SETT.ROOMS() == null) {
+        LIST<RoomBlueprintIns<?>> rooms;
+        try {
+            rooms = EngineSeams.settRoomsIns();
+        } catch (LinkageError e) {
+            // SETT (or a dependent class) has not been initialized — this happens
+            // in unit tests that run without the Songs of Syx engine. In production
+            // the engine is always present, so this branch is defensive only.
             return;
         }
-        for (RoomBlueprintIns<?> blueprint : EngineSeams.settRoomsIns()) {
+        if (rooms == null) {
+            return;
+        }
+        for (RoomBlueprintIns<?> blueprint : rooms) {
             if (!EconomicRoles.stateFundedMilitary((RoomBlueprintImp)blueprint)) continue;
             for (int i = 0; i < blueprint.instancesSize(); ++i) {
                 RoomInstance room = blueprint.getInstance(i);

@@ -169,13 +169,13 @@ public final class EconomySim {
     private final WarehouseMarket warehouseMarket;
     private final Escrow escrow = new Escrow(this.wallets);
     private final AffordabilityGate affordabilityGate = new AffordabilityGate(this.escrow, this.flowPrices, this.grainDole);
-    private final FoodPlanController foodPlanController = new FoodPlanController(this.affordabilityGate);
+    private final FoodPlanController foodPlanController;
     // Phase-4.7/T-003: purchasePlanController braucht ISyxAI (aiAdapter).
     // aiAdapter wird im Konstruktor-Body zugewiesen → Field-Initializer kann
     // nicht via this.aiAdapter darauf zugreifen. Daher Constructor-Assign.
     private final PurchasePlanController purchasePlanController;
     private final ServiceMarket serviceMarket = new ServiceMarket();
-    private final ServicePlanController servicePlanController = new ServicePlanController(this.serviceMarket, this.fiscal, this.firmLedger);
+    private final ServicePlanController servicePlanController;
     private final HousingMarket housingMarket = new HousingMarket();
     private final ForeignTradeLedger foreignTradeLedger = new ForeignTradeLedger();
     private static volatile EconomySim active = null;
@@ -420,30 +420,51 @@ public final class EconomySim {
     }
 
     public EconomySim() {
+        this(createTransportAdapter(), createWarehouseAdapter(), createBoostingAdapter(), createDiplomacyAdapter(), new VanillaAIAdapter(), true);
+    }
+
+    private static ISyxTransport createTransportAdapter() {
+        ISyxTransport tx = EconConfig.useMethodHandleAdapters ? new VanillaTransportAdapterMH() : new VanillaTransportAdapter();
+        return tx.isDistanceAvailable() ? tx : new FallbackTransportAdapter();
+    }
+
+    private static ISyxWarehouse createWarehouseAdapter() {
+        ISyxWarehouse wh = EconConfig.useMethodHandleAdapters ? new VanillaWarehouseAdapterMH() : new VanillaWarehouseAdapter();
+        return wh.isStoringLockAvailable() ? wh : new FallbackWarehouseAdapter();
+    }
+
+    private static ISyxBoosting createBoostingAdapter() {
+        ISyxBoosting boosting = new VanillaBoostingAdapter();
+        return boosting.isAdminBoosterAvailable() ? boosting : new FallbackBoostingAdapter();
+    }
+
+    private static ISyxDiplomacy createDiplomacyAdapter() {
+        ISyxDiplomacy diplomacy = EconConfig.useMethodHandleAdapters ? new VanillaDiplomacyAdapterMH() : new VanillaDiplomacyAdapter();
+        return diplomacy.isAvailable() ? diplomacy : new FallbackDiplomacyAdapter();
+    }
+
+    /**
+     * Package-private test constructor. Accepts pre-built adapters so unit tests
+     * can inject hand-written mocks without pulling in the Songs of Syx engine.
+     *
+     * <p>Production code should use the public no-arg constructor which builds
+     * the vanilla/fallback adapter chain.
+     */
+    EconomySim(ISyxTransport transportAdapter, ISyxWarehouse warehouseAdapter,
+               ISyxBoosting boostingAdapter, ISyxDiplomacy diplomacyAdapter,
+               ISyxAI aiAdapter) {
+        this(transportAdapter, warehouseAdapter, boostingAdapter, diplomacyAdapter, aiAdapter, false);
+    }
+
+    private EconomySim(ISyxTransport transportAdapter, ISyxWarehouse warehouseAdapter,
+                        ISyxBoosting boostingAdapter, ISyxDiplomacy diplomacyAdapter,
+                        ISyxAI aiAdapter, boolean productionMode) {
         active = this;
-        ISyxTransport tx;
-        if (EconConfig.useMethodHandleAdapters) {
-            tx = new VanillaTransportAdapterMH();
-        } else {
-            tx = new VanillaTransportAdapter();
-        }
-        if (!tx.isDistanceAvailable()) {
-            tx = new FallbackTransportAdapter();
-        }
-        this.transportAdapter = tx;
-        this.transportMarket = new TransportMarket(this.transportAdapter);
-        ISyxWarehouse wh;
-        if (EconConfig.useMethodHandleAdapters) {
-            wh = new VanillaWarehouseAdapterMH();
-        } else {
-            wh = new VanillaWarehouseAdapter();
-        }
-        if (!wh.isStoringLockAvailable()) {
-            wh = new FallbackWarehouseAdapter();
-        }
-        this.warehouseAdapter = wh;
-        this.stateWarehouses = new StateWarehouses(this.warehouseAdapter);
-        this.constructionHoardController = new ConstructionHoardController(this.stateWarehouses);
+        this.transportAdapter = transportAdapter;
+        this.transportMarket = new TransportMarket(transportAdapter);
+        this.warehouseAdapter = warehouseAdapter;
+        this.stateWarehouses = new StateWarehouses(warehouseAdapter);
+        this.constructionHoardController = productionMode ? new ConstructionHoardController(this.stateWarehouses) : null;
         this.warehouseMarket = new WarehouseMarket(this.stateWarehouses, this.flowPrices);
         this.firmLedger.setStateWarehouses(this.stateWarehouses);
         this.affordabilityGate.setSettlementSink(new AffordabilityGate.SettlementSink(){
@@ -458,35 +479,27 @@ public final class EconomySim {
                 EconomySim.this.fiscal.settleRation(diner, resources, marketValue, seller, EconomySim.this.roster, EconomySim.this.wallets, EconomySim.this.firmLedger, EconomySim.this.warehouseMarket);
             }
         });
-        // Phase 4.4: ISyxBoosting erst NACH warehouseInit aufbauen — Booster braucht
-        // Engine-Ready-State. Dann EconProgression mit Adapter konstruieren.
-        ISyxBoosting boosting = new VanillaBoostingAdapter();
-        if (!boosting.isAdminBoosterAvailable()) {
-            boosting = new FallbackBoostingAdapter();
-        }
-        this.boostingAdapter = boosting;
-        this.progression = new EconProgression(this.boostingAdapter);
-        // Phase 4.5: ISyxDiplomacy + DebtDiplomacyBuffer.
-        ISyxDiplomacy diplomacy;
-        if (EconConfig.useMethodHandleAdapters) {
-            diplomacy = new VanillaDiplomacyAdapterMH();
-        } else {
-            diplomacy = new VanillaDiplomacyAdapter();
-        }
-        if (!diplomacy.isAvailable()) {
-            diplomacy = new FallbackDiplomacyAdapter();
-        }
-        this.diplomacyAdapter = diplomacy;
-        this.debtDiplomacyBuffer = new DebtDiplomacyBuffer(this.diplomacyAdapter);
+        this.boostingAdapter = boostingAdapter;
+        this.progression = new EconProgression(boostingAdapter);
+        this.diplomacyAdapter = diplomacyAdapter;
+        this.debtDiplomacyBuffer = new DebtDiplomacyBuffer(diplomacyAdapter);
         // Initialer Update-Tick, damit Puffer-State gleich mit Engine-Initialisierung synchron ist.
         this.debtDiplomacyBuffer.update();
-        // Phase 4 Step 5.6: ISyxAI in EconomySim statt EngineSeams — konsolidiert
-        // alle Adapter unter einer Instanz für konsistente Migration der Aufrufer.
-        this.aiAdapter = new VanillaAIAdapter();
-        // Phase-4.7/T-003: PurchasePlanController braucht aiAdapter.
-        this.purchasePlanController = new PurchasePlanController(this.affordabilityGate, this.aiAdapter);
+        this.aiAdapter = aiAdapter;
+        this.purchasePlanController = productionMode ? new PurchasePlanController(this.affordabilityGate, aiAdapter) : null;
+        // FoodPlanController and ServicePlanController need the Songs of Syx AI
+        // singletons, so we create them only in production mode. In unit tests
+        // update() returns early because SETT.ENTITIES() is null, so the null
+        // references are never dereferenced.
+        this.foodPlanController = productionMode ? new FoodPlanController(this.affordabilityGate) : null;
+        this.servicePlanController = productionMode ? new ServicePlanController(this.serviceMarket, this.fiscal, this.firmLedger) : null;
         this.propertyMarket = new PropertyMarketController(
             this.housingMarket, this.firmLedger, this.wallets, this.roster);
+    }
+
+    /** Test-only reset of the singleton pointer. */
+    static void clearActive() {
+        active = null;
     }
 
     public void update(double ds) {
@@ -504,7 +517,7 @@ public final class EconomySim {
         if (!this.updateGuard.tryEnter()) return;
         try {
             this.debtDiplomacyBuffer.update();
-            if (SETT.ENTITIES() == null) {
+            if (!EngineSeams.entitiesAvailable()) {
                 return;
             }
             if (ds <= 0.0) {
@@ -557,10 +570,12 @@ public final class EconomySim {
         this.warehouseMarket.prune(this.roster);
         this.warehouseMarket.observeRetailDeliveries();
         this.foodPlanController.update(this.roster);
-        this.purchasePlanController.update(this.roster);
+        if (this.purchasePlanController != null) {
+            this.purchasePlanController.update(this.roster);
+        }
         this.serviceMarket.refresh();
         this.servicePlanController.update(this.roster, this.wallets);
-        if (EconConfig.constructionHoardingEnabled) {
+        if (EconConfig.constructionHoardingEnabled && this.constructionHoardController != null) {
             this.constructionHoardController.update(this.roster);
         }
         this.stateWarehouses.prune();
@@ -1379,7 +1394,9 @@ public final class EconomySim {
         this.firmLedger.clear();
         this.maintenanceMarket.clear();
         this.serviceMarket.clear();
-        this.servicePlanController.clear();
+        if (this.servicePlanController != null) {
+            this.servicePlanController.clear();
+        }
         this.housingMarket.clear();
         this.affordabilityGate.clear();
         this.flowMeter.clear();
