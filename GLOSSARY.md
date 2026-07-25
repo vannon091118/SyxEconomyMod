@@ -38,7 +38,10 @@ Alle via BypassGate SDK: `VanillaAIAdapter`, `VanillaTransportAdapter`, `Vanilla
 
 ### Fallback-Implementierungen (0 Dateien)
 
-Keine. `BypassGate.isAvailable()` ersetzt alle 4 Fallback-Adapter (Phase B–E, v0.13.10).
+Keine. Jeder Vanilla-Adapter hat seinen eigenen `BypassGate` mit eigenem `initOk`-Flag.
+Consumer prüfen `ISyx*.isAvailable()` pro Adapter individuell — granulare Degradation
+bleibt erhalten (z. B. Transport läuft weiter, wenn nur Diplomacy-Reflection scheitert).
+Phase B–E, v0.13.10.
 
 ### Package-Private Brücken (4 Dateien in `src/settlement/room/`)
 

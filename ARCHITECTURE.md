@@ -122,7 +122,10 @@ Fallback: java.lang.reflect.*.
 Alle via BypassGate SDK: `VanillaAIAdapter`, `VanillaTransportAdapter`, `VanillaWarehouseAdapter`, `VanillaBoostingAdapter`, `VanillaDiplomacyAdapter`. VarHandle/MethodHandle wird automatisch bevorzugt (3–6× Speedup), Reflection als Fallback. Keine separaten MH-Varianten mehr (Phase B–D, v0.13.10).
 
 ### Fallback-Implementierungen (0)
-Keine. `BypassGate.isAvailable()` ersetzt alle 4 Fallback-Adapter (Phase B–E, v0.13.10). Consumer prüfen `ISyx*.isAvailable()` statt Fallback-Instanzen zu erzeugen.
+Keine. Jeder Vanilla-Adapter hat seinen eigenen BypassGate mit eigenem
+`initOk`-Flag. Consumer prüfen `ISyx*.isAvailable()` pro Adapter individuell
+→ granulare Degradation bleibt erhalten. Ein fehlgeschlagener Diplomacy-
+Adapter deaktiviert nicht den Transport-Adapter. Phase B–E, v0.13.10.
 
 ### Package-Private Brücken (4, in `src/settlement/room/`)
 | Datei | Vanilla-Klasse | Zweck |
