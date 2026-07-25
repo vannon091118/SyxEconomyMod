@@ -1,6 +1,6 @@
 # SyxEconomyMod — Klassen-Glossar
 
-> **Version:** v0.13.25 | **Stand:** 2026-07-25
+> **Version:** v0.13.30 | **Stand:** 2026-07-25
 >
 > Stam-Doku-Synchron-Anker: Die obenstehende Versions-Zeile MUSS identisch mit `pom.xml` `<version>` sein.
 > Der Sync-Gate `tools/verify-doc-sync.sh` validiert dies vor jedem `mvn compile`.
@@ -312,3 +312,21 @@ grep -rE 'class [A-Z][A-Za-z]+Tab' src/vannon/syx/economy/ui/ | wc -l  # 16
 | **`AccessAutomation`** | Raum-Zugangs-Politik nach Bürger-Klasse. |
 
 > **Pflege-Hinweis:** Jede NEUE .java-Datei sofort oben nachtragen. Klassen-Glossar verrottet schneller als der Code, wenn es nicht aktiv gepflegt wird.
+
+## Neue Begriffe (post Sprint-Workflow-Reform)
+
+**Sprint** — Thematisch verbundener Cluster von 5-15 Tasks. Endet mit genau
+einem atomaren Commit. Ersetzt das alte Task-per-Commit-Pattern. Siehe
+agents.md Rule 11+12.
+
+**Sub-Phase** — BAUEN/PRÜFEN/HÄRTEN laufen einmal pro Sprint-End, nicht per Task.
+
+**Atomic-Commit** — Ein Git-Commit der alle Tasks eines Sprints + alle
+Stam-Doc-Updates enthält. Nicht teilbar.
+
+**Stam-Doc-Sync-per-Sprint** — Innerhalb eines Sprint-Commits wird Rule-3-
+Sed-Block einmal ausgefuehrt (alle 5 Stam-Docs auf pom.xml <version>).
+
+**Reference-Data vs Stam-Doc** — Stam-Docs sind pom.xml-versioniert
+(5 Dateien). Reference-Data (BINDUNGSMATRIX.csv) ist nicht versioniert,
+kein sync-gate-Subjekt. Beide leben parallel.

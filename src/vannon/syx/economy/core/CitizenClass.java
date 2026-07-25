@@ -24,6 +24,8 @@ import init.type.HCLASSES;
 import settlement.entity.humanoid.Humanoid;
 import settlement.stats.Induvidual;
 import settlement.stats.STATS;
+import vannon.syx.economy.core.Roster;
+import vannon.syx.economy.core.Wallets;
 
 public enum CitizenClass {
 
@@ -157,6 +159,44 @@ public enum CitizenClass {
         return classify(h, wealth, median, null);
     }
 
+    /**
+     * T7 (B-004): Kanonische Filter-Pruefung. Returns true wenn der Buerger in
+     * classify() beruecksichtigt wird (= kein Sklave, hType.isWorks() == true).
+     * Verwendet von Wallets.classifyAll() und WealthStats.activePeople().
+     */
+    public static boolean isClassifiable(Induvidual indu) {
+        if (indu == null) return false;
+        if (indu.clas() == HCLASSES.SLAVE()) return false;
+        try {
+            return indu.hType().isWorks();
+        } catch (RuntimeException e) {
+            // P1-Korrektur: bei API-Crash als NICHT classifiable annehmen — verhindert
+            // dass korrupte Buerger in activePeople gezaehlt werden. classify() hat
+            // eigenen SEAM-Defensive-Pfad und ueberspringt diese Buerger ebenfalls.
+            if (!hTypeFailed) {
+                hTypeFailed = true;
+                EventLog.log("SEAM", "CitizenClass.isClassifiable: hType().isWorks() failed — " + e.getClass().getSimpleName());
+            }
+            return false;
+        }
+    }
+
+    /**
+     * T7 (B-004): Zaehlt nur Buerger die NICHT durch classify() gefiltert werden.
+     * Konsistente Definition zwischen Wallets.classifyAll() und WealthStats.
+     * Die Differenz people - activePeople zeigt jetzt sichtbar wie viele Buerger
+     * (Sklaven, Non-Worker) ausgeschlossen sind.
+     */
+    public static int classifiablePopulationCount(Roster roster) {
+        int count = 0;
+        for (int i = 0; i < roster.size(); ++i) {
+            Humanoid h = roster.get(i);
+            if (h == null || h.indu() == null) continue;
+            if (isClassifiable(h.indu())) count++;
+        }
+        return count;
+    }
+
     /** Byte-Kodierung für Wallets-Array */
     private static boolean hTypeFailed = false;
     private static boolean popFailed = false;
@@ -172,5 +212,17 @@ public enum CitizenClass {
         CitizenClass[] values = values();
         int idx = b & 0xFF;
         return idx < values.length ? values[idx] : UNCLASSIFIED;
+    }
+
+    /**
+     * T13 (P1-kritisch): Session-Reset der 3 SEAM-Failure-Flags.
+     * hTypeFailed/popFailed/relFailed sind static und wuerden sonst State der
+     * vorigen Session ueberleben — nach Save/Load wuerden neue API-Crashes
+     * nicht mehr geloggt. Pattern vgl. TreasuryCrisis.reset().
+     */
+    public static void reset() {
+        hTypeFailed = false;
+        popFailed = false;
+        relFailed = false;
     }
 }

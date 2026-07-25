@@ -349,5 +349,22 @@ public final class LocalPrices {
 
     private LocalPrices() {
     }
+
+    /**
+     * T13: Session-Reset aller Caches + Failure-Flags. Wird via EconomySim.clearActive()
+     * und im 6-arg privaten Ctor aufgerufen, damit ein geladenes Savegame nicht die
+     * Cache-Werte der vorigen Session erbt. Pattern vgl. TreasuryCrisis.reset().
+     */
+    public static void reset() {
+        cachedFoodStock = -1L;
+        lastRefreshTick = -9999;
+        lastGoodsRefresh = -9999;
+        cachedFoodBasket = -1;
+        cachedDrinkBasket = -1;
+        cachedDrinkStock = -1L;
+        lastDrinkRefresh = -9999;
+        foodDaysFailed = false;
+        drinkDaysFailed = false;
+    }
 }
 

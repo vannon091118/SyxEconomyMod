@@ -41,6 +41,7 @@ public final class FlowMeter {
         IdentityMapRegistry.register("FlowMeter", "firms", firms);
     }
     private double[] supply = new double[0];
+    private double[] targetSupply = new double[0]; // T5 (B-001): Blueprint-Intent. TODO: aktuell = actual. Echte Gap-Berechnung (employeesNeeded / employeesActual) erfordert Engine-Blueprint-API.
     private double[] firmInputs = new double[0];
     private double[] householdConsumption = new double[0];
     private double[] demand = new double[0];
@@ -159,7 +160,7 @@ public final class FlowMeter {
     }
 
     public Snapshot snapshot() {
-        return new Snapshot(this.supply, this.firmInputs, this.householdConsumption, this.demand, this.stock, this.stockChange);
+        return new Snapshot(this.supply, this.targetSupply, this.firmInputs, this.householdConsumption, this.demand, this.stock, this.stockChange);
     }
 
     public int producerlessProducedSinceLastSample(int resource) {
@@ -183,6 +184,7 @@ public final class FlowMeter {
     public void clear() {
         this.firms.clear();
         Arrays.fill(this.supply, 0.0);
+        Arrays.fill(this.targetSupply, 0.0); // T5 (B-001)
         Arrays.fill(this.firmInputs, 0.0);
         Arrays.fill(this.householdConsumption, 0.0);
         Arrays.fill(this.demand, 0.0);
@@ -201,6 +203,7 @@ public final class FlowMeter {
             return;
         }
         this.supply = new double[goods];
+        this.targetSupply = new double[goods]; // T5 (B-001)
         this.firmInputs = new double[goods];
         this.householdConsumption = new double[goods];
         this.demand = new double[goods];
@@ -350,14 +353,16 @@ public final class FlowMeter {
 
     public static final class Snapshot {
         private final double[] supply;
+        private final double[] targetSupply; // T5 (B-001)
         private final double[] firmInputs;
         private final double[] householdConsumption;
         private final double[] demand;
         private final double[] stock;
         private final double[] stockChange;
 
-        Snapshot(double[] supply, double[] firmInputs, double[] householdConsumption, double[] demand, double[] stock, double[] stockChange) {
+        Snapshot(double[] supply, double[] targetSupply, double[] firmInputs, double[] householdConsumption, double[] demand, double[] stock, double[] stockChange) {
             this.supply = supply.clone();
+            this.targetSupply = targetSupply.clone();
             this.firmInputs = firmInputs.clone();
             this.householdConsumption = householdConsumption.clone();
             this.demand = demand.clone();
@@ -371,6 +376,17 @@ public final class FlowMeter {
 
         public double supplyPerDay(int good) {
             return this.supply[good];
+        }
+
+        /**
+         * @deprecated (T5 B-001) Liefert aktuell identisch zu {@link #supplyPerDay(int)}.
+         * Echte Intent-Gap-Berechnung (employeesNeeded / employeesActual) ist TODO
+         * bis Engine-Blueprint-API verfuegbar ist. Wird in einer spaeteren Phase
+         * durch Gap-bewusste Implementierung ersetzt.
+         */
+        @Deprecated
+        public double targetSupplyPerDay(int good) {
+            return good >= 0 && good < this.targetSupply.length ? this.targetSupply[good] : 0.0;
         }
 
         public double firmInputsPerDay(int good) {

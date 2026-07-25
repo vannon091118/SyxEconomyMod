@@ -12,6 +12,7 @@ import vannon.syx.economy.core.DebugTracer;
 import vannon.syx.economy.core.DiagnosticExporter;
 import vannon.syx.economy.core.EconConfig;
 import vannon.syx.economy.core.EconomySim;
+import vannon.syx.economy.core.EventLog;
 import vannon.syx.economy.core.StateWarehouses;
 import snake2d.util.color.COLOR;
 
@@ -443,6 +444,44 @@ public final class WindowState extends EconWindowBase {
             });
             traceBtn.hoverInfoSet("Dump Ring-Buffer nach stdout");
             content.add(traceBtn, x + 130, y);
+
+            GButt.ButtPanel boosterBtn = new GButt.ButtPanel("Boosters", 90);
+            boosterBtn.clickActionSet(new ACTION() {
+                @Override public void exe() {
+                    try {
+                        String info = null;
+                        for (String cn : new String[]{"BOOSTING", "BOOSTABLES"}) {
+                            try {
+                                Class<?> clazz = Class.forName(cn);
+                                // Try: BOOSTING.available() (static)
+                                try {
+                                    java.lang.reflect.Method m = clazz.getMethod("available");
+                                    info = (String) m.invoke(null);
+                                    break;
+                                } catch (NoSuchMethodException ignored) {}
+                                // Fallback: BOOSTABLES.BOOSTING() -> available()
+                                try {
+                                    java.lang.reflect.Method m = clazz.getMethod("BOOSTING");
+                                    Object boosting = m.invoke(null);
+                                    java.lang.reflect.Method av = boosting.getClass().getMethod("available");
+                                    info = (String) av.invoke(null);
+                                    break;
+                                } catch (NoSuchMethodException ignored) {}
+                            } catch (ClassNotFoundException ignored) {}
+                        }
+                        if (info != null) {
+                            EventLog.log("BOOSTERS", info);
+                            cheatStatus = "Boosters gedumpt (siehe EventLog)";
+                        } else {
+                            cheatStatus = "Boosters: BOOSTING-Klasse nicht gefunden";
+                        }
+                    } catch (ReflectiveOperationException e) {
+                        cheatStatus = "Boosters: " + e.getClass().getSimpleName();
+                    }
+                }
+            });
+            boosterBtn.hoverInfoSet("Dump aller registrierten Booster (WORLD, CIVIC, PHYSICS etc.) ins EventLog");
+            content.add(boosterBtn, x + 260, y);
             y += 32;
 
             // ── Section 3: BypassGate Status ────────────────────────

@@ -22,6 +22,7 @@ public final class FlowPrices {
             throw new IllegalArgumentException("price, meter, and target arrays must have equal lengths");
         }
         this.ensureCapacity(size);
+        double popFactor = EconConfig.phaseFactor(); // T8 (H8): Early-Game-Preisdampfung
         for (int good = 0; good < size; ++good) {
             this.anchor[good] = anchors[good];
             this.coverage[good] = FlowPrices.effectiveCoverage(meter.stock(good), meter.supplyPerDay(good), meter.demandPerDay(good), parameters.targetCoverageDays[good], parameters.flowLookaheadDays);
@@ -33,6 +34,14 @@ public final class FlowPrices {
                 if (parameters.priceAbsoluteMax > 0.0 && this.price[good] > parameters.priceAbsoluteMax) {
                     this.price[good] = parameters.priceAbsoluteMax;
                 }
+            }
+            // T8 (P3-korrigiert): phaseFactor anwenden. PhaseFactor < 1.0 reduziert den
+            // Preis NACH dem absoluteMax-Clamp — early-game Preise bleiben kleiner als
+            // absoluteMax weil der Faktor unter 1.0 liegt. Das Clamp wird dadurch NICHT
+            // enger gezogen (absoluteMax ist eine Obergrenze), sondern der resultierende
+            // Preis liegt bei early-game garantiert unter absoluteMax.
+            if (popFactor < 1.0) {
+                this.price[good] *= popFactor;
             }
         }
         this.ready = true;

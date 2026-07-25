@@ -396,7 +396,7 @@ public final class EconConfig {
      *
      * <p>Default: false — Opt-in, um Datei-IO f\u00fcr Endnutzer zu vermeiden.</p>
      */
-    public static boolean diagnosticsExportEnabled = true;
+    public static boolean diagnosticsExportEnabled = false; // Public-Release-Default; per Debug-Tab aktivierbar
 
     /**
      * Schreibt pro Tick die Carpenter/Möbel-Firma-Diagnose nach
@@ -462,6 +462,43 @@ public final class EconConfig {
         RANDOM,
         PROXIMITY;
 
+    }
+
+    // T6 (B-009): Hunger→Demographie Hook. hungerDeathThreshold: Engine-Hunger-Stat
+    // (0=saettigend, 100=verhungernd) ab dem Wert geld-schaden + emigration-risk
+    // ausgeloest wird. hungerDamageRate: D/tick Geld-Schaden bei Ueberschreitung.
+    public static int hungerDeathThreshold = 80;
+    public static int hungerDamageRate = 2;
+
+    // T6-Final: Engine-Ticks pro Spiel-Tag. Songs-of-Syx hat basierend auf
+    // Live-Daten (tick=179247/day=597.49) ca. 300 Sub-Ticks pro Spiel-Tag.
+    // Drain-Operationen in EconomySim.updateDemography nutzen diese Konstante.
+    public static int ticksPerGameDay = 300;
+
+    // T8 (H8): phaseFactor fuer Early-Game-Preisdampfung. Wenn population < threshold,
+    // werden Preise linear nach unten skaliert (factor in [phaseFactorMin, 1.0]).
+    // HEBELKARTE markiert phaseFactor als "Kritisch" — fehlte auf P1-Liste.
+    public static boolean phaseFactorEnabled = true;
+    public static int phaseFactorThreshold = 300;
+    public static double phaseFactorMin = 0.5;
+
+    // T8: Live-Population, gesetzt von EconomySim.update(). FlowPrices liest das.
+    public static int population = 0;
+
+    /**
+     * T8: Berechnet den phaseFactor fuer die aktuelle population.
+     * Linear: pop=0 -> phaseFactorMin, pop=threshold -> 1.0, pop>threshold -> 1.0.
+     */
+    public static double phaseFactor() {
+        if (!phaseFactorEnabled) return 1.0;
+        int pop = Math.max(0, population);
+        if (pop >= phaseFactorThreshold) return 1.0;
+        double ramp = (double)(phaseFactorThreshold - pop) / (double)phaseFactorThreshold;
+        return Math.max(phaseFactorMin, 1.0 - ramp * (1.0 - phaseFactorMin));
+    }
+
+    public static void setPopulation(int pop) {
+        population = Math.max(0, pop);
     }
 }
 

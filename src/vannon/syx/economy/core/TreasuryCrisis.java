@@ -146,6 +146,7 @@ public final class TreasuryCrisis {
     private static void activateWarning() {
         if (tier1Logged) return;
         tier1Logged = true;
+        recoveryLogged = false; // Recovery-Flag für nächste deactivateTiers(0) re-armen
 
         // Produktionssubventionen deaktivieren
         EconConfig.productionSubsidyMax = 0;
@@ -361,10 +362,9 @@ public final class TreasuryCrisis {
             }
             tier1Logged = tier2Logged = tier3Logged = tier4Logged = tier5Logged = false;
         }
-
-        if (newMaxTier == 0 && activeTier > 0) {
-            recoveryLogged = false;
-        }
+        // Hinweis: recoveryLogged-Reset passiert in activateWarning() beim Re-Arm
+        // der Tier-1-Maschine — nicht hier, sonst wird der nächste Recovery-Log
+        // schon im selben deactivateTiers(0)-Call wieder unterdrückt.
     }
 
     private static void revertWarning() {
@@ -413,7 +413,9 @@ public final class TreasuryCrisis {
 
     private static void revertFireSale() {
         if (!tier3Logged) return;
-        // Liquidation wird nicht automatisch zurückgenommen (Spieler-Entscheidung)
+        // Liquidation wird nicht automatisch zurückgenommen (Spieler-Entscheidung).
+        // Der EventLog-Hinweis macht die manuelle Ruecknahme-Pflicht sichtbar.
+        EventLog.log("TREASURY", "Recovery Tier3: Liquidation (Fire-Sale) nicht automatisch rueckgaengig. Spieler muss manuell eingreifen (siehe StateWarehouses/Fire-Sale-Knopf).");
     }
 
     private static void revertBankrupt() {
@@ -443,5 +445,60 @@ public final class TreasuryCrisis {
         EconConfig.liturgyEnabled = true;
         EconConfig.militaryPayrollEnabled = true;
         EconConfig.loyaltyAtMaxGini = 0.85;
+    }
+
+    /* ── State-Reset (fuer Save/Load- und Test-Isolation) ──────────────── */
+
+    /**
+     * Setzt alle statischen TierCrisis-Felder zurueck auf Initial-Werte.
+     * Wird aufgerufen:
+     *   - in EconomySim.clearActive() (Test-Reset + Save/Load-Reset)
+     *   - in EconomySim()-no-arg-Konstruktor (defensiv bei frischem Spielstand)
+     *
+     * Begruendung: TreasuryCrisis haelt 31+ statische Felder. Ohne expliziten
+     * Reset laeuft ein Save/Load in eine inkonsistente Recovery-Phase hinein,
+     * weil die saved*Wage-Stash aus der vorigen Session stammt und beim ersten
+     * deactivateTiers(0) auf den frisch geladenen EconConfig zurueck-
+     * geschrieben wird. Recovery ist nicht idempotent ueber Session-Grenzen.
+     *
+     * Muss idempotent sein: Mehrfach-Aufruf == einzelner Aufruf.
+     */
+    public static void reset() {
+        // saved*-Stash (17 Wage + 3 Tax/Headcap/Head-Tax = 20 Felder)
+        savedMilitaryTrainingWage = 0;
+        savedExportDepotWage      = 0;
+        savedHaulerWage           = 0;
+        savedArmySupplyWage       = 0;
+        savedLaboratoryWage       = 0;
+        savedLibraryWage          = 0;
+        savedEmbassyWage          = 0;
+        savedWaterWage            = 0;
+        savedCannibalWage         = 0;
+        savedPoliceWage           = 0;
+        savedGuardWage            = 0;
+        savedStockadeWage         = 0;
+        savedPrisonWage           = 0;
+        savedDefaultWage          = 0;
+        savedStateWarehouseWage   = 0;
+        savedMarketTaxRate        = 0.0;
+        savedDoleHeadcap          = 0;
+        savedPerHeadTax           = 0;
+
+        // Action-Flags (6)
+        wagesHalved       = false;
+        taxesHiked        = false;
+        doleCapped        = false;
+        corveeFrozen      = false;
+        doleFrozen        = false;
+        debtSlaveryFrozen = false;
+
+        // Tier- und Recovery-State (7)
+        activeTier   = 0;
+        tier1Logged  = false;
+        tier2Logged  = false;
+        tier3Logged  = false;
+        tier4Logged  = false;
+        tier5Logged  = false;
+        recoveryLogged = false;
     }
 }

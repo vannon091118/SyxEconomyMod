@@ -1,6 +1,6 @@
 # SyxEconomyMod
 
-> **Version:** v0.13.25 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-25
+> **Version:** v0.13.30 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-25
 >
 > Stam-Doku-Synchron-Anker: Die obenstehende Versions-Zeile MUSS identisch mit `pom.xml` `<version>` sein.
 > Der Sync-Gate `tools/verify-doc-sync.sh` validiert dies vor jedem `mvn compile`.
@@ -189,3 +189,20 @@ mvn jacoco:report         # Coverage-Report für die 7 Kernel-Klassen
 - **Original:** TiredGirl4's Economy Mod
 - **Entwicklung:** vannon091118
 - **Engineering:** Freebuff-assisted
+## Datenmatrix (BINDUNGSMATRIX.csv)
+
+`BINDUNGSMATRIX.csv` ist die kanonische Reference-Data fuer Hebel-Verifikation
+zwischen SyxEconomyMod ↔ Songs-of-Syx V71.44. Header:
+`ID;Datenpunkt;Wert-Typ;Quelle-Klasse;Zugriffspfad;Zugriffsart;Mod nutzt;UI-Kandidat;Status;Lücke;ModVerifiziert`
+
+**Marker-Spec (Spalte 11 — ModVerifiziert):**
+- `++`  HEBEL-Claim UND Mod-Code bestaetigen sich gegenseitig
+- `??`  HEBEL-Claim korrekt, aber Mod-Code hat keinen Referenten (Orphan)
+- `?`   Vage/unclear, nicht greppbar
+- `/`   REBUTTAL — HEBEL sagt X, Mod tut Y
+- (leer) Unentschieden
+
+**Bauen:** `python3 tools/build_bindungsmatrix.py` (kanonisch)
+
+**Statistik:** aktuell 332 Zeilen, 252 HEBEL-Sub-Datenpunkte (A1=2 ... B7=11 ... N95=9) + 51 Mod-API (`X.*`) + 25 Engine-API (`Y.*`) + 3 MZ-Summary.
+

@@ -75,6 +75,7 @@ import vannon.syx.economy.core.Wallets;
 import vannon.syx.economy.core.WarehouseMarket;
 import vannon.syx.economy.core.WealthStats;
 import vannon.syx.economy.core.WorkplaceDefaults;
+import vannon.syx.economy.core.EventLog;
 
 public final class EconomySim {
     // Save-format version that enables the chunked layout below.
@@ -524,6 +525,18 @@ public final class EconomySim {
     private EconomySim(ISyxTransport transportAdapter, ISyxWarehouse warehouseAdapter,
                         ISyxBoosting boostingAdapter, ISyxDiplomacy diplomacyAdapter,
                         ISyxAI aiAdapter, boolean productionMode) {
+        // Reset an ALLEM Anfang: gilt fuer no-arg + 5-arg-Test + 6-arg-Pfade gleichermassen.
+        // Java-21-Regel: this() muss erste Anweisung im Delegations-Ctor sein.
+        // Im 6-arg-Ctor ist 'active = this;' die erste Body-Anweisung —
+        // daher gehoert der reset()-Call genau davor hin.
+        TreasuryCrisis.reset();
+        AccessAutomation.reset();
+        // T13: Static-Audit Reset-Hooks fuer weitere 5 Klassen
+        LocalPrices.reset();
+        OddjobAutomation.reset();
+        WarehouseAutomation.reset();
+        GiniConsequences.reset();
+        CitizenClass.reset();
         active = this;
         this.transportAdapter = transportAdapter;
         this.transportMarket = new TransportMarket(transportAdapter);
@@ -562,12 +575,28 @@ public final class EconomySim {
             this.housingMarket, this.firmLedger, this.wallets, this.roster);
     }
 
-    /** Test-only reset of the singleton pointer. */
+    /** Test-Reset + Save/Load-Reset: Singleton-Pointer nullen + TreasuryCrisis zurücksetzen. */
     static void clearActive() {
+        TreasuryCrisis.reset();
+        AccessAutomation.reset();
+        // T13: Static-Audit Reset-Hooks fuer Save/Load
+        LocalPrices.reset();
+        OddjobAutomation.reset();
+        WarehouseAutomation.reset();
+        GiniConsequences.reset();
+        CitizenClass.reset();
+        // P4: rngLoggedOnce zuruecksetzen damit Save/Load wieder frische Logs bekommt
+        if (active != null) {
+            active.rngLoggedOnce = false;
+        }
         active = null;
     }
 
     public void update(double ds) {
+        // T8: population an EconConfig pushen, damit FlowPrices.phaseFactor() lesen kann.
+        // Pushing VOR updateGuard weil Guard früh rauswirft — kein doppeltes Push noetig
+        // bei Re-Entry, aber population soll trotzdem konsistent sein.
+        EconConfig.setPopulation((int) Math.min(Integer.MAX_VALUE, this.totalLiving()));
         // Re-Entry-Wächter (v0.1.4-hotfix-2, 2026-07-24).
         // Boolean-Flag statt tick-basiertem Guard: fängt ALLE Re-Entry-Szenarien
         // ab (Same-Frame-Duplicates, Roster<2-Cycle, Save/Load-Edge-Cases) ohne
@@ -654,6 +683,7 @@ public final class EconomySim {
         WarehouseMarket.Settlement b2b = this.warehouseMarket.sellInputs(this.flowMeter, this.flowPrices, this.roster, this.wallets, this.firmLedger);
         this.fiscal.settleMerchantRemainder((int)Math.min(Integer.MAX_VALUE, Math.max(0L, b2b.billed() - b2b.credited())));
         this.fiscal.settleCrownWholesale(this.warehouseMarket.buyRemainingCrownGoods(this.roster, this.wallets));
+        this.updateDemography();
         FirmLedger.UpdateResult firmUpdate = this.firmLedger.update(this.roster, this.wallets, this.flowMeter, this.flowPrices, this.affordabilityGate, ds, this.ticks);
         this.guildIncomePaid += firmUpdate.paid();
         MaintenanceMarket.Settlement upkeep = this.maintenanceMarket.update(this.ticks, this.roster, this.wallets, this.firmLedger);
@@ -1519,6 +1549,67 @@ public final class EconomySim {
         }
         EconConfig.corveeDays = days;
         CorveeController.ensureSized();
+    }
+
+    // T6 (B-009): Hunger→Demographie Tracking
+    private final java.util.concurrent.atomic.AtomicInteger emigrationRisk = new java.util.concurrent.atomic.AtomicInteger();
+    private int starvationRiskCount = 0;
+    private boolean rngLoggedOnce = false; // T6-Final: rate-limited RNG-Crash-Logging
+
+    /**
+     * T6 (B-009): Hunger→Demographie-Konsequenz. Pro Tick wird pro Buerger der
+     * Engine-Hunger-Stat (NEEDS.TYPES().HUNGER) geprueft. Wenn > hungerDeathThreshold,
+     * wird Geld-Schaden (hungerDamageRate) abgezogen und Emigrations-Risiko erhoeht.
+     * Hook zwischen foodPlanController.update() und firmLedger.update(), damit die
+     * Konsequenzen die naechste Firmen-Target-Berechnung beeinflussen.
+     */
+    private void updateDemography() {
+        if (!EngineSeams.entitiesAvailable()) return;
+        int threshold = EconConfig.hungerDeathThreshold;
+        if (threshold <= 0) return;
+        int damage = EconConfig.hungerDamageRate;
+        int hungerDeaths = 0;
+        for (int i = 0; i < this.roster.size(); ++i) {
+            Humanoid h = this.roster.get(i);
+            int hunger;
+            try {
+                hunger = EngineSeams.hungerRaw(h);
+            } catch (RuntimeException e) {
+                continue; // SEAM-Defensive: Engine-Stat nicht lesbar → skip
+            }
+            if (hunger < threshold) continue;
+            // P2-Staffel: kritischer Hunger (>=90) = aggressive Drain (/500),
+            // moderater Hunger (>=80) = light Drain (/2000), sonst nichts.
+            // Verhindert dass moderate Hunger die Wirtschaft zerstoert.
+            int walletDamage;
+            if (hunger >= 90) {
+                walletDamage = Math.max(1, this.wallets.get(h) / 500);
+            } else {
+                walletDamage = Math.max(1, this.wallets.get(h) / 2000);
+            }
+            if (this.wallets.get(h) >= walletDamage) {
+                this.wallets.charge(h, walletDamage);
+            }
+            // Emigration: 0.0001/Tick bei ~300 Ticks/Tag = 3%/Tag pro kritischem Buerger.
+            try {
+                if (hunger >= 90 && RND.rFloat() < 0.0001) {
+                    this.emigrationRisk.incrementAndGet();
+                } else {
+                    hungerDeaths++;
+                }
+            } catch (RuntimeException e) {
+                // RNG-Crash: loggen statt Counter inflationieren
+                if (!this.rngLoggedOnce) {
+                    EventLog.log("DEMOGRAPHY", "updateDemography: RND.rFloat() failed — " + e.getClass().getSimpleName());
+                    this.rngLoggedOnce = true;
+                }
+            }
+        }
+        this.starvationRiskCount = hungerDeaths;
+        // Drain emigrationRisk einmal pro Spiel-Tag (EconConfig.ticksPerGameDay).
+        if (this.ticks > 0 && this.ticks % EconConfig.ticksPerGameDay == 0) {
+            this.emigrationRisk.set(0);
+        }
     }
 }
 

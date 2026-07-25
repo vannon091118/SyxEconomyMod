@@ -1,6 +1,6 @@
 # SyxEconomyMod — Architektur
 
-> **Version:** v0.13.25 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-25
+> **Version:** v0.13.30 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-25
 >
 > Stam-Doku-Synchron-Anker: Die obenstehende Versions-Zeile MUSS identisch mit `pom.xml` `<version>` sein.
 > Der Sync-Gate `tools/verify-doc-sync.sh` validiert dies vor jedem `mvn compile`.
@@ -9,6 +9,39 @@
 > `wc -l $(find src -name '*.java')` entsprechen den unten genannten Zahlen.
 
 ---
+
+## Sprint-Workflow (neu ab v0.13.30)
+
+Per `agents.md`-Rule 11+12 und `WORKFLOW.md`-Reform: **1 Sprint = 1 atomic
+commit** mit 5-15 thematisch verbundenen Tasks.
+
+**Sprint-Pipeline:**
+```
+BAUEN (Tasks implementieren + Stam-Docs built-inside-Commit)
+  ↓
+PRÜFEN (validate-gate: mvn verify + sync-gate + BINDUNGSMATRIX-NF-check)
+  ↓
+HÄRTEN (code-reviewer-minimax-m3 + Gap-Closure)
+  ↓
+1 atomic commit: `sprint: <Name> — <Task-Liste>`
+```
+
+**Kanonische Reference-Data:** `BINDUNGSMATRIX.csv` (332 Zeilen,
+11 Spalten, semikolon-getrennt). Header:
+`ID;Datenpunkt;Wert-Typ;Quelle-Klasse;Zugriffspfad;Zugriffsart;Mod nutzt;UI-Kandidat;Status;Lücke;ModVerifiziert`
+
+**tools/-Stand (post-Sprint):**
+| Skript | Status |
+|---|---|
+| `build_bindungsmatrix.py` | ✅ kanonisch |
+| `gen_bindungsmatrix_v2.py` | 🗑️ geloescht |
+| `gen_bindungsmatrix_v3.py` | 🗑️ geloescht |
+| `recover_bindungsmatrix.py` | 🗑️ geloescht |
+| `refactor_bindungsmatrix_macro.py` | 🗑️ geloescht |
+
+**HEBELKARTE.md:** 🗑️ geloescht (war Spec-Input fuer 4 obsolete Skripte).
+Spec-Migration: BINDUNGSMATRIX.csv ist Single-Source-of-Truth.
+
 
 ## Überblick
 

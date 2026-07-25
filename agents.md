@@ -405,25 +405,69 @@ failures during Phase B–E. Every new adapter MUST follow them.
    `Humanoid.class.getClassLoader()` is the canonical ClassLoader
    source (verified in `VanillaAIAdapter.java:46`).
 
----## Rule 11 — Three-Phase Workflow (mandatory session structure)
+---## Rule 11 — Sprint-Workflow (mandatory session structure)
 
-Every AI-agent session that changes code MUST follow the 3-phase pattern
-formalized in [`WORKFLOW.md`](WORKFLOW.md):
+Every AI-agent session that changes code operates inside **exactly one
+Sprint**. A Sprint is a thematically coherent cluster of 5–15 Tasks
+that share one architectural goal and end with **exactly one atomic
+commit**. Within a sprint, [`WORKFLOW.md`](WORKFLOW.md) defines the
+3-phase pattern (BAUEN / PRÜFEN / HÄRTEN):
 
 | Phase | Name | Goal | Key Check |
 |---|---|---|---|
-| 1 | **BAUEN** | Build the feature, stam-docs in same commit | `mvn verify install` per commit |
-| 2 | **PRÜFEN** | Gate check, stale-ref scan, drift fix, phantom removal | `bash tools/verify-doc-sync.sh` + grep scans |
-| 3 | **HÄRTEN** | Independent review, gap closure, no silent-fail | `code-reviewer-deepseek`, all gaps closed |
+| 1 | **BAUEN** | Build all tasks in this sprint, stam-docs same commit | `mvn verify install -DskipTests -Dskip.bump=true` end-of-sprint |
+| 2 | **PRÜFEN** | Gate check, stale-ref scan, drift fix, phantom removal | `bash tools/verify-doc-sync.sh` + grep scans end-of-sprint |
+| 3 | **HÄRTEN** | Independent review, gap closure, no silent-fail | `code-reviewer-minimax-m3` end-of-sprint |
 
-**Proportionality clause:** For changes touching fewer than **5 lines
-in a single file**, Phases 2+3 may be collapsed into a single
-verify-and-review step. For everything else: all three phases,
-committed and pushed before the next phase begins.
+**Sprint-Boundaries** (each Sprint produces **one** atomic commit):
+- 5–15 Tasks per sprint (theme-bound, not time-bound)
+- One Sprint = one commit (no task-level sub-commits within a sprint)
+- Sprint-end validation: `mvn verify install -DskipTests -Dskip.bump=true` + sync-gate + code-reviewer, ALL before commit
 
-The 3-phase pattern was derived from the Phase-A–F session (2026-07-25),
-where two independent reviewers found 11 gaps with zero overlap — proving
-that a single pass is never enough.
+**Proportionality clause:** Sprints with fewer than **3 tasks total**
+may collapse Phasen 2+3 into a single verify-and-review step. Larger
+sprints (5+ tasks) require the full 3-phase pattern at sprint end.
 
-See `WORKFLOW.md` for the full checklist per phase and the catalog of
-anti-patterns discovered in this project.
+The Sprint-Workflow + 3-phase pattern inside was derived from the
+Phase-A–F session (2026-07-25, 11 gaps found), the TreasuryCrisis
+State-Leak sprint (4 tasks, T1–T4), and the Mod-Economy T5–T13 sprint
+(11 tasks, B-001/B-009/B-004/H8/B-010 + Static-Audit).
+
+See `WORKFLOW.md` for sprint-end checklist + anti-patterns catalog.
+
+---## Rule 12 — Sprint-Definition + Commit-Disziplin
+
+A **Sprint** is defined by 4 criteria — ALL must be true:
+
+1. **Theme** — Tasks share one architectural/business goal (e.g.
+   "TreasuryCrisis State-Leak Reset"), not just timing.
+2. **Scope** — 5–15 Tasks per sprint (1 Task = 1 coherent code change
+   affecting 1–3 files). Less than 3 = routine edit, more than 15 =
+   split into multiple sprints.
+3. **Atomic-commit** — Sprint ends with exactly ONE git commit
+   containing all tasks + stam-doc updates. Sub-task commits inside a
+   sprint are anti-patterns (siehe WORKFLOW.md §Anti-Patterns).
+4. **Validation-gate** — sprint-commit is allowed only after
+   `mvn verify install -DskipTests -Dskip.bump=true` + `bash tools/verify-doc-sync.sh`
+   both pass + `code-reviewer-minimax-m3` reviewed all tasks.
+
+**Sprint-Bound vs. Session-Bound:** A sprint fits typically into 1-2
+AI-sessions with full tooling. If a sprint needs 3+ sessions, it is
+too large — split it at a theme boundary (e.g. "Reset-Fix" +
+"UI-Update" = 2 sprints). Multiple sprints per session are allowed
+and encouraged when each is independently validatable — commit
+between sprints is mandatory.
+
+**Stam-Doc-Sync bleibt non-negotiable (Rule 3):** Innerhalb eines
+Sprint-Commits werden alle 5 Stam-Docs auf `pom.xml <version>`
+synchronisiert (sed-Block, by design Rule 3 friction). Das passiert
+EINMAL pro Sprint-Commit, nicht per Task.
+
+**Anti-pattern (verboten):** Task-per-Commit zerhackt thematisch
+zusammenhängende Änderungen in micro-commits. Folge: Sprint-Inhalt
+ist nur im Agent-Chat rekonstruierbar, nicht via git log. Stattdessen:
+1 Sprint = 1 atomic commit. Siehe WORKFLOW.md §Anti-Patterns.
+
+**Sprint-Naming:** Wähle einen Theme-Namen (z.B. "TreasuryCrisis Reset",
+"BINDUNGSMATRIX-Canonical", "Phase-A–F SDK"). Sprint-Header in
+CHANGELOG.md nennt den Namen + die subsummierten Tasks.

@@ -65,4 +65,11 @@ public final class OddjobAutomation {
     }
 
     private OddjobAutomation() {}
+
+    /**
+     * T13: Session-Reset. Pattern vgl. TreasuryCrisis.reset().
+     */
+    public static void reset() {
+        lastAppliedSeason = -1;
+    }
 }

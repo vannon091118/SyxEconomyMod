@@ -1,159 +1,166 @@
-# SyxEconomyMod — LLM Workflow
+# SyxEconomyMod — LLM Sprint-Workflow
 
-> **Obligatorisches 3-Phasen-Muster für jede AI-Agent-Session.**
-> Abgeleitet aus der Phase-A–F Session (2026-07-25), in der zwei unabhängige
-> Reviewer 11 Lücken ohne Überschneidung fanden — ein dritter Durchgang hätte
-> weitere gefunden. Dieses Dokument verhindert, dass Lücken bis zum
-> nächsten Reviewer-Durchgang überleben.
+> **Obligatorisches Sprint-Pattern für jede AI-Agent-Session.**
+> Abgeleitet aus Phase-A–F (2026-07-25, 11 unabhängige Gaps, 2 Reviewer),
+> TreasuryCrisis-Reset-Sprint (T1–T4) und Mod-Economy T5–T13-Sprint
+> (11 Tasks). Verhindert micro-task-commits die Sprint-Inhalt
+> un-rekonstruierbar machen.
 >
-> Letzte Aktualisierung: 2026-07-25 | Session: Phase-A–F + Baseline + Double-Review
+> Letzte Aktualisierung: 2026-07-25 | Sprint: Sprint-Workflow-Etablierung
 
 ---
 
-## Die 3 Phasen — obligatorisch, in dieser Reihenfolge
+## Sprint-Konzept
 
-Jede AI-Agent-Session, die Code ändert, durchläuft diese drei Phasen.
-Keine Phase darf übersprungen werden. Keine Phase darf mit der nächsten
-beginnen, bevor die vorherige abgeschlossen und committed ist.
+Ein **Sprint** = thematischer Cluster von 5–15 Tasks, geteiltes
+Architektur-Ziel, endet mit **genau einem atomaren Commit**.
 
 ```
-PHASE 1: BAUEN       PHASE 2: PRÜFEN        PHASE 3: HÄRTEN
-┌──────────────┐    ┌──────────────┐    ┌──────────────────┐
-│ Feature bauen│ → │ Gate checken  │ → │ Review einholen   │
-│ Stam-Docs    │    │ Stale-Refs    │    │ Lücken schließen │
-│ mit committen│    │ Drift fixen   │    │ Kein silent-fail │
-│ mvn verify   │    │ Phantome weg  │    │ Handoff-ready    │
-└──────────────┘    └──────────────┘    └──────────────────┘
+┌───────────────────────────────────────────────────────────────┐
+│                    SPRINT (5-15 Tasks)                         │
+│                                                                │
+│   ┌─BAUEN──┐   ┌─PRÜFEN─┐   ┌─HÄRTEN──┐                       │
+│   │ T1..Tn │ → │ gates  │ → │ review  │ → 1 atomic commit    │
+│   └────────┘   └────────┘   └─────────┘                       │
+└───────────────────────────────────────────────────────────────┘
 ```
+
+Innerhalb des Sprints laufen die 3 Sub-Phasen **einmal am Sprint-Ende**,
+nicht pro Task:
+
+| Sub-Phase | Wann | Was |
+|---|---|---|
+| **BAUEN** | alle Tasks | Implement + Stam-Doc-Updates (per Rule 2+3) |
+| **PRÜFEN** | sprint-end | `mvn verify install` + `verify-doc-sync.sh` + grep-scans |
+| **HÄRTEN** | sprint-end | code-reviewer-minimax-m3 + Gap-Closure |
+
+**Sprint-Naming:** Theme-basiert (z.B. "TreasuryCrisis Reset",
+"BINDUNGSMATRIX-Canonical", "Phase-A–F SDK"). Sprint-Header in CHANGELOG.md
+nennt den Namen + subsummierten Tasks.
+
+**Sprint-Bound vs. Session-Bound:** 1 Sprint pro AI-Session. Wenn nicht
+in einer Session schaffbar → Sprint zu groß, splitten. Mehrere Sprints
+pro Session OK wenn jedes für sich validiert + committed vor nächstem.
 
 ---
 
-## Phase 1: BAUEN — Konstruktion mit Commit-Disziplin
+## Sub-Phase 1: BAUEN — Konstruktion
 
 ### Regeln
 
 | # | Regel | Begründung |
 |---|---|---|
-| 1.1 | **0 bestehende Dateien brechen.** Neue Dateien oder targeted Rewrites. Kein „ich ändere mal eben 5 Consumer mit". | Die Session hat 17→14 Adapter-Dateien ohne einen einzigen Core-Consumer anzufassen. |
-| 1.2 | **Stam-Docs im selben Commit.** Jeder Commit mit neuen/gelöschten/umbenannten .java-Dateien enthält die ARCHITECTURE/GLOSSARY/ROADMAP/CHANGELOG-Updates. | Der Gate feuert bei `mvn install` (validate-Phase), nicht bei compile. |
-| 1.3 | **`mvn verify install -DskipTests` nach jedem Commit.** Kein Commit ohne grünen Build. | Siehe agents.md Regel 1. |
-| 1.4 | **Atomare Commits pro logischer Einheit.** Nicht „alles in einem Commit". Jede Phase (B/C/D/E/F) war ein eigener Commit. | Rückverfolgbarkeit. |
-| 1.5 | **Commit-Message folgt Schema:** `feat:`/`fix:`/`docs:`/`chore:` + Phase + Beschreibung. | Siehe git log: `feat: Phase C — Transport-Adapter auf BypassGate migriert` |
+| 1.1 | **5–15 Tasks pro Sprint.** Theme-bound, nicht zeit-bound. | Kleinere Sprints haben zu wenig Impact, größere splittet Logik. |
+| 1.2 | **Stam-Docs einmal im Sprint-Commit** (Rule 3 friction). | 1 sed-Block pro Sprint statt per-Task. |
+| 1.3 | **Innerhalb BAUEN: KEIN Commit, KEIN Push.** | Sprint-Commit ist der einzige Commit-Punkt im Sprint. |
+| 1.4 | **Tasks dürfen einander brechen** (z.B. Refactor vor Build). | Sprint-Commit endet mit konsistentem Stand. |
+| 1.5 | **BINDUNGSMATRIX.csv als kanonische Reference-Data** (nicht Stam-Doc). | Single-source-of-truth für Hebel-Verifikation. tools/-Skripte lesen csv, nicht HEBELKARTE. |
 
-### Checkliste vor Phase-1-Abschluss
+### Checkliste vor Sub-Phase-Sub-Phase-Übergang (nicht atomar, nur am Sprint-Ende!)
 
-- [ ] Alle neuen/gelöschten Dateien in ARCHITECTURE.md nachgetragen
-- [ ] GLOSSARY.md: Phantom-Klassen entfernt, neue ergänzt
-- [ ] CHANGELOG.md: Eintrag unter aktueller Version
-- [ ] ROADMAP.md: Status aktualisiert
-- [ ] `mvn verify install -DskipTests` = BUILD SUCCESS
-- [ ] Alle Commits gepusht
+- [ ] Alle Tasks fertig (Code + Tests wo angemessen)
+- [ ] ARCHITECTURE.md / GLOSSARY.md / ROADMAP.md / CHANGELOG.md / README.md auf aktuellem Stand
+- [ ] BINDUNGSMATRIX.csv neu gebaut (via `python3 tools/build_bindungsmatrix.py`) falls Daten sich geändert haben
 
 ---
 
-## Phase 2: PRÜFEN — Baseline-Konsistenz
+## Sub-Phase 2: PRÜFEN — Sprint-End Gate
 
 ### Regeln
 
 | # | Regel | Begründung |
 |---|---|---|
-| 2.1 | **Sync-Gate explizit ausführen:** `bash tools/verify-doc-sync.sh`. Nicht nur auf `mvn verify` verlassen — der Gate prüft nur bestimmte Muster. | Der CHANGELOG-Header blieb auf v0.13.2, während der `## v`-Eintrag korrekt war. Der Gate prüfte nur den Eintrag. |
-| 2.2 | **Stale-Referenz-Scan:** `grep -rn 'Fallback\|*MH\|useMethodHandleAdapters' src/ test/`. Jeder Treffer muss entweder legitimer Kommentar oder toter Code sein. | Nach Phase F existierten keine Fallback-Klassen mehr, aber die Stam-Docs behaupteten es. |
-| 2.3 | **Phantom-Dokumentation löschen.** Jede Behauptung in ARCHITECTURE/GLOSSARY/ROADMAP muss mit `find src/ -name '*.java'` verifizierbar sein. Keine Klasse dokumentieren, die nicht existiert. | agents.md Regel 5: „Don't paraphrase numbers, count them." |
-| 2.4 | **Version-Drift aktiv suchen.** `grep -m1 'Version:'` in allen 5 Stam-Docs gegen `pom.xml`. Der Sync-Gate fängt nicht alle Muster. | Regel 3 in agents.md sagt „intentional friction" — der Mensch muss den Drift SEHEN. |
-| 2.5 | **Gate-Abdeckung prüfen.** Welche Muster prüft der Gate? Welche übersieht er? Lücken dokumentieren (nicht unbedingt sofort fixen). | Der Gate prüft CHANGELOGs `## v`-Eintrag, aber nicht den `**Version:**`-Header. Das ist dokumentiert. |
+| 2.1 | **Sync-Gate explizit:** `bash tools/verify-doc-sync.sh`. | Der Gate fängt nicht alle Muster (z.B. CHANGELOG-Header). |
+| 2.2 | **Stale-Referenz-Scan:** `grep -rn 'Fallback\|*MH\|useMethodHandleAdapters\|HEBELKARTE' src/ test/ tools/`. | Nach tools/-Migration sollten keine HEBELKARTE-Refs mehr existieren. |
+| 2.3 | **Phantom-Dokumentation löschen.** ARCHITECTURE/GLOSSARY/ROADMAP-Behauptungen müssen mit `find src/ -name '*.java'` verifizierbar sein. | agents.md Rule 5. |
+| 2.4 | **BINDUNGSMATRIX.csv-Sanity:** NF-Check, HEBEL-Coverage, Marker-Distribution. | `awk -F';' 'NF!=11' BINDUNGSMATRIX.csv` muss leer sein. |
+| 2.5 | **Sprint-Commit-Atomicity:** Sprint-Commit enthält alle Tasks in EINEM Commit. | Verboten: per-Task-Commits zerhacken das Sprint-Thema. |
 
-### Checkliste vor Phase-2-Abschluss
+### Checkliste vor Sprint-Commit
 
-- [ ] `bash tools/verify-doc-sync.sh` = PASS (alle 7 Dateien)
-- [ ] `grep -rn 'Fallback' src/ test/` = nur legitime Kommentare, keine toten Imports
-- [ ] `grep -rn 'MH' src/vannon/syx/economy/adapter/` = keine toten MH-Referenzen
-- [ ] Alle 5 Stam-Docs: Version-Stamp = `pom.xml <version>`
-- [ ] ARCHITECTURE.md Datei-Count = `find src/ -name '*.java' | wc -l`
+- [ ] `mvn verify install -DskipTests -Dskip.bump=true` = BUILD SUCCESS
+- [ ] `bash tools/verify-doc-sync.sh` = PASS (5 Stam-Docs)
+- [ ] `awk -F';' 'NF!=11' BINDUNGSMATRIX.csv` = leer
+- [ ] Keine `HEBELKARTE` Referenzen mehr in `tools/` (außer SUPERSEDED-Notice falls noch da)
 - [ ] Keine Phantom-Klassen in GLOSSARY.md
-- [ ] agents.md: Alle neuen Regeln/Patterns aus der Session ergänzt
-- [ ] Commit + Push
+- [ ] CHANGELOG.md: Sprint-Header mit allen Tasks
 
 ---
 
-## Phase 3: HÄRTEN — Review & Gap-Closure
+## Sub-Phase 3: HÄRTEN — Review & Gap-Closure
 
 ### Regeln
 
 | # | Regel | Begründung |
 |---|---|---|
-| 3.1 | **Mindestens ein code-reviewer-deepseek nach jeder signifikanten Änderung.** Der Reviewer findet andere Lücken als der bauende Agent. | Zwei Reviewer fanden 11 Lücken mit NULL Überschneidungen. |
-| 3.2 | **Alle gefundenen Lücken schließen vor Handoff.** Kein „das machen wir später". Jede Lücke ist entweder gefixt oder explizit als „akzeptiertes Risiko" dokumentiert. | 11 Lücken, 11 Fixes im selben Commit. |
-| 3.3 | **Kein silent-fail in irgendeinem Codepfad.** Jeder Fehlerfall produziert entweder eine Exception mit Kontext oder einen EventLog-Eintrag. Niemals `return 0`/`return null`/`return false` ohne Diagnose. | FieldAccessor gab bei Totalausfall 0 zurück — stiller Bilanz-Fehler im Economy-Mod. |
-| 3.4 | **Fehlerverhalten konsistent.** Geschwisterklassen (FieldAccessor/MethodAccessor) müssen bei identischer Fehlerbedingung identisch reagieren. | FieldAccessor schwieg (return 0), MethodAccessor crashte (NPE). Beides falsch, aber vor allem: inkonsistent. |
-| 3.5 | **Double-Review für architekturkritische Dateien.** Die 4 SDK-Dateien (BypassGate, FieldAccessor, MethodAccessor, ClassResolver) sind das Fundament aller Adapter. Ein Fehler hier propagiert in 5+ Consumer. | Zweiter Reviewer fand den Lookup-Kontext-Bug, der im ersten Durchgang übersehen wurde. |
+| 3.1 | **code-reviewer-minimax-m3 einmal pro Sprint-End.** | Sprint-übergreifende Patterns nur am Sprint-Ende sichtbar. |
+| 3.2 | **Alle Reviewer-Lücken vor Sprint-Commit schließen.** Kein "später". | Sprint-Commit ist die letzte Chance. |
+| 3.3 | **Kein silent-fail** in irgendeinem Code-Pfad. | FieldAccessor-Beispiel: stiller Bilanz-Fehler. |
+| 3.4 | **Fehlerverhalten konsistent** zwischen Geschwisterklassen. | FieldAccessor vs MethodAccessor. |
 
-### Checkliste vor Phase-3-Abschluss
+### Checkliste vor Sprint-Commit
 
-- [ ] `code-reviewer-deepseek` ausgeführt, alle Anmerkungen adressiert
+- [ ] code-reviewer-minimax-m3 ausgeführt, alle Anmerkungen adressiert
 - [ ] Kein `return 0`/`null`/`false` ohne Diagnose in neuem Code
-- [ ] Fehlerverhalten zwischen Geschwisterklassen konsistent
-- [ ] Architekturkritische Dateien haben Double-Review
-- [ ] `mvn verify install -DskipTests` = BUILD SUCCESS
-- [ ] Alle Lücken geschlossen oder explizit dokumentiert
-- [ ] Commit + Push
+- [ ] Sprint-Commit enthält alle gelösten Lücken
+- [ ] Kein offener Work-in-Progress-Stand am Sprint-Ende
 
 ---
 
-## Commit-Disziplin — Session-übergreifend
+## Commit-Disziplin (Sprint-übergreifend)
 
-**Commit + Push erfolgt AM ENDE JEDER CODE-ÄNDERUNG, die Review
-durchlaufen hat.** Kein Stapeln von reviewed-but-uncommitted Changes.
-Kein „ich mach mehrere Fixes und commit dann alles auf einmal".
-Jeder Review→Fix→Verify-Zyklus endet mit einem atomaren Commit + Push.
+**Der Sprint-Commit ist der EINZIGE Commit-Punkt im Sprint-Workflow.**
 
 ```
-JEDER Commit:
-  ├── Enthält Stam-Doc-Updates (wenn .java-Dateien geändert)
-  ├── Hat `mvn verify install -DskipTests` = BUILD SUCCESS
-  ├── Folgt Schema: type: Phase/Ort — Beschreibung
-  └── Wird gepusht sobald die aktuelle Änderung reviewed und verified ist
-      (kein Stapeln mehrerer ungepushter Commits)
+EIN Sprint-Commit:
+  ├── Enthält alle 5-15 Tasks des Sprints
+  ├── Enthält Stam-Doc-Updates (1× per Sprint per agents.md Rule 3)
+  ├── Hat `mvn verify install -DskipTests -Dskip.bump=true` = BUILD SUCCESS
+  ├── Hat `bash tools/verify-doc-sync.sh` = PASS
+  ├── Hat `code-reviewer-minimax-m3` Review + alle Lücken geschlossen
+  └── Commit-Message-Schema: `sprint: <Name> — <Tasks subsummiert>`
+      oder atomare Commits bei klar trennbaren Sprint-Phasen
 
-NIE:
-  ├── „Docs mache ich später"
-  ├── „Review mache ich später"
-  ├── „Gate fixe ich später"
-  ├── Commit ohne Build
-  ├── Review abschließen ohne Commit+Push
-  └── Mehrere reviewed Changes in EINEM Commit stapeln
+NIE (innerhalb eines Sprints):
+  ├── Per-Task-Commits (verboten — Sprint-Inhalt wird un-rekonstruierbar)
+  ├── „Push später" nach abgeschlossenem Review
+  ├── Commit ohne grünen Build
+  ├── Review abschließen ohne Sprint-Commit
+  └── Zwischen-Sprint-Commits stapeln
 ```
 
 ---
 
 ## Session-Handoff-Kriterien
 
-Eine Session ist bereit zum Handoff, wenn:
+Eine AI-Session ist bereit zum Handoff, wenn:
 
-1. ✅ Alle 3 Phasen durchlaufen
-2. ✅ `mvn verify install -DskipTests` = BUILD SUCCESS
+1. ✅ Alle Sprints der Session committed (1 Sprint = 1 Commit-Regel)
+2. ✅ `mvn verify install -DskipTests -Dskip.bump=true` = BUILD SUCCESS
 3. ✅ `bash tools/verify-doc-sync.sh` = PASS
 4. ✅ `git status` = clean (keine uncommitteten Änderungen)
 5. ✅ Keine offenen Review-Lücken
-6. ✅ agents.md auf aktuellem Stand (neue Regeln/Patterns dokumentiert)
-7. ✅ WORKFLOW.md auf aktuellem Stand (neue Erkenntnisse generalisiert)
+6. ✅ agents.md auf aktuellem Stand (neue Regeln dokumentiert)
+7. ✅ BINDUNGSMATRIX.csv neu gebaut + sanity-checks PASS
+8. ✅ tools/-Scripts konsistent (alte Skripte gelöscht, kanonisch aktiv)
+9. ✅ HEBELKARTE.md entweder gelöscht oder explizit als deprecated markiert
 
 ---
 
-## Anti-Patterns — erkannt in dieser Session
+## Anti-Patterns — Sprint-spezifisch
 
 | Anti-Pattern | Symptom | Folge | Fix |
 |---|---|---|---|
-| **Doku-Phantom** | GLOSSARY listet 4 Fallback-Klassen, die gelöscht wurden | Agent erzeugt neue Fallback-Klasse „weil's in der Doku steht" | Phase 2.3: Phantom-Scan |
-| **Gate-Blindspot** | Sync-Gate passt, aber CHANGELOG-Header ist 8 Versionen alt | Agent liest v0.13.2 als Kontext, baut gegen falsche Version | Phase 2.1+2.5: Manueller Gate-Check |
-| **Silent-Zero** | FieldAccessor.get() gibt 0 zurück bei Totalausfall | Wirtschaftssimulation rechnet mit Phantom-Nullen | Phase 3.3: Exception statt silent-fail |
-| **Inkonsistente Geschwister** | FieldAccessor schweigt, MethodAccessor crasht | Selber Fehler, zwei verschiedene Folgen | Phase 3.4: Konsistenz-Prüfung |
-| **Doku-Lüge** | „BypassGate.isAvailable() ersetzt Fallbacks" klingt nach globalem Flag | Agent denkt granulare Degradation sei verloren | Phase 2.3: Claims gegen Code verifizieren |
-| **Review-ohne-Commit** | code-reviewer-deepseek läuft, Lücken werden gefixt, aber kein Commit+Push | Changes leben nur im Chat, nächster Agent sieht sie nicht | Commit+Push AM ENDE JEDER reviewed Änderung |
+| **Task-per-Commit** | Sprint mit 11 Tasks hat 11 Commits (`T5: ...`, `T6: ...`) | Sprint-Inhalt nur im Chat rekonstruierbar, git log unleserlich | 1 Sprint = 1 atomic commit |
+| **Sprint-Bruch** | Concept-Shift mid-sprint (z.B. von "TreasuryCrisis" zu "HEBELKARTE-Loeschung") | Zwei thematisch unterschiedliche Commits, Sprint-Thema unklar | Sprint beenden mit Commit, dann neuen Sprint starten |
+| **Stale-tools-Refs** | v2/v3 Skripte in tools/ obwohl build_bindungsmatrix.py kanonisch | Drift-Risiko, Dokumentations-Wirrwarr | tools/-Cleanup als eigener Sprint-Block |
+| **Sprint-Overflow** | Sprint >15 Tasks weil "thematisch verwandt" | Reviewer übersieht Lücken in der Menge | Tasks zählen, Sprint splitten |
+| **Ungeplanter Compile-Push** | Per-Task `mvn install` ohne Sprint-End-Validation | Mehrere potentielle Drift-Punkte, sync-gate feuert unkontrolliert | Sprint-Erlaubnis für compile nur via Sub-Phase-2-Gate |
+| **HEBELKARTE-Lurking** | HEBELKARTE.md bleibt + tools/ lesen es + SUPERSEDED-Notice | Zwei Wahrheits-Quellen, Drift possible | Sprint "HEBELKARTE-Loeschung" → tools/-Migration → file-delete |
+| **Sprint-Definition-Drift** | agents.md spricht von "Tasks", WORKFLOW.md von "Sub-Phasen", Code von "Phases" | Drei Terminologien, Reviewer verwirrt | Sprint-Vokabular canonical: Sprint > Task > Sub-Phase |
 
 ---
 
-> **Pflege-Hinweis:** Dieses Dokument lebt. Jede Session, die ein neues Anti-Pattern
-> oder eine neue Lücken-Kategorie entdeckt, ergänzt die entsprechenden Checklisten.
-> WORKFLOW.md ist der GENERALISIERTE EXTRAKT aus den konkreten Session-Erfahrungen —
-> nicht die Erfahrung selbst (die steht in CHANGELOG.md und den Commit-Messages).
+> **Pflege-Hinweis:** WORKFLOW.md ist der generalisierte Sprint-Workflow. Sprint-Spezifika
+> (welche Tasks, welche Architektur-Entscheidungen) stehen in CHANGELOG.md und der
+> Sprint-Commit-Message. Bei Sprint-Anomalien: WORKFLOW.md updaten, agents.md syncen.

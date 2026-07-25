@@ -76,4 +76,15 @@ public final class AccessAutomation {
                     + t.getClass().getSimpleName() + " — Zugangs-Erkennung deaktiviert.");
         }
     }
+
+    /**
+     * Setzt alle session-persistenten statischen Felder zurueck.
+     * Wird beim Save/Load und EconomySim.clearActive()/Konstruktion aufgerufen,
+     * damit ein geladenes Savegame nicht die Detection-Disables der vorigen Session erbt.
+     * Pattern vgl. TreasuryCrisis.reset() (gleicher State-Leak-Bug-Typ).
+     */
+    public static void reset() {
+        lastErrorLogTick = 0;
+        accessDetectionDisabled = false;
+    }
 }

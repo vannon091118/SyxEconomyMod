@@ -6,6 +6,7 @@ import vannon.syx.economy.core.Wallets;
 
 public final class WealthStats {
     public int people = 0;
+    public int activePeople = 0; // T7 (B-004): people minus SLAVE + non-workers
     public int min = 0;
     public int max = 0;
     public int median = 0;
@@ -22,6 +23,7 @@ public final class WealthStats {
         int i;
         int n;
         this.people = n = roster.size();
+        this.activePeople = CitizenClass.classifiablePopulationCount(roster);
         if (n == 0) {
             return;
         }

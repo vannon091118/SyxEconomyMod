@@ -64,4 +64,13 @@ public final class GiniConsequences {
     }
 
     private GiniConsequences() {}
+
+    /**
+     * T13: Session-Reset. registeredOn-Booster-Referenz und warn-season zurueck.
+     * Pattern vgl. TreasuryCrisis.reset().
+     */
+    public static void reset() {
+        registeredOn = null;
+        lastWarnSeason = -1;
+    }
 }

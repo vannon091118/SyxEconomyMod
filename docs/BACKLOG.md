@@ -9,6 +9,14 @@
 
 ---
 
+## Sprint-Snapshot (aktuell)
+
+Letzter abgeschlossener Sprint: **Mod-Economy T5–T13** (11 Tasks: T5 B-001, T6 B-009, T7 B-004, T8 H8, T9 revertFireSale, T10 diagnosticsExport, T11 HEBELKARTE-Superseded, T12 AccessAutomation-Reset, T13 Static-Audit 5-Klassen-Reset + BINDUNGSMATRIX-Canonical).
+
+BINDUNGSMATRIX.csv (332 Zeilen, 11 Spalten) ist seit Sprint T5–T13 die kanonische Reference-Data fuer Hebel-Verifikation. HEBELKARTE.md wurde in diesem Sprint geloescht.
+   Marker-Spec uebernommen in BINDUNGSMATRIX.csv Spalte 11 (ModVerifiziert):  ++ verified · ?? orphan · ? unclear · / rebuttal.
+
+
 ## 2026-07-24 Session — Live-Test Findings
 
 ### B-001: FlowMeter-Coverage-Gap — Farms/Pastures nicht gesampelt

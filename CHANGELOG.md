@@ -1,6 +1,6 @@
 # SyxEconomyMod — Changelog
 
-> **Version:** v0.13.10 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-25
+> **Version:** v0.13.30 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-25
 >
 > Stam-Doku-Synchron-Anker: Die obenstehende Versions-Zeile MUSS identisch mit `pom.xml` `<version>` sein.
 > Der Sync-Gate `tools/verify-doc-sync.sh` scheitert wenn dieser Anker driftet.
@@ -10,7 +10,54 @@
 
 ---
 
-## v0.13.25 — 2026-07-25
+## Sprint 'Sprint-Workflow + BINDUNGSMATRIX-Canonical' — 2026-07-25
+
+### Summary
+Globaler Switch von Task-per-Commit auf Sprint-per-Commit. BINDUNGSMATRIX.csv
+ist kanonische Reference-Data. HEBELKARTE.md geloescht (war Spec-Input fuer
+4 obsolete tools/-Skripte).
+
+### Detailed Changes
+
+**agents.md Workflow-Reform:**
+- Rule 11: Three-Phase Workflow umgeschrieben zu Sprint-Workflow (5-15 Tasks pro Sprint, 1 Sprint = 1 atomic commit)
+- Rule 12 (NEU): Sprint-Definition (Theme-Bound, Scope 5-15, Atomic-Commit, Validation-Gate)
+
+**WORKFLOW.md rebuild:**
+- 3 Sub-Phasen (BAUEN/PRÜFEN/HÄRTEN) laufen EINMAL pro Sprint-End, nicht per Task
+- Sprint-Definition prominent dokumentiert + Sprint-Boundaries-Kriterien
+- Anti-Patterns-Katalog erweitert: Task-per-Commit, Sprint-Bruch, Stale-tools-Refs, Sprint-Overflow, Ungeplanter Compile-Push, HEBELKARTE-Lurking, Sprint-Definition-Drift
+
+**tools/-Cleanup:**
+- geloescht: `gen_bindungsmatrix_v2.py`, `gen_bindungsmatrix_v3.py`, `recover_bindungsmatrix.py`, `refactor_bindungsmatrix_macro.py`
+- kanonisch: `build_bindungsmatrix.py` ist Single-Source-of-Truth
+
+**HEBELKARTE.md geloescht:**
+- 4 tools/-Skripte die HEBELKARTE.md als Input brauchten sind weggefallen
+- Marker-Lexikon (++/??/?/) ist in BINDUNGSMATRIX.csv Spalte 11 dokumentiert
+
+**BINDUNGSMATRIX.csv Promotion:**
+- Single-Source-of-Truth fuer Hebel-Verifikation
+- tools/-Skripte lesen csv wo noetig (andere Sim/Plot-Skripte unveraendert)
+- Schema: 11 Spalten, semikolon-getrennt, Marker-Spec bleibt strikt
+
+**BACKLOG.md Sprint-Snapshot:**
+- Neuer Header dokumentiert letzten abgeschlossenen Sprint (T5-T13)
+- Marker-Lexikon-Verweis
+
+**ABER: Mod-Economy T5-T13 Tasks (vorheriger Sprint):**
+- T5 B-001 FlowMeter Production-Intent — @Deprecated Getter bis Blueprint-API verfuegbar
+- T6 B-009 Hunger-Demographie Hook (Code-Reviewer-P1 inverted catch, P2 dead param, P4 reset) — implementiert
+- T7 B-004 Classifier-Pipeline angleichen (activePeople, classifiedCount, isClassifiable) — implementiert
+- T8 H8 phaseFactor (HEBELKARTE "Kritisch") — implementiert in FlowPrices.refresh()
+- T9 revertFireSale EventLog-Hinweis — implementiert
+- T10 diagnosticsExportEnabled default false — implementiert (Public-Release-tauglich)
+- T11 HEBELKARTE.md Superseded-Notice (jetzt geloescht in diesem Sprint)
+- T12 AccessAutomation.reset() — implementiert (Pattern wie TreasuryCrisis.reset())
+- T13 Static-Audit Reset auf 5 Klassen (LocalPrices, OddjobAutomation, WarehouseAutomation, GiniConsequences, CitizenClass) — implementiert
+- Plus: 7 reset()-Methoden total, 22 Hooks in EconomySim
+
+## v0.13.30 — 2026-07-25
 
 ### Phase F — AI-Adapter + Cleanup (Finale)
 

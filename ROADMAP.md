@@ -1,11 +1,26 @@
 # SyxEconomyMod — Entwicklung & Roadmap
 
-> **Version:** v0.13.25 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-25
+> **Version:** v0.13.30 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-25
 >
 > Stam-Doku-Synchron-Anker: Die obenstehende Versions-Zeile MUSS identisch mit `pom.xml` `<version>` sein.
 > Der Sync-Gate `tools/verify-doc-sync.sh` validiert dies vor jedem `mvn compile`.
 
 ---
+
+## Roadmap-Sprints
+
+Roadmap ist Sprint-basiert (statt Phase-basiert):
+
+**Abgeschlossene Sprints:**
+- Sprint 0: Phase-A–F SDK (6 Phasen, ~11 Dateien, BypassGate Auto-Select)
+- Sprint 1: TreasuryCrisis State-Leak Reset (4 Tasks T1-T4)
+- Sprint 2: Mod-Economy T5-T13 (11 Tasks, inkl. BINDUNGSMATRIX-Canonical)
+
+**Naechste Sprints (Reihenfolge nach BACKLOG-Prioritaet):**
+- Sprint "Phase-A–F Remaining Architecture" — `VANILLA_API_INVENTORY.md` Cross-References
+- Sprint "Static-State-Registry" — Registry-Pattern statt 7 inline reset() (Code-Reviewer-Vorschlag)
+- Sprint "T5 Blueprint-Echtheit" — echte employeeNeeded/employeeActual Gap-Berechnung
+
 
 ## Aktive P0/P1-Blocker (aus [`docs/BACKLOG.md`](docs/BACKLOG.md))
 

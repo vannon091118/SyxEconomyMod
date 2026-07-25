@@ -302,4 +302,11 @@ public final class WarehouseAutomation {
     }
 
     private WarehouseAutomation() {}
+
+    /**
+     * T13: Session-Reset. Pattern vgl. TreasuryCrisis.reset().
+     */
+    public static void reset() {
+        lastAppliedSeason = -1;
+    }
 }

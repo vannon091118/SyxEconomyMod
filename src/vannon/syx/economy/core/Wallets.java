@@ -522,6 +522,20 @@ public final class Wallets {
         }
     }
 
+    /**
+     * T7 (B-004): Anzahl der Buerger die aktuell als != UNCLASSIFIED klassifiziert sind.
+     * Liefert die Differenz people - activePeople die im BACKLOG als "3 missing" Symptom
+     * beschrieben ist.
+     */
+    public int classifiedCount() {
+        int count = 0;
+        for (int i = 0; i < this.ownedCount; ++i) {
+            int slot = this.ownedSlots[i];
+            if (this.citizenClass[slot] != CitizenClass.UNCLASSIFIED.toByte()) count++;
+        }
+        return count;
+    }
+
     private static final class PendingDeparture {
         final int estate;
         final int relRef;
