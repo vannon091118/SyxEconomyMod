@@ -10,7 +10,14 @@
 
 ---
 
-## v0.13.7 — 2026-07-25
+## v0.13.8 — 2026-07-25
+
+### Phase E — Boosting-Adapter auf BypassGate migriert
+
+- VanillaBoostingAdapter: Thin-Wrapper um BypassGate + refField (GOV source-verifiziert, BOOSTABLES.java:373)
+- FallbackBoostingAdapter: gelöscht — LETZTER Fallback entfernt
+- EconomySim.createBoostingAdapter(): vereinfacht, kein Fallback
+- ARCHITECTURE.md: 15→14
 
 ### Phase D — Warehouse-Adapter auf BypassGate migriert
 

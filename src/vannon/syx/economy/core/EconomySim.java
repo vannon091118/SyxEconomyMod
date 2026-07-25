@@ -57,7 +57,6 @@ import vannon.syx.economy.core.Roster;
 import vannon.syx.economy.core.ServiceMarket;
 import vannon.syx.economy.core.ServicePlanController;
 import vannon.syx.economy.core.StateWageMarket;
-import vannon.syx.economy.adapter.FallbackBoostingAdapter;
 import vannon.syx.economy.adapter.ISyxAI;
 import vannon.syx.economy.adapter.ISyxBoosting;
 import vannon.syx.economy.adapter.ISyxDiplomacy;
@@ -428,8 +427,8 @@ public final class EconomySim {
     }
 
     private static ISyxBoosting createBoostingAdapter() {
-        ISyxBoosting boosting = new VanillaBoostingAdapter();
-        return boosting.isAdminBoosterAvailable() ? boosting : new FallbackBoostingAdapter();
+        // Phase E: BypassGate SDK — refField für GOV auf CIVICS-Instanz.
+        return new VanillaBoostingAdapter();
     }
 
     private static ISyxDiplomacy createDiplomacyAdapter() {
