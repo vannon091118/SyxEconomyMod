@@ -8,6 +8,8 @@ import util.gui.misc.GButt;
 import util.gui.misc.GText;
 import util.gui.panel.GPanel;
 import vannon.syx.economy.core.CompactNumber;
+import vannon.syx.economy.core.DebugTracer;
+import vannon.syx.economy.core.DiagnosticExporter;
 import vannon.syx.economy.core.EconConfig;
 import vannon.syx.economy.core.EconomySim;
 import vannon.syx.economy.core.StateWarehouses;
@@ -323,7 +325,7 @@ public final class WindowState extends EconWindowBase {
                 b -> EconConfig.religionTaxEnabled = b);
             GText religionInfo = new GText(UI.FONT().S, 256);
             religionInfo.set("Treibt Geld fuer Tempel und Glaube ein.");
-            religionInfo.color(GCOLOR.T().INACTIVE);
+            religionInfo.color(GCOLOR.T().NORMAL);
             content.add(religionInfo, x + 20, y + 16);
             y += 36;
 
@@ -331,7 +333,7 @@ public final class WindowState extends EconWindowBase {
                 b -> EconConfig.liturgyEnabled = b);
             GText liturgyInfo = new GText(UI.FONT().S, 256);
             liturgyInfo.set("Sammelt Spenden — Stimmung der Buerger steigt.");
-            liturgyInfo.color(GCOLOR.T().INACTIVE);
+            liturgyInfo.color(GCOLOR.T().NORMAL);
             content.add(liturgyInfo, x + 20, y + 16);
             y += 50;
 
@@ -365,76 +367,169 @@ public final class WindowState extends EconWindowBase {
     private static final class DebugTab implements TabContent {
         @Override public CharSequence title() { return "Debug"; }
 
+        // Persist results across tab rebuilds (static = survives close/reopen)
+        private static String[] selfTestResults = {};
+        private static String cheatStatus = "";
+
         @Override
         public void build(EconomySim sim, GuiSection content, int x, int y, int w, int h) {
+            // ── Section 1: Opt-in toggles ───────────────────────────
             GText header = new GText(UI.FONT().M, 256);
-            header.set("--- Debug & Diagnose ---");
+            header.set("--- Logger & Export ---");
             header.lablify();
             content.add(header, x, y);
-            y += 28;
-
-            GText info = new GText(UI.FONT().S, 512);
-            info.set("Opt-in/out für Logger und Diagnose. Nur bei Bedarf aktivieren.");
-            info.color(GCOLOR.T().INACTIVE);
-            content.add(info, x, y);
             y += 22;
 
             addCheckbox(content, x, y, "Debug-Logging", EconConfig.debugLoggingEnabled,
                 b -> EconConfig.debugLoggingEnabled = b);
             addCheckbox(content, x + 380, y, "Debug-Tracing", EconConfig.debugTracing,
                 b -> EconConfig.debugTracing = b);
-            y += 24;
+            y += 20;
 
             addCheckbox(content, x, y, "Preis-Logging", EconConfig.debugPriceLogging,
                 b -> EconConfig.debugPriceLogging = b);
-            addCheckbox(content, x + 380, y, "Diagnostik-Export", EconConfig.diagnosticsExportEnabled,
+            addCheckbox(content, x + 380, y, "CSV-Export", EconConfig.diagnosticsExportEnabled,
                 b -> EconConfig.diagnosticsExportEnabled = b);
-            y += 24;
+            y += 20;
 
             addCheckbox(content, x, y, "Möbel-Dump", EconConfig.debugFurnitureDump,
                 b -> EconConfig.debugFurnitureDump = b);
             addCheckbox(content, x + 380, y, "Konservierung", EconConfig.checkConservation,
                 b -> EconConfig.checkConservation = b);
-            y += 30;
+            y += 26;
 
-            GText diHeader = new GText(UI.FONT().M, 256);
-            diHeader.set("--- Dump-Intervall ---");
-            diHeader.lablify();
-            content.add(diHeader, x, y);
+            // ── Section 2: Persistent logging paths ─────────────────
+            GText logHeader = new GText(UI.FONT().M, 256);
+            logHeader.set("--- Persistente Logs ---");
+            logHeader.lablify();
+            content.add(logHeader, x, y);
+            y += 20;
+
+            GText eventLog = new GText(UI.FONT().S, 512);
+            eventLog.set("EventLog: economy_events.log  [" + (EconConfig.debugPriceLogging ? "AKTIV" : "AUS") + "]");
+            eventLog.color(EconConfig.debugPriceLogging ? GCOLOR.UI().GOOD.normal : GCOLOR.T().INACTIVE);
+            content.add(eventLog, x, y);
+            y += 14;
+
+            GText csvLog = new GText(UI.FONT().S, 512);
+            csvLog.set("CSV-Export: " +                    DiagnosticExporter.diagnosticDirectory());
+            csvLog.color(EconConfig.diagnosticsExportEnabled ? GCOLOR.UI().GOOD.normal : GCOLOR.T().INACTIVE);
+            content.add(csvLog, x, y);
+            y += 14;
+
+            GText traceLog = new GText(UI.FONT().S, 512);
+            traceLog.set("Trace: 8192 Events, Dump via Numpad /");
+            traceLog.color(EconConfig.debugTracing ? GCOLOR.UI().GOOD.normal : GCOLOR.T().INACTIVE);
+            content.add(traceLog, x, y);
             y += 22;
 
-            addKpi(content, x, y, "Dump alle N Tage",
-                String.format("%.1f", EconConfig.dumpIntervalDays), GCOLOR.T().NORMAL);
-            y += 30;
+            // Force-export + Trace dump buttons
+            GButt.ButtPanel exportBtn = new GButt.ButtPanel("Export jetzt", 120);
+            exportBtn.clickActionSet(new ACTION() {
+                @Override public void exe() {
+                    sim.forceDiagnosticExport();
+                    cheatStatus = "CSV exportiert";
+                }
+            });
+            exportBtn.hoverInfoSet("Erzwingt CSV-Export sofort (ohne Tag-Grenze)");
+            content.add(exportBtn, x, y);
 
-            GText traceInfo = new GText(UI.FONT().S, 512);
-            traceInfo.set("Debug-Tracing speichert 8192 Events im Ring-Buffer. Dump via Numpad / (Division).");
-            traceInfo.color(GCOLOR.T().INACTIVE);
-            content.add(traceInfo, x, y);
-            y += 16;
+            GButt.ButtPanel traceBtn = new GButt.ButtPanel("Trace dump", 120);
+            traceBtn.clickActionSet(new ACTION() {
+                @Override public void exe() {
+                    DebugTracer.dump();
+                    cheatStatus = "Trace gedumpt (siehe Log)";
+                }
+            });
+            traceBtn.hoverInfoSet("Dump Ring-Buffer nach stdout");
+            content.add(traceBtn, x + 130, y);
+            y += 32;
 
-            GText exportInfo = new GText(UI.FONT().S, 512);
-            exportInfo.set("Diagnostik-Export schreibt CSV-Dateien pro Tag fuer Offline-Analyse.");
-            exportInfo.color(GCOLOR.T().INACTIVE);
-            content.add(exportInfo, x, y);
+            // ── Section 3: BypassGate Status ────────────────────────
+            GText gateHeader = new GText(UI.FONT().M, 256);
+            gateHeader.set("--- BypassGate Adapter ---");
+            gateHeader.lablify();
+            content.add(gateHeader, x, y);
             y += 20;
 
-            GText pathHeader = new GText(UI.FONT().M, 256);
-            pathHeader.set("--- Speicherort ---");
-            pathHeader.lablify();
-            content.add(pathHeader, x, y);
+            String[] adapterStatus = sim.debugAdapterStatus();
+            for (String status : adapterStatus) {
+                boolean ok = status.contains("OK");
+                GText line = new GText(UI.FONT().S, 380);
+                line.set(status);
+                line.color(ok ? GCOLOR.UI().GOOD.normal : GCOLOR.UI().BAD.normal);
+                content.add(line, x + 8, y);
+                y += 14;
+            }
+            y += 8;
+
+            // ── Section 4: Self-Test Buttons ───────────────────────
+            GText testHeader = new GText(UI.FONT().M, 256);
+            testHeader.set("--- Adapter Self-Test ---");
+            testHeader.lablify();
+            content.add(testHeader, x, y);
             y += 20;
 
-            GText pathInfo = new GText(UI.FONT().S, 512);
-            pathInfo.set("~/.local/share/songsofsyx/mods/SyxEconomyMod/diagnostics/");
-            pathInfo.color(GCOLOR.T().NORMAL);
-            content.add(pathInfo, x, y);
-            y += 16;
+            GButt.ButtPanel testBtn = new GButt.ButtPanel("Alle testen", 120);
+            testBtn.clickActionSet(new ACTION() {
+                @Override public void exe() {
+                    selfTestResults = sim.debugSelfTest();
+                    cheatStatus = "Self-Test abgeschlossen";
+                }
+            });
+            testBtn.hoverInfoSet("Testet jeden BypassGate-Accessor mit echtem Zugriff");
+            content.add(testBtn, x, y);
 
-            GText pathNote = new GText(UI.FONT().S, 512);
-            pathNote.set("CSVs: macro, resources, firms. Im Dateimanager öffnen.");
-            pathNote.color(GCOLOR.T().INACTIVE);
-            content.add(pathNote, x, y);
+            // Show last test results
+            if (selfTestResults.length > 0) {
+                for (int i = 0; i < selfTestResults.length && y < 460; i++) {
+                    String r = selfTestResults[i];
+                    boolean pass = r.contains("PASS");
+                    boolean skip = r.contains("SKIP");
+                    GText line = new GText(UI.FONT().S, 512);
+                    line.set(r);
+                    line.color(pass ? GCOLOR.UI().GOOD.normal : skip ? GCOLOR.T().INACTIVE : GCOLOR.UI().BAD.normal);
+                    content.add(line, x + 130, y);
+                    y += 14;
+                }
+            }
+            y += 8;
+
+            // ── Section 5: Cheat Buttons ───────────────────────────
+            GText cheatHeader = new GText(UI.FONT().M, 256);
+            cheatHeader.set("--- Cheat-Tests ---");
+            cheatHeader.lablify();
+            content.add(cheatHeader, x, y);
+            y += 20;
+
+            GButt.ButtPanel mintBtn = new GButt.ButtPanel("+100.000 D", 110);
+            mintBtn.clickActionSet(new ACTION() {
+                @Override public void exe() {
+                    sim.mintTreasury(100_000L);
+                    cheatStatus = "+100.000 D (Kasse: " + CompactNumber.format(sim.treasury()) + " D)";
+                }
+            });
+            mintBtn.hoverInfoSet("Cheat: 100.000 Denari in die Staatskasse");
+            content.add(mintBtn, x, y);
+
+            GButt.ButtPanel auditBtn = new GButt.ButtPanel("Audit", 80);
+            auditBtn.clickActionSet(new ACTION() {
+                @Override public void exe() {
+                    sim.logAuditDelta();
+                    cheatStatus = "Audit: delta=" + sim.auditDelta();
+                }
+            });
+            auditBtn.hoverInfoSet("Cheat: Geldfluss-Bilanz pruefen");
+            content.add(auditBtn, x + 120, y);
+            y += 28;
+
+            // Cheat status line
+            if (!cheatStatus.isEmpty()) {
+                GText statusLine = new GText(UI.FONT().S, 512);
+                statusLine.set(cheatStatus);
+                statusLine.color(GCOLOR.UI().SOSO.normal);
+                content.add(statusLine, x, y);
+            }
         }
     }
 
@@ -479,7 +574,7 @@ public final class WindowState extends EconWindowBase {
                 b -> EconConfig.religionTaxEnabled = b);
             GText relInfo = new GText(UI.FONT().S, 256);
             relInfo.set("Treibt Geld fuer Tempel und Glaube ein.");
-            relInfo.color(GCOLOR.T().INACTIVE);
+            relInfo.color(GCOLOR.T().NORMAL);
             content.add(relInfo, x + 20, y + 16);
             y += 36;
 
@@ -487,14 +582,14 @@ public final class WindowState extends EconWindowBase {
                 b -> EconConfig.liturgyEnabled = b);
             GText litInfo = new GText(UI.FONT().S, 256);
             litInfo.set("Sammelt Spenden — Stimmung der Buerger steigt.");
-            litInfo.color(GCOLOR.T().INACTIVE);
+            litInfo.color(GCOLOR.T().NORMAL);
             content.add(litInfo, x + 20, y + 16);
             y += 36;
 
             // Liturgy interval display only (no toggle — controlled by EconConfig)
             GText litInt = new GText(UI.FONT().S, 256);
             litInt.set("Liturgie-Turnus: alle " + EconConfig.liturgyIntervalSeasons + " Saison(en)");
-            litInt.color(GCOLOR.T().INACTIVE);
+            litInt.color(GCOLOR.T().NORMAL);
             content.add(litInt, x, y);
             y += 28;
 
@@ -506,7 +601,7 @@ public final class WindowState extends EconWindowBase {
 
             GText info = new GText(UI.FONT().S, 512);
             info.set("Religionssteuer: Pro-Kopf-Abgabe an Tempel. Liturgie: Freiwillige Spenden sammeln. Beide verbessern Stimmung und Loyalitaet.");
-            info.color(GCOLOR.T().INACTIVE);
+            info.color(GCOLOR.T().NORMAL);
             content.add(info, x, y);
         }
     }

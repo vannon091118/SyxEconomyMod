@@ -97,14 +97,27 @@ public final class DebugTracer {
     }
 
     /**
-     * Dump all buffered events to stdout in a single {@code System.out.print()}.
-     * Uses a pre-sized StringBuilder to avoid LOG.ln()'s expensive
-     * {@code new RuntimeException().getStackTrace()} per line.
+     * Dump all buffered events. Writes to:<br>
+     * 1. EventLog (visible in-game via BooksTab event chronicle).
+     * 2. Diagnostics file (persistent on disk).
+     * 3. System.out (terminal / log file).
      * <p>Events are oldest-first. Buffer is NOT cleared.</p>
+     * <p>If {@link EconConfig#debugTracing} is off, logs a hint to enable it first.</p>
      */
     public static void dump() {
+        // Always provide in-game feedback via EventLog
+        if (!EconConfig.debugTracing) {
+            String hint = "Trace AUS — erst Debug-Tracing im Staat-Fenster aktivieren";
+            EventLog.log("TRACE", hint);
+            LOG.ln("[TRACE] " + hint);
+            System.out.println("[TRACE] " + hint);
+            return;
+        }
         if (count == 0) {
-            System.out.println("[TRACE] buffer empty");
+            String msg = "Trace-Puffer leer — noch keine Events aufgezeichnet";
+            EventLog.log("TRACE", msg);
+            LOG.ln("[TRACE] " + msg);
+            System.out.println("[TRACE] " + msg);
             return;
         }
         int start = count < CAP ? 0 : (pos & (CAP - 1));
@@ -116,7 +129,25 @@ public final class DebugTracer {
               .append(" f=").append(tickBuf[idx]).append(' ').append(msgBuf[idx]).append('\n');
         }
         sb.append("[TRACE] === END ===\n");
-        System.out.print(sb.toString());
+        String output = sb.toString();
+
+        // 1. In-game: EventLog summary (visible in BooksTab)
+        EventLog.log("TRACE", count + " Events gedumpt (frame=" + frame + ")");
+
+        // 2. Persistent file
+        String path = DiagnosticExporter.diagnosticDirectory()
+                + java.io.File.separator + "trace_dump_" + System.nanoTime() + ".log";
+        try {
+            java.nio.file.Files.createDirectories(java.nio.file.Path.of(DiagnosticExporter.diagnosticDirectory()));
+            java.nio.file.Files.writeString(java.nio.file.Path.of(path), output);
+            EventLog.log("TRACE", "Geschrieben: " + path);
+        } catch (java.io.IOException e) {
+            EventLog.log("TRACE", "Datei-Schreibfehler: " + e.getMessage());
+        }
+
+        // 3. stdout (terminal / game log)
+        LOG.ln("[TRACE] dumped " + count + " events to " + path);
+        System.out.print(output);
     }
 
     /** Number of events currently in the buffer. */

@@ -395,6 +395,77 @@ public final class EconomySim {
         return this.aiAdapter;
     }
 
+    // ── Debug / Cheat API (used by DebugTab in WindowState) ──────────
+
+    /** Returns human-readable status of all 5 BypassGate adapters. */
+    public String[] debugAdapterStatus() {
+        return new String[]{
+            "Transport:  " + (transportAdapter.isDistanceAvailable() ? "OK" : "FAIL"),
+            "Warehouse:  " + (warehouseAdapter.isStoringLockAvailable() ? "OK" : "FAIL"),
+            "Diplomacy:  " + (diplomacyAdapter.isAvailable() ? "OK" : "FAIL"),
+            "Boosting:   " + (boostingAdapter.isAdminBoosterAvailable() ? "OK" : "FAIL"),
+            "AI:         " + (aiAdapter.isAvailable() ? "OK" : "FAIL")
+        };
+    }
+
+    /** Self-test: tries a lightweight operation on each adapter. Returns per-adapter PASS/FAIL. */
+    public String[] debugSelfTest() {
+        java.util.List<String> results = new java.util.ArrayList<>();
+
+        // Transport: check availability (no live RoomInstance needed)
+        boolean tOk = transportAdapter.isDistanceAvailable();
+        results.add("Transport  " + (tOk ? "PASS" : "SKIP") + "  distanceField=" + tOk);
+
+        // Warehouse: check availability
+        boolean wOk = warehouseAdapter.isStoringLockAvailable();
+        results.add("Warehouse  " + (wOk ? "PASS" : "SKIP") + "  storingLock=" + wOk);
+
+        // Diplomacy: check availability
+        boolean dOk = diplomacyAdapter.isAvailable();
+        results.add("Diplomacy  " + (dOk ? "PASS" : "SKIP") + "  numericFields=" + dOk);
+
+        // Boosting: check availability + try reading the boostable
+        boolean bOk = boostingAdapter.isAdminBoosterAvailable();
+        game.boosting.Boostable b = bOk ? boostingAdapter.getAdminBoostable() : null;
+        results.add("Boosting   " + (bOk && b != null ? "PASS" : (bOk ? "PARTIAL" : "SKIP"))
+                + "  adminBoostable=" + (b != null ? b.key : "null"));
+
+        // AI: check availability + try a null-safe class check
+        // isFoodPlan javadoc explicitly says "darf null sein" — safe null test
+        boolean aOk = aiAdapter.isAvailable();
+        boolean nullCheck = !aiAdapter.isFoodPlan(null); // should be false for null
+        results.add("AI         " + (aOk && nullCheck ? "PASS" : (aOk ? "PARTIAL" : "SKIP"))
+                + "  classResolution=" + aOk + "  nullSafe=" + nullCheck);
+
+        return results.toArray(new String[0]);
+    }
+
+    /** Cheat: mint money into the player treasury. Logged to EventLog. */
+    public void mintTreasury(long amount) {
+        FACTIONS.player().credits().inc((double) amount, FCredits.CTYPE.MISC);
+        LOG.ln("[ECON CHEAT] minted " + amount + " D into treasury (new balance: " + treasury() + " D)");
+        EventLog.log("CHEAT", "Minted " + amount + " D — new treasury: " + treasury());
+    }
+
+    /** Cheat: force a diagnostic CSV export now (bypasses daily guard). */
+    public void forceDiagnosticExport() {
+        DiagnosticExporter.resetExportGuard();
+        DiagnosticExporter.exportDay(this);
+        LOG.ln("[ECON CHEAT] forced diagnostic export");
+        EventLog.log("CHEAT", "Forced diagnostic export");
+    }
+
+    /** Cheat: log current audit delta to EventLog + stdout. */
+    public void logAuditDelta() {
+        long delta = auditDelta();
+        LOG.ln("[ECON CHEAT] auditDelta=" + delta + " | circulating=" + wallets().circulating()
+                + " | treasury=" + treasury() + " | seed=" + seedSupply()
+                + " | imported=" + imported() + " | exported=" + exported()
+                + " | wagesPaid=" + wagesPaid() + " | drift=" + roundingDrift());
+        EventLog.log("CHEAT", "Audit delta: " + delta
+                + " (circulating=" + wallets().circulating() + ", treasury=" + treasury() + ")");
+    }
+
     public HousingMarket housingMarket() {
         return this.housingMarket;
     }

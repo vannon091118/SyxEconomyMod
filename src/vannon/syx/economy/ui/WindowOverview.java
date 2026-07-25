@@ -145,7 +145,7 @@ public final class WindowOverview extends EconWindowBase {
 
                 GText chartLabel = new GText(UI.FONT().S, 256);
                 chartLabel.set(CompactNumber.format(maxVal) + " D max — " + maxBars + " Tage");
-                chartLabel.color(GCOLOR.T().INACTIVE);
+                chartLabel.color(GCOLOR.T().NORMAL);
                 content.add(chartLabel, x, y);
             }
         }
@@ -257,7 +257,7 @@ public final class WindowOverview extends EconWindowBase {
 
                     GText bandRange = new GText(UI.FONT().S, 100);
                     bandRange.set(CompactNumber.format(fromW) + "-" + CompactNumber.format(toW) + " D");
-                    bandRange.color(GCOLOR.T().INACTIVE);
+                    bandRange.color(GCOLOR.T().NORMAL);
                     content.add(bandRange, x + 180, y);
 
                     GText bandAvgT = new GText(UI.FONT().S, 64);

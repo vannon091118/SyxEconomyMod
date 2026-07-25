@@ -48,7 +48,7 @@ final class InstanceScript implements SCRIPT.SCRIPT_INSTANCE {
         this.quickview = new WindowQuickview(this.economy);
         this.subjectWallet = new SubjectWallet();
         this.subjectJob = new SubjectJob();
-        this.econHud = new EconHud(this.overview, this.economyWindow, this.stateWindow, this.quickview);
+        this.econHud = new EconHud(this.economy, this.overview, this.economyWindow, this.stateWindow, this.quickview);
         this.econHud.initPosition();
         EconWindowBase.setSiblings(this.overview, this.economyWindow, this.stateWindow);
         DebugTracer.trace(DebugTracer.SCRP, "InstanceScript created");
@@ -130,9 +130,11 @@ final class InstanceScript implements SCRIPT.SCRIPT_INSTANCE {
         if (quickview.isShown()) quickview.close();
     }
 
-    /** Numpad / (GLFW_KEY_KP_DIVIDE = 331) → dump DebugTracer buffer to game log. */
+    /** Numpad / (331) or regular / (47) → dump DebugTracer buffer to EventLog + file + stdout. */
     private void pollDumpHotkey() {
-        boolean div = CORE.getInput().getKeyboard().isPressed(331);
+        // 331 = Numpad / (layout-independent), 47 = US '/' key
+        boolean div = CORE.getInput().getKeyboard().isPressed(331)
+                   || CORE.getInput().getKeyboard().isPressed(47);
         if (div && !this.dumpWasDown) {
             DebugTracer.trace(DebugTracer.SYS, "dump requested via hotkey");
             DebugTracer.dump();

@@ -229,7 +229,7 @@ public abstract class EconWindowBase {
         GText val = new GText(UI.FONT().M, 128);
         val.set(value);
         val.color(valueColor);
-        section.add(val, x, y + 14);
+        section.add(val, x, y + 16);
     }
 
     /** KPI with a leading vanilla icon. Icon renders at (x, y+2), label + value shift right by 28px. */
@@ -243,7 +243,7 @@ public abstract class EconWindowBase {
         GText val = new GText(UI.FONT().M, 128);
         val.set(value);
         val.color(valueColor);
-        section.add(val, x + 28, y + 14);
+        section.add(val, x + 28, y + 16);
     }
 
     // ─── Live Slider ────────────────────────────────────────────
@@ -374,6 +374,9 @@ public abstract class EconWindowBase {
     }
 
     // ─── Switcher helpers (unused by quickview) ──────────────────────
+
+    /** Returns the EconomySim instance for HUD traffic-light computation. */
+    public EconomySim getSim() { return sim; }
 
     /** Returns the overview window reference (for switcher buttons). */
     protected static EconWindowBase winOverview() { return winOverview; }

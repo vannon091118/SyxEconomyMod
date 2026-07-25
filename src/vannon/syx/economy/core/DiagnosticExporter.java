@@ -91,6 +91,12 @@ public final class DiagnosticExporter {
     /** Welcher Tag zuletzt exportiert wurde — vermeidet Doppel-Exports pro Tag. */
     private static volatile long lastExportedDay = -1L;
 
+    /** Resets the daily export guard so the next exportDay() call will run
+     *  even if the current day was already exported. Used by cheat buttons. */
+    public static void resetExportGuard() {
+        lastExportedDay = -1L;
+    }
+
     // ── Rebalance-Alert-Schwellwerte ───────────────────────────────────
     private static final double GINI_HARD_THRESHOLD = 0.40;
     private static final long AUDIT_DELTA_HARD_THRESHOLD = 1000L;

@@ -132,7 +132,7 @@ public final class WindowEconomy extends EconWindowBase {
 
             GText header = new GText(UI.FONT().M, 512);
             header.set("Lokale Verrechnungspreise. Deckung: 1.0 = Ziel, <1 = Mangel, >1 = Überschuss.");
-            header.color(GCOLOR.T().INACTIVE);
+            header.color(GCOLOR.T().NORMAL);
             content.add(header, x, y);
             y += 24;
 
@@ -150,7 +150,7 @@ public final class WindowEconomy extends EconWindowBase {
             // Resource rows
             if (fp.ready()) {
                 EconSnapshot snap = sim.econIndicators().latest();
-                int rows = Math.min(RESOURCES.ALL().size(), Math.min(25, (h - 60) / 14));
+                int rows = Math.min(RESOURCES.ALL().size(), Math.min(25, (h - 60) / 16));
                 for (int i = 0; i < rows; i++) {
                     RESOURCE r = (RESOURCE) RESOURCES.ALL().get(i);
                     double local = fp.price(i);
@@ -214,7 +214,7 @@ public final class WindowEconomy extends EconWindowBase {
                     statusT.color(statusColor);
                     content.add(statusT, x + 550, y);
 
-                    y += 14;
+                    y += 16;
                 }
             } else {
                 GText noData = new GText(UI.FONT().M, 128);
@@ -369,12 +369,12 @@ public final class WindowEconomy extends EconWindowBase {
         public void build(EconomySim sim, GuiSection content, int x, int y, int w, int h) {
             GText header = new GText(UI.FONT().M, 512);
             header.set("Subventionen: Der Staat zahlt pro produzierter Einheit.");
-            header.color(GCOLOR.T().INACTIVE);
+            header.color(GCOLOR.T().NORMAL);
             content.add(header, x, y);
             y += 24;
 
             int subsidized = 0;
-            int maxRows = Math.min(RESOURCES.ALL().size(), (h - 40) / 14);
+            int maxRows = Math.min(RESOURCES.ALL().size(), (h - 40) / 16);
             for (int i = 0; i < maxRows; i++) {
                 RESOURCE r = (RESOURCE) RESOURCES.ALL().get(i);
                 int bounty = sim.productionSubsidies().bounty(r);
@@ -395,7 +395,7 @@ public final class WindowEconomy extends EconWindowBase {
                 status.color(bounty > 0 ? GCOLOR.UI().GOOD.normal : GCOLOR.T().INACTIVE);
                 content.add(status, x + 350, y);
 
-                y += 14;
+                y += 16;
             }
 
             y += 10;
@@ -500,9 +500,9 @@ public final class WindowEconomy extends EconWindowBase {
                     EventLog.EventEntry e = events.get(i);
                     GText evt = new GText(UI.FONT().S, 512);
                     evt.set("[" + e.category + "] " + e.message + " (t=" + e.timestamp + ")");
-                    evt.color(GCOLOR.T().INACTIVE);
+                    evt.color(GCOLOR.T().NORMAL);
                     content.add(evt, x, y);
-                    y += 14;
+                    y += 16;
                 }
             }
         }
