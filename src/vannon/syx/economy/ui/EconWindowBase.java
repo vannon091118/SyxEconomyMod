@@ -16,6 +16,7 @@ import util.gui.misc.GText;
 import util.gui.panel.GPanel;
 import view.interrupter.InterGuisection;
 import view.interrupter.InterManager;
+import vannon.syx.economy.core.BuildStamp;
 import vannon.syx.economy.core.CompactNumber;
 import vannon.syx.economy.core.EconomySim;
 
@@ -65,7 +66,7 @@ public abstract class EconWindowBase {
             inter = new InterGuisection(manager);
 
             GPanel panel = new GPanel();
-            panel.setTitle(title());
+            panel.setTitle(stampedTitle());
             panel.setCloseAction(new ACTION() {
                 @Override
                 public void exe() {
@@ -355,6 +356,21 @@ public abstract class EconWindowBase {
         hdr.set(label);
         hdr.color(GCOLOR.T().NORMAL);
         section.add(hdr, x, y);
+    }
+
+    // ─── Build-Stamp helper ───────────────────────────────────────
+
+    /** Returns the window title annotated with the build stamp.
+     *  Override {@link #title()} to provide the base title; this method
+     *  appends the unique build identity so you always know which
+     *  compilation you are evaluating during live testing. */
+    protected CharSequence stampedTitle() {
+        try {
+            return title() + "  [" + BuildStamp.FULL_ID + "]";
+        } catch (NoClassDefFoundError e) {
+            // BuildStamp not yet generated (IDE without Maven)
+            return title() + "  [vDEV]";
+        }
     }
 
     // ─── Switcher helpers (unused by quickview) ──────────────────────

@@ -35,6 +35,7 @@ public final class VanillaWarehouseAdapterMH implements ISyxWarehouse {
             this.storingSetHandle = priv.findVirtual(StockpileInstance.class, STORING_SET_METHOD,
                     MethodType.methodType(void.class, boolean.class));
             this.available = true;
+            EventLog.log("SEAM", "VanillaWarehouseAdapterMH: READY (storingSet, MethodHandle)");
         } catch (Throwable t) {
             this.available = false;
             if (!this.initFailedLogged) {

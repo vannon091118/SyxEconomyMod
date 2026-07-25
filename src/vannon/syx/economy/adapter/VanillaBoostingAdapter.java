@@ -48,6 +48,9 @@ public final class VanillaBoostingAdapter implements ISyxBoosting {
             }
             this.adminBoostable = found;
             this.available = found != null;
+            if (this.available) {
+                EventLog.log("SEAM", "VanillaBoostingAdapter: READY (GOV-Boostable gefunden)");
+            }
         } catch (Throwable t) {
             this.adminBoostable = null;
             this.available = false;

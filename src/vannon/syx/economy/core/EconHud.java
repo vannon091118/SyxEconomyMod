@@ -2,14 +2,17 @@ package vannon.syx.economy.core;
 
 import init.constant.C;
 import init.sprite.SPRITES;
+import init.sprite.UI.UI;
 import snake2d.MButt;
 import snake2d.Renderer;
 import snake2d.SPRITE_RENDERER;
 import snake2d.util.datatypes.COORDINATE;
 import snake2d.util.gui.GuiSection;
 import snake2d.util.misc.ACTION;
+import util.colors.GCOLOR;
 import util.gui.misc.GBox;
 import util.gui.misc.GButt;
+import util.gui.misc.GText;
 import vannon.syx.economy.ui.EconWindowBase;
 
 /**
@@ -23,6 +26,7 @@ import vannon.syx.economy.ui.EconWindowBase;
 public final class EconHud {
 
     private final GuiSection section = new GuiSection();
+    private final GText versionLabel;
     private static final int BTN_DIM = 36;
     private static final int BTN_GAP = 2;
 
@@ -53,6 +57,12 @@ public final class EconHud {
         section.add(ecBtn, BTN_DIM + BTN_GAP, 0);
         section.add(stBtn, 2 * (BTN_DIM + BTN_GAP), 0);
         section.add(qvBtn, 3 * (BTN_DIM + BTN_GAP), 0);
+
+        // Version label — build identity anchor
+        versionLabel = new GText(UI.FONT().S, 16);
+        versionLabel.set(BuildStamp.FULL_ID);
+        versionLabel.color(GCOLOR.T().INACTIVE);
+        section.add(versionLabel, 0, BTN_DIM + 6);
     }
 
     /** Called once to position the button strip.

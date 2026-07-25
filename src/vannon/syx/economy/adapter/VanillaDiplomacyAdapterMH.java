@@ -43,6 +43,7 @@ public final class VanillaDiplomacyAdapterMH implements ISyxDiplomacy {
             cp = priv.findVarHandle(DipWarPlayer.class, COALITION_POWER_FIELD, double.class);
             bits = priv.findVarHandle(DipWarPlayer.class, WILLING_BITS_FIELD, Bitmap1D.class);
             ok = true;
+            EventLog.log("SEAM", "VanillaDiplomacyAdapterMH: READY (4/4 Felder, VarHandle)");
         } catch (Throwable t) {
             ok = false;
             if (!this.initFailedLogged) {

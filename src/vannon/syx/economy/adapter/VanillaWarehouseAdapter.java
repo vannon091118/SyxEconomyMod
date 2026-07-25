@@ -30,6 +30,7 @@ public final class VanillaWarehouseAdapter implements ISyxWarehouse {
             this.storingSetMethod = StockpileInstance.class.getDeclaredMethod(STORING_SET_METHOD, boolean.class);
             this.storingSetMethod.setAccessible(true);
             this.available = true;
+            EventLog.log("SEAM", "VanillaWarehouseAdapter: READY (storingSet-Methode)");
         } catch (Throwable t) {
             this.available = false;
             if (!this.initFailedLogged) {

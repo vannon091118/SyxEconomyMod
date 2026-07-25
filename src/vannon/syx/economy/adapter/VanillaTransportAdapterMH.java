@@ -45,6 +45,7 @@ public final class VanillaTransportAdapterMH implements ISyxTransport {
             this.distanceHandle = MethodHandles.privateLookupIn(transportClass, lookup)
                     .findVarHandle(transportClass, DISTANCE_FIELD, float.class);
             this.distanceAvailable = true;
+            EventLog.log("SEAM", "VanillaTransportAdapterMH: READY (distance-Feld, VarHandle)");
         } catch (Throwable t) {
             this.distanceAvailable = false;
             if (!this.initFailedLogged) {

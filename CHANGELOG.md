@@ -10,7 +10,7 @@
 
 ---
 
-## v0.13.2 — 2026-07-25
+## v0.13.3 — 2026-07-25
 
 ### Phase 3 Tab-Restoration — Bücher, Immobilien, Glaube
 

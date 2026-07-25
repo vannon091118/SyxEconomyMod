@@ -48,6 +48,7 @@ public final class VanillaDiplomacyAdapter implements ISyxDiplomacy {
             cp.setAccessible(true);
             bits.setAccessible(true);
             ok = true;
+            EventLog.log("SEAM", "VanillaDiplomacyAdapter: READY (4/4 Felder)");
         } catch (Throwable t) {
             ok = false;
             if (!this.initFailedLogged) {

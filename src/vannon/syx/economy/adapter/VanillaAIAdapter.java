@@ -70,6 +70,17 @@ public final class VanillaAIAdapter implements ISyxAI {
         this.foodRawClass = loadClass(FOOD_RAW_CLASS);
         this.tavernClass = loadClass(TAVERN_CLASS);
         this.marketClass = loadClass(MARKET_CLASS);
+
+        int loaded = 0;
+        if (this.oddjobberClass != null) loaded++;
+        if (this.foodEateryClass != null) loaded++;
+        if (this.foodCanteenClass != null) loaded++;
+        if (this.foodRawClass != null) loaded++;
+        if (this.tavernClass != null) loaded++;
+        if (this.marketClass != null) loaded++;
+        if (loaded > 0) {
+            EventLog.log("SEAM", "VanillaAIAdapter: READY (" + loaded + "/6 Plan-Klassen geladen)");
+        }
     }
 
     private static Class<?> loadClass(String name) {

@@ -42,6 +42,7 @@ public final class VanillaTransportAdapter implements ISyxTransport {
             this.distanceField = transportClass.getDeclaredField(DISTANCE_FIELD);
             this.distanceField.setAccessible(true);
             this.distanceAvailable = true;
+            EventLog.log("SEAM", "VanillaTransportAdapter: READY (distance-Feld)");
         } catch (Throwable t) {
             this.distanceAvailable = false;
             if (!this.initFailedLogged) {
