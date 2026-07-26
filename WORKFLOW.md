@@ -71,7 +71,7 @@ pro Session OK wenn jedes für sich validiert + committed vor nächstem.
 | # | Regel | Begründung |
 |---|---|---|
 | 2.1 | **Sync-Gate explizit:** `bash tools/verify-doc-sync.sh`. | Der Gate fängt nicht alle Muster (z.B. CHANGELOG-Header). |
-| 2.2 | **Stale-Referenz-Scan:** `grep -rn 'Fallback\|*MH\|useMethodHandleAdapters\|HEBELKARTE' src/ test/ tools/`. | Nach tools/-Migration sollten keine HEBELKARTE-Refs mehr existieren. |
+| 2.2 | **Stale-Referenz-Scan:** `grep -rn 'Fallback\|*MH\|useMethodHandleAdapters' src/ test/ tools/`. | Nach Adapter-Migration sollten keine Fallback/MH-Refs mehr existieren. |
 | 2.3 | **Phantom-Dokumentation löschen.** ARCHITECTURE/GLOSSARY/ROADMAP-Behauptungen müssen mit `find src/ -name '*.java'` verifizierbar sein. | agents.md Rule 5. |
 | 2.4 | **BINDUNGSMATRIX.csv-Sanity:** NF-Check, HEBEL-Coverage, Marker-Distribution. | `awk -F';' 'NF!=11' BINDUNGSMATRIX.csv` muss leer sein. |
 | 2.5 | **Sprint-Commit-Atomicity:** Sprint-Commit enthält alle Tasks in EINEM Commit. | Verboten: per-Task-Commits zerhacken das Sprint-Thema. |
@@ -81,7 +81,7 @@ pro Session OK wenn jedes für sich validiert + committed vor nächstem.
 - [ ] `mvn verify install -DskipTests -Dskip.bump=true` = BUILD SUCCESS
 - [ ] `bash tools/verify-doc-sync.sh` = PASS (5 Stam-Docs)
 - [ ] `awk -F';' 'NF!=11' BINDUNGSMATRIX.csv` = leer
-- [ ] Keine `HEBELKARTE` Referenzen mehr in `tools/` (außer SUPERSEDED-Notice falls noch da)
+- [ ] Keine `Fallback` oder `*MH` Adapter-Referenzen mehr in `src/`
 - [ ] Keine Phantom-Klassen in GLOSSARY.md
 - [ ] CHANGELOG.md: Sprint-Header mit allen Tasks
 

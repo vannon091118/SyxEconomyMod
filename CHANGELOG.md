@@ -10,7 +10,7 @@
 
 ---
 
-## v0.13.37 — 2026-07-26
+## v0.13.39 — 2026-07-26
 
 ### Sprint 7 — Adapter-Dispatcher + Schema-SSoT
 
