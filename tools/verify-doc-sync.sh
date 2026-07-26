@@ -12,6 +12,7 @@
 #   5. GLOSSARY.md                (root)
 #   6. pom.xml                    (root) — Truth of Record
 #   7. _Info.txt                  (root) — Maven-Filter-Template
+#   8. tools/vanilla-schema.yaml  — Schema-Version + YAML↔Java-Feld-Abgleich
 #
 # Exit-Codes:
 #   0 - alle Stam-Dokumente sync
@@ -156,12 +157,55 @@ else
     # Kein FAIL — _Info.txt wird erst nach `mvn package` aus dem Template generiert.
 fi
 
+# CHANGELOG.md Kopfzeile: "> **Version:** vX.Y.Z" (zusätzlich zum ## v-Heading)
+check_doc "CHANGELOG.md" \
+    '>\s*\*\*Version:\*\*[[:space:]]*v?[0-9]+\.[0-9]+\.[0-9]+' \
+    "> **Version:** vX.Y.Z in CHANGELOG-Kopfzeile"
+
 # _Info.txt Template-Placeholder muss existieren
 if grep -q '\${mod.version}' _Info.txt; then
     printf '  %sOK%s    %-30s  Template referenziert ${mod.version} (Maven-Filter korrekt)\n' "$GREEN" "$NC" "_Info.txt"
     CHECKED=$((CHECKED + 1))
 else
     printf '  %sFAIL%s  %-30s  Template-Placeholder ${mod.version} fehlt\n' "$RED" "$NC" "_Info.txt"
+    FAILED=1
+fi
+
+# ── YAML-Schema Sync (vanilla-schema.yaml) ──────────────────────────
+SCHEMA_YAML="tools/vanilla-schema.yaml"
+if [ -f "$SCHEMA_YAML" ]; then
+    # Schema-Version (Zeile 2: "mod: SyxEconomyMod vX.Y.Z")
+    YAML_VER=$(grep -m1 'SyxEconomyMod v' "$SCHEMA_YAML" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true)
+    if [ -n "$YAML_VER" ]; then
+        if [ "$YAML_VER" = "$TRUTH_V" ]; then
+            printf '  %sOK%s    %-30s  schema_version=%s (truth=%s)\n' "$GREEN" "$NC" "$SCHEMA_YAML" "$YAML_VER" "$TRUTH"
+            CHECKED=$((CHECKED + 1))
+        else
+            printf '  %sFAIL%s  %-30s  schema_version=%s expected=%s\n' "$RED" "$NC" "$SCHEMA_YAML" "$YAML_VER" "$TRUTH"
+            FAILED=1
+        fi
+    fi
+
+    # YAML↔Java Feld-Abgleich: vanilla-schema.yaml fields vs. AdapterDispatcher.register*
+    DISPATCHER="src/vannon/syx/economy/adapter/AdapterDispatcher.java"
+    if [ -f "$DISPATCHER" ]; then
+        # Zähle registerField/registerMethod/registerClass calls im Dispatcher
+        JAVA_REG=$(grep -cE 'register(Field|Method|Class)\(' "$DISPATCHER" 2>/dev/null || echo 0)
+        # Zähle fields:-Einträge im YAML (alle fields-Blöcke)
+        YAML_FLD=$(grep -cE '^\s+\w+:' "$SCHEMA_YAML" 2>/dev/null || echo 0)
+        # Grober Abgleich: Beide sollten > 0 sein (existieren)
+        if [ "$JAVA_REG" -gt 0 ] && [ "$YAML_FLD" -gt 0 ]; then
+            printf '  %sOK%s    %-30s  YAML↔Java: %d schema-fields ↔ %d dispatcher-registers\n' "$GREEN" "$NC" "$SCHEMA_YAML" "$YAML_FLD" "$JAVA_REG"
+            CHECKED=$((CHECKED + 1))
+        else
+            printf '  %sFAIL%s  %-30s  YAML↔Java mismatch: %d fields vs %d registers\n' "$RED" "$NC" "$SCHEMA_YAML" "$YAML_FLD" "$JAVA_REG"
+            FAILED=1
+        fi
+    else
+        printf '  %sINFO%s  %-30s  AdapterDispatcher.java nicht gefunden — YAML↔Java-Check übersprungen\n' "$CYAN" "$NC" "$SCHEMA_YAML"
+    fi
+else
+    printf '  %sFAIL%s  %-30s  Datei fehlt — Schema-SSoT nicht vorhanden\n' "$RED" "$NC" "$SCHEMA_YAML"
     FAILED=1
 fi
 

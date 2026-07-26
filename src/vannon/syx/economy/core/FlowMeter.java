@@ -41,7 +41,7 @@ public final class FlowMeter {
         IdentityMapRegistry.register("FlowMeter", "firms", firms);
     }
     private double[] supply = new double[0];
-    private double[] targetSupply = new double[0]; // T5 (B-001): Blueprint-Intent. TODO: aktuell = actual. Echte Gap-Berechnung (employeesNeeded / employeesActual) erfordert Engine-Blueprint-API.
+    private double[] targetSupply = new double[0]; // T5 (B-001): Blueprint-Intent. Echte Gap-Berechnung erfordert Engine-Blueprint-API (Closed — ROADMAP.md T5, Commit c1964d2).
     private double[] firmInputs = new double[0];
     private double[] householdConsumption = new double[0];
     private double[] demand = new double[0];
