@@ -1,6 +1,6 @@
 # SyxEconomyMod — Entwicklung & Roadmap
 
-> **Version:** v0.13.56 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-26
+> **Version:** v0.13.61 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-26
 >
 > Stam-Doku-Synchron-Anker: `tools/verify-doc-sync.sh` (9 Checks).
 > Abgeschlossene Sprints → [`CHANGELOG.md`](CHANGELOG.md).
@@ -28,14 +28,10 @@
 | *B-008* | 🟢 P3 | EngineSeams-Direkt-Calls: 31→0 | ~40 | — |
 | *B-010* | 🟢 P3 | Carpenter targetWage=0 in FlowPrices | ~8 | — |
 | *T22* | 🟢 P3 | Savegame-Compat-Headless-Test | ~50 | — |
-| **D-001** | ✅ Closed (6f4588d) | **Food-Price-Hyperinflation fixen.** `foodPriceCapMultiplier=6.0` (anker-relativ). FlowPrices.enforceCap() nach refresh(), LocalPrices-Defense-in-Depth. **Ergebnis:** BREAD max 6× Anker (468 statt 6248), alle Food-Ressourcen gecappt. | ~20 | 10 |
-| **D-002** | ✅ Closed (6f4588d) | **Emigration-Kaskade bei median_wealth=0.** Rate 0.0001→0.00003 (1%/Tag statt 3%/Tag). Polish: Population-Floor-Guard (`roster.size()>=20`) gegen Frühspiel-Kleinstadt-Death-Spirale. Dependency: D-001 zuerst (Emigration ist Symptom der Inflation). | ~18 | 10 |
-| **D-003** | ✅ Closed (6f4588d) | **Carpenter Cold-Start nach Save/Load.** `FirmLedger.SAVE_VERSION_FIRMS 1→2`. HillState (bestTarget, bestProfit, direction, initialized) persistiert — null-safe via sentinel values. Backward-compat: v1-Saves laden ohne HillState, Cold-Start-Grace greift im nächsten Tick. | ~30 | 10 |
-| **D-004** | ✅ Closed (6f4588d) | **_WOOD-Preis-Inversion: Broken-Link-Analyse.** `FlowPrices.effectiveCoverage()`: `effectiveStock = supplyPerDay>0 ? stock : 0.0` — Inflow-Check statt Symptom-Clamp. Physischer Lagerbestand zählt nur bei Produktions-Zufluss. | ~25 | 10 |
-| **D-005** | ✅ Closed (6f4588d) | **Wealth-Concentration-Clamp (Gini 0.95+).** `incomeCarry` gecappt via `guildSurplusMinProfitPerWorker × workerCount`. Pro-Firma statt absolut — skaliert mit Firmengröße. Follow-up: medianWealth-basierter Cap für große Populationen. | ~15 | 10 |
-| **D-006** | ✅ Closed (6f4588d) | **UI-Struktur-Verifikation.** DebugTab permanent in `TABS[]` (nicht mehr conditional). ARCHITECTURE.md aktualisiert: 6 Tabs, DebugTab permanent sichtbar. Stam-Docs synchron. | ~15 | 10 |
+| **UI-CENT** | ✅ Closed | **UI-Zentralisierung:** 122 GText → 10 FONTW_*-Konstanten in EconWindowBase | ~15 | 10 |
+| **AUDIT-1** | 📝 Notiert | **emigrationRisk = Dead Code** — AtomicInteger nie gelesen, D-002 wirkungslos | — | 10 |
 
-**Total:** 21 Tasks — 6×Closed (D-001–D-006, 6f4588d), 5×Sprint 9 Active (7-1a, 7-1b, 7-2, 8-1, 7-3), 4×Sprint 9 Planned (8-2–8-5), 6×P3 Backlog.
+**Total:** 17 Tasks — 6×Closed D-001–D-006 (→ CHANGELOG v0.13.57), 2×Closed Sprint 10 (UI-CENT, AUDIT-1), 5×Sprint 9 Active (7-1a, 7-1b, 7-2, 8-1, 7-3), 4×Sprint 9 Planned (8-2–8-5), 6×P3 Backlog.
 
 **Sprint 9 Dependency-Edges (Rule 1.7 Pre-Note):**
 
@@ -52,6 +48,12 @@
 ```
 
 Maschinenlesbare Validation der Dep-Edges ist Sprint-10-Folgeaufgabe (Gate 11 in eigenem Folge-Sprint).
+
+---
+
+## Sprint 10 — Diagnostik-Fixes + UI-Zentralisierung (→ CHANGELOG v0.13.57)
+
+**D-001–D-006** (6 Tasks) + **UI-Zentralisierung** + **Dead-Code-Audit** → alle in CHANGELOG.md §v0.13.57 dokumentiert.
 
 ---
 

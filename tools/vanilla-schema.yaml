@@ -1,5 +1,5 @@
 # =============================================================================
-# VANILLA BYTECODE-SCHEMA — SyxEconomyMod v0.13.56
+# VANILLA BYTECODE-SCHEMA — SyxEconomyMod v0.13.61
 #
 # Single-Source-of-Truth für ALLE Vanilla-Klassen die der Mod per
 # BypassGate, ClassResolver oder direkter public API anfasst.

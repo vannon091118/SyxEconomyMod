@@ -49,7 +49,7 @@ public final class WindowState extends EconWindowBase {
             addKpi(content, x + 380, y, UI.icons().s.trade, "Modus", wh.tradeMode().name(), GCOLOR.T().NORMAL);
             y += 50;
 
-            GText modeHeader = new GText(UI.FONT().M, 256);
+            GText modeHeader = new GText(UI.FONT().M, FONTW_HDR);
             modeHeader.set("Handelsmodus:");
             modeHeader.lablify();
             content.add(modeHeader, x, y);
@@ -114,7 +114,7 @@ public final class WindowState extends EconWindowBase {
             content.add(liquidate, x + 240, y);
             y += 40;
 
-            GText statsHeader = new GText(UI.FONT().M, 256);
+            GText statsHeader = new GText(UI.FONT().M, FONTW_HDR);
             statsHeader.set("--- Letzte Saison ---");
             statsHeader.lablify();
             content.add(statsHeader, x, y);
@@ -130,7 +130,7 @@ public final class WindowState extends EconWindowBase {
                 wh.lastCrownMarketUnitsSold() + " Einh. / " + CompactNumber.format(wh.lastCrownMarketSold()) + " D", GCOLOR.T().NORMAL);
             y += 40;
 
-            GText wageHeader = new GText(UI.FONT().M, 256);
+            GText wageHeader = new GText(UI.FONT().M, FONTW_HDR);
             wageHeader.set("--- Lagerlöhne ---");
             wageHeader.lablify();
             content.add(wageHeader, x, y);
@@ -159,7 +159,7 @@ public final class WindowState extends EconWindowBase {
 
         @Override
         public void build(EconomySim sim, GuiSection content, int x, int y, int w, int h) {
-            GText taxHeader = new GText(UI.FONT().M, 256);
+            GText taxHeader = new GText(UI.FONT().M, FONTW_HDR);
             taxHeader.set("--- Steuern & Abgaben ---");
             taxHeader.lablify();
             content.add(taxHeader, x, y);
@@ -179,7 +179,7 @@ public final class WindowState extends EconWindowBase {
                 EconConfig.warehouseTaxPercent + "%", GCOLOR.T().NORMAL);
             y += 40;
 
-            GText collHeader = new GText(UI.FONT().M, 256);
+            GText collHeader = new GText(UI.FONT().M, FONTW_HDR);
             collHeader.set("--- Einnahmen ---");
             collHeader.lablify();
             content.add(collHeader, x, y);
@@ -201,7 +201,7 @@ public final class WindowState extends EconWindowBase {
                 CompactNumber.format(sim.fiscal().rationOut()) + " D", GCOLOR.T().NORMAL);
             y += 50;
 
-            GText toggleHeader = new GText(UI.FONT().M, 256);
+            GText toggleHeader = new GText(UI.FONT().M, FONTW_HDR);
             toggleHeader.set("--- Schalter ---");
             toggleHeader.lablify();
             content.add(toggleHeader, x, y);
@@ -236,7 +236,7 @@ public final class WindowState extends EconWindowBase {
 
         @Override
         public void build(EconomySim sim, GuiSection content, int x, int y, int w, int h) {
-            GText swHeader = new GText(UI.FONT().M, 256);
+            GText swHeader = new GText(UI.FONT().M, FONTW_HDR);
             swHeader.set("--- Staatsgehälter ---");
             swHeader.lablify();
             content.add(swHeader, x, y);
@@ -248,7 +248,7 @@ public final class WindowState extends EconWindowBase {
                 String.valueOf(sim.roster().size()), GCOLOR.T().NORMAL);
             y += 40;
 
-            GText corveeHeader = new GText(UI.FONT().M, 256);
+            GText corveeHeader = new GText(UI.FONT().M, FONTW_HDR);
             corveeHeader.set("--- Staatsarbeit (Corvée) ---");
             corveeHeader.lablify();
             content.add(corveeHeader, x, y);
@@ -269,7 +269,7 @@ public final class WindowState extends EconWindowBase {
                 String.format("%.1f%%", sim.corveeDraftFractionLast() * 100), GCOLOR.T().NORMAL);
             y += 40;
 
-            GText oddHeader = new GText(UI.FONT().M, 256);
+            GText oddHeader = new GText(UI.FONT().M, FONTW_HDR);
             oddHeader.set("--- Gelegenheitsarbeit ---");
             oddHeader.lablify();
             content.add(oddHeader, x, y);
@@ -282,7 +282,7 @@ public final class WindowState extends EconWindowBase {
                 EconConfig.oddjobWagePerTask + " D", GCOLOR.T().NORMAL);
             y += 40;
 
-            GText txHeader = new GText(UI.FONT().M, 256);
+            GText txHeader = new GText(UI.FONT().M, FONTW_HDR);
             txHeader.set("--- Transportpauschale ---");
             txHeader.lablify();
             content.add(txHeader, x, y);
@@ -295,7 +295,7 @@ public final class WindowState extends EconWindowBase {
                 EconConfig.transportFeePer100TileDay + " D / 100t / Tag", GCOLOR.T().NORMAL);
             y += 40;
 
-            GText gdHeader = new GText(UI.FONT().M, 256);
+            GText gdHeader = new GText(UI.FONT().M, FONTW_HDR);
             gdHeader.set("--- Kornspende ---");
             gdHeader.lablify();
             content.add(gdHeader, x, y);
@@ -315,7 +315,7 @@ public final class WindowState extends EconWindowBase {
 
         @Override
         public void build(EconomySim sim, GuiSection content, int x, int y, int w, int h) {
-            GText header = new GText(UI.FONT().M, 256);
+            GText header = new GText(UI.FONT().M, FONTW_HDR);
             header.set("--- Religion & Liturgie ---");
             header.lablify();
             content.add(header, x, y);
@@ -329,7 +329,7 @@ public final class WindowState extends EconWindowBase {
                 b -> EconConfig.liturgyEnabled = b);
             y += 22;
 
-            GText collHeader = new GText(UI.FONT().M, 256);
+            GText collHeader = new GText(UI.FONT().M, FONTW_HDR);
             collHeader.set("--- Heutige Einnahmen ---");
             collHeader.lablify();
             content.add(collHeader, x, y);
@@ -347,7 +347,7 @@ public final class WindowState extends EconWindowBase {
             y += 40;
 
             long total = religionToday + liturgyToday;
-            GText totalText = new GText(UI.FONT().M, 256);
+            GText totalText = new GText(UI.FONT().M, FONTW_HDR);
             totalText.set("Gesamte Sammlungen heute: " + CompactNumber.format(total) + " D");
             totalText.color(total > 0 ? GCOLOR.UI().GOOD.normal : GCOLOR.T().INACTIVE);
             content.add(totalText, x, y);
@@ -366,7 +366,7 @@ public final class WindowState extends EconWindowBase {
         @Override
         public void build(EconomySim sim, GuiSection content, int x, int y, int w, int h) {
             // ── Section 1: Opt-in toggles ───────────────────────────
-            GText header = new GText(UI.FONT().M, 256);
+            GText header = new GText(UI.FONT().M, FONTW_HDR);
             header.set("--- Logger & Export ---");
             header.lablify();
             content.add(header, x, y);
@@ -391,25 +391,25 @@ public final class WindowState extends EconWindowBase {
             y += 26;
 
             // ── Section 2: Persistent logging paths ─────────────────
-            GText logHeader = new GText(UI.FONT().M, 256);
+            GText logHeader = new GText(UI.FONT().M, FONTW_HDR);
             logHeader.set("--- Persistente Logs ---");
             logHeader.lablify();
             content.add(logHeader, x, y);
             y += 20;
 
-            GText eventLog = new GText(UI.FONT().S, 512);
+            GText eventLog = new GText(UI.FONT().S, FONTW_BODY);
             eventLog.set("EventLog: economy_events.log  [" + (EconConfig.debugPriceLogging ? "AKTIV" : "AUS") + "]");
             eventLog.color(EconConfig.debugPriceLogging ? GCOLOR.UI().GOOD.normal : GCOLOR.T().INACTIVE);
             content.add(eventLog, x, y);
             y += 14;
 
-            GText csvLog = new GText(UI.FONT().S, 512);
+            GText csvLog = new GText(UI.FONT().S, FONTW_BODY);
             csvLog.set("CSV-Export: " +                    DiagnosticExporter.diagnosticDirectory());
             csvLog.color(EconConfig.diagnosticsExportEnabled ? GCOLOR.UI().GOOD.normal : GCOLOR.T().INACTIVE);
             content.add(csvLog, x, y);
             y += 14;
 
-            GText traceLog = new GText(UI.FONT().S, 512);
+            GText traceLog = new GText(UI.FONT().S, FONTW_BODY);
             traceLog.set("Trace: 8192 Events, Dump via Numpad /");
             traceLog.color(EconConfig.debugTracing ? GCOLOR.UI().GOOD.normal : GCOLOR.T().INACTIVE);
             content.add(traceLog, x, y);
@@ -476,7 +476,7 @@ public final class WindowState extends EconWindowBase {
             y += 32;
 
             // ── Section 3: BypassGate Status ────────────────────────
-            GText gateHeader = new GText(UI.FONT().M, 256);
+            GText gateHeader = new GText(UI.FONT().M, FONTW_HDR);
             gateHeader.set("--- BypassGate Adapter ---");
             gateHeader.lablify();
             content.add(gateHeader, x, y);
@@ -485,7 +485,7 @@ public final class WindowState extends EconWindowBase {
             String[] adapterStatus = sim.debugAdapterStatus();
             for (String status : adapterStatus) {
                 boolean ok = status.contains("OK");
-                GText line = new GText(UI.FONT().S, 380);
+                GText line = new GText(UI.FONT().S, FONTW_BODY);
                 line.set(status);
                 line.color(ok ? GCOLOR.UI().GOOD.normal : GCOLOR.UI().BAD.normal);
                 content.add(line, x + 8, y);
@@ -494,7 +494,7 @@ public final class WindowState extends EconWindowBase {
             y += 8;
 
             // ── Section 4: Self-Test Buttons ───────────────────────
-            GText testHeader = new GText(UI.FONT().M, 256);
+            GText testHeader = new GText(UI.FONT().M, FONTW_HDR);
             testHeader.set("--- Adapter Self-Test ---");
             testHeader.lablify();
             content.add(testHeader, x, y);
@@ -516,7 +516,7 @@ public final class WindowState extends EconWindowBase {
                     String r = selfTestResults[i];
                     boolean pass = r.contains("PASS");
                     boolean skip = r.contains("SKIP");
-                    GText line = new GText(UI.FONT().S, 512);
+                    GText line = new GText(UI.FONT().S, FONTW_BODY);
                     line.set(r);
                     line.color(pass ? GCOLOR.UI().GOOD.normal : skip ? GCOLOR.T().INACTIVE : GCOLOR.UI().BAD.normal);
                     content.add(line, x + 130, y);
@@ -526,7 +526,7 @@ public final class WindowState extends EconWindowBase {
             y += 8;
 
             // ── Section 5: Cheat Buttons ───────────────────────────
-            GText cheatHeader = new GText(UI.FONT().M, 256);
+            GText cheatHeader = new GText(UI.FONT().M, FONTW_HDR);
             cheatHeader.set("--- Cheat-Tests ---");
             cheatHeader.lablify();
             content.add(cheatHeader, x, y);
@@ -555,7 +555,7 @@ public final class WindowState extends EconWindowBase {
 
             // Cheat status line
             if (!cheatStatus.isEmpty()) {
-                GText statusLine = new GText(UI.FONT().S, 512);
+                GText statusLine = new GText(UI.FONT().S, FONTW_BODY);
                 statusLine.set(cheatStatus);
                 statusLine.color(GCOLOR.UI().SOSO.normal);
                 content.add(statusLine, x, y);
@@ -570,7 +570,7 @@ public final class WindowState extends EconWindowBase {
 
         @Override
         public void build(EconomySim sim, GuiSection content, int x, int y, int w, int h) {
-            GText header = new GText(UI.FONT().M, 256);
+            GText header = new GText(UI.FONT().M, FONTW_HDR);
             header.set("--- Religion & Liturgie ---");
             header.lablify();
             content.add(header, x, y);
@@ -588,13 +588,13 @@ public final class WindowState extends EconWindowBase {
             y += 40;
 
             long total = religionToday + liturgyToday;
-            GText totalText = new GText(UI.FONT().M, 256);
+            GText totalText = new GText(UI.FONT().M, FONTW_HDR);
             totalText.set("Gesamte Sammlungen heute: " + CompactNumber.format(total) + " D");
             totalText.color(total > 0 ? GCOLOR.UI().GOOD.normal : GCOLOR.T().INACTIVE);
             content.add(totalText, x, y);
             y += 36;
 
-            GText toggleHdr = new GText(UI.FONT().M, 256);
+            GText toggleHdr = new GText(UI.FONT().M, FONTW_HDR);
             toggleHdr.set("--- Schalter ---");
             toggleHdr.lablify();
             content.add(toggleHdr, x, y);
@@ -609,19 +609,19 @@ public final class WindowState extends EconWindowBase {
             y += 22;
 
             // Liturgy interval display only (no toggle — controlled by EconConfig)
-            GText litInt = new GText(UI.FONT().S, 256);
+            GText litInt = new GText(UI.FONT().S, FONTW_HDR);
             litInt.set("Liturgie-Turnus: alle " + EconConfig.liturgyIntervalSeasons + " Saison(en)");
             litInt.color(GCOLOR.T().NORMAL);
             content.add(litInt, x, y);
             y += 28;
 
-            GText infoHdr = new GText(UI.FONT().M, 256);
+            GText infoHdr = new GText(UI.FONT().M, FONTW_HDR);
             infoHdr.set("--- Info ---");
             infoHdr.lablify();
             content.add(infoHdr, x, y);
             y += 18;
 
-            GText info = new GText(UI.FONT().S, 512);
+            GText info = new GText(UI.FONT().S, FONTW_BODY);
             info.set("Religionssteuer: Pro-Kopf-Abgabe an Tempel. Liturgie: Freiwillige Spenden sammeln. Beide verbessern Stimmung und Loyalitaet.");
             info.color(GCOLOR.T().NORMAL);
             content.add(info, x, y);

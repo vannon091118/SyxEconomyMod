@@ -156,6 +156,10 @@ public final class EconomySim {
     private final DebtDiplomacyBuffer debtDiplomacyBuffer;
     private int econIndicatorTickCounter = 0;
     private static final int ECON_INDICATOR_INTERVAL = 60;
+    // Livetest: Building-Change-Tracker. Vergleicht Raum-Anzahl pro Tick und
+    // logged Änderungen via DebugTracer.BUILD für Korrelation mit CSV-Diagnostik.
+    private int lastStockpileCount = -1;
+    private int lastWorkplaceCount = -1;
     // Phase 4: stateWarehouses is built in the constructor after the warehouse
     // adapter is initialized. These two consumers are therefore constructed in
     // the constructor body, not via field initializers, so the diamond reads
@@ -753,6 +757,7 @@ public final class EconomySim {
         }
 
         this.updateRenderCaches();
+        this.trackBuildingChanges();
 
         // Push values into the dashboard histories once per in-game day.
         // This keeps the 60-slot charts meaningful over several game days
@@ -857,6 +862,46 @@ public final class EconomySim {
         } else {
             this.cachedWorkplaces = Collections.emptyList();
         }
+    }
+
+    /** Livetest: Loggt Änderungen der Raum-Anzahl (Lager, Werkstätten) via
+     *  DebugTracer.BUILD für Korrelation mit CSV-Diagnostik. Nur aktiv wenn
+     *  {@code debugTracing=true}. Throttled auf alle 60 Ticks (~12s real)
+     *  da Bau-Änderungen auf menschlicher Zeitskala passieren. */
+    private void trackBuildingChanges() {
+        if (!DebugTracer.on()) return;
+        if (this.ticks % 60 != 0) return;
+        if (SETT.ROOMS() == null) return;
+
+        // Stockpile count
+        int stockpiles = 0;
+        if (SETT.ROOMS().STOCKPILE != null) {
+            stockpiles = EconProgression.reliableStockpileCount();
+        }
+        if (this.lastStockpileCount >= 0 && stockpiles != this.lastStockpileCount) {
+            int delta = stockpiles - this.lastStockpileCount;
+            DebugTracer.trace(DebugTracer.BUILD,
+                "stockpile " + (delta > 0 ? "+" : "") + delta + " → now " + stockpiles);
+        }
+        this.lastStockpileCount = stockpiles;
+
+        // Workplace count (total instances across all blueprints)
+        int workplaces = 0;
+        if (SETT.ROOMS().imps() != null) {
+            LIST<?> all = SETT.ROOMS().imps();
+            for (int i = 0; i < all.size(); ++i) {
+                RoomBlueprintImp b = (RoomBlueprintImp) all.get(i);
+                if (b.employment() != null && b instanceof RoomBlueprintIns) {
+                    workplaces += ((RoomBlueprintIns<?>) b).instancesSize();
+                }
+            }
+        }
+        if (this.lastWorkplaceCount >= 0 && workplaces != this.lastWorkplaceCount) {
+            int delta = workplaces - this.lastWorkplaceCount;
+            DebugTracer.trace(DebugTracer.BUILD,
+                "workplaces " + (delta > 0 ? "+" : "") + delta + " → now " + workplaces);
+        }
+        this.lastWorkplaceCount = workplaces;
     }
 
     private void refreshFlowPrices() {

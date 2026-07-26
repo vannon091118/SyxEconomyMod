@@ -92,7 +92,7 @@ public final class WindowQuickview extends EconWindowBase {
 
         // Trade mode buttons — ButtPanel with render override (like WindowState) for
         // dynamic selected state, plus text labels so each mode is clearly distinguishable.
-        GText modeLabel = new GText(UI.FONT().M, 128);
+        GText modeLabel = new GText(UI.FONT().M, FONTW_KPI);
         modeLabel.set("Lager-Modus:");
         modeLabel.lablify();
         content.add(modeLabel, x, y);
@@ -139,32 +139,32 @@ public final class WindowQuickview extends EconWindowBase {
         y += 36;
 
         // Warehouse stats
-        GText whLabel = new GText(UI.FONT().M, 256);
+        GText whLabel = new GText(UI.FONT().M, FONTW_HDR);
         whLabel.set("Lager: " + wh.ownedCount() + " staatlich");
         whLabel.color(GCOLOR.T().NORMAL);
         content.add(whLabel, x, y);
         y += 20;
 
-        GText whStats = new GText(UI.FONT().S, 256);
+        GText whStats = new GText(UI.FONT().S, FONTW_HDR);
         whStats.set("Gekauft: " + CompactNumber.format(wh.lastBought()) + "  Verkauft: " + CompactNumber.format(wh.lastSold()));
         whStats.color(GCOLOR.T().NORMAL);
         content.add(whStats, x, y);
         y += 30;
 
-        GText fiscalLabel = new GText(UI.FONT().S, 256);
+        GText fiscalLabel = new GText(UI.FONT().S, FONTW_HDR);
         fiscalLabel.set("Steuern: " + CompactNumber.format(sim.fiscal().headTaxCollected()) + "  Markt: " + CompactNumber.format(sim.fiscal().marketReceipts()));
         fiscalLabel.color(GCOLOR.T().NORMAL);
         content.add(fiscalLabel, x, y);
         y += 20;
 
-        GText wagesLabel = new GText(UI.FONT().S, 256);
+        GText wagesLabel = new GText(UI.FONT().S, FONTW_HDR);
         wagesLabel.set("Loehne: " + CompactNumber.format(sim.wagesPaid()) + "  Rationen: " + CompactNumber.format(sim.fiscal().rationOut()));
         wagesLabel.color(GCOLOR.T().NORMAL);
         content.add(wagesLabel, x, y);
 
         // Window switcher buttons
         y += 36;
-        GText switchLabel = new GText(UI.FONT().S, 128);
+        GText switchLabel = new GText(UI.FONT().S, FONTW_KPI);
         switchLabel.set("Fenster:");
         switchLabel.color(GCOLOR.T().INACTIVE);
         content.add(switchLabel, x, y);

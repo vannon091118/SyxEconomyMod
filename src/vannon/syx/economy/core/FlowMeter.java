@@ -134,6 +134,20 @@ public final class FlowMeter {
             this.lastGlobalProduced[good] = current;
         }
         this.globalProducedInitialized = true;
+        // Livetest-Fix: Nicht-Industry-Produktion (Jagen, Sammeln, Angeln, …) in
+        // supply[] einfließen lassen. producerlessProduced = globale Engine-Produktion
+        // minus Industry-getrackte Produktion. Ohne diesen Fix sieht FlowMeter nur
+        // Stockpile-basierte Produktion → supplyPerDay=0 → Phantom-Knappheit obwohl
+        // Bürger via Jagd satt sind. Rate = Einheiten / elapsedDays.
+        // Wichtig: householdConsumption = supply - firmInputs - stockChange steigt
+        // automatisch mit → demand steigt mit → coverage bleibt bei 1.0 für
+        // direkt konsumierte Wild-Nahrung. Keine Phantom-Preis-Spikes mehr.
+        for (good = 0; good < goods; ++good) {
+            if (this.producerlessProduced[good] > 0 && elapsedDays > 0.0) {
+                double rate = (double) this.producerlessProduced[good] / elapsedDays;
+                this.supply[good] += rate;
+            }
+        }
         for (good = 0; good < goods; ++good) {
             long locked = withheld != null && good < withheld.length ? Math.max(0L, withheld[good]) : 0L;
             double physical = Math.max(0L, FlowMeter.stockOf(RESOURCES.ALL().get(good)) - locked);

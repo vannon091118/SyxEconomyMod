@@ -80,7 +80,7 @@ public final class WindowOverview extends EconWindowBase {
             y += 60;
 
             // Ampel (traffic lights) — ASCII text indicators, no unicode dots that might render as '?'
-            GText ampelHeader = new GText(UI.FONT().M, 256);
+            GText ampelHeader = new GText(UI.FONT().M, FONTW_HDR);
             ampelHeader.set("--- AMPANZEIGE ---");
             ampelHeader.lablify();
             content.add(ampelHeader, x, y);
@@ -105,14 +105,14 @@ public final class WindowOverview extends EconWindowBase {
             y += 40;
             String statusText = buildStatusText(ind, stats, treasury);
             boolean hasWarnings = !allClear(ind) || !hasPop || treasury < 0;
-            GText status = new GText(UI.FONT().M, 512);
+            GText status = new GText(UI.FONT().M, FONTW_BODY);
             status.set(statusText);
             status.color(!hasPop ? GCOLOR.T().INACTIVE : hasWarnings ? GCOLOR.UI().SOSO.normal : GCOLOR.UI().GOOD.normal);
             content.add(status, x, y);
 
             // ─── DIRECT PLAYER CONTROLS (SOFORT-STEUERUNG) ───
             y += 30;
-            GText ctrlHdr = new GText(UI.FONT().M, 256);
+            GText ctrlHdr = new GText(UI.FONT().M, FONTW_HDR);
             ctrlHdr.set("--- DIREKTE SOFORT-STEUERUNG ---");
             ctrlHdr.lablify();
             content.add(ctrlHdr, x, y);
@@ -171,13 +171,13 @@ public final class WindowOverview extends EconWindowBase {
             // ─── INTERAKTIVES TUTORIAL POPUP (ONBOARDING) ───
             EconTutorialController tut = sim.tutorial();
             if (tut.isActive() && tut.currentStage() != Stage.NONE && tut.currentStage() != Stage.COMPLETED) {
-                GText tutHdr = new GText(UI.FONT().M, 256);
+                GText tutHdr = new GText(UI.FONT().M, FONTW_HDR);
                 tutHdr.set(">>> ANLEITUNG / ONBOARDING <<<");
                 tutHdr.color(GCOLOR.UI().GOOD.normal);
                 content.add(tutHdr, x, y);
                 y += 18;
 
-                GText tutMsg = new GText(UI.FONT().S, 512);
+                GText tutMsg = new GText(UI.FONT().S, FONTW_BODY);
                 switch (tut.currentStage()) {
                     case WELCOME_WAGES:
                         tutMsg.set("SCHRITT 1/4: Passe oben den 'Lagerlohn/Tag' an. Höhere Löhne ziehen Arbeiter an.");
@@ -207,7 +207,7 @@ public final class WindowOverview extends EconWindowBase {
             // History chart — colored bars for treasury timeline
             y += 26;
             if (ind.count() > 0) {
-                GText histHeader = new GText(UI.FONT().S, 256);
+                GText histHeader = new GText(UI.FONT().S, FONTW_HDR);
                 histHeader.set("--- Kassen-Historie ---");
                 histHeader.lablify();
                 content.add(histHeader, x, y);
@@ -240,7 +240,7 @@ public final class WindowOverview extends EconWindowBase {
                 }
                 y += maxH + 4;
 
-                GText chartLabel = new GText(UI.FONT().S, 256);
+                GText chartLabel = new GText(UI.FONT().S, FONTW_HDR);
                 chartLabel.set(CompactNumber.format(maxVal) + " D max — " + maxBars + " Tage");
                 chartLabel.color(GCOLOR.T().NORMAL);
                 content.add(chartLabel, x, y);
@@ -271,7 +271,7 @@ public final class WindowOverview extends EconWindowBase {
             y += 50;
 
             // Wealth distribution histogram (text-based)
-            GText histLabel = new GText(UI.FONT().M, 256);
+            GText histLabel = new GText(UI.FONT().M, FONTW_HDR);
             histLabel.set("--- Vermögensverteilung ---");
             histLabel.lablify();
             content.add(histLabel, x, y);
@@ -289,7 +289,7 @@ public final class WindowOverview extends EconWindowBase {
                     if (barW <= 0) { y += 16; continue; }
 
                     // Bucket label
-                    GText lbl = new GText(UI.FONT().S, 64);
+                    GText lbl = new GText(UI.FONT().S, FONTW_LABEL);
                     lbl.set(CompactNumber.format(from) + "-" + CompactNumber.format(to));
                     lbl.color(GCOLOR.T().NORMAL);
                     content.add(lbl, x, y);
@@ -299,7 +299,7 @@ public final class WindowOverview extends EconWindowBase {
                     content.add(coloredBar(barColor, barW, barH), labelX, y + 2);
 
                     // Count label after the bar
-                    GText cnt = new GText(UI.FONT().S, 48);
+                    GText cnt = new GText(UI.FONT().S, FONTW_CNT);
                     cnt.set(String.valueOf(count));
                     cnt.color(GCOLOR.T().NORMAL);
                     content.add(cnt, labelX + barW + 6, y);
@@ -307,14 +307,14 @@ public final class WindowOverview extends EconWindowBase {
                     y += 16;
                 }
             } else {
-                GText empty = new GText(UI.FONT().M, 128);
+                GText empty = new GText(UI.FONT().M, FONTW_KPI);
                 empty.set("Keine Siedler");
                 empty.color(GCOLOR.T().NORMAL);
                 content.add(empty, x, y);
             }
 
             // Wealth bands (4-Klassen-Aufschlüsselung)
-            GText bandLabel = new GText(UI.FONT().M, 256);
+            GText bandLabel = new GText(UI.FONT().M, FONTW_HDR);
             bandLabel.set("--- Wohlstandsbänder ---");
             bandLabel.lablify();
             content.add(bandLabel, x, y);
@@ -342,22 +342,22 @@ public final class WindowOverview extends EconWindowBase {
                     long fromW = bFrom * stats.bucketWidth;
                     long toW = Math.min((long)(bTo - 1) * stats.bucketWidth + stats.bucketWidth - 1, stats.max);
 
-                    GText bandName = new GText(UI.FONT().S, 100);
+                    GText bandName = new GText(UI.FONT().S, FONTW_NAME);
                     bandName.set(bands[b]);
                     bandName.color(bandCount > 0 ? GCOLOR.T().NORMAL : GCOLOR.T().INACTIVE);
                     content.add(bandName, x, y);
 
-                    GText bandCnt = new GText(UI.FONT().S, 48);
+                    GText bandCnt = new GText(UI.FONT().S, FONTW_CNT);
                     bandCnt.set(String.valueOf(bandCount));
                     bandCnt.color(GCOLOR.T().NORMAL);
                     content.add(bandCnt, x + 110, y);
 
-                    GText bandRange = new GText(UI.FONT().S, 100);
+                    GText bandRange = new GText(UI.FONT().S, FONTW_NAME);
                     bandRange.set(CompactNumber.format(fromW) + "-" + CompactNumber.format(toW) + " D");
                     bandRange.color(GCOLOR.T().NORMAL);
                     content.add(bandRange, x + 180, y);
 
-                    GText bandAvgT = new GText(UI.FONT().S, 64);
+                    GText bandAvgT = new GText(UI.FONT().S, FONTW_LABEL);
                     bandAvgT.set(CompactNumber.format(bandAvg) + " D");
                     bandAvgT.color(bandAvg > stats.median ? GCOLOR.UI().GOOD.normal : GCOLOR.UI().SOSO.normal);
                     content.add(bandAvgT, x + 290, y);
@@ -365,7 +365,7 @@ public final class WindowOverview extends EconWindowBase {
                     y += 14;
                 }
             } else {
-                GText noBands = new GText(UI.FONT().S, 128);
+                GText noBands = new GText(UI.FONT().S, FONTW_KPI);
                 noBands.set("Keine Vermögensdaten.");
                 noBands.color(GCOLOR.T().INACTIVE);
                 content.add(noBands, x, y);
@@ -374,7 +374,7 @@ public final class WindowOverview extends EconWindowBase {
 
             // Housing info
             y += 8;
-            GText housing = new GText(UI.FONT().M, 256);
+            GText housing = new GText(UI.FONT().M, FONTW_HDR);
             housing.set("Mieteinnahmen: " + CompactNumber.format(sim.housingMarket().lastRentCollected()) + " D  |  Zwangsraeumungen: " + sim.housingMarket().lastEvictions());
             housing.color(GCOLOR.T().NORMAL);
             content.add(housing, x, y);
@@ -395,7 +395,7 @@ public final class WindowOverview extends EconWindowBase {
             boolean hasPop = stats.people > 0;
 
             // === AMPEL-DASHBOARD (5 Indikatoren) ===
-            GText ampelHdr = new GText(UI.FONT().M, 256);
+            GText ampelHdr = new GText(UI.FONT().M, FONTW_HDR);
             ampelHdr.set("--- Ampel-Status ---");
             ampelHdr.lablify();
             content.add(ampelHdr, x, y);
@@ -422,13 +422,13 @@ public final class WindowOverview extends EconWindowBase {
             // === WARNKETTEN (kausale Abhängigkeiten) ===
             String chains = buildWarningChains(ind, treasury, stats);
             if (!chains.isEmpty()) {
-                GText warnHdr = new GText(UI.FONT().M, 256);
+                GText warnHdr = new GText(UI.FONT().M, FONTW_HDR);
                 warnHdr.set("--- Warnketten ---");
                 warnHdr.lablify();
                 content.add(warnHdr, x, y);
                 y += 20;
 
-                GText chainsText = new GText(UI.FONT().S, 512);
+                GText chainsText = new GText(UI.FONT().S, FONTW_BODY);
                 chainsText.set(chains);
                 chainsText.color(GCOLOR.UI().SOSO.normal);
                 content.add(chainsText, x, y);
@@ -437,7 +437,7 @@ public final class WindowOverview extends EconWindowBase {
 
             // === TREND-TABELLE (letzte 3 Tage) ===
             if (ind.count() >= 2) {
-                GText trendHdr = new GText(UI.FONT().M, 256);
+                GText trendHdr = new GText(UI.FONT().M, FONTW_HDR);
                 trendHdr.set("--- Trend (letzte 3 Tage) ---");
                 trendHdr.lablify();
                 content.add(trendHdr, x, y);
@@ -457,32 +457,32 @@ public final class WindowOverview extends EconWindowBase {
                     if (s == null) continue;
                     int dayLabel = i - (ind.count() - 1);
 
-                    GText dayT = new GText(UI.FONT().S, 32);
+                    GText dayT = new GText(UI.FONT().S, FONTW_TINY);
                     dayT.set(dayLabel == 0 ? "Heute" : "D" + dayLabel);
                     dayT.color(dayLabel == 0 ? GCOLOR.T().NORMAL : GCOLOR.T().INACTIVE);
                     content.add(dayT, x, y);
 
-                    GText treasuryT = new GText(UI.FONT().S, 64);
+                    GText treasuryT = new GText(UI.FONT().S, FONTW_LABEL);
                     treasuryT.set(CompactNumber.format(s.treasuryCurrent));
                     treasuryT.color(s.treasuryCurrent >= 0 ? GCOLOR.UI().GOOD.normal : GCOLOR.UI().BAD.normal);
                     content.add(treasuryT, x + 45, y);
 
-                    GText giniT = new GText(UI.FONT().S, 48);
+                    GText giniT = new GText(UI.FONT().S, FONTW_CNT);
                     giniT.set(String.format("%.3f", s.gini));
                     giniT.color(s.gini > 0.40 ? GCOLOR.UI().BAD.normal : s.gini > 0.35 ? GCOLOR.UI().SOSO.normal : GCOLOR.UI().GOOD.normal);
                     content.add(giniT, x + 130, y);
 
-                    GText wageT = new GText(UI.FONT().S, 56);
+                    GText wageT = new GText(UI.FONT().S, FONTW_MED);
                     wageT.set(CompactNumber.format((long)s.actualMeanWage));
                     wageT.color(GCOLOR.T().NORMAL);
                     content.add(wageT, x + 195, y);
 
-                    GText foodT = new GText(UI.FONT().S, 48);
+                    GText foodT = new GText(UI.FONT().S, FONTW_CNT);
                     foodT.set(String.format("%.1fd", s.foodDays));
                     foodT.color(s.foodDays > 3 ? GCOLOR.UI().GOOD.normal : s.foodDays > 1 ? GCOLOR.UI().SOSO.normal : GCOLOR.UI().BAD.normal);
                     content.add(foodT, x + 265, y);
 
-                    GText unpaidT = new GText(UI.FONT().S, 48);
+                    GText unpaidT = new GText(UI.FONT().S, FONTW_CNT);
                     unpaidT.set(String.valueOf(s.workersUnpaid));
                     unpaidT.color(s.workersUnpaid > 0 ? GCOLOR.UI().BAD.normal : GCOLOR.UI().GOOD.normal);
                     content.add(unpaidT, x + 330, y);
@@ -493,7 +493,7 @@ public final class WindowOverview extends EconWindowBase {
             }
 
             // === STUFE & MEILENSTEINE ===
-            GText stageHdr = new GText(UI.FONT().M, 256);
+            GText stageHdr = new GText(UI.FONT().M, FONTW_HDR);
             stageHdr.set("--- Stufe & Meilensteine ---");
             stageHdr.lablify();
             content.add(stageHdr, x, y);
@@ -528,21 +528,21 @@ public final class WindowOverview extends EconWindowBase {
 
             // Nächste Stufe
             String nextReqs = nextStageReqs(prog, stats);
-            GText nextText = new GText(UI.FONT().S, 512);
+            GText nextText = new GText(UI.FONT().S, FONTW_BODY);
             nextText.set("Naechste Stufe: " + nextReqs);
             nextText.color(GCOLOR.UI().SOSO.normal);
             content.add(nextText, x, y);
             y += 24;
 
             // === WAS SOLL ICH TUN? ===
-            GText adviceHdr = new GText(UI.FONT().M, 256);
+            GText adviceHdr = new GText(UI.FONT().M, FONTW_HDR);
             adviceHdr.set("--- Was soll ich heute tun? ---");
             adviceHdr.lablify();
             content.add(adviceHdr, x, y);
             y += 20;
 
             String advice = buildAdvice(sim, stats, ind, treasury);
-            GText adviceText = new GText(UI.FONT().M, 512);
+            GText adviceText = new GText(UI.FONT().M, FONTW_BODY);
             adviceText.set(advice);
             adviceText.color(GCOLOR.UI().SOSO.normal);
             content.add(adviceText, x, y);
@@ -580,7 +580,7 @@ public final class WindowOverview extends EconWindowBase {
         // Colored rectangle replaces ASCII # bars
         section.add(coloredBar(barColor, 50, 10), x, y + 4);
 
-        GText lbl = new GText(UI.FONT().M, 128);
+        GText lbl = new GText(UI.FONT().M, FONTW_KPI);
         lbl.set(label);
         lbl.color(state >= 0 ? GCOLOR.T().NORMAL : GCOLOR.T().INACTIVE);
         section.add(lbl, x + 55, y);
@@ -592,7 +592,7 @@ public final class WindowOverview extends EconWindowBase {
         } else {
             section.add(UI.icons().s.cancel, x, y + 2);
         }
-        GText ms = new GText(UI.FONT().M, 256);
+        GText ms = new GText(UI.FONT().M, FONTW_HDR);
         ms.set(label);
         ms.color(achieved ? GCOLOR.UI().GOOD.normal : GCOLOR.T().INACTIVE);
         section.add(ms, x + 20, y);
@@ -759,7 +759,7 @@ public final class WindowOverview extends EconWindowBase {
 
         @Override
         public void build(EconomySim sim, GuiSection content, int x, int y, int w, int h) {
-            GText header = new GText(UI.FONT().M, 256);
+            GText header = new GText(UI.FONT().M, FONTW_HDR);
             header.set("--- Immobilienmarkt ---");
             header.lablify();
             content.add(header, x, y);
@@ -782,7 +782,7 @@ public final class WindowOverview extends EconWindowBase {
                 CompactNumber.format(sim.propertyDividendsPaid()) + " D", GCOLOR.T().NORMAL);
             y += 50;
 
-            GText sliderHdr = new GText(UI.FONT().M, 256);
+            GText sliderHdr = new GText(UI.FONT().M, FONTW_HDR);
             sliderHdr.set("--- Hebel ---");
             sliderHdr.lablify();
             content.add(sliderHdr, x, y);
@@ -803,7 +803,7 @@ public final class WindowOverview extends EconWindowBase {
                 new ACTION() { @Override public void exe() { EconConfig.housingGraceDays = Math.max(0, EconConfig.housingGraceDays - 1); } });
             y += 50;
 
-            GText toggleHdr = new GText(UI.FONT().M, 256);
+            GText toggleHdr = new GText(UI.FONT().M, FONTW_HDR);
             toggleHdr.set("--- Schalter ---");
             toggleHdr.lablify();
             content.add(toggleHdr, x, y);

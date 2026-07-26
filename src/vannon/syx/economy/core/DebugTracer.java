@@ -24,6 +24,7 @@ import snake2d.LOG;
  *   <li>{@link #SCRP} — Script lifecycle (init, createInstance)</li>
  *   <li>{@link #ECON} — Economy state changes (toggle, config, stage)</li>
  *   <li>{@link #SYS}  — System/infra (startup, shutdown)</li>
+ *   <li>{@link #BUILD} — Building construction / room count changes</li>
  * </ul>
  */
 public final class DebugTracer {
@@ -34,6 +35,7 @@ public final class DebugTracer {
     public static final byte SCRP = 2;
     public static final byte ECON = 3;
     public static final byte SYS  = 4;
+    public static final byte BUILD = 5;
 
     // ─── Ring buffer ───────────────────────────────────────────────────────
     private static final int CAP = 8192;
@@ -191,5 +193,5 @@ public final class DebugTracer {
         if (cat >= 0 && cat < CAT_NAMES.length) return CAT_NAMES[cat];
         return "???";
     }
-    private static final String[] CAT_NAMES = {"INTR", "VIEW", "SCRP", "ECON", "SYS "};
+    private static final String[] CAT_NAMES = {"INTR", "VIEW", "SCRP", "ECON", "SYS ", "BUILD"};
 }

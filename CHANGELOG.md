@@ -1,6 +1,6 @@
 # SyxEconomyMod — Changelog
 
-> **Version:** v0.13.56 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-26
+> **Version:** v0.13.61 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-26
 >
 > Stam-Doku-Synchron-Anker: Die obenstehende Versions-Zeile MUSS identisch mit `pom.xml` `<version>` sein.
 > Der Sync-Gate `tools/verify-doc-sync.sh` scheitert wenn dieser Anker driftet.
@@ -16,7 +16,8 @@
 
 | Sprint | Theme | Commit(s) | Datum |
 |---|---|---|---|
-| **9** | UI-Sprint — SK-01/06/09/10 Bugfixes (inline-Text, Rohkeys, Null-Farbe, leere Header) | _staged_ | 2026-07-26 |
+| **10** | Diagnostik-Fixes D-001–D-006 + UI-Zentralisierung + Dead-Code-Audit | `381a9c1`, `90064c3` | 2026-07-26 |
+| **9** | Sprint 9 Test-Coverage (7-1a EconConfig, 7-1b FlowPrices, 8-1 Mockito) + UI-Bugfixes | `31fb485`, `e261ca5` | 2026-07-26 |
 | **8** | Global-Audit — dead code removal, stale doc refs, .gitignore hygiene | `2ac5191` | 2026-07-26 |
 | **7** | Adapter-Dispatcher + Schema-SSoT (7 Tasks subsummiert) | `4efa7c4` | 2026-07-26 |
 | **6** | Global-Audit + Freeze (7 Tasks: 6-1..6-7) | `2ac5191`, `804cbf3` | 2026-07-26 |
@@ -29,6 +30,52 @@
 | **0** | Phase A–F SDK + Adapter-Migration | `1442804`..`c1964d2` | 2026-07-25 |
 
 **Drift-Hinweis:** Sprint 6/8 teilen `2ac5191`, Sprint 5/7 teilen `4efa7c4`. Sprint-Nummerierung wurde in v0.13.43 renumbered (siehe `docs: ROADMAP Task N-X Schema + sprint renumbering`).
+
+---
+
+## v0.13.61 — 2026-07-26
+
+### Sprint 10 — Diagnostik-Fixes D-001–D-006 (Commit `6f4588d`)
+
+- **D-001:** `foodPriceAbsoluteMax=500` → `foodPriceCapMultiplier=6.0` (anker-relativ)
+  - `FlowPrices.enforceCap()` nach `refresh()`, `LocalPrices` Defense-in-Depth
+  - BREAD max 6× Anker (468 statt 6248), alle Food-Ressourcen gecappt
+- **D-002:** Emigration 0.0001→0.00003 + Population-Floor-Guard (`roster.size()>=20`)
+  - ⚠️ Audit-Fund: `emigrationRisk` AtomicInteger ist Dead Code — wird nie gelesen
+  - Echte Emigration via `STATS.POP().EMMIGRATING` (Vanilla-Engine), nicht via `emigrationRisk`
+- **D-003:** Carpenter Cold-Start: `FirmLedger.SAVE_VERSION_FIRMS 1→2`, HillState persistiert
+- **D-004:** `_WOOD`-Preis-Inversion: `effectiveCoverage()` inflow-Check (`supplyPerDay>0`)
+- **D-005:** Gini-Clamp: `incomeCarry` gecappt via `guildSurplusMinProfitPerWorker × workerCount`
+- **D-006:** UI-Struktur: DebugTab permanent in `TABS[]`, ARCHITECTURE.md aktualisiert
+
+### Sprint 10 Polish (Commit `381a9c1`)
+
+- **D-001 Polish:** `foodPriceAbsoluteMax=500` → `foodPriceCapMultiplier=6.0` (anker-relativ)
+  - `EconomySim.refreshFlowPrices()`: Cap = `anchor × multiplier` pro Food-Ressource
+  - `LocalPrices.mealPrice()`: Defense-in-Depth mit Basket-basiertem Cap
+- **D-002 Polish:** Population-Floor-Guard `roster.size()>=20` gegen Kleinstadt-Death-Spirale
+- **Balance-CI:** `balance-regression-check.sh` + `balance-reference.txt` (41 Konstanten, Gate 8)
+
+### Sprint 9 Test-Coverage (Commit `31fb485`)
+
+- **7-1a:** `EconConfigTest.java` — 65 Tests, alle public static Felder
+- **7-1b:** `FlowPricesTest.java` — 28 Tests (effectiveCoverage, scarcityMultiplier, localPrice)
+- **8-1:** `EconomySimMockitoTest.java` — 8 Tests mit `@Mock` + `MockitoExtension`
+
+### UI-Zentralisierung (v0.13.61)
+
+- 122 `new GText(UI.FONT().X, N)` → 10 zentrale `FONTW_*`-Konstanten in `EconWindowBase`
+- Konstanten: `FONTW_HDR`(256), `FONTW_BODY`(512), `FONTW_CNT`(48), `FONTW_KPI`(128),
+  `FONTW_LABEL`(64), `FONTW_TINY`(32), `FONTW_NAME`(100), `FONTW_SLVAL`(80),
+  `FONTW_SLBAR`(120), `FONTW_MED`(56)
+- 6 Dateien umgestellt: EconWindowBase, EconHud, WindowEconomy, WindowOverview,
+  WindowState, WindowQuickview
+
+### Code-Audit (v0.13.61)
+
+- **emigrationRisk Dead Code:** AtomicInteger in EconomySim — inkrementiert, genullt, nie gelesen
+- **Cap-Layer-Überlappung:** phaseFactor + enforceCap → enforceCap enger, phaseFactor für Food redundant
+- **priceAbsoluteMax=50000** feuert für Food nie (foodPriceCapMultiplier=6× → max ~4680)
 
 ---
 

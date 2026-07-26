@@ -54,7 +54,7 @@ public final class WindowEconomy extends EconWindowBase {
             boolean hasPop = sim.stats().people > 0;
 
             // Labor market overview
-            GText laborHeader = new GText(UI.FONT().M, 256);
+            GText laborHeader = new GText(UI.FONT().M, FONTW_HDR);
             laborHeader.set("--- Arbeitsmarkt ---");
             laborHeader.lablify();
             content.add(laborHeader, x, y);
@@ -75,7 +75,7 @@ public final class WindowEconomy extends EconWindowBase {
             y += 50;
 
             // Treasury & Fiscal
-            GText fiscalHeader = new GText(UI.FONT().M, 256);
+            GText fiscalHeader = new GText(UI.FONT().M, FONTW_HDR);
             fiscalHeader.set("--- Finanzen ---");
             fiscalHeader.lablify();
             content.add(fiscalHeader, x, y);
@@ -101,7 +101,7 @@ public final class WindowEconomy extends EconWindowBase {
             y += 50;
 
             // Market activity
-            GText marketHeader = new GText(UI.FONT().M, 256);
+            GText marketHeader = new GText(UI.FONT().M, FONTW_HDR);
             marketHeader.set("--- Marktaktivität ---");
             marketHeader.lablify();
             content.add(marketHeader, x, y);
@@ -130,7 +130,7 @@ public final class WindowEconomy extends EconWindowBase {
         public void build(EconomySim sim, GuiSection content, int x, int y, int w, int h) {
             FlowPrices fp = sim.flowPrices();
 
-            GText header = new GText(UI.FONT().M, 512);
+            GText header = new GText(UI.FONT().M, FONTW_BODY);
             header.set("Lokale Verrechnungspreise. Deckung: 1.0 = Ziel, <1 = Mangel, >1 = Überschuss.");
             header.color(GCOLOR.T().NORMAL);
             content.add(header, x, y);
@@ -162,42 +162,42 @@ public final class WindowEconomy extends EconWindowBase {
                     double demand = (snap != null && i < snap.demandPerDay.length) ? snap.demandPerDay[i] : 0;
 
                     // Resource display name (SK-06: lesbarer Name statt Rohkey)
-                    GText name = new GText(UI.FONT().S, 100);
+                    GText name = new GText(UI.FONT().S, FONTW_NAME);
                     name.set(toDisplayName(r.key));
                     name.color(GCOLOR.T().NORMAL);
                     content.add(name, x, y);
 
-                    GText localT = new GText(UI.FONT().S, 48);
+                    GText localT = new GText(UI.FONT().S, FONTW_CNT);
                     localT.set(String.format("%.1f", local));
                     localT.color(GCOLOR.T().NORMAL);
                     content.add(localT, x + 110, y);
 
-                    GText anchorT = new GText(UI.FONT().S, 48);
+                    GText anchorT = new GText(UI.FONT().S, FONTW_CNT);
                     anchorT.set(String.format("%.1f", anchor));
                     anchorT.color(GCOLOR.T().NORMAL);
                     content.add(anchorT, x + 175, y);
 
-                    GText factorT = new GText(UI.FONT().S, 48);
+                    GText factorT = new GText(UI.FONT().S, FONTW_CNT);
                     factorT.set(String.format("%.1fx", factor));
                     factorT.color(factor > 10 ? GCOLOR.UI().BAD.normal : factor > 3 ? GCOLOR.UI().SOSO.normal : GCOLOR.T().NORMAL);
                     content.add(factorT, x + 240, y);
 
-                    GText covT = new GText(UI.FONT().S, 48);
+                    GText covT = new GText(UI.FONT().S, FONTW_CNT);
                     covT.set(String.format("%.2f", coverage));
                     covT.color(coverage < 0.5 ? GCOLOR.UI().BAD.normal : coverage < 1.0 ? GCOLOR.UI().SOSO.normal : GCOLOR.UI().GOOD.normal);
                     content.add(covT, x + 295, y);
 
-                    GText stockT = new GText(UI.FONT().S, 48);
+                    GText stockT = new GText(UI.FONT().S, FONTW_CNT);
                     stockT.set(CompactNumber.format((long)stock));
                     stockT.color(stock > 0 ? GCOLOR.T().NORMAL : GCOLOR.UI().BAD.normal);
                     content.add(stockT, x + 355, y);
 
-                    GText supplyT = new GText(UI.FONT().S, 48);
+                    GText supplyT = new GText(UI.FONT().S, FONTW_CNT);
                     supplyT.set(CompactNumber.format((long)supply));
                     supplyT.color(supply > 0 ? GCOLOR.T().NORMAL : GCOLOR.T().INACTIVE);
                     content.add(supplyT, x + 420, y);
 
-                    GText demandT = new GText(UI.FONT().S, 48);
+                    GText demandT = new GText(UI.FONT().S, FONTW_CNT);
                     demandT.set(CompactNumber.format((long)demand));
                     demandT.color(GCOLOR.T().NORMAL);
                     content.add(demandT, x + 485, y);
@@ -209,7 +209,7 @@ public final class WindowEconomy extends EconWindowBase {
                     else if (coverage > 3.0) { status = "UEBERSCH."; statusColor = GCOLOR.UI().GOOD.normal; }
                     else { status = "ok"; statusColor = GCOLOR.UI().GOOD.normal; }
 
-                    GText statusT = new GText(UI.FONT().S, 48);
+                    GText statusT = new GText(UI.FONT().S, FONTW_CNT);
                     statusT.set(status);
                     statusT.color(statusColor);
                     content.add(statusT, x + 550, y);
@@ -217,13 +217,13 @@ public final class WindowEconomy extends EconWindowBase {
                     y += 16;
                 }
             } else {
-                GText noData = new GText(UI.FONT().M, 128);
+                GText noData = new GText(UI.FONT().M, FONTW_KPI);
                 noData.set("Preise noch nicht initialisiert — erster Tag abwarten.");
                 noData.color(GCOLOR.T().INACTIVE);
                 content.add(noData, x, y);
                 y += 24;
 
-                GText noDataInfo = new GText(UI.FONT().S, 256);
+                GText noDataInfo = new GText(UI.FONT().S, FONTW_HDR);
                 noDataInfo.set("Dieser Tab wird ab Spieltag 2 automatisch befuellt.");
                 noDataInfo.color(GCOLOR.T().INACTIVE);
                 content.add(noDataInfo, x, y);
@@ -240,7 +240,7 @@ public final class WindowEconomy extends EconWindowBase {
         public void build(EconomySim sim, GuiSection content, int x, int y, int w, int h) {
             FirmLedger ledger = sim.firmLedger();
 
-            GText header = new GText(UI.FONT().M, 512);
+            GText header = new GText(UI.FONT().M, FONTW_BODY);
             header.set("--- Betriebsgewinn & Input/Output ---");
             header.lablify();
             content.add(header, x, y);
@@ -274,34 +274,34 @@ public final class WindowEconomy extends EconWindowBase {
                 for (int i = 0; i < maxRows; i++) {
                     FirmLedger.FirmFinancialSnapshot f = firms.get(i);
 
-                    GText key = new GText(UI.FONT().S, 128);
+                    GText key = new GText(UI.FONT().S, FONTW_KPI);
                     String keyStr = f.blueprint();
                     if (keyStr != null && keyStr.length() > 18) keyStr = keyStr.substring(0, 18);
                     key.set(keyStr);
                     key.color(GCOLOR.T().NORMAL);
                     content.add(key, x, y);
 
-                    GText emp = new GText(UI.FONT().S, 48);
+                    GText emp = new GText(UI.FONT().S, FONTW_CNT);
                     emp.set(String.valueOf(f.employees()));
                     emp.color(GCOLOR.T().NORMAL);
                     content.add(emp, x + 150, y);
 
-                    GText tgt = new GText(UI.FONT().S, 48);
+                    GText tgt = new GText(UI.FONT().S, FONTW_CNT);
                     tgt.set(String.valueOf(f.employedTarget()));
                     tgt.color(GCOLOR.T().NORMAL);
                     content.add(tgt, x + 200, y);
 
-                    GText profit = new GText(UI.FONT().S, 64);
+                    GText profit = new GText(UI.FONT().S, FONTW_LABEL);
                     profit.set(String.format("%.1f", f.profitPerDay()));
                     profit.color(f.profitPerDay() > 0 ? GCOLOR.UI().GOOD.normal : GCOLOR.UI().BAD.normal);
                     content.add(profit, x + 250, y);
 
-                    GText marginal = new GText(UI.FONT().S, 64);
+                    GText marginal = new GText(UI.FONT().S, FONTW_LABEL);
                     marginal.set(String.format("%.1f", f.marginalPerWorker()));
                     marginal.color(f.marginalPerWorker() > 0 ? GCOLOR.UI().GOOD.normal : GCOLOR.UI().BAD.normal);
                     content.add(marginal, x + 340, y);
 
-                    GText unpaid = new GText(UI.FONT().S, 48);
+                    GText unpaid = new GText(UI.FONT().S, FONTW_CNT);
                     unpaid.set(String.valueOf(f.workersUnpaid()));
                     unpaid.color(f.workersUnpaid() > 0 ? GCOLOR.UI().BAD.normal : GCOLOR.UI().GOOD.normal);
                     content.add(unpaid, x + 430, y);
@@ -309,7 +309,7 @@ public final class WindowEconomy extends EconWindowBase {
                     y += 16;
                 }
             } else {
-                GText noFirms = new GText(UI.FONT().M, 128);
+                GText noFirms = new GText(UI.FONT().M, FONTW_KPI);
                 noFirms.set("Keine Betriebe erfasst.");
                 noFirms.color(GCOLOR.T().INACTIVE);
                 content.add(noFirms, x, y);
@@ -326,7 +326,7 @@ public final class WindowEconomy extends EconWindowBase {
         public void build(EconomySim sim, GuiSection content, int x, int y, int w, int h) {
             FirmLedger ledger = sim.firmLedger();
 
-            GText header = new GText(UI.FONT().M, 256);
+            GText header = new GText(UI.FONT().M, FONTW_HDR);
             header.set("--- Arbeiterbezahlung ---");
             header.lablify();
             content.add(header, x, y);
@@ -346,7 +346,7 @@ public final class WindowEconomy extends EconWindowBase {
                 CompactNumber.format(sim.wagesPaid()) + " D", GCOLOR.T().NORMAL);
             y += 50;
 
-            GText finHeader = new GText(UI.FONT().M, 256);
+            GText finHeader = new GText(UI.FONT().M, FONTW_HDR);
             finHeader.set("--- Firmen-Einkommen ---");
             finHeader.lablify();
             content.add(finHeader, x, y);
@@ -371,7 +371,7 @@ public final class WindowEconomy extends EconWindowBase {
 
         @Override
         public void build(EconomySim sim, GuiSection content, int x, int y, int w, int h) {
-            GText header = new GText(UI.FONT().M, 512);
+            GText header = new GText(UI.FONT().M, FONTW_BODY);
             header.set("Subventionen: Der Staat zahlt pro produzierter Einheit.");
             header.color(GCOLOR.T().NORMAL);
             content.add(header, x, y);
@@ -384,17 +384,17 @@ public final class WindowEconomy extends EconWindowBase {
                 int bounty = sim.productionSubsidies().bounty(r);
                 if (bounty > 0) subsidized++;
 
-                GText name = new GText(UI.FONT().S, 128);
+                GText name = new GText(UI.FONT().S, FONTW_KPI);
                 name.set(toDisplayName(r.key));  // SK-06: lesbarer Name statt Rohkey
                 name.color(bounty > 0 ? GCOLOR.UI().GOOD.normal : GCOLOR.T().INACTIVE);
                 content.add(name, x, y);
 
-                GText bountyText = new GText(UI.FONT().S, 64);
+                GText bountyText = new GText(UI.FONT().S, FONTW_LABEL);
                 bountyText.set(CompactNumber.format(bounty) + " D/Einheit");
                 bountyText.color(bounty > 0 ? GCOLOR.UI().GOOD.normal : GCOLOR.T().INACTIVE);
                 content.add(bountyText, x + 160, y);
 
-                GText status = new GText(UI.FONT().S, 64);
+                GText status = new GText(UI.FONT().S, FONTW_LABEL);
                 status.set(bounty > 0 ? "subventioniert" : "—");
                 status.color(bounty > 0 ? GCOLOR.UI().GOOD.normal : GCOLOR.T().INACTIVE);
                 content.add(status, x + 350, y);
@@ -403,7 +403,7 @@ public final class WindowEconomy extends EconWindowBase {
             }
 
             y += 10;
-            GText summary = new GText(UI.FONT().M, 256);
+            GText summary = new GText(UI.FONT().M, FONTW_HDR);
             summary.set(subsidized + " von " + RESOURCES.ALL().size() + " Ressourcen subventioniert.");
             summary.color(subsidized > 0 ? GCOLOR.UI().GOOD.normal : GCOLOR.T().INACTIVE);
             content.add(summary, x, y);
@@ -418,7 +418,7 @@ public final class WindowEconomy extends EconWindowBase {
         @Override
         public void build(EconomySim sim, GuiSection content, int x, int y, int w, int h) {
             // === Geldfluss-Bilanz ===
-            GText flowHdr = new GText(UI.FONT().M, 256);
+            GText flowHdr = new GText(UI.FONT().M, FONTW_HDR);
             flowHdr.set("--- Geldfluss-Bilanz (letzte Saison) ---");
             flowHdr.lablify();
             content.add(flowHdr, x, y);
@@ -444,7 +444,7 @@ public final class WindowEconomy extends EconWindowBase {
             y += 50;
 
             // Detail-Aufschlüsselung
-            GText detailHdr = new GText(UI.FONT().M, 256);
+            GText detailHdr = new GText(UI.FONT().M, FONTW_HDR);
             detailHdr.set("--- Einnahmen-Detail ---");
             detailHdr.lablify();
             content.add(detailHdr, x, y);
@@ -462,7 +462,7 @@ public final class WindowEconomy extends EconWindowBase {
             addKpi(content, x + 240, y, "Dividenden", CompactNumber.format(sim.propertyDividendsPaid()) + " D", GCOLOR.T().NORMAL);
             y += 50;
 
-            GText outHdr = new GText(UI.FONT().M, 256);
+            GText outHdr = new GText(UI.FONT().M, FONTW_HDR);
             outHdr.set("--- Ausgaben-Detail ---");
             outHdr.lablify();
             content.add(outHdr, x, y);
@@ -476,7 +476,7 @@ public final class WindowEconomy extends EconWindowBase {
             y += 40;
 
             // Sanity-Check
-            GText sanityHdr = new GText(UI.FONT().M, 256);
+            GText sanityHdr = new GText(UI.FONT().M, FONTW_HDR);
             sanityHdr.set("--- Bücher stimmen? ---");
             sanityHdr.lablify();
             content.add(sanityHdr, x, y);
@@ -484,7 +484,7 @@ public final class WindowEconomy extends EconWindowBase {
 
             long circulating = sim.wallets().circulating();
             long discrepancy = treasury + circulating;
-            GText sanity = new GText(UI.FONT().M, 512);
+            GText sanity = new GText(UI.FONT().M, FONTW_BODY);
             sanity.set("Kasse + Umlauf = " + CompactNumber.format(discrepancy) + " D");
             sanity.color(Math.abs(discrepancy) < 1000 ? GCOLOR.UI().GOOD.normal : GCOLOR.UI().SOSO.normal);
             content.add(sanity, x, y);
@@ -493,7 +493,7 @@ public final class WindowEconomy extends EconWindowBase {
             // Event-Chronik
             java.util.List<EventLog.EventEntry> events = EventLog.getRecentEvents();
             if (events != null && !events.isEmpty()) {
-                GText chronHdr = new GText(UI.FONT().M, 256);
+                GText chronHdr = new GText(UI.FONT().M, FONTW_HDR);
                 chronHdr.set("--- Wirtschafts-Chronik ---");
                 chronHdr.lablify();
                 content.add(chronHdr, x, y);
@@ -502,7 +502,7 @@ public final class WindowEconomy extends EconWindowBase {
                 int shown = Math.min(events.size(), 8);
                 for (int i = events.size() - shown; i < events.size() && y < 480; i++) {
                     EventLog.EventEntry e = events.get(i);
-                    GText evt = new GText(UI.FONT().S, 512);
+                    GText evt = new GText(UI.FONT().S, FONTW_BODY);
                     evt.set("[" + e.category + "] " + e.message + " (t=" + e.timestamp + ")");
                     evt.color(GCOLOR.T().NORMAL);
                     content.add(evt, x, y);

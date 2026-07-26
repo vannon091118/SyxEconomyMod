@@ -15,6 +15,8 @@ import util.gui.misc.GBox;
 import util.gui.misc.GButt;
 import util.gui.misc.GText;
 import vannon.syx.economy.ui.EconWindowBase;
+import static vannon.syx.economy.ui.EconWindowBase.FONTW_TINY;
+import static vannon.syx.economy.ui.EconWindowBase.FONTW_LABEL;
 
 /**
  * Vanilla-konforme HUD-Buttons mit Ampel-Rahmen (farbige Balken unter
@@ -120,7 +122,7 @@ public final class EconHud {
         addLabel(section, x5, labelY, "Lager");
 
         // Version stamp below labels
-        GText versionLabel = new GText(UI.FONT().S, 32);
+        GText versionLabel = new GText(UI.FONT().S, FONTW_TINY);
         try {
             versionLabel.set(BuildStamp.FULL_ID);
         } catch (NoClassDefFoundError e) {
@@ -131,7 +133,7 @@ public final class EconHud {
     }
 
     private static void addLabel(GuiSection section, int x, int y, String text) {
-        GText lbl = new GText(UI.FONT().S, 64);
+        GText lbl = new GText(UI.FONT().S, FONTW_LABEL);
         lbl.set(text);
         lbl.color(GCOLOR.T().NORMAL);
         section.add(lbl, x, y);

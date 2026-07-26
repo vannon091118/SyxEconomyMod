@@ -175,7 +175,7 @@ public abstract class EconWindowBase {
         int tabX = 12;
         for (int i = 0; i < tabs.length; i++) {
             final int idx = i;
-            GText label = new GText(UI.FONT().S, 64);
+            GText label = new GText(UI.FONT().S, FONTW_LABEL);
             label.clear().add(tabs[i].title());
             // Minimum 120px wide — prevents truncation of labels like "Demografie", "Soziales"
             int tw = Math.max(140, label.width() + 32);
@@ -217,16 +217,42 @@ public abstract class EconWindowBase {
         return 620;
     }
 
+    // ─── Centralized UI Sizing (2026-07-26, Notiz 4) ──────────────────
+    // Every GText max-width in this project routes through these constants.
+    // Change here to resize ALL UI text at once — no more 122-line scavenger hunt.
+
+    /** Tab labels, column headers, button labels. Default: 64. */
+    public static final int FONTW_LABEL    = 64;
+    /** KPI labels and values, slider labels. Default: 128. */
+    public static final int FONTW_KPI    = 128;
+    /** Section headers, tutorial headers, chart labels. Default: 256. */
+    public static final int FONTW_HDR    = 256;
+    /** Tutorial body, event log, advice, status messages. Default: 512. */
+    public static final int FONTW_BODY   = 512;
+    /** Small counters: employees, wealth columns, trend values. Default: 48. */
+    public static final int FONTW_CNT    = 48;
+    /** Tiny labels: timeline day, version stamp. Default: 32. */
+    public static final int FONTW_TINY   = 32;
+    /** Resource names, blueprint keys. Default: 100. */
+    public static final int FONTW_NAME   = 100;
+    /** LiveSlider value. Default: 80. */
+    public static final int FONTW_SLVAL  = 80;
+    /** LiveSlider bar. Default: 120. */
+    public static final int FONTW_SLBAR  = 120;
+    /** Wage columns, medium metrics. Default: 56. */
+    public static final int FONTW_MED    = 56;
+    /** Compact labels: band averages, food stats. Default: 64. */
+
     // ─── Shared widget helpers ───────────────────────────────────────
 
     /** KPI label+value pair. Label in UI.FONT().S, value in UI.FONT().M. */
     protected static void addKpi(GuiSection section, int x, int y, String label, String value, COLOR valueColor) {
-        GText lbl = new GText(UI.FONT().S, 128);
+        GText lbl = new GText(UI.FONT().S, FONTW_KPI);
         lbl.set(label);
         lbl.color(GCOLOR.T().NORMAL);
         section.add(lbl, x, y);
 
-        GText val = new GText(UI.FONT().M, 128);
+        GText val = new GText(UI.FONT().M, FONTW_KPI);
         val.set(value);
         val.color(valueColor);
         section.add(val, x, y + 16);
@@ -235,12 +261,12 @@ public abstract class EconWindowBase {
     /** KPI with a leading vanilla icon. Icon renders at (x, y+2), label + value shift right by 28px. */
     protected static void addKpi(GuiSection section, int x, int y, SPRITE icon, String label, String value, COLOR valueColor) {
         section.add(new RENDEROBJ.Sprite(icon), x, y + 2);
-        GText lbl = new GText(UI.FONT().S, 128);
+        GText lbl = new GText(UI.FONT().S, FONTW_KPI);
         lbl.set(label);
         lbl.color(GCOLOR.T().NORMAL);
         section.add(lbl, x + 28, y);
 
-        GText val = new GText(UI.FONT().M, 128);
+        GText val = new GText(UI.FONT().M, FONTW_KPI);
         val.set(value);
         val.color(valueColor);
         section.add(val, x + 28, y + 16);
@@ -271,7 +297,7 @@ public abstract class EconWindowBase {
             this.max = max;
             this.suffix = suffix;
 
-            GText lbl = new GText(UI.FONT().S, 128);
+            GText lbl = new GText(UI.FONT().S, FONTW_KPI);
             lbl.set(label);
             lbl.color(GCOLOR.T().NORMAL);
             add(lbl, 0, 0);
@@ -280,10 +306,10 @@ public abstract class EconWindowBase {
             minus.clickActionSet(minusAction);
             add(minus, 0, 14);
 
-            bar = new GText(UI.FONT().M, 120);
+            bar = new GText(UI.FONT().M, FONTW_SLBAR);
             add(bar, 32, 16);
 
-            val = new GText(UI.FONT().M, 80);
+            val = new GText(UI.FONT().M, FONTW_SLVAL);
             add(val, 120, 16);
 
             GButt.ButtPanel plus = new GButt.ButtPanel("+", 24);
@@ -352,7 +378,7 @@ public abstract class EconWindowBase {
 
     /** Column header in UI.FONT().S for table layouts. */
     protected static void addColHeader(GuiSection section, int x, int y, String label, int w) {
-        GText hdr = new GText(UI.FONT().S, 64);
+        GText hdr = new GText(UI.FONT().S, FONTW_LABEL);
         hdr.set(label);
         hdr.color(GCOLOR.T().NORMAL);
         section.add(hdr, x, y);
