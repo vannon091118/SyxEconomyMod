@@ -137,7 +137,10 @@ public final class EconomySim {
     private final ProductionSubsidies productionSubsidies = new ProductionSubsidies();
     private final FlowMeter flowMeter = new FlowMeter();
     private final FlowPrices flowPrices = new FlowPrices();
+    private final EconTutorialController tutorial = new EconTutorialController();
     private final ScarcitySignal scarcitySignal = new ScarcitySignal();
+
+    public EconTutorialController tutorial() { return tutorial; }
     private final ISyxWarehouse warehouseAdapter;
     private final StateWarehouses stateWarehouses;
     private final ISyxAI aiAdapter;
@@ -589,6 +592,7 @@ public final class EconomySim {
     }
 
     public void update(double ds) {
+        tutorial.update(ds);
         // T8: population an EconConfig pushen, damit FlowPrices.phaseFactor() lesen kann.
         // Pushing VOR updateGuard weil Guard früh rauswirft — kein doppeltes Push noetig
         // bei Re-Entry, aber population soll trotzdem konsistent sein.

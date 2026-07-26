@@ -107,6 +107,100 @@ public final class WindowOverview extends EconWindowBase {
             status.color(!hasPop ? GCOLOR.T().INACTIVE : hasWarnings ? GCOLOR.UI().SOSO.normal : GCOLOR.UI().GOOD.normal);
             content.add(status, x, y);
 
+            // ─── DIRECT PLAYER CONTROLS (SOFORT-STEUERUNG) ───
+            y += 30;
+            GText ctrlHdr = new GText(UI.FONT().M, 256);
+            ctrlHdr.set("--- DIREKTE SOFORT-STEUERUNG ---");
+            ctrlHdr.lablify();
+            content.add(ctrlHdr, x, y);
+            y += 22;
+
+            vannon.syx.economy.core.StateWarehouses wh = sim.stateWarehouses();
+
+            // Row 1: Wages Slider & Tax Slider
+            addSlider(content, x, y, "Lagerlohn/Tag", wh::wage, 0, EconConfig.wageMax, EconConfig.wageStep,
+                new ACTION() { @Override public void exe() { wh.setWage(wh.wage() + EconConfig.wageStep); } },
+                new ACTION() { @Override public void exe() { wh.setWage(Math.max(0, wh.wage() - EconConfig.wageStep)); } });
+
+            addSlider(content, x + 380, y, "Kopfsteuer/Saison", () -> EconConfig.perHeadTax, 0, 500, 5,
+                new ACTION() { @Override public void exe() { EconConfig.perHeadTax = Math.min(500, EconConfig.perHeadTax + 5); } },
+                new ACTION() { @Override public void exe() { EconConfig.perHeadTax = Math.max(0, EconConfig.perHeadTax - 5); } });
+            y += 38;
+
+            // Row 2: Warehouse Mode buttons & Emergency Liquidation
+            GButt.ButtPanel normalMode = new GButt.ButtPanel("Handel: Normal", 120) {
+                @Override protected void render(snake2d.SPRITE_RENDERER r, float ds, boolean isActive, boolean isSelected, boolean isHovered) {
+                    selectedSet(wh.tradeMode() == vannon.syx.economy.core.StateWarehouses.TradeMode.NORMAL);
+                    super.render(r, ds, isActive, isSelected, isHovered);
+                }
+            };
+            normalMode.clickActionSet(() -> wh.setTradeMode(vannon.syx.economy.core.StateWarehouses.TradeMode.NORMAL));
+            content.add(normalMode, x, y);
+
+            GButt.ButtPanel buyMode = new GButt.ButtPanel("Nur Kaufen", 100) {
+                @Override protected void render(snake2d.SPRITE_RENDERER r, float ds, boolean isActive, boolean isSelected, boolean isHovered) {
+                    selectedSet(wh.tradeMode() == vannon.syx.economy.core.StateWarehouses.TradeMode.BUY_ONLY);
+                    super.render(r, ds, isActive, isSelected, isHovered);
+                }
+            };
+            buyMode.clickActionSet(() -> wh.setTradeMode(vannon.syx.economy.core.StateWarehouses.TradeMode.BUY_ONLY));
+            content.add(buyMode, x + 125, y);
+
+            GButt.ButtPanel sellMode = new GButt.ButtPanel("Nur Verkaufen", 100) {
+                @Override protected void render(snake2d.SPRITE_RENDERER r, float ds, boolean isActive, boolean isSelected, boolean isHovered) {
+                    selectedSet(wh.tradeMode() == vannon.syx.economy.core.StateWarehouses.TradeMode.SELL_ONLY);
+                    super.render(r, ds, isActive, isSelected, isHovered);
+                }
+            };
+            sellMode.clickActionSet(() -> wh.setTradeMode(vannon.syx.economy.core.StateWarehouses.TradeMode.SELL_ONLY));
+            content.add(sellMode, x + 230, y);
+
+            GButt.ButtPanel liquidateBtn = new GButt.ButtPanel("Not-Liquidation", 120) {
+                @Override protected void render(snake2d.SPRITE_RENDERER r, float ds, boolean isActive, boolean isSelected, boolean isHovered) {
+                    selectedSet(wh.allLiquidating());
+                    super.render(r, ds, isActive, isSelected, isHovered);
+                }
+            };
+            liquidateBtn.clickActionSet(() -> wh.setAllLiquidating(!wh.allLiquidating()));
+            content.add(liquidateBtn, x + 380, y);
+            y += 32;
+
+            // ─── INTERAKTIVES TUTORIAL POPUP (ONBOARDING) ───
+            vannon.syx.economy.core.EconTutorialController tut = sim.tutorial();
+            if (tut.isActive() && tut.currentStage() != vannon.syx.economy.core.EconTutorialController.Stage.NONE && tut.currentStage() != vannon.syx.economy.core.EconTutorialController.Stage.COMPLETED) {
+                GText tutHdr = new GText(UI.FONT().M, 256);
+                tutHdr.set(">>> ANLEITUNG / ONBOARDING <<<");
+                tutHdr.color(GCOLOR.UI().GOOD.normal);
+                content.add(tutHdr, x, y);
+                y += 18;
+
+                GText tutMsg = new GText(UI.FONT().S, 512);
+                switch (tut.currentStage()) {
+                    case WELCOME_WAGES:
+                        tutMsg.set("SCHRITT 1/4: Passe oben den 'Lagerlohn/Tag' an. Höhere Löhne ziehen Arbeiter an.");
+                        break;
+                    case WAREHOUSE_MODE:
+                        tutMsg.set("SCHRITT 2/4: Wähle den Handelsmodus deiner Staatslager (Normal, Kaufen, Verkaufen).");
+                        break;
+                    case TAXES_FISCAL:
+                        tutMsg.set("SCHRITT 3/4: Reguliere die Kopfsteuer, um die Staatskasse im Plus zu halten.");
+                        break;
+                    case EMERGENCY_ACTIONS:
+                        tutMsg.set("SCHRITT 4/4: Nutze bei Geldnot die 'Not-Liquidation' für sofortiges Bargeld.");
+                        break;
+                    default:
+                        tutMsg.set("Lerne die Steuerelemente kennen.");
+                        break;
+                }
+                tutMsg.color(GCOLOR.T().NORMAL);
+                content.add(tutMsg, x, y);
+
+                GButt.ButtPanel nextTut = new GButt.ButtPanel("Weiter", 60);
+                nextTut.clickActionSet(tut::dismissCurrent);
+                content.add(nextTut, x + 500, y - 2);
+                y += 20;
+            }
+
             // History chart — colored bars for treasury timeline
             y += 26;
             if (ind.count() > 0) {

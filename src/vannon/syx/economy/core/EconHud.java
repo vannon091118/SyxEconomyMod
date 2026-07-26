@@ -72,16 +72,37 @@ public final class EconHud {
         qvBtn.hoverInfoSet("Quickview (Numpad 0)");
         qvBtn.setDim(BTN_DIM, 36);
 
+        GButt.ButtPanel liqBtn = new GButt.ButtPanel(SPRITES.icons().s.cancel);
+        liqBtn.clickActionSet(new ACTION() { @Override public void exe() { sim.stateWarehouses().setAllLiquidating(!sim.stateWarehouses().allLiquidating()); } });
+        liqBtn.hoverInfoSet("Not-Liquidation Umschalten");
+        liqBtn.setDim(BTN_DIM, 36);
+
+        GButt.ButtPanel whModeBtn = new GButt.ButtPanel(SPRITES.icons().s.trade);
+        whModeBtn.clickActionSet(new ACTION() {
+            @Override public void exe() {
+                StateWarehouses.TradeMode m = sim.stateWarehouses().tradeMode();
+                if (m == StateWarehouses.TradeMode.NORMAL) sim.stateWarehouses().setTradeMode(StateWarehouses.TradeMode.BUY_ONLY);
+                else if (m == StateWarehouses.TradeMode.BUY_ONLY) sim.stateWarehouses().setTradeMode(StateWarehouses.TradeMode.SELL_ONLY);
+                else sim.stateWarehouses().setTradeMode(StateWarehouses.TradeMode.NORMAL);
+            }
+        });
+        whModeBtn.hoverInfoSet("Staatslager-Modus Durchschalten (Normal/Kaufen/Verkaufen)");
+        whModeBtn.setDim(BTN_DIM, 36);
+
         // ── Layout: button, ampel-bar, label ──
         int x0 = 0;
         int x1 = BTN_DIM + X_GAP;
         int x2 = 2 * (BTN_DIM + X_GAP);
         int x3 = 3 * (BTN_DIM + X_GAP);
+        int x4 = 4 * (BTN_DIM + X_GAP);
+        int x5 = 5 * (BTN_DIM + X_GAP);
 
         section.add(ovBtn, x0, 0);
         section.add(ecBtn, x1, 0);
         section.add(stBtn, x2, 0);
         section.add(qvBtn, x3, 0);
+        section.add(liqBtn, x4, 0);
+        section.add(whModeBtn, x5, 0);
 
         // Ampel bars directly under buttons (y = BTN_DIM = 36)
         section.add(barFinanzen,   x0, BTN_DIM);
@@ -95,6 +116,8 @@ public final class EconHud {
         addLabel(section, x1, labelY, "Wirt.");
         addLabel(section, x2, labelY, "Staat");
         addLabel(section, x3, labelY, "Quick");
+        addLabel(section, x4, labelY, "Not-Liq");
+        addLabel(section, x5, labelY, "Lager");
 
         // Version stamp below labels
         GText versionLabel = new GText(UI.FONT().S, 32);
