@@ -14,7 +14,10 @@ import vannon.syx.economy.core.EconConfig;
 import vannon.syx.economy.core.EconIndicators;
 import vannon.syx.economy.core.EconProgression;
 import vannon.syx.economy.core.EconSnapshot;
+import vannon.syx.economy.core.EconTutorialController;
+import vannon.syx.economy.core.EconTutorialController.Stage;
 import vannon.syx.economy.core.EconomySim;
+import vannon.syx.economy.core.StateWarehouses;
 import vannon.syx.economy.core.WealthStats;
 
 /**
@@ -115,7 +118,7 @@ public final class WindowOverview extends EconWindowBase {
             content.add(ctrlHdr, x, y);
             y += 22;
 
-            vannon.syx.economy.core.StateWarehouses wh = sim.stateWarehouses();
+            StateWarehouses wh = sim.stateWarehouses();
 
             // Row 1: Wages Slider & Tax Slider
             addSlider(content, x, y, "Lagerlohn/Tag", wh::wage, 0, EconConfig.wageMax, EconConfig.wageStep,
@@ -130,29 +133,29 @@ public final class WindowOverview extends EconWindowBase {
             // Row 2: Warehouse Mode buttons & Emergency Liquidation
             GButt.ButtPanel normalMode = new GButt.ButtPanel("Handel: Normal", 120) {
                 @Override protected void render(snake2d.SPRITE_RENDERER r, float ds, boolean isActive, boolean isSelected, boolean isHovered) {
-                    selectedSet(wh.tradeMode() == vannon.syx.economy.core.StateWarehouses.TradeMode.NORMAL);
+                    selectedSet(wh.tradeMode() == StateWarehouses.TradeMode.NORMAL);
                     super.render(r, ds, isActive, isSelected, isHovered);
                 }
             };
-            normalMode.clickActionSet(() -> wh.setTradeMode(vannon.syx.economy.core.StateWarehouses.TradeMode.NORMAL));
+            normalMode.clickActionSet(() -> wh.setTradeMode(StateWarehouses.TradeMode.NORMAL));
             content.add(normalMode, x, y);
 
             GButt.ButtPanel buyMode = new GButt.ButtPanel("Nur Kaufen", 100) {
                 @Override protected void render(snake2d.SPRITE_RENDERER r, float ds, boolean isActive, boolean isSelected, boolean isHovered) {
-                    selectedSet(wh.tradeMode() == vannon.syx.economy.core.StateWarehouses.TradeMode.BUY_ONLY);
+                    selectedSet(wh.tradeMode() == StateWarehouses.TradeMode.BUY_ONLY);
                     super.render(r, ds, isActive, isSelected, isHovered);
                 }
             };
-            buyMode.clickActionSet(() -> wh.setTradeMode(vannon.syx.economy.core.StateWarehouses.TradeMode.BUY_ONLY));
+            buyMode.clickActionSet(() -> wh.setTradeMode(StateWarehouses.TradeMode.BUY_ONLY));
             content.add(buyMode, x + 125, y);
 
             GButt.ButtPanel sellMode = new GButt.ButtPanel("Nur Verkaufen", 100) {
                 @Override protected void render(snake2d.SPRITE_RENDERER r, float ds, boolean isActive, boolean isSelected, boolean isHovered) {
-                    selectedSet(wh.tradeMode() == vannon.syx.economy.core.StateWarehouses.TradeMode.SELL_ONLY);
+                    selectedSet(wh.tradeMode() == StateWarehouses.TradeMode.SELL_ONLY);
                     super.render(r, ds, isActive, isSelected, isHovered);
                 }
             };
-            sellMode.clickActionSet(() -> wh.setTradeMode(vannon.syx.economy.core.StateWarehouses.TradeMode.SELL_ONLY));
+            sellMode.clickActionSet(() -> wh.setTradeMode(StateWarehouses.TradeMode.SELL_ONLY));
             content.add(sellMode, x + 230, y);
 
             GButt.ButtPanel liquidateBtn = new GButt.ButtPanel("Not-Liquidation", 120) {
@@ -166,8 +169,8 @@ public final class WindowOverview extends EconWindowBase {
             y += 32;
 
             // ─── INTERAKTIVES TUTORIAL POPUP (ONBOARDING) ───
-            vannon.syx.economy.core.EconTutorialController tut = sim.tutorial();
-            if (tut.isActive() && tut.currentStage() != vannon.syx.economy.core.EconTutorialController.Stage.NONE && tut.currentStage() != vannon.syx.economy.core.EconTutorialController.Stage.COMPLETED) {
+            EconTutorialController tut = sim.tutorial();
+            if (tut.isActive() && tut.currentStage() != Stage.NONE && tut.currentStage() != Stage.COMPLETED) {
                 GText tutHdr = new GText(UI.FONT().M, 256);
                 tutHdr.set(">>> ANLEITUNG / ONBOARDING <<<");
                 tutHdr.color(GCOLOR.UI().GOOD.normal);
