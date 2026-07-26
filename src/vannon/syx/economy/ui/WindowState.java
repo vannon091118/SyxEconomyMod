@@ -23,7 +23,8 @@ public final class WindowState extends EconWindowBase {
         new FiscalTab(),
         new PublicWorksTab(),
         new SocialTab(),
-        new FaithTab()
+        new FaithTab(),
+        new DebugTab()
     };
 
     public WindowState(EconomySim sim) {
@@ -32,9 +33,6 @@ public final class WindowState extends EconWindowBase {
 
     @Override protected CharSequence title() { return "Staat"; }
     @Override protected TabContent[] tabs() {
-        if (EconConfig.debugLoggingEnabled) {
-            return new TabContent[]{new WarehousesTab(), new FiscalTab(), new PublicWorksTab(), new SocialTab(), new DebugTab()};
-        }
         return TABS;
     }
 

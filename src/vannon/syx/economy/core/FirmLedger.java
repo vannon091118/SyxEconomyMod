@@ -57,7 +57,7 @@ public final class FirmLedger {
      * </ul>
      */
     private final HashMap<Long, FirmState> firms = new HashMap<>();
-    private static final int SAVE_VERSION_FIRMS = 1;
+    private static final int SAVE_VERSION_FIRMS = 2;  // v2: +HillState persistence (D-003)
     private final Map<String, BlueprintState> blueprints = new HashMap<String, BlueprintState>();
     private final Map<String, Double> serviceRevenue = new HashMap<String, Double>();
     private final Map<String, Double> stateWageMarginal = new HashMap<String, Double>();
@@ -374,6 +374,12 @@ public final class FirmLedger {
             double excessProfit = state.profit - EconConfig.guildSurplusMinProfitPerWorker * (double) workerCount;
             if (excessProfit > 0.0) {
                 state.incomeCarry += excessProfit * elapsedDays * Math.max(0.0, EconConfig.guildSurplusShare);
+                // D-005: Clamp incomeCarry auf guildSurplusMinProfitPerWorker × workerCount.
+                // Ohne Deckelung akkumuliert Überschuss unbegrenzt → Gini 0.62→0.95 in 60 Tagen.
+                // Pro-Arbeiter-Cap skaliert mit Firmengröße: 1-Arbeiter-Firma max 10 D,
+                // 50-Arbeiter-Firma max 500 D — verhindert Konzentration ohne Normalbetrieb zu bremsen.
+                double maxCarry = EconConfig.guildSurplusMinProfitPerWorker * (double)workerCount;
+                state.incomeCarry = Math.min(state.incomeCarry, maxCarry);
             }
             int n = due = state.incomeCarry >= 2.147483647E9 ? Integer.MAX_VALUE : (int)Math.floor(state.incomeCarry);
             if (due <= 0) continue;
@@ -732,9 +738,11 @@ public final class FirmLedger {
     // —— save / load (Phase 4.7/T-008) ——————————————————————————————
 
     /**
-     * Phase 4.7/T-008: Persistiert die Firm-Hot-State. {@code HillState} wird in
-     * v0.1.x nicht serialisiert (Re-Cold-Start-Pfad nach Load ist noch durch den
-     * Phase-5e-Fix abgesichert — Firmen überleben einige Ticks ohne Hill).
+     * Phase 4.7/T-008: Persistiert die Firm-Hot-State.
+     * D-003 (v0.13.46): {@code HillState} wird seit SAVE_VERSION=2 serialisiert.
+     * Vorher (v1): Re-Cold-Start nach Load — Firmen mit profit=0 und hill=null
+     * wurden permanent idle (Catch-22). Alte v1-Saves werden backward-compatibel
+     * geladen (hill bleibt null, Cold-Start-Grace greift einmalig).
      *
      * <p>Save-Format (pro Firm, key=long):</p>
      * <ol>
@@ -744,8 +752,12 @@ public final class FirmLedger {
      *   <li>{@code d}: profit (last computed)</li>
      *   <li>{@code d}: marginal (last computed, slope-clamp'd)</li>
      *   <li>{@code d}: cashRate (last computed)</li>
-     *   <li>{@code d}: totalOutputValue</li>
-     *   <li>{@code d}: totalInputValue</li>
+     *   <li>{@code d}: totalOutputValue (since v1)</li>
+     *   <li>{@code d}: totalInputValue (since v1)</li>
+     *   <li>{@code i}: hill.bestTarget (since v2, 0 if hill==null)</li>
+     *   <li>{@code d}: hill.bestProfit (since v2)</li>
+     *   <li>{@code i}: hill.direction (since v2)</li>
+     *   <li>{@code b}: hill.initialized (since v2, false if hill==null)</li>
      * </ol>
      */
     public void save(FilePutter file) {
@@ -763,6 +775,13 @@ public final class FirmLedger {
             file.d(s.cashRate);
             file.d(s.totalOutputValue);
             file.d(s.totalInputValue);
+            // D-003 (v2): persist HillState — null-safe via sentinel values
+            FirmEconomyKernel.HillState h = s.hill;
+            boolean hasHill = h != null && h.initialized();
+            file.i(hasHill ? h.bestTarget() : 0);
+            file.d(hasHill ? h.bestProfit() : 0.0);
+            file.i(hasHill ? h.direction() : 0);
+            file.bool(hasHill);
         }
     }
 
@@ -770,6 +789,10 @@ public final class FirmLedger {
      * Phase 4.7/T-008: Lädt die Firm-Hot-State. Überspringt Einträge deren
      * Tile keinen Room mehr hat (Demolished between saves → karteileiche
      * Überreste).
+     *
+     * <p>D-003 (v0.13.46): HillState wird ab SAVE_VERSION=2 geladen.
+     * v1-Saves (ohne HillState) laden backward-compatibel — hill bleibt null,
+     * der Cold-Start-Grace-Pfad in update() greift beim nächsten Tick.</p>
      */
     public void load(FileGetter file) throws IOException {
         this.firms.clear();
@@ -788,7 +811,17 @@ public final class FirmLedger {
                 s.totalOutputValue = file.d();
                 s.totalInputValue = file.d();
             }
-            // Note: hill-state nicht in v0.1.x persistiert — siehe save()-Doc.
+            // D-003 (v2): HillState restore — backward-compat: v1 saves skip this block
+            if (version >= 2) {
+                int hTarget = file.i();
+                double hProfit = file.d();
+                int hDirection = file.i();
+                boolean hInit = file.bool();
+                if (hInit) {
+                    s.hill = new FirmEconomyKernel.HillState(hTarget, hProfit, hDirection, true);
+                }
+                // else: hill bleibt null — Cold-Start-Grace greift im nächsten update()
+            }
             // Defensive: Skip wenn room an dieser Tile-Coord nicht (mehr) existiert.
             if (SETT.ROOMS() == null || FirmLedger.roomFor(key) != null) {
                 this.firms.put(key, s);

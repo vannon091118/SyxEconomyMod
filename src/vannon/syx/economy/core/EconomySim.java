@@ -877,6 +877,19 @@ public final class EconomySim {
         }
         this.flowPrices.refresh(anchors, this.flowMeter.snapshot(), new FlowPrices.Parameters(targets, EconConfig.flowLookaheadDays, EconConfig.scarcityElasticityUp, EconConfig.scarcityElasticityDown, EconConfig.priceClampLo, EconConfig.priceClampHi, EconConfig.priceAbsoluteMax), this.scarcitySignal.snapshot());
         
+        // D-001: Food-Price-Hard-Cap. FlowPrices kennt keine Ressourcentypen,
+        // daher Post-Processing-Clamp für essbare Ressourcen via package-private
+        // enforceCap(). Greift nach scarcityMultiplier + scarcityPriceBoost.
+        // Verhindert dass BREAD bei Knappheit auf 6248 (80× Anker) steigt.
+        if (EconConfig.foodPriceAbsoluteMax > 0.0) {
+            for (int i = 0; i < goods; ++i) {
+                RESOURCE res = (RESOURCE)RESOURCES.ALL().get(i);
+                if (RESOURCES.EDI().is(res)) {
+                    this.flowPrices.enforceCap(i, EconConfig.foodPriceAbsoluteMax);
+                }
+            }
+        }
+        
         if (EconConfig.debugLoggingEnabled) {
             FlowMeter.Snapshot meter = this.flowMeter.snapshot();
             for (int i = 0; i < goods; ++i) {
@@ -1590,9 +1603,10 @@ public final class EconomySim {
             if (this.wallets.get(h) >= walletDamage) {
                 this.wallets.charge(h, walletDamage);
             }
-            // Emigration: 0.0001/Tick bei ~300 Ticks/Tag = 3%/Tag pro kritischem Buerger.
+            // D-002: Emigration 0.0001→0.00003 (1%/Tag statt 3%/Tag pro kritischem Bürger).
+            // Diagnose: 9/Tag bei median_wealth=0 — 3× zu aggressiv.
             try {
-                if (hunger >= 90 && RND.rFloat() < 0.0001) {
+                if (hunger >= 90 && RND.rFloat() < 0.00003) {
                     this.emigrationRisk.incrementAndGet();
                 } else {
                     hungerDeaths++;

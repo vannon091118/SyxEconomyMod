@@ -82,6 +82,16 @@ public final class FlowPrices {
         this.ready = false;
     }
 
+    /** D-001: Package-private post-processing cap für einzelne Ressourcen.
+     *  Wird von EconomySim.refreshFlowPrices() für essbare Ressourcen aufgerufen,
+     *  unmittelbar nach refresh() — ready ist zu diesem Zeitpunkt garantiert true.
+     *  Kein public API — nur EconomySim (gleiches Package) darf Preise kappen. */
+    void enforceCap(int good, double max) {
+        if (max > 0.0 && good >= 0 && good < this.price.length && this.price[good] > max) {
+            this.price[good] = max;
+        }
+    }
+
     public static double targetStock(double demandPerDay, double targetCoverageDays) {
         if (!(demandPerDay > 0.0) || !(targetCoverageDays > 0.0)) {
             return 0.0;
@@ -89,13 +99,20 @@ public final class FlowPrices {
         return demandPerDay * targetCoverageDays;
     }
 
+    /** D-004: stock nur in Coverage zählen wenn tatsächlich Produktions-Zufluss existiert.
+     *  Ohne diesen Guard signalisiert ein volles Lager (stock=414) bei supplyPerDay=0
+     *  fälschlich Überfluss (coverage=8.7) → Preis kollabiert auf 0.05× Anker → Firmen
+     *  finden kein Holz obwohl Lager voll ist (broken link: Lager-Tracking ≠ Firmen-Input).
+     *  Mit Fix: supplyPerDay≤0 → effectiveStock=0 → coverage fällt → Preis steigt →
+     *  Scarcity-Signal korrekt. */
     public static double effectiveCoverage(double stock, double supplyPerDay, double demandPerDay, double targetCoverageDays, double flowLookaheadDays) {
         double target = FlowPrices.targetStock(demandPerDay, targetCoverageDays);
         if (!(target > 0.0) || !Double.isFinite(target)) {
             return 1.0;
         }
         double beta = Math.max(0.0, flowLookaheadDays);
-        double projected = Math.max(0.0, stock) + beta * (supplyPerDay - demandPerDay);
+        double effectiveStock = supplyPerDay > 0.0 ? Math.max(0.0, stock) : 0.0;
+        double projected = effectiveStock + beta * (supplyPerDay - demandPerDay);
         if (!Double.isFinite(projected)) {
             projected = projected > 0.0 ? Double.MAX_VALUE : 0.0;
         }

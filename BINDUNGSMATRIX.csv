@@ -254,79 +254,79 @@ N98;Threading;-;<engine>;Single-threaded;static;ja;nein;[~];Keine Race-Condition
 N99;BypassGate Mod-Kompatibilitaet;-;BypassGate;Read-before-Write + Conflict-Log;instance;ja;ja;[~];Partial-Loesbar via DebugTracer;??
 N100;BypassGate.isAvailable Fallback;boolean;BypassGate;isAvailable();instance;ja;ja;[x];initOk=false + runtimeFailed=true;++
 N100;runtimeFailed runtimeFailed;boolean;<adapter>;runtimeFailed;instance;ja;ja;[x];Granular per Adapter;??
-X.LocalPrices.price(RESOURCE);double;LocalPrices;price(RESOURCE);static;ja;ja;[x];Entry-Point pro Resource;;++
-X.LocalPrices.foodBasketPrice;int;LocalPrices;foodBasketPrice(tick);static;ja;ja;[x];Cached;;++
-X.LocalPrices.drinkBasketPrice;int;LocalPrices;drinkBasketPrice(tick);static;ja;ja;[x];Cached;;++
-X.LocalPrices.mealPrice;int;LocalPrices;mealPrice(population, tick);static;ja;ja;[x];Mod-internal;;++
-X.Wallets.touch(tick);void;Wallets;touch(tick);static;ja;nein;[~];Wallet-Tod-Trigger;;??
-X.Wallets.circulating();long;Wallets;circulating();static;ja;ja;[x];Sum Mainframe;;??
-X.Wallets.moneyOf(indu);int;Wallets;moneyOf(indu);static;ja;ja;[x];per Citizen;;??
-X.WealthStats.gini();double;WealthStats;gini();instance;ja;ja;[x];Verteilungs-Indikator;;++
-X.WealthStats.update();void;WealthStats;update();instance;ja;ja;[x];Bucket-Recompute;;??
-X.EconSnapshot.setSample(snap);void;EconSnapshot;setSample(snap);instance;ja;ja;[x];Trigger pro Tick;;++
-X.EconSnapshot.totalMoney;long;EconSnapshot;totalMoney;instance;ja;ja;[x];Aggregate;;??
-X.EconIndicators.isInequalityRising;boolean;EconIndicators;isInequalityRising();instance;ja;ja;[x];Advisor-Trigger;;++
-X.EconProgression.advanceStage(stage);void;EconProgression;advanceStage(stage);instance;ja;ja;[x];Stage-Transition;;??
-X.LaborMarket.profitPriority;double;LaborMarket;profitPriority;static;ja;ja;[~];Mod-internal;;++
-X.LaborMarket.setScarcitySignal;void;LaborMarket;setScarcitySignal(double);instance;ja;ja;[~];FlowMeter-Trigger;;??
-X.FirmLedger.meanPositiveMarginal();double;FirmLedger;meanPositiveMarginal();instance;ja;ja;[x];Mittel Lohn-Hebel;;++
-X.FirmLedger.distributeFirmRevenue;void;FirmLedger;distributeFirmRevenue();instance;ja;ja;[x];Surplus-Share;;??
-X.Fiscal.settlePurchase(...):99;void;Fiscal;settlePurchase(buyer, resources, gross, kind, seller, roster, wallets, ledger, warehouses);instance;ja;nein;[x];KEY entry-point;;++
-X.StateWarehouses.payWages();void;StateWarehouses;payWages();instance;ja;nein;[~];Loehn-Auszahlung an Worker;;??
-X.ConstructionHoardController.tick();void;ConstructionHoardController;tick();instance;ja;nein;[x];Bau-Tresor;;??
-X.AuditKernel.audit();void;AuditKernel;audit();instance;ja;ja;[x];Konsistenz-Check;;??
-X.AffordabilityGate.Kind;Enum;AffordabilityGate;Kind;enum;ja;ja;[x];Settlement-Gate;;++
-X.ChartPanel.update(snapshot);void;ChartPanel;update(snapshot);instance;ja;ja;[x];UI-Bind;;??
-X.CompactNumber.format(value);String;CompactNumber;format(value);static;ja;ja;[x];UI-Format;;??
-X.DebtDiplomacyBuffer.deduct(amount);void;DebtDiplomacyBuffer;deduct(amount);instance;ja;nein;[x];Diplomatische Schulden;;??
-X.CrisisDispatch.dispatch(crisisType);void;CrisisDispatch;dispatch(crisisType);instance;ja;ja;[x];Crisis-Engine;;??
-X.IdentityMapRegistry.register(saveable);void;IdentityMapRegistry;register(saveable);static;ja;ja;[~];10 Saveables;;??
-X.Liturgy.publish(market);void;Liturgy;publish(market);instance;ja;ja;[x];Religion Market;;??
-X.PolityPriceAnchor.priceOf(RES);int;PolityPriceAnchor;priceOf(RESOURCE);static;ja;ja;[x];Preis-Quelle;;++
-X.ForeignTradeLedger.importRate(res);double;ForeignTradeLedger;importRate(res);instance;ja;ja;[~];Import-Volumen;;??
-X.TransportMarket.distanceFee(dist);double;TransportMarket;distanceFee(dist);instance;ja;ja;[x];Distanz-Tarif;;??
-X.OddjobMarket.tick();void;OddjobMarket;tick();instance;ja;ja;[x];Sonder-Job-Vergabe;;??
-X.StateWageMarket.update();void;StateWageMarket;update();instance;ja;ja;[x];Regulierung;;??
-X.FlowMeter.sample(res);double;FlowMeter;sample(res);instance;ja;ja;[x];Per-Resource-Signal;;??
-X.DebtBondage.tick();void;DebtBondage;tick();instance;ja;ja;[x];Schuldknechtschaft;;??
-X.CorveeController.tick();void;CorveeController;tick();instance;ja;ja;[x];Frondienst;;??
-X.HealthPressure.register(p,h);void;HealthPressure;register(perCapita, h);static;ja;ja;[x];Happiness-Hook;;++
-X.WealthHappiness.register(wealth, h);void;WealthHappiness;register(wealth, h);static;ja;ja;[x];Happiness-Hook;;++
-X.PropertyHappiness.register(prop, h);void;PropertyHappiness;register(prop, h);static;ja;ja;[x];Happiness-Hook;;++
-X.PovertyPressure.register(wealth, h);void;PovertyPressure;register(wealth, happiness);static;ja;ja;[x];Happiness-Hook;;++
-X.GiniConsequences.update(gini, loyalty);void;GiniConsequences;update(gini, loyalty);instance;ja;ja;[x];LOYALTY-Update;;++
-X.MeticImmigration.register();void;MeticImmigration;register();static;ja;ja;[x];CIVIC_IMMIGRATION-Hook;;++
-X.EconHud.update();void;EconHud;update();instance;ja;ja;[x];Top-HUD;;??
-X.WindowState.DebugTab;UI-Tab;WindowState;DebugTab;instance;ja;ja;[x];5 Buttons;;??
-X.DiagnosticExporter.makroExport();void;DiagnosticExporter;makroExport();static;ja;ja;[x];CSV-Output;;??
-X.ChartPanel.show(snap);void;ChartPanel;show(snap);instance;ja;ja;[x];History-Diagram;;??
-X.BuildStamp.timestamp();String;BuildStamp;timestamp();static;ja;ja;[x];Identity;;??
-X.InstanceScript.WindowEconomy;UI;InstanceScript;WindowEconomy;instance;ja;ja;[x];Hotkey;;??
-X.JsonExport.firmaRevenueDist();void;DiagnosticExporter;firmaRevenueDistribution();static;ja;ja;[x];Audit-Output;;??
-X.EconProgression.allocate(income, cost);void;EconProgression;allocate(income, cost);instance;ja;ja;[x];Treasury-Update;;??
-X.ForeignTradeLedger.importExportWindow();void;ForeignTradeLedger;importExportWindow();instance;ja;ja;[~];Trade-Reporting;;??
-Y.FACTOR.HumanoidStats.LOOT;Double;FACTOR.HumanoidStats;LOOT;static;nein;nein;[-];Engine-Int;;??
-Y.FACTOR.HUMANOID.blood;Double;FACTOR.HUMANOID;blood;static;nein;nein;[-];Engine-Int;;??
-Y.FACTOR.HUMANOID.fat;Double;FACTOR.HUMANOID;fat;static;nein;nein;[-];Engine-Int;;??
-Y.F.SetText.SentenceCase;Util;F.SetText;SentenceCase;static;nein;nein;[-];Engine-Util;;??
-Y.RECIPES.player.rateTotal();double;RECIPES.player;rateTotal();static;ja;nein;[x];Mod-C-EngineBridge via PSeller;;++
-Y.SETT.ROOMS().industries;List;SETT.ROOMS();industries;instance;ja;nein;[x];Mod liest Industry.all;;++
-Y.SETT.ROOMS().STOCKPILE;RoomInstance;SETT.ROOMS();STOCKPILE;instance;ja;ja;[x];Mod-Storage-Bridge;;++
-Y.SETT.ROOMS().MARKET;RoomInstance;SETT.ROOMS();MARKET;instance;ja;ja;[x];Mod-Market-Bridge;;++
-Y.FACTIONS.player();Faction;FACTIONS;player();static;ja;ja;[x];Engine-Entry;;++
-Y.FACTIONS.PRICE().get(res);double;FACTIONS.PRICE;get(res);static;ja;ja;[x];Mod-PolityFallback;;++
-Y.HUMANOID.i.d.humanoids;List;Humanoid;humanoids;instance;ja;ja;[x];Mod-Loop-Aggregat;;++
-Y.STATS.FOOD().DRINK;STAT;STATS.FOOD();DRINK;instance;ja;ja;[x];Mod Source;;++
-Y.STATS.FOOD().FOOD;STAT;STATS.FOOD();FOOD;instance;ja;ja;[x];Mod Source;;++
-Y.STATS.LAW();StatsLaw;STATS;LAW();instance;ja;ja;[x];Mod-Potential, Mod ignoriert;;??
-Y.BOOSTING.available();String;BOOSTING;available();static;ja;ja;[x];Mod dump in WindowState.DebugTab;;++
-Y.BOOSTING.push(category, key, val);void;BOOSTING;push(category, key, val);static;ja;ja;[x];Mod via BoosterValue;;++
-Y.BOOSTABLES.CIVICS;boostable;BOOSTABLES;CIVICS;static;ja;ja;[x];Inner-Class;;++
-Y.BOOSTABLES.RATES;boostable;BOOSTABLES;RATES;static;ja;ja;[x];Inner-Class;;++
-Y.BOOSTABLES.RESOURCE_BOOSTABLES;boostable;BOOSTABLES;RESOURCE_BOOSTABLES;static;ja;ja;[x];Mod-NICHT via;;++
-Y.BOOSTABLES.Behaviour;boostable;BOOSTABLES;Behaviour;static;ja;ja;[x];Inner-Class;;++
-Y.BOOSTABLES.Physics;boostable;BOOSTABLES;Physics;static;ja;ja;[x];Inner-Class;;++
-Y.BOOSTABLES.Noble;boostable;BOOSTABLES;Noble;static;ja;ja;[x];Inner-Class;;++
-Y.Boostable.get(faction);double;Boostable;get(faction);instance;ja;ja;[x];Mod-Lesen;;++
-Y.Boostable.value.map;Map;Boostable;value;instance;ja;ja;[x];Mod-Lesen;;++
-Y.BoosterValue.add(d);void;BoosterValue;add(double);instance;ja;ja;[x];Mod-3-Schreiber;;++
+X.LocalPrices.price(RESOURCE);double;LocalPrices;price(RESOURCE);static;ja;ja;[x];Entry-Point pro Resource;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;++
+X.LocalPrices.foodBasketPrice;int;LocalPrices;foodBasketPrice(tick);static;ja;ja;[x];Cached;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;++
+X.LocalPrices.drinkBasketPrice;int;LocalPrices;drinkBasketPrice(tick);static;ja;ja;[x];Cached;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;++
+X.LocalPrices.mealPrice;int;LocalPrices;mealPrice(population, tick);static;ja;ja;[x];Mod-internal;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;++
+X.Wallets.touch(tick);void;Wallets;touch(tick);static;ja;nein;[~];Wallet-Tod-Trigger;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;??
+X.Wallets.circulating();long;Wallets;circulating();static;ja;ja;[x];Sum Mainframe;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;??
+X.Wallets.moneyOf(indu);int;Wallets;moneyOf(indu);static;ja;ja;[x];per Citizen;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;??
+X.WealthStats.gini();double;WealthStats;gini();instance;ja;ja;[x];Verteilungs-Indikator;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;++
+X.WealthStats.update();void;WealthStats;update();instance;ja;ja;[x];Bucket-Recompute;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;??
+X.EconSnapshot.setSample(snap);void;EconSnapshot;setSample(snap);instance;ja;ja;[x];Trigger pro Tick;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;++
+X.EconSnapshot.totalMoney;long;EconSnapshot;totalMoney;instance;ja;ja;[x];Aggregate;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;??
+X.EconIndicators.isInequalityRising;boolean;EconIndicators;isInequalityRising();instance;ja;ja;[x];Advisor-Trigger;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;++
+X.EconProgression.advanceStage(stage);void;EconProgression;advanceStage(stage);instance;ja;ja;[x];Stage-Transition;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;??
+X.LaborMarket.profitPriority;double;LaborMarket;profitPriority;static;ja;ja;[~];Mod-internal;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;++
+X.LaborMarket.setScarcitySignal;void;LaborMarket;setScarcitySignal(double);instance;ja;ja;[~];FlowMeter-Trigger;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;??
+X.FirmLedger.meanPositiveMarginal();double;FirmLedger;meanPositiveMarginal();instance;ja;ja;[x];Mittel Lohn-Hebel;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;++
+X.FirmLedger.distributeFirmRevenue;void;FirmLedger;distributeFirmRevenue();instance;ja;ja;[x];Surplus-Share;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;??
+X.Fiscal.settlePurchase(...):99;void;Fiscal;settlePurchase(buyer, resources, gross, kind, seller, roster, wallets, ledger, warehouses);instance;ja;nein;[x];KEY entry-point;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;++
+X.StateWarehouses.payWages();void;StateWarehouses;payWages();instance;ja;nein;[~];Loehn-Auszahlung an Worker;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;??
+X.ConstructionHoardController.tick();void;ConstructionHoardController;tick();instance;ja;nein;[x];Bau-Tresor;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;??
+X.AuditKernel.audit();void;AuditKernel;audit();instance;ja;ja;[x];Konsistenz-Check;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;??
+X.AffordabilityGate.Kind;Enum;AffordabilityGate;Kind;enum;ja;ja;[x];Settlement-Gate;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;++
+X.ChartPanel.update(snapshot);void;ChartPanel;update(snapshot);instance;ja;ja;[x];UI-Bind;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;??
+X.CompactNumber.format(value);String;CompactNumber;format(value);static;ja;ja;[x];UI-Format;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;??
+X.DebtDiplomacyBuffer.deduct(amount);void;DebtDiplomacyBuffer;deduct(amount);instance;ja;nein;[x];Diplomatische Schulden;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;??
+X.CrisisDispatch.dispatch(crisisType);void;CrisisDispatch;dispatch(crisisType);instance;ja;ja;[x];Crisis-Engine;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;??
+X.IdentityMapRegistry.register(saveable);void;IdentityMapRegistry;register(saveable);static;ja;ja;[~];10 Saveables;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;??
+X.Liturgy.publish(market);void;Liturgy;publish(market);instance;ja;ja;[x];Religion Market;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;??
+X.PolityPriceAnchor.priceOf(RES);int;PolityPriceAnchor;priceOf(RESOURCE);static;ja;ja;[x];Preis-Quelle;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;++
+X.ForeignTradeLedger.importRate(res);double;ForeignTradeLedger;importRate(res);instance;ja;ja;[~];Import-Volumen;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;??
+X.TransportMarket.distanceFee(dist);double;TransportMarket;distanceFee(dist);instance;ja;ja;[x];Distanz-Tarif;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;??
+X.OddjobMarket.tick();void;OddjobMarket;tick();instance;ja;ja;[x];Sonder-Job-Vergabe;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;??
+X.StateWageMarket.update();void;StateWageMarket;update();instance;ja;ja;[x];Regulierung;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;??
+X.FlowMeter.sample(res);double;FlowMeter;sample(res);instance;ja;ja;[x];Per-Resource-Signal;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;??
+X.DebtBondage.tick();void;DebtBondage;tick();instance;ja;ja;[x];Schuldknechtschaft;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;??
+X.CorveeController.tick();void;CorveeController;tick();instance;ja;ja;[x];Frondienst;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;??
+X.HealthPressure.register(p,h);void;HealthPressure;register(perCapita, h);static;ja;ja;[x];Happiness-Hook;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;++
+X.WealthHappiness.register(wealth, h);void;WealthHappiness;register(wealth, h);static;ja;ja;[x];Happiness-Hook;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;++
+X.PropertyHappiness.register(prop, h);void;PropertyHappiness;register(prop, h);static;ja;ja;[x];Happiness-Hook;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;++
+X.PovertyPressure.register(wealth, h);void;PovertyPressure;register(wealth, happiness);static;ja;ja;[x];Happiness-Hook;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;++
+X.GiniConsequences.update(gini, loyalty);void;GiniConsequences;update(gini, loyalty);instance;ja;ja;[x];LOYALTY-Update;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;++
+X.MeticImmigration.register();void;MeticImmigration;register();static;ja;ja;[x];CIVIC_IMMIGRATION-Hook;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;++
+X.EconHud.update();void;EconHud;update();instance;ja;ja;[x];Top-HUD;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;??
+X.WindowState.DebugTab;UI-Tab;WindowState;DebugTab;instance;ja;ja;[x];5 Buttons;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;??
+X.DiagnosticExporter.makroExport();void;DiagnosticExporter;makroExport();static;ja;ja;[x];CSV-Output;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;??
+X.ChartPanel.show(snap);void;ChartPanel;show(snap);instance;ja;ja;[x];History-Diagram;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;??
+X.BuildStamp.timestamp();String;BuildStamp;timestamp();static;ja;ja;[x];Identity;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;??
+X.InstanceScript.WindowEconomy;UI;InstanceScript;WindowEconomy;instance;ja;ja;[x];Hotkey;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;??
+X.JsonExport.firmaRevenueDist();void;DiagnosticExporter;firmaRevenueDistribution();static;ja;ja;[x];Audit-Output;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;??
+X.EconProgression.allocate(income, cost);void;EconProgression;allocate(income, cost);instance;ja;ja;[x];Treasury-Update;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;??
+X.ForeignTradeLedger.importExportWindow();void;ForeignTradeLedger;importExportWindow();instance;ja;ja;[~];Trade-Reporting;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;??
+Y.FACTOR.HumanoidStats.LOOT;Double;FACTOR.HumanoidStats;LOOT;static;nein;nein;[-];Engine-Int;Engine-API direkt genutzt — sauber verfügbar, kein Gap;??
+Y.FACTOR.HUMANOID.blood;Double;FACTOR.HUMANOID;blood;static;nein;nein;[-];Engine-Int;Engine-API direkt genutzt — sauber verfügbar, kein Gap;??
+Y.FACTOR.HUMANOID.fat;Double;FACTOR.HUMANOID;fat;static;nein;nein;[-];Engine-Int;Engine-API direkt genutzt — sauber verfügbar, kein Gap;??
+Y.F.SetText.SentenceCase;Util;F.SetText;SentenceCase;static;nein;nein;[-];Engine-Util;Engine-API direkt genutzt — sauber verfügbar, kein Gap;??
+Y.RECIPES.player.rateTotal();double;RECIPES.player;rateTotal();static;ja;nein;[x];Mod-C-EngineBridge via PSeller;Engine-API direkt genutzt — sauber verfügbar, kein Gap;++
+Y.SETT.ROOMS().industries;List;SETT.ROOMS();industries;instance;ja;nein;[x];Mod liest Industry.all;Engine-API direkt genutzt — sauber verfügbar, kein Gap;++
+Y.SETT.ROOMS().STOCKPILE;RoomInstance;SETT.ROOMS();STOCKPILE;instance;ja;ja;[x];Mod-Storage-Bridge;Engine-API direkt genutzt — sauber verfügbar, kein Gap;++
+Y.SETT.ROOMS().MARKET;RoomInstance;SETT.ROOMS();MARKET;instance;ja;ja;[x];Mod-Market-Bridge;Engine-API direkt genutzt — sauber verfügbar, kein Gap;++
+Y.FACTIONS.player();Faction;FACTIONS;player();static;ja;ja;[x];Engine-Entry;Engine-API direkt genutzt — sauber verfügbar, kein Gap;++
+Y.FACTIONS.PRICE().get(res);double;FACTIONS.PRICE;get(res);static;ja;ja;[x];Mod-PolityFallback;Engine-API direkt genutzt — sauber verfügbar, kein Gap;++
+Y.HUMANOID.i.d.humanoids;List;Humanoid;humanoids;instance;ja;ja;[x];Mod-Loop-Aggregat;Engine-API direkt genutzt — sauber verfügbar, kein Gap;++
+Y.STATS.FOOD().DRINK;STAT;STATS.FOOD();DRINK;instance;ja;ja;[x];Mod Source;Engine-API direkt genutzt — sauber verfügbar, kein Gap;++
+Y.STATS.FOOD().FOOD;STAT;STATS.FOOD();FOOD;instance;ja;ja;[x];Mod Source;Engine-API direkt genutzt — sauber verfügbar, kein Gap;++
+Y.STATS.LAW();StatsLaw;STATS;LAW();instance;ja;ja;[x];Mod-Potential, Mod ignoriert;Engine-API direkt genutzt — sauber verfügbar, kein Gap;??
+Y.BOOSTING.available();String;BOOSTING;available();static;ja;ja;[x];Mod dump in WindowState.DebugTab;Engine-API direkt genutzt — sauber verfügbar, kein Gap;++
+Y.BOOSTING.push(category, key, val);void;BOOSTING;push(category, key, val);static;ja;ja;[x];Mod via BoosterValue;Engine-API direkt genutzt — sauber verfügbar, kein Gap;++
+Y.BOOSTABLES.CIVICS;boostable;BOOSTABLES;CIVICS;static;ja;ja;[x];Inner-Class;Engine-API direkt genutzt — sauber verfügbar, kein Gap;++
+Y.BOOSTABLES.RATES;boostable;BOOSTABLES;RATES;static;ja;ja;[x];Inner-Class;Engine-API direkt genutzt — sauber verfügbar, kein Gap;++
+Y.BOOSTABLES.RESOURCE_BOOSTABLES;boostable;BOOSTABLES;RESOURCE_BOOSTABLES;static;ja;ja;[x];Mod-NICHT via;Engine-API direkt genutzt — sauber verfügbar, kein Gap;++
+Y.BOOSTABLES.Behaviour;boostable;BOOSTABLES;Behaviour;static;ja;ja;[x];Inner-Class;Engine-API direkt genutzt — sauber verfügbar, kein Gap;++
+Y.BOOSTABLES.Physics;boostable;BOOSTABLES;Physics;static;ja;ja;[x];Inner-Class;Engine-API direkt genutzt — sauber verfügbar, kein Gap;++
+Y.BOOSTABLES.Noble;boostable;BOOSTABLES;Noble;static;ja;ja;[x];Inner-Class;Engine-API direkt genutzt — sauber verfügbar, kein Gap;++
+Y.Boostable.get(faction);double;Boostable;get(faction);instance;ja;ja;[x];Mod-Lesen;Engine-API direkt genutzt — sauber verfügbar, kein Gap;++
+Y.Boostable.value.map;Map;Boostable;value;instance;ja;ja;[x];Mod-Lesen;Engine-API direkt genutzt — sauber verfügbar, kein Gap;++
+Y.BoosterValue.add(d);void;BoosterValue;add(double);instance;ja;ja;[x];Mod-3-Schreiber;Engine-API direkt genutzt — sauber verfügbar, kein Gap;++
