@@ -39,7 +39,7 @@ public final class WindowEconomy extends EconWindowBase {
     }
 
     @Override
-    protected int panelWidth() { return 780; }
+    protected int panelWidth() { return 840; }
 
     @Override
     protected TabContent[] tabs() { return TABS; }

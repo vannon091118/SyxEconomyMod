@@ -207,14 +207,14 @@ public abstract class EconWindowBase {
         return null;
     }
 
-    /** Override for window width. Default: 780. */
+    /** Override for window width. Default: 840. */
     protected int panelWidth() {
-        return 780;
+        return 840;
     }
 
-    /** Override for window height. Default: 520. */
+    /** Override for window height. Default: 620. */
     protected int panelHeight() {
-        return 520;
+        return 620;
     }
 
     // ─── Shared widget helpers ───────────────────────────────────────

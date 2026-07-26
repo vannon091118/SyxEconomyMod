@@ -137,9 +137,9 @@ public final class EconHud {
         section.add(lbl, x, y);
     }
 
-    /** Position the HUD section ~30% further left than original. */
+    /** Position the HUD section further left (shifted left by >2x button width). */
     public void initPosition() {
-        section.body().moveX2(C.WIDTH() - 280);
+        section.body().moveX2(C.WIDTH() - 820);
         section.body().moveY1(2);
     }
 
