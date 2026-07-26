@@ -1,6 +1,6 @@
 # SyxEconomyMod — Entwicklung & Roadmap
 
-> **Version:** v0.13.55 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-26
+> **Version:** v0.13.56 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-26
 >
 > Stam-Doku-Synchron-Anker: `tools/verify-doc-sync.sh` (9 Checks).
 > Abgeschlossene Sprints → [`CHANGELOG.md`](CHANGELOG.md).
