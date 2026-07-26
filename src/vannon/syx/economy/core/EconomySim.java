@@ -57,7 +57,9 @@ import vannon.syx.economy.core.Roster;
 import vannon.syx.economy.core.ServiceMarket;
 import vannon.syx.economy.core.ServicePlanController;
 import vannon.syx.economy.core.StateWageMarket;
+import vannon.syx.economy.adapter.AdapterDispatcher;
 import vannon.syx.economy.adapter.ISyxAI;
+import vannon.syx.economy.adapter.ISyxNpc;
 import vannon.syx.economy.adapter.ISyxBoosting;
 import vannon.syx.economy.adapter.ISyxDiplomacy;
 import vannon.syx.economy.adapter.ISyxTransport;
@@ -152,6 +154,7 @@ public final class EconomySim {
     private final EconProgression progression;
     private final ISyxBoosting boostingAdapter;
     private final ISyxDiplomacy diplomacyAdapter;
+    private ISyxNpc npcAdapter;  // set via bundle constructor; null in test path
     private final DebtDiplomacyBuffer debtDiplomacyBuffer;
     private int econIndicatorTickCounter = 0;
     private static final int ECON_INDICATOR_INTERVAL = 60;
@@ -405,7 +408,8 @@ public final class EconomySim {
             "Warehouse:  " + (warehouseAdapter.isStoringLockAvailable() ? "OK" : "FAIL"),
             "Diplomacy:  " + (diplomacyAdapter.isAvailable() ? "OK" : "FAIL"),
             "Boosting:   " + (boostingAdapter.isAdminBoosterAvailable() ? "OK" : "FAIL"),
-            "AI:         " + (aiAdapter.isAvailable() ? "OK" : "FAIL")
+            "AI:         " + (aiAdapter.isAvailable() ? "OK" : "FAIL"),
+            "NPC:        " + (npcAdapter != null && npcAdapter.isAvailable() ? "OK" : (npcAdapter != null ? "FAIL" : "N/A"))
         };
     }
 
@@ -437,6 +441,12 @@ public final class EconomySim {
         boolean nullCheck = !aiAdapter.isFoodPlan(null); // should be false for null
         results.add("AI         " + (aOk && nullCheck ? "PASS" : (aOk ? "PARTIAL" : "SKIP"))
                 + "  classResolution=" + aOk + "  nullSafe=" + nullCheck);
+
+        // NPC: check availability + npcCount
+        boolean nOk = npcAdapter != null && npcAdapter.isAvailable();
+        int npcN = nOk ? npcAdapter.npcCount() : 0;
+        results.add("NPC        " + (nOk ? "PASS" : (npcAdapter != null ? "FAIL" : "N/A"))
+                + "  priceAccess=" + nOk + "  factions=" + npcN);
 
         return results.toArray(new String[0]);
     }
@@ -484,30 +494,21 @@ public final class EconomySim {
         return this.propertyMarket.dividendsPaid();
     }
 
+    /** Sprint 7 (Phase G): adapters built per instance via AdapterDispatcher, NOT cached. */
     public EconomySim() {
-        this(createTransportAdapter(), createWarehouseAdapter(), createBoostingAdapter(), createDiplomacyAdapter(), new VanillaAIAdapter(), true);
+        this(AdapterDispatcher.build(), true);
     }
 
-    private static ISyxTransport createTransportAdapter() {
-        // Phase C: BypassGate SDK — ClassResolver für package-private TransportInstance.
-        return new VanillaTransportAdapter();
+    /** Convenience overload: unpacks the bundle into the 6-arg constructor, then stores npc. */
+    private EconomySim(AdapterDispatcher.AdapterBundle bundle, boolean productionMode) {
+        this(bundle.transport, bundle.warehouse, bundle.boosting,
+             bundle.diplomacy, bundle.ai, productionMode);
+        this.npcAdapter = bundle.npc;
     }
 
-    private static ISyxWarehouse createWarehouseAdapter() {
-        // Phase D: BypassGate SDK — MethodAccessor.VoidMethod für storingSet(boolean).
-        return new VanillaWarehouseAdapter();
-    }
-
-    private static ISyxBoosting createBoostingAdapter() {
-        // Phase E: BypassGate SDK — refField für GOV auf CIVICS-Instanz.
-        return new VanillaBoostingAdapter();
-    }
-
-    private static ISyxDiplomacy createDiplomacyAdapter() {
-        // Phase B: BypassGate SDK — VarHandle/Reflection auto-select, kein MH-Toggle nötig.
-        // Fallback entfällt: BypassGate.isAvailable() ersetzt FallbackDiplomacyAdapter.
-        return new VanillaDiplomacyAdapter();
-    }
+    // Phase G (Sprint 7): AdapterDispatcher replaces 5 createXxxAdapter() methods.
+    // SchemaValidator cross-checks engine contracts before any adapter is built.
+    // All 5 adapter-creator methods deleted — dispatcher is the single entry point.
 
     /**
      * Package-private test constructor. Accepts pre-built adapters so unit tests

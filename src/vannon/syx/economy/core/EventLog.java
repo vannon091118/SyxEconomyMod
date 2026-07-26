@@ -65,6 +65,15 @@ public class EventLog {
                 writer.println("[" + fullTime + "] [" + category + "] " + message);
                 writer.flush();
             }
+            // Sprint 6.4 — Unified CSV-Bridge: parallel-write to DebugCsv.
+            // Additive only, Original-EventLog-Output bleibt bestehen.
+            LoggingAdapter.csvTrace(
+                    "SYSTEM".equals(category) ? LoggingAdapter.Category.SYSTEM : category,
+                    LoggingAdapter.Subsystem.ECON,
+                    LoggingAdapter.Severity.INFO,
+                    "eventlog_" + category,
+                    "1",
+                    message);
         }
     }
     

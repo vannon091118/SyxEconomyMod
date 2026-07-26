@@ -84,6 +84,15 @@ public final class DebugTracer {
         msgBuf[idx]  = msg;
         pos++;
         if (count < CAP) count++;
+        // Sprint 6.4 — Unified CSV-Bridge: parallel-write to DebugCsv für
+        // konsolidierte Debug-Analyse. Additive only, kein Refactor.
+        LoggingAdapter.csvTrace(
+                cat == INTR ? LoggingAdapter.Category.INTR : LoggingAdapter.Category.TRACE,
+                LoggingAdapter.Subsystem.SEAM,
+                LoggingAdapter.Severity.DEBUG,
+                "trace_" + catName(cat),
+                String.valueOf(frame),
+                msg);
     }
 
     /**

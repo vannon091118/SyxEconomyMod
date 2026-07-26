@@ -212,6 +212,17 @@ public final class DiagnosticExporter {
         final StringBuilder resourceRowsFinal = resourceRows;
         final StringBuilder firmsRowsFinal = firmsRows;
         IO.submit(() -> writeAll(macroRowFinal, resourceRowsFinal.toString(), firmsRowsFinal.toString()));
+        // Sprint 6.4 — Unified CSV-Bridge: parallel-write a meta-row to DebugCsv
+        // fuer Konsolidierte Debug-Analyse. Additive only.
+        LoggingAdapter.csvTrace(
+                LoggingAdapter.Category.SNAPSHOT,
+                LoggingAdapter.Subsystem.ECON,
+                LoggingAdapter.Severity.INFO,
+                "diag_export",
+                String.valueOf(day),
+                "macro=" + (macroRow != null && !macroRow.isEmpty() ? "1" : "0")
+                        + " resources=" + resourceRows.length()
+                        + " firms=" + firmsRows.length());
     }
 
     /**

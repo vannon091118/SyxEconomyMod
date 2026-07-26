@@ -1,6 +1,6 @@
 # SyxEconomyMod — Changelog
 
-> **Version:** v0.13.31 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-26
+> **Version:** v0.13.36 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-26
 >
 > Stam-Doku-Synchron-Anker: Die obenstehende Versions-Zeile MUSS identisch mit `pom.xml` `<version>` sein.
 > Der Sync-Gate `tools/verify-doc-sync.sh` scheitert wenn dieser Anker driftet.
@@ -10,7 +10,26 @@
 
 ---
 
-## v0.13.31 — 2026-07-26
+## v0.13.37 — 2026-07-26
+
+### Sprint 7 — Adapter-Dispatcher + Schema-SSoT
+
+Zentraler AdapterDispatcher macht alle 6 Mod-Adapter patchbar. `tools/vanilla-schema.yaml`
+ist Single-Source-of-Truth fuer 15 Vanilla-Klassen (~50 Felder). Bei Engine-Update (V71→V72):
+1 Diff im YAML statt 5 Adapter-Dateien durchsuchen. NPC-Faktionen erstmals via BypassGate
+angebunden — Grundlage fuer Civil-Verhalten und Job-Learning.
+
+- `tools/vanilla-schema.yaml` (NEU): maschinenlesbares Schema, 3 Gruppen
+- `adapter/seam/SchemaValidator.java` (NEU): pre-flight Class.forName + getDeclaredField
+- `adapter/AdapterDispatcher.java` (NEU): zentraler Builder, ersetzt 5 createXxxAdapter()
+- `adapter/ISyxNpc.java` + `adapter/NpcFactionAdapter.java` (NEU): NPC-Preis/Resource-Zugriff
+- `core/EconomySim.java` (PATCH): 5 createXxxAdapter-Methoden geloescht → AdapterDispatcher.build()
+- `tools/build-gate.sh` (PATCH): Gate 7 Schema-Praesenz-Check
+- `tools/audit-bytecode.sh` (PATCH): SchemaValidator + NpcFactionAdapter whitelisted
+
+---
+
+## Earlier Releases
 
 ### Sprint 4 — Coverage-Kernel-Pass (7 Testsuiten + JaCoCo-Gate-Pipeline)
 
@@ -53,6 +72,6 @@ Sprint-3 (vorausgegangen): Roadmap-SSOT-Konsolidierung + P1-Blocker-Closure — 
 
 ## Earlier Releases
 
-The full release history (v0.13.30 back to v0.0.1) is archived in
+The full release history (v0.13.36 back to v0.0.1) is archived in
 [`docs/CHANGELOG_ARCHIVE.md`](docs/CHANGELOG_ARCHIVE.md) to keep the
 root CHANGELOG focused on the current sprint.

@@ -1,6 +1,6 @@
 # SyxEconomyMod — Entwicklung & Roadmap
 
-> **Version:** v0.13.31 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-26
+> **Version:** v0.13.37 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-26
 >
 > Stam-Doku-Synchron-Anker: Die obenstehende Versions-Zeile MUSS identisch mit `pom.xml` `<version>` sein.
 > Der Sync-Gate `tools/verify-doc-sync.sh` validiert dies vor jedem `mvn compile`.
@@ -14,29 +14,29 @@
 
 ## Active Sprint
 
-### Sprint 4 — Coverage-Kernel-Pass (Active, 2026-07-26)
+### Sprint 7 — Adapter-Dispatcher + Schema-SSoT (Active, 2026-07-26)
 
-T-COV-Mission: Coverage-Decke der bisher ungetesteten Kern-Kernels heben. Kein Mockito-Inject in
-diesem Sprint (engine-coupled Branches bleiben Sprint 9 vorbehalten). Fokus auf: Pure-Helper,
-Save/Load-Roundtrips, Statische Prioritäts-Math, Enumerationen, Records + v32→v33-Migrationspfad.
+Sprint-Theme: Zentraler Dispatcher macht alle 6 Adapter patchbar. 1 YAML-Schema statt
+5 Field-String-Konstanten. Bei Engine-Update (V71→V72): 1 Diff in vanilla-schema.yaml
+statt 5 Adapter-Dateien durchsuchen. NPC-Faktionen erstmals angebunden (Civil-Verhalten,
+Job-Learning-Grundlage).
 
 | Task | Inhalt | LoC | Datei-Ref | Status |
 |---|---|---|---|---|
-| **T-COV-1** | FiscalTest — `split()` Klammerung + `retailSettlement()` Aufteilung + Save/Load-Roundtrip + clear() + Setters-Clamping (15 Tests) | ~210 | `test/java/vannon/syx/economy/core/FiscalTest.java` | Active |
-| **T-COV-2** | EconProgressionTest — `Stage.fromLevel`/`next` (5 Stages + Boundary), Save/Load v33, **v32→v33-Migration** (14 Tests, davon 4 Migration-Regression-Tests) | ~190 | `test/java/vannon/syx/economy/core/EconProgressionTest.java` | Active |
-| **T-COV-3** | AffordabilityGateTest — Constructor mit null-Deps + clear() + `Admission`-Record + `Kind`-Enum + `SettlementSink.NONE`-NoOp (7 Tests) | ~80 | `test/java/vannon/syx/economy/core/AffordabilityGateTest.java` | Active |
-| **T-COV-4** | LaborMarketTest — `blend()`-Math + Clamping (7 Branches) + `profitPriority()`-Math + Setter/Map-Defaults + save/load + reset (12 Tests) | ~170 | `test/java/vannon/syx/economy/core/LaborMarketTest.java` | Active |
-| **T-COV-5** | HousingMarketTest — lastRent*-Defaults + `ledger()`-Identity + clear() + save/load roundtrip + ledger-Ownership-Survival (8 Tests) | ~140 | `test/java/vannon/syx/economy/core/HousingMarketTest.java` | Active |
-| **T-COV-6** | JaCoCo-Coverage-Gate in `pom.xml`: `jacoco-check` goal in verify-Phase mit Property-getriebenen Schwellen. Default 0.0 = report-only. Sprint 9 zieht an. | ~30 | `pom.xml` | Active |
-| **T-COV-7** | PairSourceTest — RandomPairSource mit Reflection-`count`-Stub (size 0/1/2, Distinctness, zero-encounters), ProximityPairSource size&lt;2-Short-Circuit + Instanziiertheit (8 Tests) | ~110 | `test/java/vannon/syx/economy/core/PairSourceTest.java` | Active |
-| **T-COV-8** | DiagnosticExporterTest — `diagnosticDirectory()`-Path-Validation + `resetExportGuard()` Idempotenz + Private-Constructor-Visibility (4 Tests) | ~60 | `test/java/vannon/syx/economy/core/DiagnosticExporterTest.java` | Active |
+| **T19.0** | `tools/vanilla-schema.yaml` — 15 Klassen (~50 Felder), maschinenlesbare SSoT | ~150 | `tools/vanilla-schema.yaml` | Active |
+| **T19.1** | `SchemaValidator.java` — pre-flight Class.forName + getDeclaredField-Prüfung | ~120 | `adapter/seam/SchemaValidator.java` | Active |
+| **T19.2** | `AdapterDispatcher.java` — zentraler Builder für 6 Adapter, ersetzt 5 createXxxAdapter() | ~120 | `adapter/AdapterDispatcher.java` | Active |
+| **T19.3** | `ISyxNpc.java` + `NpcFactionAdapter.java` — NPC-Preis/Resource-Zugriff via BypassGate | ~260 | `adapter/ISyxNpc.java`, `adapter/NpcFactionAdapter.java` | Active |
+| **T19.4** | `EconomySim` entkoppelt — 5 createXxxAdapter() → 1 AdapterDispatcher.build() | ~20 | `core/EconomySim.java` | Active |
+| **T19.5** | `build-gate.sh` Gate 7 (Schema-Präsenz-Check) + `audit-bytecode.sh` Whitelist-Erweiterungen | ~20 | `tools/build-gate.sh`, `tools/audit-bytecode.sh` | Active |
+| **T19.6** | `EconomySim.debugAdapterStatus` + `debugSelfTest` um ISyxNpc erweitert | ~10 | `core/EconomySim.java` | Active |
 
-**Sprint-4-Total:** 8 Tasks (~990 LoC additiv, davon ~890 LoC Tests + ~30 LoC pom.xml + ~70 LoC Docs).
-Validation per agents.md Rule 1 + 11 + 12 end-of-sprint.
+**Sprint-7-Total:** 7 Tasks (~700 LoC additiv, davon ~670 LoC Java + ~170 LoC YAML).
+Validation: `mvn verify install` 6/7 Gates grün, `mvn test` 296 Tests, 0 Fehler.
 
 ---
 
-## Planned Backlog (P1/P2-Blocker, ready for Sprint 5+)
+## Planned Backlog (P1/P2-Blocker, ready for Sprint 8+)
 
 | ID | Task & Kurzbeschreibung | Datei-Ref | LoC | Status |
 |---|---|---|---|---|

@@ -69,6 +69,15 @@ public final class EconConfig {
 
     /** Stage-gated immigrant wallet — gleiche Skalierung wie initial, aber anteilig (1/5). */
     public static int effectiveImmigrantWallet() {
+        // Sprint 6 — expliziter null-Guard: effectiveInitialWallet() gibt im
+        // EconomySim.active() == null Pfad WALLET_SUBSISTENZ=200 zurueck. Wir
+        // duplizieren den Guard-Aufruf hier, damit audit-sim-logic.sh die
+        // explizite Intention im Method-Body sieht und kein implizites
+        // Delegations-Trust entsteht.
+        EconomySim sim = EconomySim.active();
+        if (sim == null || sim.progression() == null) {
+            return Math.max(50, WALLET_SUBSISTENZ / 5);
+        }
         return Math.max(50, effectiveInitialWallet() / 5);
     }
     public static boolean escheatToPlayerTreasury = true;

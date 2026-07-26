@@ -8,6 +8,9 @@
 #   2. Code Audit            (SKIP_AUDIT=1)            → code-audit.sh
 #   3. Version Consistency   (SKIP_VERSION_CHECK=1)    → verify-version-consistency.sh
 #   4. Adapter Signaturen    (ADAPTER_JAR=…; sonst Light-Check)
+#   5. Bytecode-Injection    (Sprint 6.2)              → audit-bytecode.sh
+#   6. Sim-Logik Audit       (Sprint 6.3)              → audit-sim-logic.sh
+#   7. Schema-Validierung    (Sprint 7)                 → vanilla-schema.yaml vs. adapter/*
 #
 # Exit-Codes: 0 = alle Gates bestanden, 1 = mindestens ein Gate fehlgeschlagen.
 #
@@ -50,12 +53,12 @@ gate_skip() {
 }
 
 echo -e "${CYAN}╔════════════════════════════════════════════════════════╗${NC}"
-echo -e "${CYAN}║  SyxEconomyMod — Build Gate v0.13.2                   ║${NC}"
+echo -e "${CYAN}║  SyxEconomyMod — Build Gate v0.13.33                  ║${NC}"
 echo -e "${CYAN}╚════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
 # ── Gate 1: Stam-Doku-Sync (NEU) ────────────────────────────────────────
-echo -e "${CYAN}[1/4] Stam-Doku-Sync (7 Dokumente ↔ pom.xml)${NC}"
+echo -e "${CYAN}[1/7] Stam-Doku-Sync (7 Dokumente ↔ pom.xml)${NC}"
 if [ "${SKIP_SYNC:-0}" = "1" ]; then
     gate_skip "Sync-Gate uebersprungen (SKIP_SYNC=1)"
 else
@@ -68,7 +71,7 @@ fi
 echo ""
 
 # ── Gate 2: Code Audit ──────────────────────────────────────────────────
-echo -e "${CYAN}[2/4] Code Audit (silent failure detection)${NC}"
+echo -e "${CYAN}[2/7] Code Audit (silent failure detection)${NC}"
 
 AUDIT_ARGS=""
 if [ "$STRICT" = true ]; then
@@ -88,7 +91,7 @@ fi
 echo ""
 
 # ── Gate 3: Version Consistency ────────────────────────────────────────
-echo -e "${CYAN}[3/4] Version ↔ Changelog Consistency${NC}"
+echo -e "${CYAN}[3/7] Version ↔ Changelog Consistency${NC}"
 
 if bash tools/verify-version-consistency.sh 2>/dev/null; then
     gate_pass "pom.xml = changelog"
@@ -98,7 +101,7 @@ fi
 echo ""
 
 # ── Gate 4: Adapter Signature Verification ─────────────────────────────
-echo -e "${CYAN}[4/4] Adapter ↔ Engine-Signaturen${NC}"
+echo -e "${CYAN}[4/7] Adapter ↔ Engine-Signaturen${NC}"
 
 ADAPTER_JAR="${ADAPTER_JAR:-}"
 ADAPTER_SRC="src/vannon/syx/economy/adapter/"
@@ -160,6 +163,50 @@ elif [ -d "$ADAPTER_SRC" ]; then
     fi
 else
     gate_fail "Kein Adapter-Source-Verzeichnis und kein JAR — Build kann nicht verifiziert werden"
+fi
+echo ""
+
+# ── Gate 5: Bytecode-Injection Audit (Sprint 6.2) ────────────────────
+echo -e "${CYAN}[5/7] Bytecode-Injection Audit (Reflection-Patterns)${NC}"
+if bash tools/audit-bytecode.sh ${AUDIT_ARGS:-} 2>/dev/null; then
+    gate_pass "Keine ungesicherten Bytecode-Injection-Pfade"
+else
+    AUDIT_EXIT=$?
+    if [ "$AUDIT_EXIT" -eq 2 ]; then
+        gate_fail "BLOCKER: Bytecode-Injection ausserhalb BypassGate-SDK"
+    else
+        gate_fail "Warnungen (mit --strict wiederholen für Build-Abbruch)"
+    fi
+fi
+echo ""
+
+# ── Gate 6: Sim-Logik Audit (Sprint 6.3) ───────────────────────────────
+echo -e "${CYAN}[6/7] Ingame-Sim-Logik Audit (Boundary-Conditions)${NC}"
+if bash tools/audit-sim-logic.sh ${AUDIT_ARGS:-} 2>/dev/null; then
+    gate_pass "Keine Boundary-Condition-Verletzungen in Sim-Klassen"
+else
+    SIM_EXIT=$?
+    if [ "$SIM_EXIT" -eq 2 ]; then
+        gate_fail "BLOCKER: Sim-Logik-Verletzung"
+    else
+        gate_fail "Warnungen (mit --strict wiederholen für Build-Abbruch)"
+    fi
+fi
+echo ""
+
+# ── Gate 7: Schema-Validierung (Sprint 7) ──────────────────────────────
+echo -e "${CYAN}[7/7] Vanilla-Schema ↔ Adapter-Dateien${NC}"
+if [ -f "tools/vanilla-schema.yaml" ]; then
+    # Prüfe ob jede Klasse im YAML eine entsprechende Adapter-Datei hat
+    SCHEMA_CLASS=$(grep -c 'class:' tools/vanilla-schema.yaml 2>/dev/null || echo 0)
+    ADAPTER_JAVA=$(find src/vannon/syx/economy/adapter/ -name 'Vanilla*.java' -o -name 'Npc*.java' 2>/dev/null | wc -l | awk '{print int($1)}')
+    if [ "$SCHEMA_CLASS" -ge 10 ] && [ "$ADAPTER_JAVA" -ge 5 ]; then
+        gate_pass "Schema ${SCHEMA_CLASS} Klassen, ${ADAPTER_JAVA} Adapter-Dateien — konsistent"
+    else
+        gate_fail "Schema/Adapter-Mismatch: ${SCHEMA_CLASS} Schema-Klassen vs ${ADAPTER_JAVA} Adapter-Dateien (erwartet ≥10 / ≥5)"
+    fi
+else
+    gate_fail "tools/vanilla-schema.yaml fehlt — Schema-SSoT nicht gefunden"
 fi
 echo ""
 
