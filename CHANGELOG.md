@@ -10,7 +10,76 @@
 
 ---
 
+## Completed Sprints Index
+
+`ROADMAP.md` enthält nur mehr die TODO-Sektion. Abgeschlossene Sprints werden hier versioniert (sortiert: jüngste zuerst).
+
+| Sprint | Theme | Commit(s) | Datum |
+|---|---|---|---|
+| **8** | Global-Audit — dead code removal, stale doc refs, .gitignore hygiene | `2ac5191` | 2026-07-26 |
+| **7** | Adapter-Dispatcher + Schema-SSoT (7 Tasks subsummiert) | `4efa7c4` | 2026-07-26 |
+| **6** | Global-Audit + Freeze (7 Tasks: 6-1..6-7) | `2ac5191`, `804cbf3` | 2026-07-26 |
+| **5** | Adapter-Dispatcher + Schema-SSoT (7 Tasks: 5-1..5-7) | `4efa7c4` | 2026-07-26 |
+| **4** | Coverage + Audit + CSV-Logging (5 Tasks: 4-1..4-5) | `4efa7c4` | 2026-07-26 |
+| **3** | Coverage-Kernel-Pass (8 Tasks: 3-1..3-8) | `a809405` | 2026-07-26 |
+| **2** | Roadmap-SSOT-Konsolidierung (7 Tasks: 2-1..2-7) | `51f8b27` | 2026-07-26 |
+| **1** | Mod-Economy T5–T13 (9 Tasks: 1-1..1-9) | `c1964d2` | 2026-07-25 |
+| **A** | TreasuryCrisis State-Leak Reset (3 Tasks) | `c1964d2` | 2026-07-25 |
+| **0** | Phase A–F SDK + Adapter-Migration | `1442804`..`c1964d2` | 2026-07-25 |
+
+**Drift-Hinweis:** Sprint 6/8 teilen `2ac5191`, Sprint 5/7 teilen `4efa7c4`. Sprint-Nummerierung wurde in v0.13.43 renumbered (siehe `docs: ROADMAP Task N-X Schema + sprint renumbering`).
+
+---
+
 ## v0.13.43 — 2026-07-26
+
+### Sprint 9 — Stale-Doc-Reference-Resolution + Audit-Gate-10
+
+Sprint-Header per agents.md Rule 11+12: 1 Sprint = 1 atomic commit.
+Stam-Doc-Split per v0.13.43 (ROADMAP = Backlog-only, CHANGELOG = Completed-Index).
+Audit-getrieben: B-011 zeigte auf geloeschtes `tools/scarcity_sim.py`, der Dead-Code-Bot
+hatte nur Code-Files (nicht Markdown) gescannt. Sprint 9 schliesst diese Klasse.
+
+Subsummierte Tasks (8 total, 1 atomic commit):
+
+- **T-9.1 README-Bereinigung** — `README.md`: 4× `tools/scarcity_sim.py`-Aufrufe
+  (Diagnostic-Tools-Tabelle-Zeile, Scarcity-Simulator-Subsection, B-011 Reference in
+  Exit-Codes, diagnostics-mkdir-Hint) durch `tools/audit-sim-logic.sh` ersetzt.
+  Audit-Befund dokumentiert als gelöscht (Commit `2ac5191`).
+
+- **T-9.2/9.4 ROADMAP 7-1 a/b Split** — alter Task 7-1 wurde zu 7-1a
+  (Algorithmus-Doku, ~35 LoC) + 7-1b (Golden-Snapshot-Erzeugung, ~25 LoC).
+  Dependency-Chain `7-1a -> 7-1b -> 7-2` explizit als Pre-Note-Block.
+  `scarcity_sim`-Dateitoken ersetzt durch `Scarcity-Kaskaden-Algorithmus`
+  (Engine-Spec aus `FlowPrices`/`LocalPrices`/`EconConfig`).
+
+- **T-9.3 ROADMAP 7-3 Anti-Bias** — Booster-Eval-Wording mit `0/6 = valider
+  Ausgang` + Folgesprint B-013 fuer Lohnendes. Verhindert Kennzahl-Optimierung.
+
+- **T-9.5 WORKFLOW.md Rules 1.6/1.7/1.8 + Anti-Patterns** — Anti-Bias-Wording,
+  Dependency-Edges-sichtbar, Kompromiss-Szenarien-pre-sprint-dokumentiert.
+
+- **T-9.6 verify-doc-sync.sh Gate 10** — neuer md-tool-invocation-Check. Run-3-final:
+  prefix-required `(python|python3|bash)<space>tools/X.{py,sh}` mit
+  `--exclude-dir=.freebuff,.git,docs` und `--roE` (only-matching, sonst extrahiert
+  Stage-2-grep `tools/X.{py,sh}`-Pfade aus Zeilen-Kontext statt nur dem Match).
+
+- **Reviewer-Fix #2 ROADMAP 8-1 Anti-Bias** — `JaCoCo 30/15%` mit `0/N-Disclaimer`
+  + Folgesprint B-014.
+
+- **Reviewer-Fix #3 ROADMAP Dependency-Graph** — ASCII-Box `7-1a -> 7-1b -> 7-2`
+  mit unabhaengigen Pfaden fuer 8-1/7-3/8-2..8-5.
+
+**Out-of-Scope Sprint 9 (deliberately deferred per Rule 11 Ratio-Klausel):**
+
+- 🟡 `build-gate.sh` Bias-Word-Grep fuer Rule 1.6 Enforcement — Sprint 10 als Gate 11.
+
+**Verification (post-fix Run-3):**
+
+- Sync-Gate: `bash tools/verify-doc-sync.sh` = 11/11 PASS (incl. Gate 10).
+- Build: `mvn verify install -DskipTests -Dskip.bump=true` = BUILD SUCCESS.
+- Stam-Doc-Version bleibt v0.13.43 (kein Bump, `-Dskip.bump=true`).
+- Sprint 9 commit-Referenz: folgt am atomic-commit-Ende.
 
 ### Sprint 7 — Adapter-Dispatcher + Schema-SSoT
 

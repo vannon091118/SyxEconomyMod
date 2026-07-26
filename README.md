@@ -127,38 +127,18 @@ Nicht-Gate-Tools für tiefergehende Wirtschafts-Analyse. Reine Berechnung, kein 
 
 | Tool | Zweck | Aufruf |
 |---|---|---|
-| `scarcity_sim.py` — `tools/scarcity_sim.py` | Validiert 4 Scarcity-Kaskaden gegen die echten FlowPrices/LocalPrices/EconConfig-Formeln. Druckt Tick-by-Tick-Tabellen + Gini-Trajektorien + Clamp-Feuer-Detection. | `python3 tools/scarcity_sim.py` |
+| `audit-sim-logic.sh` — `tools/audit-sim-logic.sh` | Audit-Skript für die 4 Scarcity-Kaskaden-Formeln gegen die echten `FlowPrices`/`LocalPrices`/`EconConfig`-Klassen. Druckt PASS/FAIL pro Cascade. Ersetzt `tools/scarcity_sim.py` (gelöscht in Sprint 8, Commit `2ac5191`). | `bash tools/audit-sim-logic.sh` |
 | `rebalance_plots.py` / `rebalance_dashboard.ipynb` | Pandas/Notebook-Auswertung der `DiagnosticExporter`-CSV-Snapshots. | `jupyter notebook tools/rebalance_dashboard.ipynb` |
 
-#### Scarcity-Simulator (v0.13.10)
+#### Scarcity-Simulator (entfernt in Sprint 8)
 
-Simuliert vier Szenarien mit echten Java-Parametern (grep-verifiziert aus `EconConfig.java`, `FlowPrices.java`, `LocalPrices.java`):
+`tools/scarcity_sim.py` wurde in Sprint 8 (Commit `2ac5191`, Begründung *"0 cross-references, DEAD"*) gelöscht — die Dead-Code-Heuristik hatte nur Code-Dateien gescannt, nicht Markdown. Die vier Szenario-Beschreibungen oben sind als historische Spec weiterhin unter `CHANGELOG.md` v0.13.10 archiviert; die aktive Validation passiert über `tools/audit-sim-logic.sh` (siehe Diagnostic-Tools-Tabelle).
 
-- **Scenario A — Drought (Scarcity-Dominanz):** Storage- und Supply-Drain gegen `targetStock=d demand × coverageDays`. Prüft, ob `priceClampHi=100` greift, wann Konvergenz eintritt.
-- **Scenario B — Gini-Tsunami:** TANH-basierte `LocalPrices.scarcity()` koppelt mit AffordabilityGate-Deny-Counter. Misst Gini-Drift über 5+-Tage-Drought.
-- **Scenario C — Edge-Case 6 (Fallback-Kollision):** Leontief-Anchor leer → `FACTIONS.PRICE().edible()` als Fallback. Misst Drift zwischen synchronisiertem Anker und NPC-Lag.
-- **Scenario D — Edge-Case 7 (Zero-Default):** Custom-Resource ohne `worldgenScarcity` → `anchor=0` → `price=0` (Hard-Failure-Pfad, NICHT durch `priceClampLo=0.001` aufgefangen).
-
-**Quelle der Formeln:** `src/vannon/syx/economy/core/FlowPrices.java:scarcityMultiplier()`, `LocalPrices.java:scarcity()`, `EconConfig.scarcityElasticityUp/Down`. Werte (UP=0.8, DOWN=1.375, Clamp=100) sind im Header der Sim-Datei als Konstanten gelistet — bei jeder Änderung in `EconConfig.java` bitte `tools/scarcity_sim.py` mit-diffen.
-
-**Verwendung:**
-
-```bash
-python3 tools/scarcity_sim.py
-# Output: 4 Tick-by-Tick-Tabellen + Summary aller Clamp-Feuer, Gini-Peaks, Fallback-Drifts.
-```
-
-Sim-Ergebnisse als Output-Log für jeden Live-Test-Save-Slot exportieren (Plain-Text, kein PDF — das aktuelle Skript schreibt rohe Tick-Tabellen nach stdout):
-
-```bash
-mkdir -p diagnostics && python3 tools/scarcity_sim.py > diagnostics/run-$(date +%Y%m%d-%H%M).log
-```
-
-Wenn der Ordner `diagnostics/` noch nicht existiert (frischer Clone), schlägt der Redirect ohne `mkdir -p` fehl.
+Sprint 9 plant unter `T-9.4` / `7-1a`–`b` die spec-getriebene Re-Etablierung als `tools/balance-smoke.sh` mit Golden-Snapshot-Vergleich (keine Code-Wiederherstellung der gelöschten Datei). Der Sprint-9-Workflow folgt damit Anti-Bias-Wording gemäß `WORKFLOW.md` Regel 1.6 (0/N als valider Ausgang).
 
 #### Exit-Codes
 
-Das Skript hat aktuell keinen Exit-Code-Bound (kein CI-Gate-Verhalten). Eventuelle CI-Integration ist ein Roadmap-Item in `docs/BACKLOG.md` ([B-011]), nicht eine zugesagte Eigenschaft dieses Releases.
+Das Skript hat aktuell keinen Exit-Code-Bound (kein CI-Gate-Verhalten). Sprint 9 plant unter `T-9.4` / `7-1a`–`b` die spec-getriebene Re-Etablierung als `tools/balance-smoke.sh` (Golden-Snapshot-Vergleich statt Code-Wiederherstellung der gelöschten Datei).
 
 ---
 

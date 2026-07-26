@@ -55,6 +55,10 @@ pro Session OK wenn jedes für sich validiert + committed vor nächstem.
 | 1.3 | **Innerhalb BAUEN: KEIN Commit, KEIN Push.** | Sprint-Commit ist der einzige Commit-Punkt im Sprint. |
 | 1.4 | **Tasks dürfen einander brechen** (z.B. Refactor vor Build). | Sprint-Commit endet mit konsistentem Stand. |
 | 1.5 | **BINDUNGSMATRIX.csv als kanonische Reference-Data** (nicht Stam-Doc). | Single-source-of-truth für Hebel-Verifikation. tools/-Skripte lesen csv, nicht HEBELKARTE. |
+| 1.6 | **Anti-Bias-Wording (Sprint 9+).** Tasks mit Evaluation / Messung / Audit-Charakter müssen Null-Result als validen Ausgang explizit zulassen. Verboten sind Target-Quoten wie „X/Y erhöhen" ohne „0/X gleichwertig". | Sprint-9-Audit: Booster-Eval „3/402 → 6/402" war Kennzahl-Optimierung statt Spielentscheidung. Coverage-Zahlen haben denselben Bias. |
+| 1.7 | **Dependency-Edges explizit** in ROADMAP-Spalte oder als Pre-Note. Tasks mit „Voraussetzung" / „Bedingt" / „hängt an" tragen den Pfad direkt sichtbar (z.B. „7-1b → 7-2"). | Vermeidet „leerlaufende Skripte" wie Sprint-9-Risiko für `balance-smoke.sh` ohne Snapshot. |
+| 1.8 | **Kompromiss-Szenarien pre-sprint dokumentieren.** Bei „ggf." im Task-Wording: Wenn-Bedingung jetzt aufschreiben, nicht erst wenn's passiert. Wenn-Dann-Pfad als separate Task-ID im selben Sprint ODER als expliziter Folgesprint. | Verhindert den „ein Commit, außer es funktioniert"-Effekt. pre-commit Hook (build-gate) kann das greifen. |
+|
 
 ### Checkliste vor Sub-Phase-Sub-Phase-Übergang (nicht atomar, nur am Sprint-Ende!)
 
@@ -160,6 +164,9 @@ Eine AI-Session ist bereit zum Handoff, wenn:
 | **Sprint-Definition-Drift** | agents.md spricht von "Tasks", WORKFLOW.md von "Sub-Phasen", Code von "Phases" | Drei Terminologien, Reviewer verwirrt | Sprint-Vokabular canonical: Sprint > Task > Sub-Phase |
 | **Verschoben-Postponed-Token** | Tasks als "Postponed", "Deferred", "Später", "Next-Sprint" markiert statt als Planned/Active/Closed/Rejected | Versteckte Tasks, Roadmap nicht Single-Source-of-Truth, verify-doc-sync.sh bricht ab | ROADMAP.md ist SSOT: nur die 4 Zustände (Planned/Active/Closed(SHA)/Rejected(Begründung)) — agents.md Rule 13 |
 | **Backlog-as-Master-Liste** | docs/BACKLOG.md enthält Master-Task-Liste statt nur New-Findings-Inbox | Tasks doppelt in ROADMAP+BACKLOG, Drift-Risiko | BACKLOG mold-down: nur Inbox für noch-nicht-erfasste Findings, alle T-/B-IDs in ROADMAP § Global Task Index |
+| **Zwangsmetrik-Target** | Task mit „X/Y erhöhen" / „auf Z bringen" ohne „0/X als valide" | Optimierung auf Quote statt Erkenntnis. Output-Drift. | Anti-Bias-Wording in Task-Description (Rule 1.6). |
+| **Hidden-Dependency** | Task B sagt „hängt an A" nur im Wording, nicht in ROADMAP-Spalte | B läuft ohne A-Snapshot/Output. Leerlauf-Task oder provisorischer Platzhalter. | Dependency-Pfad in ROADMAP-Spalte oder Pre-Note (Rule 1.7). |
+|
 
 ---
 

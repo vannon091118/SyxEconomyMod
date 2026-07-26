@@ -13,10 +13,11 @@
 
 | Task | Prio | Kurzbeschreibung | LoC | Sprint |
 |---|---|---|---|---|
-| **7-1** | 🟠 P1 | Balance-CI: Golden-Snapshot-Spezifikation + `scarcity_sim`-Algorithmus dokumentieren | ~35 | 7 |
+| **7-1a** | 🟠 P1 | Balance-CI: Scarcity-Kaskaden-Algorithmus dokumentieren (Spezifikation aus `FlowPrices.java:scarcityMultiplier()` + `LocalPrices.java:scarcity()` + `EconConfig.scarcityElasticityUp/Down`; Konstanten UP=0.8 / DOWN=1.375 / Clamp=100. **Reihenfolge:** 7-1a vor 7-1b, 7-1b vor 7-2. | ~35 | 9 |
+| **7-1b** | 🟠 P1 | Balance-CI: Golden-Snapshot-Erzeugung gegen `EconConfig`-Formeln (Ist-Output für 7-2-Toleranzcheck). **Reihenfolge:** 7-1a (Algorithmus) vor 7-1b. **Hinweis:** NICHT durch Wiederbelebung der gelöschten `tools/scarcity_sim.py` — Build aus den vorhandenen Engine-Klassen. | ~25 | 9 |
 | **7-2** | 🟠 P1 | `tools/balance-smoke.sh`: CSV→Toleranz-Check→Build-Break (5%). Hängt von 7-1 ab. | ~40 | 7 |
-| **7-3** | 🟡 P2 | Booster-Eval (ergebnisoffen): 6 Behaviour-Booster auf Mod-Relevanz messen | ~30 | 7 |
-| **8-1** | 🟠 P1 | Mockito-Inject Coverage: Fiscal/Housing/Labor/Affordability/EconProgression + JaCoCo 30/15% | ~600 | 8 |
+| **7-3** | 🟡 P2 | Booster-Eval: 6 Behaviour-Booster auf Mod-Relevanz messen. **Anti-Bias-Wording (Rule 1.6):** Ergebnis `0/6` ist valider Ausgang. Booster werden NICHT um einer Quote willen integriert ("3/402 → 6/402" war Kennzahl-Optimierung, nicht Spielentscheidung). Wenn keiner der 6 für die Mod-Mechanik relevant ist → Sprint-Abschluss ohne Booster-Integration. `ggf.`-Pfad als selbständiger Folgesprint (z.B. B-013), niemals in Sprint-9-commit mit-mischen. **Reihenfolge:** Sprint 9 ticket `8-1` (Mockito-Coverage) liefert die Mess-Basis. | ~30 | 9 |
+| **8-1** | 🟠 P1 | Mockito-Inject Coverage: Fiscal/Housing/Labor/Affordability/EconProgression + JaCoCo line=30% / branch=15%. **Anti-Bias-Wording (Rule 1.6):** Schwellen sind Ziel-Werte, keine Pflicht-Quoten. Wenn Coverage nach Mockito-Inject unter Schwellen bleibt → Sprint-Abschluss mit dokumentiertem Befund, kein Pflicht-Sprint-Folgesprint. `ggf.`-Pfad als B-014 (separater Sprint). **Reihenfolge:** Unabhängig vom 7-1a/b/2-Pfad; Mess-Basis für 7-3. | ~600 | 9 |
 | **8-2** | 🟡 P2 | 5 ungetestete Klassen: NpcFactionAdapter, AdapterDispatcher, SchemaValidator, DebugCsv, LoggingAdapter | ~200 | 8 |
 | **8-3** | 🟡 P2 | FlowMeter: `SETT.ROOMS().ins()` für ROOM_PRODUCER_INSTANCE iterieren (B-001) | ~25 | 8 |
 | **8-4** | 🟡 P2 | Oddjob-Clamp: harte Grenze via `EconConfig.oddjobMaxPay` (B-005) | ~12 | 8 |
@@ -28,22 +29,21 @@
 | *B-010* | 🟢 P3 | Carpenter targetWage=0 in FlowPrices | ~8 | — |
 | *T22* | 🟢 P3 | Savegame-Compat-Headless-Test | ~50 | — |
 
-**Total:** 14 Tasks — 2×P1 (Sprint 7), 3×P2 (Sprint 8), 3×P2 (Sprint 8-Plan), 6×P3 (Backlog).
+**Total:** 15 Tasks — 4×P1 Sprint 9 (7-1a, 7-1b, 7-2, 8-1), 5×P2 Sprint 9 (7-3 + 8-2..8-5), 6×P3 (Backlog).
+
+**Sprint 9 Dependency-Edges (Rule 1.7 Pre-Note):**
+
+```
+  7-1a (Algorithmus-Doku, ~35 LoC)  -->  7-1b (Snapshot-Erzeugung, ~25 LoC)  -->  7-2 (balance-smoke Gate)
+  8-1 (Mockito-Coverage) ist unabhaengig vom 7-1a/b/2-Pfad
+  7-3 (Booster-Eval) nutzt 8-1 als Mess-Basis, sonst unabhaengig
+  8-2..8-5 (Probe-Objekte + B-001/FlowMeter + B-005/Oddjob + B-009/Hunger) sind unabhaengig
+```
+
+Maschinenlesbare Validation der Dep-Edges ist Sprint-10-Folgeaufgabe (Gate 11 in eigenem Folge-Sprint).
 
 ---
 
-## Abgeschlossene Sprints (Details → CHANGELOG.md)
-
-| Sprint | Theme | Tasks | Commit | Datum |
-|---|---|---|---|---|
-| **6** | Global-Audit + Freeze (7 Tasks: 6-1..6-7) | Dead-Code, Drift-Fixes, Pre-Commit-Hook | `2ac5191`, `804cbf3` | 2026-07-26 |
-| **5** | Adapter-Dispatcher + Schema-SSoT (7 Tasks: 5-1..5-7) | vanilla-schema.yaml, SchemaValidator, AdapterDispatcher, ISyxNpc | `4efa7c4` | 2026-07-26 |
-| **4** | Coverage + Audit + CSV-Logging (5 Tasks: 4-1..4-5) | audit-bytecode, audit-sim-logic, DebugCsv, LoggingAdapter, 4 Tests | `4efa7c4` | 2026-07-26 |
-| **3** | Coverage-Kernel-Pass (8 Tasks: 3-1..3-8) | 8 Test-Klassen, JaCoCo-Gate | `a809405` | 2026-07-26 |
-| **2** | Roadmap-SSOT-Konsolidierung (7 Tasks: 2-1..2-7) | agents.md Rule 13, BACKLOG mold-down | `51f8b27` | 2026-07-26 |
-| **1** | Mod-Economy T5–T13 (9 Tasks: 1-1..1-9) | FlowMeter, Hunger-Hook, Classifier, AccessAutomation, Static-Audit | `c1964d2` | 2026-07-25 |
-| **A** | TreasuryCrisis State-Leak Reset (3 Tasks) | TreasuryCrisis.reset(), EconomySim.clearActive() | `c1964d2` | 2026-07-25 |
-| **0** | Phase A–F SDK + Adapter-Migration | BypassGate, 5 Adapter migriert, 7 Dateien gelöscht | `1442804`..`c1964d2` | 2026-07-25 |
 
 ---
 

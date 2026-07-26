@@ -209,6 +209,41 @@ else
     FAILED=1
 fi
 
+# ── 3.X MD-Tool-Reference Sync (Gate 10) ──────────────────────────────
+# Sprint 9 Audit-Lesson (Run 3 — final): Live-Invocation-Pattern statt alle
+# md-tool-Refs. Eine zu breite Regex (Run 2) hat drei Klassen von False-
+# Positives erzeugt: forward-planning-Refs (Sprint 9 plant balance-smoke.sh),
+# historical-audit-Refs (scarcity_sim.py wurde in Sprint 8 geloescht) und
+# meta-prohibition-Refs in agents.md (DO NOT add sync-doc-anchors.sh).
+# Gate 10 final: greift nur 'python3 tools/X.py' / 'python tools/X.py' /
+# 'bash tools/X.sh' (live invocation). Worktrees + .git ausgeschlossen.
+# Process-Substitution statt Word-Splitting (Robustheit).
+MD_INVOKE_PATTERN='(python3?|python|bash)[[:space:]]+tools/[A-Za-z0-9_.-]+\.(py|sh)([^A-Za-z0-9_.-]|$)'
+MD_INVOKE_HITS=$(grep -roE "$MD_INVOKE_PATTERN" --include='*.md' \
+    --exclude-dir='.freebuff' --exclude-dir='.git' --exclude-dir='docs' . 2>/dev/null \
+    | grep -oE 'tools/[A-Za-z0-9_.-]+\.(py|sh)' | sort -u || true)
+
+if [ -z "$MD_INVOKE_HITS" ]; then
+    printf '  %sOK%s    %-30s  no md-tool-refs found\n' "$GREEN" "$NC" "tools/verify-doc-sync.sh:Gate10"
+    CHECKED=$((CHECKED + 1))
+else
+    STALE_REFS=""
+    while IFS= read -r ref; do
+        [ -z "$ref" ] && continue
+        if [ ! -f "$ref" ]; then
+            STALE_REFS="${STALE_REFS} ${ref}"
+        fi
+    done < <(printf '%s\n' "$MD_INVOKE_HITS")
+    if [ -n "$STALE_REFS" ]; then
+        printf '  %sFAIL%s  %-30s  md-tool-stale-refs:%s\n' "$RED" "$NC" "tools/verify-doc-sync.sh:Gate10" "$STALE_REFS"
+        FAILED=1
+    else
+        OK_COUNT=$(printf '%s\n' "$MD_INVOKE_HITS" | grep -cE '.+' 2>/dev/null || echo 0)
+        printf '  %sOK%s    %-30s  %s md-tool-refs all resolve\n' "$GREEN" "$NC" "tools/verify-doc-sync.sh:Gate10" "${OK_COUNT:-0}"
+        CHECKED=$((CHECKED + 1))
+    fi
+fi
+
 # ── 4. Result ─────────────────────────────────────────────────────────
 
 echo ""
