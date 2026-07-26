@@ -1,6 +1,6 @@
 # SyxEconomyMod — Architektur
 
-> **Version:** v0.13.39 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-25
+> **Version:** v0.13.40 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-25
 >
 > Stam-Doku-Synchron-Anker: Die obenstehende Versions-Zeile MUSS identisch mit `pom.xml` `<version>` sein.
 > Der Sync-Gate `tools/verify-doc-sync.sh` validiert dies vor jedem `mvn compile`.
@@ -39,7 +39,6 @@ HÄRTEN (code-reviewer-minimax-m3 + Gap-Closure)
 | `recover_bindungsmatrix.py` | 🗑️ geloescht |
 | `refactor_bindungsmatrix_macro.py` | 🗑️ geloescht |
 
-**HEBELKARTE.md:** 🗑️ geloescht (war Spec-Input fuer 4 obsolete Skripte).
 Spec-Migration: BINDUNGSMATRIX.csv ist Single-Source-of-Truth.
 
 

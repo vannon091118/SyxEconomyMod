@@ -28,7 +28,6 @@
 | Dokument | Pfad | Rolle |
 |----------|------|-------|
 | **pom.xml** | [pom.xml](../pom.xml) | Versions- und Build-Metadaten |
-| **HANDOFF** | [HANDOFF.md](../HANDOFF.md) | Aktueller Stand, offene Änderungen, Git-Status |
 
 ---
 
