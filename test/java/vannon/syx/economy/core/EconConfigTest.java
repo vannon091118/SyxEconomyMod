@@ -357,15 +357,15 @@ class EconConfigTest {
     // ─── D-001: Food Price Absolute Max ───────────────────────────────
 
     @Test
-    void d001_foodPriceAbsoluteMaxDefault() {
-        assertEquals(500.0, EconConfig.foodPriceAbsoluteMax, 1e-9,
-                "D-001: foodPriceAbsoluteMax must cap food prices at 500");
+    void d001_foodPriceCapMultiplierDefault() {
+        assertEquals(6.0, EconConfig.foodPriceCapMultiplier, 1e-9,
+                "D-001: foodPriceCapMultiplier must be 6.0 (anker-relativ)");
     }
 
     @Test
-    void d001_foodCapBelowGeneralCap() {
-        assertTrue(EconConfig.foodPriceAbsoluteMax < EconConfig.priceAbsoluteMax,
-                "food cap must be tighter than general absolute max");
+    void d001_foodCapMultiplierIsPositive() {
+        assertTrue(EconConfig.foodPriceCapMultiplier > 0.0,
+                "food price cap multiplier must be positive");
     }
 
     // ─── Phase Factor ─────────────────────────────────────────────────

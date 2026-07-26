@@ -11,6 +11,7 @@
 #   5. Bytecode-Injection    (Sprint 6.2)              → audit-bytecode.sh
 #   6. Sim-Logik Audit       (Sprint 6.3)              → audit-sim-logic.sh
 #   7. Schema-Validierung    (Sprint 7)                 → vanilla-schema.yaml vs. adapter/*
+#   8. Balance-Regression    (Sprint 9 / 7-2)           → balance-regression-check.sh
 #
 # Exit-Codes: 0 = alle Gates bestanden, 1 = mindestens ein Gate fehlgeschlagen.
 #
@@ -58,7 +59,7 @@ echo -e "${CYAN}╚════════════════════�
 echo ""
 
 # ── Gate 1: Stam-Doku-Sync (NEU) ────────────────────────────────────────
-echo -e "${CYAN}[1/7] Stam-Doku-Sync (7 Dokumente ↔ pom.xml)${NC}"
+echo -e "${CYAN}[1/8] Stam-Doku-Sync (7 Dokumente ↔ pom.xml)${NC}"
 if [ "${SKIP_SYNC:-0}" = "1" ]; then
     gate_skip "Sync-Gate uebersprungen (SKIP_SYNC=1)"
 else
@@ -71,7 +72,7 @@ fi
 echo ""
 
 # ── Gate 2: Code Audit ──────────────────────────────────────────────────
-echo -e "${CYAN}[2/7] Code Audit (silent failure detection)${NC}"
+echo -e "${CYAN}[2/8] Code Audit (silent failure detection)${NC}"
 
 AUDIT_ARGS=""
 if [ "$STRICT" = true ]; then
@@ -91,7 +92,7 @@ fi
 echo ""
 
 # ── Gate 3: Version Consistency ────────────────────────────────────────
-echo -e "${CYAN}[3/7] Version ↔ Changelog Consistency${NC}"
+echo -e "${CYAN}[3/8] Version ↔ Changelog Consistency${NC}"
 
 if bash tools/verify-version-consistency.sh 2>/dev/null; then
     gate_pass "pom.xml = changelog"
@@ -101,7 +102,7 @@ fi
 echo ""
 
 # ── Gate 4: Adapter Signature Verification ─────────────────────────────
-echo -e "${CYAN}[4/7] Adapter ↔ Engine-Signaturen${NC}"
+echo -e "${CYAN}[4/8] Adapter ↔ Engine-Signaturen${NC}"
 
 ADAPTER_JAR="${ADAPTER_JAR:-}"
 ADAPTER_SRC="src/vannon/syx/economy/adapter/"
@@ -167,7 +168,7 @@ fi
 echo ""
 
 # ── Gate 5: Bytecode-Injection Audit (Sprint 6.2) ────────────────────
-echo -e "${CYAN}[5/7] Bytecode-Injection Audit (Reflection-Patterns)${NC}"
+echo -e "${CYAN}[5/8] Bytecode-Injection Audit (Reflection-Patterns)${NC}"
 if bash tools/audit-bytecode.sh ${AUDIT_ARGS:-} 2>/dev/null; then
     gate_pass "Keine ungesicherten Bytecode-Injection-Pfade"
 else
@@ -181,7 +182,7 @@ fi
 echo ""
 
 # ── Gate 6: Sim-Logik Audit (Sprint 6.3) ───────────────────────────────
-echo -e "${CYAN}[6/7] Ingame-Sim-Logik Audit (Boundary-Conditions)${NC}"
+echo -e "${CYAN}[6/8] Ingame-Sim-Logik Audit (Boundary-Conditions)${NC}"
 if bash tools/audit-sim-logic.sh ${AUDIT_ARGS:-} 2>/dev/null; then
     gate_pass "Keine Boundary-Condition-Verletzungen in Sim-Klassen"
 else
@@ -195,7 +196,7 @@ fi
 echo ""
 
 # ── Gate 7: Schema-Validierung (Sprint 7) ──────────────────────────────
-echo -e "${CYAN}[7/7] Vanilla-Schema ↔ Adapter-Dateien${NC}"
+echo -e "${CYAN}[7/8] Vanilla-Schema ↔ Adapter-Dateien${NC}"
 if [ -f "tools/vanilla-schema.yaml" ]; then
     # Prüfe ob jede Klasse im YAML eine entsprechende Adapter-Datei hat
     SCHEMA_CLASS=$(grep -c 'class:' tools/vanilla-schema.yaml 2>/dev/null || echo 0)
@@ -207,6 +208,19 @@ if [ -f "tools/vanilla-schema.yaml" ]; then
     fi
 else
     gate_fail "tools/vanilla-schema.yaml fehlt — Schema-SSoT nicht gefunden"
+fi
+echo ""
+
+# ── Gate 8: Balance-Regression (Sprint 9 / 7-2) ──────────────────────────────
+echo -e "${CYAN}[8/8] Balance-Regression (EconConfig-Referenzwerte)${NC}"
+if [ "${SKIP_BALANCE:-0}" = "1" ]; then
+    gate_skip "Balance-Check uebersprungen (SKIP_BALANCE=1)"
+else
+    if bash tools/balance-regression-check.sh 2>/dev/null; then
+        gate_pass "Balance-Konstanten im Soll-Bereich"
+    else
+        gate_fail "Balance-Drift — tools/balance-regression-check.sh Details"
+    fi
 fi
 echo ""
 

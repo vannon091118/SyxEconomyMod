@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 /**
  * Sprint 9 — 7-1b: Unit-Test-Coverage für die static math-Methoden in FlowPrices.
  * Fokus: effectiveCoverage(), scarcityMultiplier(), localPrice(), targetStock().
- * Inklusive D-001 (foodPriceAbsoluteMax) und D-004 (supplyPerDay=0 → stock ignoriert).
+ * Inklusive D-001 (foodPriceCapMultiplier) und D-004 (supplyPerDay=0 → stock ignoriert).
  */
 class FlowPricesTest {
 

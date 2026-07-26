@@ -244,11 +244,14 @@ public final class LocalPrices {
     public static int mealPrice(int population, int tick) {
         int flow;
         if (EconConfig.flowPricingEnabled && (flow = LocalPrices.flowFoodBasketPrice()) > 0) {
-            // D-001: flowFoodBasketPrice nutzt FlowPrices — foodPriceAbsoluteMax
+            // D-001: flowFoodBasketPrice nutzt FlowPrices — foodPriceCapMultiplier
             // greift bereits via EconomySim.refreshFlowPrices() + enforceCap().
             // Zusätzlicher Hard-Clamp als Defense-in-Depth.
-            if (EconConfig.foodPriceAbsoluteMax > 0.0 && flow > (int)EconConfig.foodPriceAbsoluteMax) {
-                flow = (int)EconConfig.foodPriceAbsoluteMax;
+            if (EconConfig.foodPriceCapMultiplier > 0.0 && flow > 0) {
+                int cap = (int)(LocalPrices.foodBasketPrice(tick) * EconConfig.foodPriceCapMultiplier);
+                if (cap > 0 && flow > cap) {
+                    flow = cap;
+                }
             }
             return flow;
         }
@@ -260,8 +263,11 @@ public final class LocalPrices {
         int result = (int)Math.ceil((double)world * s);
         // D-001: Food-Price-Hard-Cap. Greift wenn flowPricingEnabled=false
         // und vanilla FACTIONS.PRICE().get() ungecappte Preise liefert.
-        if (EconConfig.foodPriceAbsoluteMax > 0.0 && result > (int)EconConfig.foodPriceAbsoluteMax) {
-            result = (int)EconConfig.foodPriceAbsoluteMax;
+        if (EconConfig.foodPriceCapMultiplier > 0.0 && result > 0) {
+            int cap = (int)((double)world * EconConfig.foodPriceCapMultiplier);
+            if (cap > 0 && result > cap) {
+                result = cap;
+            }
         }
         return result;
     }

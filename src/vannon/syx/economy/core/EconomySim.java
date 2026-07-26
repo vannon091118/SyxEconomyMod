@@ -880,12 +880,17 @@ public final class EconomySim {
         // D-001: Food-Price-Hard-Cap. FlowPrices kennt keine Ressourcentypen,
         // daher Post-Processing-Clamp für essbare Ressourcen via package-private
         // enforceCap(). Greift nach scarcityMultiplier + scarcityPriceBoost.
+        // Cap = anchor × foodPriceCapMultiplier (anker-relativ, nicht absolut).
+        // BREAD (anchor=78, 6×) → max 468. LUXUS-FOOD (anchor=500, 6×) → max 3000.
         // Verhindert dass BREAD bei Knappheit auf 6248 (80× Anker) steigt.
-        if (EconConfig.foodPriceAbsoluteMax > 0.0) {
+        if (EconConfig.foodPriceCapMultiplier > 0.0) {
             for (int i = 0; i < goods; ++i) {
                 RESOURCE res = (RESOURCE)RESOURCES.ALL().get(i);
                 if (RESOURCES.EDI().is(res)) {
-                    this.flowPrices.enforceCap(i, EconConfig.foodPriceAbsoluteMax);
+                    double cap = anchors[i] * EconConfig.foodPriceCapMultiplier;
+                    if (cap > 0.0) {
+                        this.flowPrices.enforceCap(i, cap);
+                    }
                 }
             }
         }
@@ -1605,8 +1610,11 @@ public final class EconomySim {
             }
             // D-002: Emigration 0.0001→0.00003 (1%/Tag statt 3%/Tag pro kritischem Bürger).
             // Diagnose: 9/Tag bei median_wealth=0 — 3× zu aggressiv.
+            // D-002 Polish: Population-Floor-Guard — keine Emigration bei < 20 Bürgern.
+            // Wallet-Schaden trifft weiterhin, aber einzelne Abwanderungen sind in
+            // Kleinstädten unverhältnismäßig destruktiv (irreversible Death-Spirale).
             try {
-                if (hunger >= 90 && RND.rFloat() < 0.00003) {
+                if (hunger >= 90 && RND.rFloat() < 0.00003 && this.roster.size() >= 20) {
                     this.emigrationRisk.incrementAndGet();
                 } else {
                     hungerDeaths++;

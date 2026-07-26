@@ -333,13 +333,17 @@ public final class EconConfig {
      *  (Diagnose: BREAD 78→6248 bei scarcityMaxMultiple=1.5). 500 = ~6× durchschnittlicher
      *  Food-Anker — signalisiert Knappheit ohne Bürger bankrott zu machen.
      *  Greift NACH scarcityMultiplier + scarcityPriceBoost, VOR phaseFactor.
-     *  Nur für essbare Ressourcen (RESOURCES.EDI().is(resource)). */
-    public static double foodPriceAbsoluteMax = 500.0;
+     *  Nur für essbare Ressourcen (RESOURCES.EDI().is(resource)).
+     *  Anker-relativ (6×): BREAD (Anker=78) → max 468, LUXUS-FOOD (Anker=500) → max 3000.
+     *  Verhindert Config-Design-Fehler: absoluter Cap (500) ist für teure Güter zu eng
+     *  und für billige zu weit. Multiplikator skaliert mit dem Anker — Handelsdynamik bleibt.
+     *  Setze 0.0 zum Deaktivieren. */
+    public static double foodPriceCapMultiplier = 6.0;
     /** v1.7.2-Fix: War 5000 → alle Ressourcen mit Bestand=0 landeten bei exakt 5K,
      *  unabhaengig vom Ankerpreis. Jetzt 50000 — 10x hoeher, Ressourcen bleiben
      *  unterscheidbar (Brot ~14K, Moebel ~99K gecappt auf 50K). priceClampHi=100
      *  begrenzt den Multiplikator bereits, 50000 ist reines Safety-Net.
-     *  D-001: foodPriceAbsoluteMax=500 deckt Nahrungsmittel separat ab. */
+     *  D-001: foodPriceCapMultiplier=6.0 deckt Nahrungsmittel separat ab (anker-relativ). */
     public static double priceAbsoluteMax = 50000.0;
     public static double flowPriceRefreshDays = 60.0 / DEFAULT_TICKS_PER_DAY;
     public static boolean windowEnabled = true;
