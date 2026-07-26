@@ -1,6 +1,6 @@
 # SyxEconomyMod — Klassen-Glossar
 
-> **Version:** v0.13.42 | **Stand:** 2026-07-25
+> **Version:** v0.13.43 | **Stand:** 2026-07-25
 >
 > Stam-Doku-Synchron-Anker: Die obenstehende Versions-Zeile MUSS identisch mit `pom.xml` `<version>` sein.
 > Der Sync-Gate `tools/verify-doc-sync.sh` validiert dies vor jedem `mvn compile`.
