@@ -35,6 +35,74 @@
 
 ## v0.13.61 — 2026-07-26
 
+### 🔬 Handshake: Warum wir Phantom-Bugs gejagt haben
+
+**Die Fehldiagnose (Session 2026-07-26, ~3h):**
+
+CSV-Diagnostik (Seed `7123836647702`, 294 Tage, 10 Bürger) zeigte:
+- `FARM_GRAIN`: 0.00 Output über 294 Tage → "Farm produziert nichts!"
+- `food_basket_price`: 124→737 (10× Anker) → "Hyperinflation!"
+- `treasury`: +200K → −2.3M (Tag 202) → "Geld-Drucker!"
+- `total_money`: 2.000 → 2.541.750 → "Wirtschaft kollabiert!"
+
+Daraufhin wurden D-001 (Food-Cap), D-002 (Emigration-Dämpfung), D-003 (Carpenter
+Cold-Start), D-004 (_WOOD-Inflow-Check), D-005 (Gini-Clamp), D-006 (UI-Verifikation)
+innerhalb von 2 Stunden implementiert — alle notwendig, aber **keiner davon**
+behob die eigentliche Ursache der Phantom-Krise.
+
+**Die Offenbarung (Liveteser-Feedback):**
+
+1. **Getreide braucht ein volles Jahr** (Saat Frühling → Ernte Spätsommer).
+   `FARM_GRAIN` mit 0 Output in den ersten ~90 Tagen ist korrekt.
+
+2. **Bürger jagen und sammeln.** Nahrung aus Jagd, Fischfang und Sammeln geht
+   DIREKT an den Bürger — nicht durchs Lager. Der Engine-Tracker
+   `FACTIONS.player().res().in(RTYPE.PRODUCED)` zählt alles, aber der `FlowMeter`
+   liest nur `SETT.ROOMS().STOCKPILE.tally()` + Industry-Output.
+
+3. **Der FlowMeter hat `producerlessProduced` seit jeher berechnet** — die
+   Differenz zwischen globaler Engine-Produktion und Industry-getrackter Produktion.
+   Aber dieser Wert wurde **nie in `supply[]` eingespeist**. Er existierte nur
+   als tote Variable, exportiert via `producerlessProducedSinceLastSample()`,
+   aber nie in die Coverage-/Demand-Berechnung integriert.
+
+**Die Kausalkette der Phantom-Krise:**
+
+```
+Realität:           Bürger jagen → 2 FISH/Tag → Bürger sind satt
+FlowMeter (vorher): supplyPerDay=0 → coverage=0 → scarcityMultiplier=69×
+                    → food_basket_price=737 → Treasury zahlt überhöhte Preise
+                    → Treasury kollabiert → "Hyperinflation" in der CSV
+```
+
+Der Mod reagierte auf eine Knappheit, die NUR in seiner eigenen Datenwelt
+ existierte. Die Bürger waren nie in Gefahr.
+
+**Der Fix (5 LOC in `FlowMeter.sample()`):**
+
+```java
+// producerlessProduced = globale Engine-Produktion − Industry-getrackte Produktion
+// Das IST Jagen, Sammeln, Angeln — jetzt sichtbar für FlowPrices & Co.
+for (good = 0; good < goods; ++good) {
+    if (this.producerlessProduced[good] > 0) {
+        this.supply[good] += (double) producerlessProduced[good] / elapsedDays;
+    }
+}
+```
+
+Die abgeleitete `householdConsumption = supply − firmInputs − stockChange` steigt
+automatisch mit → `demand` steigt proportional → `coverage = supply/(demand×target)`
+bleibt bei 1.0 für gejagte Nahrung. Keine Phantom-Preis-Spikes mehr.
+
+**Prävention für zukünftige Livetests:**
+
+- `DebugTracer.BUILD`-Kategorie + `EconomySim.trackBuildingChanges()`: logged wann
+  das erste Lager/Werkstatt gebaut wurde → direkte Korrelation mit CSV-Zeitstempeln
+- `docs/live-notes/2026-07-26-livetest.md`: alle Spieler-Beobachtungen + korrigierte
+  Diagnose dokumentiert
+
+---
+
 ### Sprint 10 — Diagnostik-Fixes D-001–D-006 (Commit `6f4588d`)
 
 - **D-001:** `foodPriceAbsoluteMax=500` → `foodPriceCapMultiplier=6.0` (anker-relativ)
