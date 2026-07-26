@@ -1,6 +1,6 @@
 # SyxEconomyMod — Entwicklung & Roadmap
 
-> **Version:** v0.13.41 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-26
+> **Version:** v0.13.42 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-26
 >
 > Stam-Doku-Synchron-Anker: Die obenstehende Version MUSS identisch mit `pom.xml` `<version>` sein.
 > `tools/verify-doc-sync.sh` validiert dies (9 Checks inkl. YAML-Schema + YAML↔Java).
@@ -14,9 +14,9 @@
 | ID | Prio | Task | LoC | Sprint | Status |
 |---|---|---|---|---|---|
 | **T-COV-9** | 🟠 P1 | Mockito-Inject für engine-coupled Branches + JaCoCo auf 30/15% | ~600 | 10 | Planned |
-| **B-011** | 🟠 P1 | Balance-CI-Gate: Golden-Snapshot-Vergleich (5%-Toleranz) für Gini/Steuer/Treasury | ~25 | 9 | Planned |
-| **BAL-1** | 🟠 P1 | `tools/balance-smoke.sh`: CSV-Snapshot laden, Toleranz-Check, Build-Break bei 5% Drift | ~40 | 9 | Planned |
-| **BOOST-1** | 🟡 P2 | Booster-Eval: 6 Behaviour-Booster (LAWFULNESS/SUBMISSION/HAPPI/HAPPI_SLAVES/SANITY/LOYALTY) auf Mod-Relevanz prüfen | ~30 | 9 | Planned |
+| **B-011** | 🟠 P1 | Balance-CI-Gate: `tools/scarcity_sim.py`-Algorithmus dokumentieren → `tools/balance-smoke.sh` Golden-Snapshot-Spezifikation (5%-Toleranz). **Snapshot-Erzeugung ist Teil dieses Tasks.** Output: `tools/balance-smoke.sh` kann gegen einen validen CSV-Referenz-Datensatz rechnen. | ~35 | 9 | Planned |
+| **BAL-1** | 🟠 P1 | `tools/balance-smoke.sh`: CSV-Snapshot laden, Gini/Steuer/Treasury gegen Toleranz prüfen, Build-Break bei 5% Drift. **Abhängig von B-011 (Snapshot muss existieren).** Ohne B-011: Leer-Start mit Warnung, kein Fail. | ~40 | 9 | Planned |
+| **BOOST-1** | 🟡 P2 | Booster-Eval (ergebnisoffen): 6 Behaviour-Booster (LAWFULNESS/SUBMISSION/HAPPI/HAPPI_SLAVES/SANITY/LOYALTY) auf Mod-Mechanik-Relevanz messen. **Valides Ergebnis: 'keiner lohnt sich' oder 'X,Y,Z sind relevant'.** Keine Einbau-Garantie — Messung, nicht Zielvorgabe. | ~30 | 9 | Planned |
 | **T-COV-5** | 🟡 P2 | 5 ungetestete Klassen: NpcFactionAdapter, AdapterDispatcher, SchemaValidator, DebugCsv, LoggingAdapter | ~200 | 10 | Planned |
 | **B-001** | 🟡 P2 | FlowMeter: `SETT.ROOMS().ins()` für ROOM_PRODUCER_INSTANCE iterieren | ~25 | 10 | Planned |
 | **B-005** | 🟡 P2 | Oddjob-Clamp: harte Grenze via `EconConfig.oddjobMaxPay` | ~12 | 10 | Planned |
