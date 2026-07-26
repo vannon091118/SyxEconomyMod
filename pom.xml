@@ -74,10 +74,16 @@
         </dependency>
         <!-- Sprint 6.0 — Mockito fuer engine-coupled Branches (Sprint 9 T-COV-9).
              Seit Mockito 5.0 ist mockito-inline in mockito-core integriert — kein
-             separates Artifact noetig. -->
+             separates Artifact noetig. mockito-junit-jupiter fuer @ExtendWith + @Mock. -->
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
+            <version>5.14.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
             <version>5.14.2</version>
             <scope>test</scope>
         </dependency>
