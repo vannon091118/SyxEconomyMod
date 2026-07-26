@@ -161,9 +161,9 @@ public final class WindowEconomy extends EconWindowBase {
                     double supply = (snap != null && i < snap.supplyPerDay.length) ? snap.supplyPerDay[i] : 0;
                     double demand = (snap != null && i < snap.demandPerDay.length) ? snap.demandPerDay[i] : 0;
 
-                    // Resource name
+                    // Resource display name (SK-06: lesbarer Name statt Rohkey)
                     GText name = new GText(UI.FONT().S, 100);
-                    name.set(r.key);
+                    name.set(toDisplayName(r.key));
                     name.color(GCOLOR.T().NORMAL);
                     content.add(name, x, y);
 
@@ -259,57 +259,56 @@ public final class WindowEconomy extends EconWindowBase {
                 ledger.lastWorkersUnpaid() > 0 ? GCOLOR.UI().BAD.normal : GCOLOR.UI().GOOD.normal);
             y += 50;
 
-            addColHeader(content, x, y, "Betrieb", 140);
-            addColHeader(content, x + 150, y, "Arb", 40);
-            addColHeader(content, x + 200, y, "Ziel", 40);
-            addColHeader(content, x + 250, y, "Profit/d", 80);
-            addColHeader(content, x + 340, y, "Marginal", 80);
-            addColHeader(content, x + 430, y, "Unpaid", 50);
-            y += 20;
-
-            // Firm rows
             java.util.List<FirmLedger.FirmFinancialSnapshot> firms = ledger.firmFinancialSnapshots();
-            int maxRows = Math.min(firms.size(), (h - 120) / 16);
-            for (int i = 0; i < maxRows; i++) {
-                FirmLedger.FirmFinancialSnapshot f = firms.get(i);
 
-                // Blueprint key (truncate)
-                GText key = new GText(UI.FONT().S, 128);
-                String keyStr = f.blueprint();
-                if (keyStr != null && keyStr.length() > 18) keyStr = keyStr.substring(0, 18);
-                key.set(keyStr);
-                key.color(GCOLOR.T().NORMAL);
-                content.add(key, x, y);
+            if (!firms.isEmpty()) {
+                addColHeader(content, x, y, "Betrieb", 140);
+                addColHeader(content, x + 150, y, "Arb", 40);
+                addColHeader(content, x + 200, y, "Ziel", 40);
+                addColHeader(content, x + 250, y, "Profit/d", 80);
+                addColHeader(content, x + 340, y, "Marginal", 80);
+                addColHeader(content, x + 430, y, "Unpaid", 50);
+                y += 20;
 
-                GText emp = new GText(UI.FONT().S, 48);
-                emp.set(String.valueOf(f.employees()));
-                emp.color(GCOLOR.T().NORMAL);
-                content.add(emp, x + 150, y);
+                int maxRows = Math.min(firms.size(), (h - 120) / 16);
+                for (int i = 0; i < maxRows; i++) {
+                    FirmLedger.FirmFinancialSnapshot f = firms.get(i);
 
-                GText tgt = new GText(UI.FONT().S, 48);
-                tgt.set(String.valueOf(f.employedTarget()));
-                tgt.color(GCOLOR.T().NORMAL);
-                content.add(tgt, x + 200, y);
+                    GText key = new GText(UI.FONT().S, 128);
+                    String keyStr = f.blueprint();
+                    if (keyStr != null && keyStr.length() > 18) keyStr = keyStr.substring(0, 18);
+                    key.set(keyStr);
+                    key.color(GCOLOR.T().NORMAL);
+                    content.add(key, x, y);
 
-                GText profit = new GText(UI.FONT().S, 64);
-                profit.set(String.format("%.1f", f.profitPerDay()));
-                profit.color(f.profitPerDay() > 0 ? GCOLOR.UI().GOOD.normal : GCOLOR.UI().BAD.normal);
-                content.add(profit, x + 250, y);
+                    GText emp = new GText(UI.FONT().S, 48);
+                    emp.set(String.valueOf(f.employees()));
+                    emp.color(GCOLOR.T().NORMAL);
+                    content.add(emp, x + 150, y);
 
-                GText marginal = new GText(UI.FONT().S, 64);
-                marginal.set(String.format("%.1f", f.marginalPerWorker()));
-                marginal.color(f.marginalPerWorker() > 0 ? GCOLOR.UI().GOOD.normal : GCOLOR.UI().BAD.normal);
-                content.add(marginal, x + 340, y);
+                    GText tgt = new GText(UI.FONT().S, 48);
+                    tgt.set(String.valueOf(f.employedTarget()));
+                    tgt.color(GCOLOR.T().NORMAL);
+                    content.add(tgt, x + 200, y);
 
-                GText unpaid = new GText(UI.FONT().S, 48);
-                unpaid.set(String.valueOf(f.workersUnpaid()));
-                unpaid.color(f.workersUnpaid() > 0 ? GCOLOR.UI().BAD.normal : GCOLOR.UI().GOOD.normal);
-                content.add(unpaid, x + 430, y);
+                    GText profit = new GText(UI.FONT().S, 64);
+                    profit.set(String.format("%.1f", f.profitPerDay()));
+                    profit.color(f.profitPerDay() > 0 ? GCOLOR.UI().GOOD.normal : GCOLOR.UI().BAD.normal);
+                    content.add(profit, x + 250, y);
 
-                y += 16;
-            }
+                    GText marginal = new GText(UI.FONT().S, 64);
+                    marginal.set(String.format("%.1f", f.marginalPerWorker()));
+                    marginal.color(f.marginalPerWorker() > 0 ? GCOLOR.UI().GOOD.normal : GCOLOR.UI().BAD.normal);
+                    content.add(marginal, x + 340, y);
 
-            if (firms.isEmpty()) {
+                    GText unpaid = new GText(UI.FONT().S, 48);
+                    unpaid.set(String.valueOf(f.workersUnpaid()));
+                    unpaid.color(f.workersUnpaid() > 0 ? GCOLOR.UI().BAD.normal : GCOLOR.UI().GOOD.normal);
+                    content.add(unpaid, x + 430, y);
+
+                    y += 16;
+                }
+            } else {
                 GText noFirms = new GText(UI.FONT().M, 128);
                 noFirms.set("Keine Betriebe erfasst.");
                 noFirms.color(GCOLOR.T().INACTIVE);
@@ -334,7 +333,8 @@ public final class WindowEconomy extends EconWindowBase {
             y += 28;
 
             addKpi(content, x, y, "Bezahlt",
-                String.valueOf(ledger.lastWorkersPaid()), GCOLOR.UI().GOOD.normal);
+                String.valueOf(ledger.lastWorkersPaid()),
+                ledger.lastWorkersPaid() > 0 ? GCOLOR.UI().GOOD.normal : GCOLOR.T().INACTIVE);
             addKpi(content, x + 380, y, "Unbezahlt",
                 String.valueOf(ledger.lastWorkersUnpaid()),
                 ledger.lastWorkersUnpaid() > 0 ? GCOLOR.UI().BAD.normal : GCOLOR.UI().GOOD.normal);
@@ -356,7 +356,11 @@ public final class WindowEconomy extends EconWindowBase {
                 CompactNumber.format(ledger.lastIncomeDue()) + " D", GCOLOR.T().NORMAL);
             addKpi(content, x + 380, y, "Bezahlt",
                 CompactNumber.format(ledger.lastIncomePaid()) + " D",
-                ledger.lastIncomePaid() >= ledger.lastIncomeDue() ? GCOLOR.UI().GOOD.normal : GCOLOR.UI().SOSO.normal);
+                ledger.lastIncomePaid() > 0 && ledger.lastIncomePaid() >= ledger.lastIncomeDue()
+                    ? GCOLOR.UI().GOOD.normal
+                    : ledger.lastIncomePaid() > 0
+                        ? GCOLOR.UI().SOSO.normal
+                        : GCOLOR.T().INACTIVE);
         }
     }
 
@@ -381,7 +385,7 @@ public final class WindowEconomy extends EconWindowBase {
                 if (bounty > 0) subsidized++;
 
                 GText name = new GText(UI.FONT().S, 128);
-                name.set(r.key);
+                name.set(toDisplayName(r.key));  // SK-06: lesbarer Name statt Rohkey
                 name.color(bounty > 0 ? GCOLOR.UI().GOOD.normal : GCOLOR.T().INACTIVE);
                 content.add(name, x, y);
 
@@ -506,5 +510,19 @@ public final class WindowEconomy extends EconWindowBase {
                 }
             }
         }
+    }
+
+    /** SK-06: Wandelt Ressourcen-Rohkey (z.B. ALCO_BEER) in lesbaren Namen um. */
+    private static String toDisplayName(String key) {
+        if (key == null || key.isEmpty()) return key;
+        String[] parts = key.split("_");
+        StringBuilder sb = new StringBuilder();
+        for (String part : parts) {
+            if (part.isEmpty()) continue;
+            if (sb.length() > 0) sb.append(' ');
+            sb.append(Character.toUpperCase(part.charAt(0)));
+            if (part.length() > 1) sb.append(part.substring(1).toLowerCase());
+        }
+        return sb.toString();
     }
 }

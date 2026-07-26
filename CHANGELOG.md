@@ -1,6 +1,6 @@
 # SyxEconomyMod — Changelog
 
-> **Version:** v0.13.43 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-26
+> **Version:** v0.13.44 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-26
 >
 > Stam-Doku-Synchron-Anker: Die obenstehende Versions-Zeile MUSS identisch mit `pom.xml` `<version>` sein.
 > Der Sync-Gate `tools/verify-doc-sync.sh` scheitert wenn dieser Anker driftet.
@@ -16,6 +16,7 @@
 
 | Sprint | Theme | Commit(s) | Datum |
 |---|---|---|---|
+| **9** | UI-Sprint — SK-01/06/09/10 Bugfixes (inline-Text, Rohkeys, Null-Farbe, leere Header) | _staged_ | 2026-07-26 |
 | **8** | Global-Audit — dead code removal, stale doc refs, .gitignore hygiene | `2ac5191` | 2026-07-26 |
 | **7** | Adapter-Dispatcher + Schema-SSoT (7 Tasks subsummiert) | `4efa7c4` | 2026-07-26 |
 | **6** | Global-Audit + Freeze (7 Tasks: 6-1..6-7) | `2ac5191`, `804cbf3` | 2026-07-26 |
@@ -28,6 +29,17 @@
 | **0** | Phase A–F SDK + Adapter-Migration | `1442804`..`c1964d2` | 2026-07-25 |
 
 **Drift-Hinweis:** Sprint 6/8 teilen `2ac5191`, Sprint 5/7 teilen `4efa7c4`. Sprint-Nummerierung wurde in v0.13.43 renumbered (siehe `docs: ROADMAP Task N-X Schema + sprint renumbering`).
+
+---
+
+## v0.13.44 — 2026-07-26
+
+### Sprint 9 — UI Bugfixes (SK-01, SK-06, SK-09, SK-10)
+
+- SK-01: Inline-Beschreibungstexte bei Checkboxen entfernt
+- SK-06: Ressourcen-Rohkeys durch lesbare Anzeigenamen ersetzt
+- SK-09: Farbgebung bei Null-Werten korrigiert (INACTIVE statt GOOD.normal)
+- SK-10: Tabellen-Header bei leerem Firmenbestand ausgeblendet
 
 ---
 

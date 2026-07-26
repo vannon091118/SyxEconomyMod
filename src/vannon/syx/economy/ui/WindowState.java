@@ -143,7 +143,8 @@ public final class WindowState extends EconWindowBase {
                 new ACTION() { @Override public void exe() { wh.setWage(Math.max(0, wh.wage() - EconConfig.wageStep)); } });
 
             addKpi(content, x + 380, y, UI.icons().s.human, "Bezahlt",
-                String.valueOf(wh.lastWorkersPaid()), GCOLOR.UI().GOOD.normal);
+                String.valueOf(wh.lastWorkersPaid()),
+                wh.lastWorkersPaid() > 0 ? GCOLOR.UI().GOOD.normal : GCOLOR.T().INACTIVE);
             y += 30;
             addKpi(content, x, y, UI.icons().m.coins, "Lohnsumme",
                 CompactNumber.format(wh.lastWagesPaid()) + " D", GCOLOR.T().NORMAL);
@@ -324,19 +325,11 @@ public final class WindowState extends EconWindowBase {
 
             addCheckbox(content, x, y, "Religion-Steuer", EconConfig.religionTaxEnabled,
                 b -> EconConfig.religionTaxEnabled = b);
-            GText religionInfo = new GText(UI.FONT().S, 256);
-            religionInfo.set("Treibt Geld fuer Tempel und Glaube ein.");
-            religionInfo.color(GCOLOR.T().NORMAL);
-            content.add(religionInfo, x + 20, y + 16);
-            y += 36;
+            y += 22;
 
             addCheckbox(content, x, y, "Liturgie abhalten", EconConfig.liturgyEnabled,
                 b -> EconConfig.liturgyEnabled = b);
-            GText liturgyInfo = new GText(UI.FONT().S, 256);
-            liturgyInfo.set("Sammelt Spenden — Stimmung der Buerger steigt.");
-            liturgyInfo.color(GCOLOR.T().NORMAL);
-            content.add(liturgyInfo, x + 20, y + 16);
-            y += 50;
+            y += 22;
 
             GText collHeader = new GText(UI.FONT().M, 256);
             collHeader.set("--- Heutige Einnahmen ---");
@@ -611,19 +604,11 @@ public final class WindowState extends EconWindowBase {
 
             addCheckbox(content, x, y, "Religionssteuer aktiv", EconConfig.religionTaxEnabled,
                 b -> EconConfig.religionTaxEnabled = b);
-            GText relInfo = new GText(UI.FONT().S, 256);
-            relInfo.set("Treibt Geld fuer Tempel und Glaube ein.");
-            relInfo.color(GCOLOR.T().NORMAL);
-            content.add(relInfo, x + 20, y + 16);
-            y += 36;
+            y += 22;
 
             addCheckbox(content, x, y, "Liturgie abhalten", EconConfig.liturgyEnabled,
                 b -> EconConfig.liturgyEnabled = b);
-            GText litInfo = new GText(UI.FONT().S, 256);
-            litInfo.set("Sammelt Spenden — Stimmung der Buerger steigt.");
-            litInfo.color(GCOLOR.T().NORMAL);
-            content.add(litInfo, x + 20, y + 16);
-            y += 36;
+            y += 22;
 
             // Liturgy interval display only (no toggle — controlled by EconConfig)
             GText litInt = new GText(UI.FONT().S, 256);
