@@ -54,21 +54,16 @@ import vannon.syx.economy.core.Roster;
 import vannon.syx.economy.core.StateWarehouses;
 import vannon.syx.economy.core.Wallets;
 import vannon.syx.economy.core.WarehouseKernel;
+import vannon.syx.economy.core.warehouse.market.MarketSharedState;
 import util.statistics.HISTORY_COLLECTION;
 
 public final class WarehouseMarket implements Saveable {
     static final int FORMAT = 7;
-    private final ArrayList<PendingBook> pending = new ArrayList<>();
-    private final ArrayList<PendingIntakeLock> pendingIntakeLocks = new ArrayList<>();
-    private final Map<StockpileInstance, Book[]> books = new IdentityHashMap<>();
-    private final Map<Integer, ArrayList<DirectClaim>> directClaims = new HashMap<>();
-    private final ArrayList<PendingDirectClaim> pendingDirectClaims = new ArrayList<>();
-    private final Map<RoomInstance, RetailBook[]> retailBooks = new IdentityHashMap<>();
-    private final ArrayList<PendingRetailBook> pendingRetailBooks = new ArrayList<>();
-    private long[] crownUnits = new long[0];
-    private long[] abandonedUnits = new long[0];
-    private boolean inferCrownFromLoose = true;
-    private final Map<StockpileInstance, Map<Integer, Integer>> intakeLocks = new IdentityHashMap<StockpileInstance, Map<Integer, Integer>>();
+    // Sprint M-1 / T-101: 11 reference-keyed data fields + scalar flags moved into
+    // MarketSharedState. WarehouseMarket keeps tracking-stat fields (lastBought, etc.)
+    // for now; those migrate into per-engine aggregations in T-102..T-108.
+    private final MarketSharedState sharedState = new MarketSharedState();
+    private final WholesaleEngine wholesale;
     private final StateWarehouses state;
     private final FlowPrices prices;
     private long lastBought;
@@ -92,13 +87,7 @@ public final class WarehouseMarket implements Saveable {
     public WarehouseMarket(StateWarehouses state, FlowPrices prices) {
         this.state = state;
         this.prices = prices;
-        // v0.1.3 (Phase-4.7-Blocker #8): register reference-keyed maps for
-        // Save/Load-clear. Without this, books/retailBooks/intakeLocks lose
-        // all entries silently after the engine recreates StockpileInstance
-        // and RoomInstance objects on chunk/legacy load.
-        IdentityMapRegistry.register("WarehouseMarket", "books", books);
-        IdentityMapRegistry.register("WarehouseMarket", "retailBooks", retailBooks);
-        IdentityMapRegistry.register("WarehouseMarket", "intakeLocks", intakeLocks);
+        this.wholesale = new WholesaleEngine(sharedState, state, prices);
     }
 
     public long lastConstructionPaid() {
@@ -110,19 +99,19 @@ public final class WarehouseMarket implements Saveable {
     }
 
     public long lastBought() {
-        return this.lastBought;
+        return this.wholesale.lastBought;
     }
 
     public long lastSold() {
-        return this.lastSold;
+        return this.wholesale.lastSold;
     }
 
     public int lastUnitsBought() {
-        return this.lastUnitsBought;
+        return this.wholesale.lastUnitsBought;
     }
 
     public int lastUnitsSold() {
-        return this.lastUnitsSold;
+        return this.wholesale.lastUnitsSold;
     }
 
     public long lastTaxed() {
@@ -134,45 +123,29 @@ public final class WarehouseMarket implements Saveable {
     }
 
     public void beginPurchases() {
-        this.lastBought = 0L;
-        this.lastUnitsBought = 0;
+        this.wholesale.beginPurchases();
     }
 
     public long buy(FlowMeter meter, FlowPrices prices, Roster roster, Wallets wallets, FirmLedger ledger) {
-        if (!EconConfig.warehouseMarketEnabled || !prices.ready() || SETT.ROOMS() == null) {
-            return 0L;
-        }
-        long paid = 0L;
-        for (FlowMeter.FirmSnapshot firm : meter.firmSnapshots()) {
-            if (firm.room() instanceof StockpileInstance) continue;
-            for (int output = 0; output < firm.outputCount(); ++output) {
-                RESOURCE resource;
-                int price;
-                int units = firm.producedSinceLastSample(output);
-                if (units <= 0 || (price = prices.priceRoundedUp((resource = firm.outputResource(output)).index())) <= 0) continue;
-                paid += this.buyOutput(firm, resource, units, price, roster, wallets, ledger);
-            }
-        }
-        this.lastBought += paid;
-        return paid;
+        return this.wholesale.buy(meter, prices, roster, wallets, ledger);
     }
 
     public void recordProducerlessOutput(FlowMeter meter) {
         this.ensureCrownCapacity();
-        for (int resource = 0; resource < this.crownUnits.length; ++resource) {
+        for (int resource = 0; resource < this.sharedState.crownUnits.length; ++resource) {
             int units = meter.producerlessProducedSinceLastSample(resource);
             if (units <= 0) continue;
-            this.crownUnits[resource] = Math.min(Long.MAX_VALUE, this.crownUnits[resource] + (long)units);
+            this.sharedState.crownUnits[resource] = Math.min(Long.MAX_VALUE, this.sharedState.crownUnits[resource] + (long)units);
         }
     }
 
     private void ensureCrownCapacity() {
         int goods = RESOURCES.ALL().size();
-        if (this.crownUnits.length != goods) {
-            this.crownUnits = Arrays.copyOf(this.crownUnits, goods);
+        if (this.sharedState.crownUnits.length != goods) {
+            this.sharedState.crownUnits = Arrays.copyOf(this.sharedState.crownUnits, goods);
         }
-        if (this.abandonedUnits.length != goods) {
-            this.abandonedUnits = Arrays.copyOf(this.abandonedUnits, goods);
+        if (this.sharedState.abandonedUnits.length != goods) {
+            this.sharedState.abandonedUnits = Arrays.copyOf(this.sharedState.abandonedUnits, goods);
         }
     }
 
@@ -181,7 +154,7 @@ public final class WarehouseMarket implements Saveable {
             return 0L;
         }
         this.ensureCrownCapacity();
-        return Math.max(0L, this.crownUnits[resource.index()]);
+        return Math.max(0L, this.sharedState.crownUnits[resource.index()]);
     }
 
     public long buyCheaperCrownGoods(Roster roster, Wallets wallets) {
@@ -201,7 +174,7 @@ public final class WarehouseMarket implements Saveable {
         long paidTotal = 0L;
         block0: for (int resourceIndex = 0; resourceIndex < RESOURCES.ALL().size(); ++resourceIndex) {
             int privatePrice;
-            if (this.crownUnits[resourceIndex] <= 0L) continue;
+            if (this.sharedState.crownUnits[resourceIndex] <= 0L) continue;
             RESOURCE resource = (RESOURCE)RESOURCES.ALL().get(resourceIndex);
             int crownPrice = this.state.crownMarketPrice(resource);
             int n = privatePrice = this.prices.ready() ? this.prices.priceRoundedUp(resourceIndex) : Integer.MAX_VALUE;
@@ -214,7 +187,7 @@ public final class WarehouseMarket implements Saveable {
                 if (warehouse == null || !warehouse.exists() || this.state.isStateOwned((RoomInstance)warehouse)) continue;
                 int stored = Math.max(0, tally.amount.get(resource, warehouse));
                 physical += (long)stored;
-                Book[] shelf = this.books.get(warehouse);
+                Book[] shelf = this.sharedState.books.get(warehouse);
                 Book existing = shelf != null && resourceIndex < shelf.length ? shelf[resourceIndex] : null;
                 int titled = existing == null ? 0 : Math.max(0, existing.unitsHeld);
                 warehouseTitle += (long)titled;
@@ -223,7 +196,7 @@ public final class WarehouseMarket implements Saveable {
                 candidates.add(new CrownStorage(warehouse, shortfall));
             }
             long directTitle = this.directClaimUnits(resourceIndex);
-            int offered = WarehouseMarket.crownPurchasableUnits(physical, warehouseTitle, directTitle, this.crownUnits[resourceIndex]);
+            int offered = WarehouseMarket.crownPurchasableUnits(physical, warehouseTitle, directTitle, this.sharedState.crownUnits[resourceIndex]);
             if (offered <= 0) continue;
             long directReserve = directTitle;
             int remaining = offered;
@@ -236,8 +209,8 @@ public final class WarehouseMarket implements Saveable {
                 if ((eligible -= reserved) <= 0 || (purchase = this.purchaseCrown(candidate.warehouse(), resource, Math.min(remaining, eligible), crownPrice, roster, wallets)).units() <= 0) continue;
                 remaining -= purchase.units();
                 int n2 = resourceIndex;
-                this.crownUnits[n2] = this.crownUnits[n2] - (long)purchase.units();
-                this.abandonedUnits[resourceIndex] = Math.max(0L, this.abandonedUnits[resourceIndex] - (long)purchase.units());
+                this.sharedState.crownUnits[n2] = this.sharedState.crownUnits[n2] - (long)purchase.units();
+                this.sharedState.abandonedUnits[resourceIndex] = Math.max(0L, this.sharedState.abandonedUnits[resourceIndex] - (long)purchase.units());
                 paidTotal += (long)purchase.paid();
                 this.lastUnitsBought += purchase.units();
                 this.lastBought += (long)purchase.paid();
@@ -247,18 +220,18 @@ public final class WarehouseMarket implements Saveable {
         return paidTotal;
     }
 
-    static boolean crownBeforePrivate(int crownPrice, int privatePrice) {
+    public static boolean crownBeforePrivate(int crownPrice, int privatePrice) {
         return Math.max(0, crownPrice) <= Math.max(0, privatePrice);
     }
 
-    static int crownPurchasableUnits(long physical, long warehouseTitle, long directTitle, long crownAvailable) {
+    public static int crownPurchasableUnits(long physical, long warehouseTitle, long directTitle, long crownAvailable) {
         long untitled = Math.max(0L, physical - Math.max(0L, warehouseTitle) - Math.max(0L, directTitle));
         return (int)Math.min(Integer.MAX_VALUE, Math.min(Math.max(0L, crownAvailable), untitled));
     }
 
     private long directClaimUnits(int resourceIndex) {
         long total = 0L;
-        ArrayList<DirectClaim> claims = this.directClaims.get(resourceIndex);
+        ArrayList<DirectClaim> claims = this.sharedState.directClaims.get(resourceIndex);
         if (claims == null) {
             return 0L;
         }
@@ -413,7 +386,7 @@ public final class WarehouseMarket implements Saveable {
             return;
         }
         this.ensureCrownCapacity();
-        for (Map.Entry<StockpileInstance, Book[]> entry : this.books.entrySet()) {
+        for (Map.Entry<StockpileInstance, Book[]> entry : this.sharedState.books.entrySet()) {
             boolean nowState = this.state.isStateOwned((RoomInstance)entry.getKey());
             for (Book book : entry.getValue()) {
                 if (book == null) continue;
@@ -433,43 +406,7 @@ public final class WarehouseMarket implements Saveable {
     }
 
     public Settlement sellInputs(FlowMeter meter, FlowPrices prices, Roster roster, Wallets wallets, FirmLedger ledger) {
-        if (!EconConfig.warehouseMarketEnabled || !prices.ready() || SETT.ROOMS() == null) {
-            return new Settlement(0L, 0L);
-        }
-        long billed = 0L;
-        long credited = 0L;
-        for (FlowMeter.FirmSnapshot firm : meter.firmSnapshots()) {
-            if (firm.room() instanceof StockpileInstance) continue;
-            for (int input = 0; input < firm.inputCount(); ++input) {
-                RESOURCE resource;
-                int price;
-                int units = firm.consumedSinceLastSample(input);
-                if (units <= 0 || (price = prices.priceRoundedUp((resource = firm.inputResource(input)).index())) <= 0) continue;
-                int availableMarketTitle = this.marketTitledUnits(resource, units, price);
-                int crownPricedUnits = WarehouseMarket.crownPricedUnits(units, this.crownUnits(resource), availableMarketTitle);
-                int marketUnits = units - crownPricedUnits;
-                int crownPrice = this.state.crownMarketPrice(resource);
-                long marketGross = (long)marketUnits * (long)price;
-                long crownGross = (long)crownPricedUnits * (long)crownPrice;
-                long gross = WarehouseMarket.inputGross(units, marketUnits, price, crownPrice);
-                int bill = (int)Math.min(Integer.MAX_VALUE, gross);
-                int charged = WarehouseMarket.charge(firm.room(), bill, roster, wallets);
-                if (charged > 0) {
-                    ledger.recordFirmCost(firm.room(), charged);
-                    billed += (long)charged;
-                }
-                int marketProceeds = WarehouseMarket.proportionalValue(charged, marketGross, marketGross + crownGross);
-                if (marketUnits > 0 && marketProceeds > 0) {
-                    int[] quantities = new int[RESOURCES.ALL().size()];
-                    quantities[resource.index()] = marketUnits;
-                    credited += (long)this.distributeSaleDetailed(quantities, marketProceeds, roster, wallets, ledger, false, false).credited();
-                }
-                if (crownPricedUnits <= 0) continue;
-                this.consumeCrownTitle(resource, crownPricedUnits);
-                this.state.recordCrownMarketSale(charged - marketProceeds, crownPricedUnits);
-            }
-        }
-        return new Settlement(billed, credited);
+        return this.wholesale.sellInputs(meter, prices, roster, wallets, ledger);
     }
 
     private int marketTitledUnits(RESOURCE resource, int wanted, int marketPrice) {
@@ -478,7 +415,7 @@ public final class WarehouseMarket implements Saveable {
         }
         int index = resource.index();
         long warehouseUnits = 0L;
-        for (Map.Entry<StockpileInstance, Book[]> entry : this.books.entrySet()) {
+        for (Map.Entry<StockpileInstance, Book[]> entry : this.sharedState.books.entrySet()) {
             Book book;
             Book[] shelf = entry.getValue();
             if (index >= shelf.length || (book = shelf[index]) == null || book.unitsHeld <= 0 || book.stateOwned && !this.state.sellsAt((RoomInstance)entry.getKey(), resource, marketPrice)) continue;
@@ -490,7 +427,7 @@ public final class WarehouseMarket implements Saveable {
             return titled;
         }
         long producerUnits = 0L;
-        ArrayList<DirectClaim> claims = this.directClaims.get(index);
+        ArrayList<DirectClaim> claims = this.sharedState.directClaims.get(index);
         if (claims != null) {
             for (DirectClaim claim : claims) {
                 if (claim.producer == null || !claim.producer.exists() || claim.unitsHeld <= 0) continue;
@@ -515,7 +452,7 @@ public final class WarehouseMarket implements Saveable {
         return total - market;
     }
 
-    static int proportionalValue(int amount, long claimedValue, long totalValue) {
+    public static int proportionalValue(int amount, long claimedValue, long totalValue) {
         if (amount <= 0 || claimedValue <= 0L || totalValue <= 0L) {
             return 0;
         }
@@ -558,7 +495,7 @@ public final class WarehouseMarket implements Saveable {
                 this.syncRetail(room2, null);
             }
         }
-        this.retailBooks.keySet().removeIf(room -> !live.contains(room));
+        this.sharedState.retailBooks.keySet().removeIf(room -> !live.contains(room));
     }
 
     public RetailQuote retailWholesaleQuote(RoomInstance seller, int[] soldQuantities) {
@@ -571,7 +508,7 @@ public final class WarehouseMarket implements Saveable {
     private RetailQuote syncRetail(RoomInstance room, int[] soldQuantities) {
         int[] current = WarehouseMarket.retailStock(room);
         int[] byResource = new int[RESOURCES.ALL().size()];
-        RetailBook[] shelf = this.retailBooks.computeIfAbsent(room, ignored -> new RetailBook[RESOURCES.ALL().size()]);
+        RetailBook[] shelf = this.sharedState.retailBooks.computeIfAbsent(room, ignored -> new RetailBook[RESOURCES.ALL().size()]);
         long wholesale = 0L;
         for (int resource = 0; resource < shelf.length; ++resource) {
             int sold = soldQuantities == null || resource >= soldQuantities.length ? 0 : Math.max(0, soldQuantities[resource]);
@@ -612,18 +549,18 @@ public final class WarehouseMarket implements Saveable {
         }
         this.ensureCrownCapacity();
         long waived = 0L;
-        for (int resource = 0; resource < payable.length && resource < this.abandonedUnits.length; ++resource) {
+        for (int resource = 0; resource < payable.length && resource < this.sharedState.abandonedUnits.length; ++resource) {
             int units;
             int sold = Math.max(0, payable[resource]);
-            if (sold <= 0 || this.abandonedUnits[resource] <= 0L || (units = (int)Math.min((long)sold, Math.min(this.crownUnits[resource], this.abandonedUnits[resource]))) <= 0) continue;
+            if (sold <= 0 || this.sharedState.abandonedUnits[resource] <= 0L || (units = (int)Math.min((long)sold, Math.min(this.sharedState.crownUnits[resource], this.sharedState.abandonedUnits[resource]))) <= 0) continue;
             int resourceDue = resource < wholesaleByResource.length ? Math.max(0, wholesaleByResource[resource]) : 0;
             waived = WarehouseMarket.safeMoneyAdd(waived, WarehouseMarket.proportionalValue(resourceDue, units, sold));
             int n = resource;
             payable[n] = payable[n] - units;
             int n2 = resource;
-            this.crownUnits[n2] = this.crownUnits[n2] - (long)units;
+            this.sharedState.crownUnits[n2] = this.sharedState.crownUnits[n2] - (long)units;
             int n3 = resource;
-            this.abandonedUnits[n3] = this.abandonedUnits[n3] - (long)units;
+            this.sharedState.abandonedUnits[n3] = this.sharedState.abandonedUnits[n3] - (long)units;
         }
         return new OwnerlessRetailClaims((int)Math.min(Integer.MAX_VALUE, waived), payable);
     }
@@ -685,7 +622,7 @@ public final class WarehouseMarket implements Saveable {
         }
     }
 
-    private static long safeMoneyAdd(long left, long right) {
+    static long safeMoneyAdd(long left, long right) {
         if (right <= 0L) {
             return Math.max(0L, left);
         }
@@ -738,7 +675,7 @@ public final class WarehouseMarket implements Saveable {
     }
 
     public int distributeSale(int[] resourceQuantities, int amount, Roster roster, Wallets wallets, FirmLedger ledger) {
-        return this.distributeSaleDetailed(resourceQuantities, amount, roster, wallets, ledger, false, true).credited();
+        return this.wholesale.distributeSale(resourceQuantities, amount, roster, wallets, ledger);
     }
 
     private SaleDistribution distributeSaleDetailed(int[] resourceQuantities, int amount, Roster roster, Wallets wallets, FirmLedger ledger, boolean crownFirst, boolean consumeCrownRemainder) {
@@ -771,13 +708,13 @@ public final class WarehouseMarket implements Saveable {
     private int consumeCrownTitle(int[] remaining) {
         this.ensureCrownCapacity();
         long consumed = 0L;
-        for (int resource = 0; resource < remaining.length && resource < this.crownUnits.length; ++resource) {
+        for (int resource = 0; resource < remaining.length && resource < this.sharedState.crownUnits.length; ++resource) {
             int wanted = Math.max(0, remaining[resource]);
-            if (wanted <= 0 || this.crownUnits[resource] <= 0L) continue;
-            int units = WarehouseMarket.crownUnitsConsumed(this.crownUnits[resource], wanted);
+            if (wanted <= 0 || this.sharedState.crownUnits[resource] <= 0L) continue;
+            int units = WarehouseMarket.crownUnitsConsumed(this.sharedState.crownUnits[resource], wanted);
             int n = resource;
-            this.crownUnits[n] = this.crownUnits[n] - (long)units;
-            this.abandonedUnits[resource] = Math.max(0L, this.abandonedUnits[resource] - (long)units);
+            this.sharedState.crownUnits[n] = this.sharedState.crownUnits[n] - (long)units;
+            this.sharedState.abandonedUnits[resource] = Math.max(0L, this.sharedState.abandonedUnits[resource] - (long)units);
             int n2 = resource;
             remaining[n2] = remaining[n2] - units;
             consumed += (long)units;
@@ -791,14 +728,14 @@ public final class WarehouseMarket implements Saveable {
         }
         this.ensureCrownCapacity();
         int index = resource.index();
-        int units = WarehouseMarket.crownUnitsConsumed(this.crownUnits[index], wanted);
+        int units = WarehouseMarket.crownUnitsConsumed(this.sharedState.crownUnits[index], wanted);
         int n = index;
-        this.crownUnits[n] = this.crownUnits[n] - (long)units;
-        this.abandonedUnits[index] = Math.max(0L, this.abandonedUnits[index] - (long)units);
+        this.sharedState.crownUnits[n] = this.sharedState.crownUnits[n] - (long)units;
+        this.sharedState.abandonedUnits[index] = Math.max(0L, this.sharedState.abandonedUnits[index] - (long)units);
         return units;
     }
 
-    static int crownUnitsConsumed(long available, int wanted) {
+    public static int crownUnitsConsumed(long available, int wanted) {
         if (available <= 0L || wanted <= 0) {
             return 0;
         }
@@ -831,7 +768,7 @@ public final class WarehouseMarket implements Saveable {
             ArrayList<WarehouseHolding> shelf = new ArrayList<WarehouseHolding>();
             long held = 0L;
             RESOURCE resource = (RESOURCE)RESOURCES.ALL().get(index);
-            for (Map.Entry<StockpileInstance, Book[]> entry : this.books.entrySet()) {
+            for (Map.Entry<StockpileInstance, Book[]> entry : this.sharedState.books.entrySet()) {
                 Book book;
                 Book[] shelves = entry.getValue();
                 if (index >= shelves.length || (book = shelves[index]) == null || book.unitsHeld <= 0 || book.stateOwned && !this.state.sellsAt((RoomInstance)entry.getKey(), resource, this.prices.priceRoundedUp(index))) continue;
@@ -909,7 +846,7 @@ public final class WarehouseMarket implements Saveable {
         if (producer == null || resource == null || units <= 0) {
             return;
         }
-        ArrayList<DirectClaim> claims = this.directClaims.computeIfAbsent(resource.index(), ignored -> new ArrayList<DirectClaim>());
+        ArrayList<DirectClaim> claims = this.sharedState.directClaims.computeIfAbsent(resource.index(), ignored -> new ArrayList<DirectClaim>());
         for (DirectClaim claim : claims) {
             if (claim.producer != producer) continue;
             claim.unitsHeld = WarehouseMarket.safeAdd(claim.unitsHeld, units);
@@ -931,7 +868,7 @@ public final class WarehouseMarket implements Saveable {
         for (int resource = 0; resource < remaining.length; ++resource) {
             ArrayList<DirectClaim> claims;
             int wanted = remaining[resource];
-            if (wanted <= 0 || (claims = this.directClaims.get(resource)) == null) continue;
+            if (wanted <= 0 || (claims = this.sharedState.directClaims.get(resource)) == null) continue;
             Iterator<DirectClaim> iterator = claims.iterator();
             while (iterator.hasNext() && wanted > 0) {
                 DirectClaim claim = iterator.next();
@@ -949,7 +886,7 @@ public final class WarehouseMarket implements Saveable {
             }
             remaining[resource] = wanted;
             if (!claims.isEmpty()) continue;
-            this.directClaims.remove(resource);
+            this.sharedState.directClaims.remove(resource);
         }
         if (claimed <= 0L) {
             return new DirectDistribution(0, 0);
@@ -974,11 +911,11 @@ public final class WarehouseMarket implements Saveable {
         return (int)Math.min(Integer.MAX_VALUE, (long)amount * Math.min(claimedUnits, demandedUnits) / demandedUnits);
     }
 
-    private static int safeAdd(int left, int right) {
+    static int safeAdd(int left, int right) {
         return (int)Math.min(Integer.MAX_VALUE, (long)Math.max(0, left) + (long)Math.max(0, right));
     }
 
-    private static long safeAdd(long left, long right) {
+    static long safeAdd(long left, long right) {
         long base = Math.max(0L, left);
         long addition = Math.max(0L, right);
         return addition > Long.MAX_VALUE - base ? Long.MAX_VALUE : base + addition;
@@ -1081,6 +1018,8 @@ public final class WarehouseMarket implements Saveable {
                     : normalCost;
             int[] quantities = new int[goods];
             quantities[i] = marketConsumed;
+            // TODO T-105: redirect to this.wholesale.distributeSaleDetailed() once
+            // AutoProcurementEngine extracts — current call updates dead WM tracking fields
             SaleDistribution distribution = this.distributeSaleDetailed(quantities, (int)Math.min(Integer.MAX_VALUE, budgetedCost), roster, wallets, ledger, true, true);
             int credited = distribution.credited();
             if (credited <= 0) continue;
@@ -1106,7 +1045,7 @@ public final class WarehouseMarket implements Saveable {
             return;
         }
         int left = units;
-        for (Map.Entry<StockpileInstance, Book[]> entry : this.books.entrySet()) {
+        for (Map.Entry<StockpileInstance, Book[]> entry : this.sharedState.books.entrySet()) {
             Book book;
             if (left <= 0 || !this.state.isStateOwned((RoomInstance)entry.getKey())) continue;
             Book[] shelves = entry.getValue();
@@ -1157,6 +1096,8 @@ public final class WarehouseMarket implements Saveable {
             if (price <= 0) continue;
             int[] quantities = new int[goods];
             quantities[i] = shipped;
+            // TODO T-105: redirect to this.wholesale.distributeSaleDetailed() once
+            // AutoProcurementEngine extracts — current call updates dead WM tracking fields
             SaleDistribution distribution = this.distributeSaleDetailed(quantities, (int)Math.min(Integer.MAX_VALUE, (long)shipped * (long)price), roster, wallets, ledger, true, true);
             int credited = distribution.credited();
             int free = Math.max(0, shipped - distribution.merchantUnits() - distribution.crownUnits() - distribution.directUnits());
@@ -1214,7 +1155,7 @@ public final class WarehouseMarket implements Saveable {
     }
 
     private long inventoryValue(StockpileInstance warehouse) {
-        Book[] shelf = this.books.get(warehouse);
+        Book[] shelf = this.sharedState.books.get(warehouse);
         if (shelf == null) {
             return 0L;
         }
@@ -1256,7 +1197,7 @@ public final class WarehouseMarket implements Saveable {
         return (int)total;
     }
 
-    private static ArrayList<Humanoid> staff(Roster roster, RoomInstance room) {
+    static ArrayList<Humanoid> staff(Roster roster, RoomInstance room) {
         ArrayList<Humanoid> result = new ArrayList<Humanoid>();
         for (int i = 0; i < roster.size(); ++i) {
             Humanoid worker = roster.get(i);
@@ -1266,7 +1207,7 @@ public final class WarehouseMarket implements Saveable {
         return result;
     }
 
-    private static Humanoid alive(Roster roster, int id) {
+    static Humanoid alive(Roster roster, int id) {
         for (int i = 0; i < roster.size(); ++i) {
             if (roster.get(i).id() != id) continue;
             return roster.get(i);
@@ -1275,7 +1216,7 @@ public final class WarehouseMarket implements Saveable {
     }
 
     private Book book(StockpileInstance warehouse, RESOURCE resource) {
-        Book[] shelf = this.books.computeIfAbsent(warehouse, ignored -> new Book[RESOURCES.ALL().size()]);
+        Book[] shelf = this.sharedState.books.computeIfAbsent(warehouse, ignored -> new Book[RESOURCES.ALL().size()]);
         if (shelf[resource.index()] == null) {
             shelf[resource.index()] = new Book();
         }
@@ -1284,10 +1225,10 @@ public final class WarehouseMarket implements Saveable {
 
     public void prune(Roster roster) {
         this.resolvePending();
-        this.books.keySet().removeIf(warehouse -> warehouse == null || !warehouse.exists());
-        this.intakeLocks.keySet().removeIf(warehouse -> warehouse == null || !warehouse.exists());
-        this.retailBooks.keySet().removeIf(room -> room == null || !room.exists());
-        Iterator<Map.Entry<Integer, ArrayList<DirectClaim>>> resources = this.directClaims.entrySet().iterator();
+        this.sharedState.books.keySet().removeIf(warehouse -> warehouse == null || !warehouse.exists());
+        this.sharedState.intakeLocks.keySet().removeIf(warehouse -> warehouse == null || !warehouse.exists());
+        this.sharedState.retailBooks.keySet().removeIf(room -> room == null || !room.exists());
+        Iterator<Map.Entry<Integer, ArrayList<DirectClaim>>> resources = this.sharedState.directClaims.entrySet().iterator();
         while (resources.hasNext()) {
             ArrayList<DirectClaim> claims = resources.next().getValue();
             claims.removeIf(claim -> claim.producer == null || !claim.producer.exists() || claim.unitsHeld <= 0);
@@ -1308,7 +1249,7 @@ public final class WarehouseMarket implements Saveable {
             } else {
                 this.lockIntake(warehouse2);
             }
-            Book[] shelf = this.books.get(warehouse2);
+            Book[] shelf = this.sharedState.books.get(warehouse2);
             if (shelf == null) continue;
             for (int resourceIndex = 0; resourceIndex < shelf.length; ++resourceIndex) {
                 Book book = shelf[resourceIndex];
@@ -1320,11 +1261,11 @@ public final class WarehouseMarket implements Saveable {
                     continue;
                 }
                 if (workers.isEmpty()) {
-                    if (resourceIndex < this.crownUnits.length && book.unitsHeld > 0) {
-                        this.crownUnits[resourceIndex] = WarehouseMarket.safeAdd(this.crownUnits[resourceIndex], (long)book.unitsHeld);
+                    if (resourceIndex < this.sharedState.crownUnits.length && book.unitsHeld > 0) {
+                        this.sharedState.crownUnits[resourceIndex] = WarehouseMarket.safeAdd(this.sharedState.crownUnits[resourceIndex], (long)book.unitsHeld);
                     }
-                    if (resourceIndex < this.abandonedUnits.length && book.unitsHeld > 0) {
-                        this.abandonedUnits[resourceIndex] = WarehouseMarket.safeAdd(this.abandonedUnits[resourceIndex], (long)book.unitsHeld);
+                    if (resourceIndex < this.sharedState.abandonedUnits.length && book.unitsHeld > 0) {
+                        this.sharedState.abandonedUnits[resourceIndex] = WarehouseMarket.safeAdd(this.sharedState.abandonedUnits[resourceIndex], (long)book.unitsHeld);
                     }
                     book.unitsHeld = 0;
                     book.stakes.clear();
@@ -1367,7 +1308,7 @@ public final class WarehouseMarket implements Saveable {
     }
 
     private void lockIntake(StockpileInstance warehouse) {
-        Map<Integer, Integer> locks = this.intakeLocks.computeIfAbsent(warehouse, ignored -> new HashMap<Integer, Integer>());
+        Map<Integer, Integer> locks = this.sharedState.intakeLocks.computeIfAbsent(warehouse, ignored -> new HashMap<Integer, Integer>());
         for (COORDINATE tile : warehouse.body()) {
             int free;
             TILE_STORAGE crate;
@@ -1378,7 +1319,7 @@ public final class WarehouseMarket implements Saveable {
     }
 
     private void unlockIntake(StockpileInstance warehouse) {
-        Map<Integer, Integer> locks = this.intakeLocks.remove(warehouse);
+        Map<Integer, Integer> locks = this.sharedState.intakeLocks.remove(warehouse);
         if (locks == null) {
             return;
         }
@@ -1406,10 +1347,10 @@ public final class WarehouseMarket implements Saveable {
     private void resolvePending() {
         RESOURCE resource;
         StockpileInstance warehouse;
-        if (this.pending.isEmpty() && this.pendingIntakeLocks.isEmpty() && this.pendingDirectClaims.isEmpty() && this.pendingRetailBooks.isEmpty() && !this.inferCrownFromLoose || SETT.ROOMS() == null) {
+        if (this.sharedState.pending.isEmpty() && this.sharedState.pendingIntakeLocks.isEmpty() && this.sharedState.pendingDirectClaims.isEmpty() && this.sharedState.pendingRetailBooks.isEmpty() && !this.sharedState.inferCrownFromLoose || SETT.ROOMS() == null) {
             return;
         }
-        for (PendingBook pendingBook : this.pending) {
+        for (PendingBook pendingBook : this.sharedState.pending) {
             warehouse = WarehouseMarket.warehouseAt(pendingBook.x, pendingBook.y);
             resource = WarehouseMarket.resource(pendingBook.resourceKey);
             if (warehouse == null || resource == null) continue;
@@ -1418,25 +1359,25 @@ public final class WarehouseMarket implements Saveable {
             book.stakes.putAll(pendingBook.stakes);
             book.capitalBasis = pendingBook.capitalBasis;
         }
-        this.pending.clear();
-        for (PendingIntakeLock pendingIntakeLock : this.pendingIntakeLocks) {
+        this.sharedState.pending.clear();
+        for (PendingIntakeLock pendingIntakeLock : this.sharedState.pendingIntakeLocks) {
             warehouse = WarehouseMarket.warehouseAt(pendingIntakeLock.x, pendingIntakeLock.y);
             if (warehouse == null) continue;
-            this.intakeLocks.put(warehouse, new HashMap<Integer, Integer>(pendingIntakeLock.tiles));
+            this.sharedState.intakeLocks.put(warehouse, new HashMap<Integer, Integer>(pendingIntakeLock.tiles));
         }
-        this.pendingIntakeLocks.clear();
-        for (PendingDirectClaim pendingDirectClaim : this.pendingDirectClaims) {
+        this.sharedState.pendingIntakeLocks.clear();
+        for (PendingDirectClaim pendingDirectClaim : this.sharedState.pendingDirectClaims) {
             RoomInstance producer = WarehouseMarket.producerAt(pendingDirectClaim.x, pendingDirectClaim.y);
             resource = WarehouseMarket.resource(pendingDirectClaim.resourceKey);
             if (producer == null || resource == null || pendingDirectClaim.unitsHeld <= 0) continue;
             this.recordDirectClaim(producer, resource, pendingDirectClaim.unitsHeld);
         }
-        this.pendingDirectClaims.clear();
-        for (PendingRetailBook pendingRetailBook : this.pendingRetailBooks) {
+        this.sharedState.pendingDirectClaims.clear();
+        for (PendingRetailBook pendingRetailBook : this.sharedState.pendingRetailBooks) {
             RoomInstance retailer = WarehouseMarket.producerAt(pendingRetailBook.x, pendingRetailBook.y);
             resource = WarehouseMarket.resource(pendingRetailBook.resourceKey);
             if (retailer == null || resource == null || !WarehouseMarket.isRetailBlueprint(retailer.blueprintI())) continue;
-            RetailBook[] shelf = this.retailBooks.computeIfAbsent(retailer, ignored -> new RetailBook[RESOURCES.ALL().size()]);
+            RetailBook[] shelf = this.sharedState.retailBooks.computeIfAbsent(retailer, ignored -> new RetailBook[RESOURCES.ALL().size()]);
             RetailBook book = new RetailBook();
             book.observedStock = Math.max(0, pendingRetailBook.observedStock);
             for (RetailLot lot : pendingRetailBook.lots) {
@@ -1444,16 +1385,16 @@ public final class WarehouseMarket implements Saveable {
             }
             shelf[resource.index()] = book;
         }
-        this.pendingRetailBooks.clear();
-        if (this.inferCrownFromLoose) {
+        this.sharedState.pendingRetailBooks.clear();
+        if (this.sharedState.inferCrownFromLoose) {
             this.inferCrownFromLoose();
-            this.inferCrownFromLoose = false;
+            this.sharedState.inferCrownFromLoose = false;
         }
     }
 
     private void inferCrownFromLoose() {
         this.ensureCrownCapacity();
-        long[] loose = new long[this.crownUnits.length];
+        long[] loose = new long[this.sharedState.crownUnits.length];
         for (Object tile : SETT.TILE_BOUNDS) {
             COORDINATE c = (COORDINATE) tile;
             THINGS.Thing thing = SETT.THINGS().getFirst(c.x(), c.y());
@@ -1468,22 +1409,22 @@ public final class WarehouseMarket implements Saveable {
                 thing = thing.tileNext();
             }
         }
-        long[] titled = new long[this.crownUnits.length];
-        for (Map.Entry<Integer, ArrayList<DirectClaim>> entry : this.directClaims.entrySet()) {
+        long[] titled = new long[this.sharedState.crownUnits.length];
+        for (Map.Entry<Integer, ArrayList<DirectClaim>> entry : this.sharedState.directClaims.entrySet()) {
             if (entry.getKey() < 0 || entry.getKey() >= titled.length) continue;
             for (DirectClaim claim : entry.getValue()) {
                 titled[entry.getKey()] = Math.min(Long.MAX_VALUE, titled[entry.getKey()] + (long)Math.max(0, claim.unitsHeld));
             }
         }
-        for (Book[] bookArray : this.books.values()) {
+        for (Book[] bookArray : this.sharedState.books.values()) {
             for (int resource = 0; resource < bookArray.length && resource < titled.length; ++resource) {
                 Book book = bookArray[resource];
                 if (book == null || book.unitsHeld <= 0) continue;
                 titled[resource] = Math.min(Long.MAX_VALUE, titled[resource] + (long)book.unitsHeld);
             }
         }
-        for (int resource = 0; resource < this.crownUnits.length; ++resource) {
-            this.crownUnits[resource] = Math.max(this.crownUnits[resource], Math.max(0L, loose[resource] - titled[resource]));
+        for (int resource = 0; resource < this.sharedState.crownUnits.length; ++resource) {
+            this.sharedState.crownUnits[resource] = Math.max(this.sharedState.crownUnits[resource], Math.max(0L, loose[resource] - titled[resource]));
         }
     }
 
@@ -1522,14 +1463,14 @@ public final class WarehouseMarket implements Saveable {
         file.i(7);
         file.i(this.lastTaxSeason);
         int count = 0;
-        for (Book[] bookArray : this.books.values()) {
+        for (Book[] bookArray : this.sharedState.books.values()) {
             for (Book book : bookArray) {
                 if (book == null || book.unitsHeld <= 0) continue;
                 ++count;
             }
         }
         file.i(count);
-        for (Map.Entry entry : this.books.entrySet()) {
+        for (Map.Entry entry : this.sharedState.books.entrySet()) {
             StockpileInstance warehouse = (StockpileInstance)entry.getKey();
             if (warehouse == null || !warehouse.exists()) continue;
             for (int i = 0; i < ((Book[])entry.getValue()).length; ++i) {
@@ -1548,12 +1489,12 @@ public final class WarehouseMarket implements Saveable {
             }
         }
         int lockCount = 0;
-        for (Map.Entry<StockpileInstance, Map<Integer, Integer>> entry : this.intakeLocks.entrySet()) {
+        for (Map.Entry<StockpileInstance, Map<Integer, Integer>> entry : this.sharedState.intakeLocks.entrySet()) {
             if (entry.getKey() == null || !entry.getKey().exists() || entry.getValue().isEmpty()) continue;
             ++lockCount;
         }
         file.i(lockCount);
-        for (Map.Entry<StockpileInstance, Map<Integer, Integer>> entry : this.intakeLocks.entrySet()) {
+        for (Map.Entry<StockpileInstance, Map<Integer, Integer>> entry : this.sharedState.intakeLocks.entrySet()) {
             StockpileInstance stockpileInstance = entry.getKey();
             if (stockpileInstance == null || !stockpileInstance.exists() || entry.getValue().isEmpty()) continue;
             file.i(stockpileInstance.mX());
@@ -1565,14 +1506,14 @@ public final class WarehouseMarket implements Saveable {
             }
         }
         int directClaimCount = 0;
-        for (ArrayList<DirectClaim> claims : this.directClaims.values()) {
+        for (ArrayList<DirectClaim> claims : this.sharedState.directClaims.values()) {
             for (DirectClaim claim : claims) {
                 if (claim.producer == null || !claim.producer.exists() || claim.unitsHeld <= 0) continue;
                 ++directClaimCount;
             }
         }
         file.i(directClaimCount);
-        for (Map.Entry<Integer, ArrayList<DirectClaim>> entry : this.directClaims.entrySet()) {
+        for (Map.Entry<Integer, ArrayList<DirectClaim>> entry : this.sharedState.directClaims.entrySet()) {
             if (entry.getKey() < 0 || entry.getKey() >= RESOURCES.ALL().size()) continue;
             String resourceKey = ((RESOURCE)RESOURCES.ALL().get((int)entry.getKey().intValue())).key;
             for (DirectClaim directClaim : entry.getValue()) {
@@ -1585,30 +1526,30 @@ public final class WarehouseMarket implements Saveable {
         }
         this.ensureCrownCapacity();
         int crownCount = 0;
-        for (long l : this.crownUnits) {
+        for (long l : this.sharedState.crownUnits) {
             if (l <= 0L) continue;
             ++crownCount;
         }
         file.i(crownCount);
-        for (int i = 0; i < this.crownUnits.length; ++i) {
-            if (this.crownUnits[i] <= 0L) continue;
+        for (int i = 0; i < this.sharedState.crownUnits.length; ++i) {
+            if (this.sharedState.crownUnits[i] <= 0L) continue;
             file.chars((CharSequence)((RESOURCE)RESOURCES.ALL().get(i)).key);
-            file.l(this.crownUnits[i]);
+            file.l(this.sharedState.crownUnits[i]);
         }
         int abandonedCount = 0;
-        for (long l : this.abandonedUnits) {
+        for (long l : this.sharedState.abandonedUnits) {
             if (l > 0L) {
                 ++abandonedCount;
             }
         }
         file.i(abandonedCount);
-        for (int resource = 0; resource < this.abandonedUnits.length; ++resource) {
-            if (this.abandonedUnits[resource] <= 0L) continue;
+        for (int resource = 0; resource < this.sharedState.abandonedUnits.length; ++resource) {
+            if (this.sharedState.abandonedUnits[resource] <= 0L) continue;
             file.chars((CharSequence)((RESOURCE)RESOURCES.ALL().get((int)resource)).key);
-            file.l(this.abandonedUnits[resource]);
+            file.l(this.sharedState.abandonedUnits[resource]);
         }
         int retailCount = 0;
-        for (Map.Entry<RoomInstance, RetailBook[]> entry : this.retailBooks.entrySet()) {
+        for (Map.Entry<RoomInstance, RetailBook[]> entry : this.sharedState.retailBooks.entrySet()) {
             RoomInstance retailer = entry.getKey();
             if (retailer == null || !retailer.exists()) continue;
             for (RetailBook book : shelf = entry.getValue()) {
@@ -1617,7 +1558,7 @@ public final class WarehouseMarket implements Saveable {
             }
         }
         file.i(retailCount);
-        for (Map.Entry<RoomInstance, RetailBook[]> entry : this.retailBooks.entrySet()) {
+        for (Map.Entry<RoomInstance, RetailBook[]> entry : this.sharedState.retailBooks.entrySet()) {
             RoomInstance retailer = entry.getKey();
             if (retailer == null || !retailer.exists()) continue;
             shelf = entry.getValue();
@@ -1663,7 +1604,7 @@ public final class WarehouseMarket implements Saveable {
                 if (version >= 6) continue;
                 capitalBasis += paidIn;
             }
-            this.pending.add(new PendingBook(x2, y, key, unitsHeld, stakes, capitalBasis));
+            this.sharedState.pending.add(new PendingBook(x2, y, key, unitsHeld, stakes, capitalBasis));
         }
         if (version >= 3) {
             int lockCount = Math.max(0, file.i());
@@ -1678,7 +1619,7 @@ public final class WarehouseMarket implements Saveable {
                     if (amount <= 0) continue;
                     tiles.put(key, amount);
                 }
-                this.pendingIntakeLocks.add(new PendingIntakeLock(x, y, tiles));
+                this.sharedState.pendingIntakeLocks.add(new PendingIntakeLock(x, y, tiles));
             }
         }
         if (version >= 4) {
@@ -1689,10 +1630,10 @@ public final class WarehouseMarket implements Saveable {
                 String key = file.chars();
                 int unitsHeld = Math.max(0, file.i());
                 if (unitsHeld <= 0) continue;
-                this.pendingDirectClaims.add(new PendingDirectClaim(x, y, key, unitsHeld));
+                this.sharedState.pendingDirectClaims.add(new PendingDirectClaim(x, y, key, unitsHeld));
             }
         }
-        boolean bl = this.inferCrownFromLoose = version < 5;
+        boolean bl = this.sharedState.inferCrownFromLoose = version < 5;
         if (version >= 5) {
             this.ensureCrownCapacity();
             int crownCount = Math.max(0, file.i());
@@ -1700,7 +1641,7 @@ public final class WarehouseMarket implements Saveable {
                 RESOURCE resource = WarehouseMarket.resource(file.chars());
                 long units = Math.max(0L, file.l());
                 if (resource == null) continue;
-                this.crownUnits[resource.index()] = units;
+                this.sharedState.crownUnits[resource.index()] = units;
             }
         }
         if (version >= 7) {
@@ -1710,7 +1651,7 @@ public final class WarehouseMarket implements Saveable {
                 RESOURCE resource = WarehouseMarket.resource(file.chars());
                 long units = Math.max(0L, file.l());
                 if (resource == null) continue;
-                this.abandonedUnits[resource.index()] = Math.min(units, this.crownUnits[resource.index()]);
+                this.sharedState.abandonedUnits[resource.index()] = Math.min(units, this.sharedState.crownUnits[resource.index()]);
             }
             int retailCount = Math.max(0, file.i());
             for (int i3 = 0; i3 < retailCount; ++i3) {
@@ -1726,28 +1667,28 @@ public final class WarehouseMarket implements Saveable {
                     if (units <= 0) continue;
                     lots.add(new RetailLot(units, price));
                 }
-                this.pendingRetailBooks.add(new PendingRetailBook(x3, y, key, observed, lots));
+                this.sharedState.pendingRetailBooks.add(new PendingRetailBook(x3, y, key, observed, lots));
             }
         }
     }
 
     public void beginTick() {
-        this.lastSold = 0L;
-        this.lastUnitsSold = 0;
+        this.wholesale.beginTick();
     }
 
     public void clear() {
-        this.books.clear();
-        this.pending.clear();
-        this.directClaims.clear();
-        this.pendingDirectClaims.clear();
-        this.retailBooks.clear();
-        this.pendingRetailBooks.clear();
-        this.crownUnits = new long[0];
-        this.abandonedUnits = new long[0];
-        this.inferCrownFromLoose = true;
-        this.intakeLocks.clear();
-        this.pendingIntakeLocks.clear();
+        this.sharedState.books.clear();
+        this.sharedState.pending.clear();
+        this.sharedState.directClaims.clear();
+        this.sharedState.pendingDirectClaims.clear();
+        this.sharedState.retailBooks.clear();
+        this.sharedState.pendingRetailBooks.clear();
+        this.sharedState.crownUnits = new long[0];
+        this.sharedState.abandonedUnits = new long[0];
+        this.sharedState.inferCrownFromLoose = true;
+        this.sharedState.intakeLocks.clear();
+        this.sharedState.pendingIntakeLocks.clear();
+        this.wholesale.clear();
         this.lastSold = 0L;
         this.lastBought = 0L;
         this.lastUnitsSold = 0;
@@ -1763,24 +1704,24 @@ public final class WarehouseMarket implements Saveable {
         this.lastExportBought = 0L;
     }
 
-    private static final class Book {
+    public static final class Book {
         int unitsHeld;
         double capitalBasis;
         final Map<Integer, Double> stakes = new HashMap<Integer, Double>();
         boolean stateOwned;
 
-        private Book() {
+        Book() {
         }
     }
 
-    private record CrownStorage(StockpileInstance warehouse, int untitledUnits) {
+    public record CrownStorage(StockpileInstance warehouse, int untitledUnits) {
     }
 
-    private record Purchase(int units, int paid) {
-        private static final Purchase NONE = new Purchase(0, 0);
+    public record Purchase(int units, int paid) {
+        public static final Purchase NONE = new Purchase(0, 0);
     }
 
-    private static final class DirectClaim {
+    public static final class DirectClaim {
         final RoomInstance producer;
         int unitsHeld;
 
@@ -1793,7 +1734,7 @@ public final class WarehouseMarket implements Saveable {
     public record Settlement(long billed, long credited) {
     }
 
-    private record SaleDistribution(int credited, int merchantUnits, int directUnits, int crownUnits) {
+    public record SaleDistribution(int credited, int merchantUnits, int directUnits, int crownUnits) {
     }
 
     public record RetailQuote(int total, int[] byResource) {
@@ -1807,7 +1748,7 @@ public final class WarehouseMarket implements Saveable {
         }
     }
 
-    private static final class RetailBook {
+    public static final class RetailBook {
         int observedStock = -1;
         final ArrayDeque<RetailLot> lots = new ArrayDeque();
 
@@ -1826,7 +1767,7 @@ public final class WarehouseMarket implements Saveable {
         }
     }
 
-    private static final class RetailLot {
+    public static final class RetailLot {
         int units;
         final int unitPrice;
 
@@ -1848,7 +1789,7 @@ public final class WarehouseMarket implements Saveable {
     private record DirectSale(RoomInstance producer, int units) {
     }
 
-    private static final class PendingBook {
+    public static final class PendingBook {
         final int x;
         final int y;
         final String resourceKey;
@@ -1866,7 +1807,7 @@ public final class WarehouseMarket implements Saveable {
         }
     }
 
-    private static final class PendingIntakeLock {
+    public static final class PendingIntakeLock {
         final int x;
         final int y;
         final Map<Integer, Integer> tiles;
@@ -1878,7 +1819,7 @@ public final class WarehouseMarket implements Saveable {
         }
     }
 
-    private static final class PendingDirectClaim {
+    public static final class PendingDirectClaim {
         final int x;
         final int y;
         final String resourceKey;
@@ -1892,7 +1833,7 @@ public final class WarehouseMarket implements Saveable {
         }
     }
 
-    private static final class PendingRetailBook {
+    public static final class PendingRetailBook {
         final int x;
         final int y;
         final String resourceKey;
