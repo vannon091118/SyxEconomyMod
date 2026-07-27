@@ -1,6 +1,6 @@
 # SyxEconomyMod — Architektur
 
-> **Version:** v0.13.61 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-26
+> **Version:** v0.13.62 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-26
 >
 > Stam-Doku-Synchron-Anker: Die obenstehende Versions-Zeile MUSS identisch mit `pom.xml` `<version>` sein.
 > Der Sync-Gate `tools/verify-doc-sync.sh` validiert dies vor jedem `mvn compile`.
@@ -46,11 +46,11 @@ Spec-Migration: BINDUNGSMATRIX.csv ist Single-Source-of-Truth.
 
 Das Mod fügt Songs of Syx eine parallele Wirtschaftsschicht hinzu. Jeder Siedler hat ein eigenes Wallet, Firmen rechnen边际isch ab, der Staat kann Steuern erheben und Subventionen verteilen. Das Mod ersetzt keine Vanilla-Systeme, sondern arbeitet über einen **Adapter-Layer** strikt getrennt daneben.
 
-Modul-Bilanz: **128 Java-Dateien, ~22.700 LOC**
+Modul-Bilanz: **139 Java-Dateien, ~23.900 LOC**
 
 | Modul | Dateien | LOC | Aufgabe |
 |---|---:|---:|---|
-| `vannon/syx/economy/core/` | 100 | ~19.247 | Wirtschafts-Sim + Subsysteme |
+| `vannon/syx/economy/core/` | 110 | ~20.542 | Wirtschafts-Sim + Subsysteme |
 | `vannon/syx/economy/adapter/` | 14 | ~1.050 | Engine-API-Wrapper + Bypass-SDK |
 | `vannon/syx/economy/ui/` | 5 | ~2.345 | 4 Fenster + Base |
 | `vannon/syx/economy/benchmark/` | 1 | ~200 | Reflection-vs-MethodHandle-Benchmark |
@@ -63,54 +63,43 @@ Modul-Bilanz: **128 Java-Dateien, ~22.700 LOC**
 ```
 ╔════════════════════════════════════════════════════════════════╗
 ║  SCHICHT 0: Vanilla Engine (Songs of Syx V71)                  ║
-║  unverändert, ~10.992 Klassen                                  ║
 ╚═════════════════════════════════════╤══════════════════════════╝
-                                       │ nur über
                                        ▼
 ╔════════════════════════════════════════════════════════════════╗
 ║  SCHICHT 1: Adapter-Layer (14 Dateien)                         ║
-║  5 Interfaces                                                  ║
-║   ISyxAI, ISyxTransport, ISyxWarehouse, ISyxBoosting,          ║
-║   ISyxDiplomacy                                                ║
-║  5 Vanilla-Implementierungen (via BypassGate SDK,               ║
-║   VarHandle/MethodHandle auto-select)                           ║
-║  4 Bypass-SDK-Klassen (FieldAccessor, MethodAccessor,           ║
-║   ClassResolver, BypassGate)                                    ║
-║  Engine-Zugriff erlaubt AUSSCHLIESSLICH hier                    ║
+║  5 Interfaces + 5 Vanilla-Impls + 4 Bypass-SDK                 ║
 ╚═════════════════════════════════════╤══════════════════════════╝
                                        ▼
 ╔════════════════════════════════════════════════════════════════╗
-║  SCHICHT 2: Wirtschafts-Logik (`core/`, 100 Dateien)           ║
-║  Orchestrator: EconomySim (1.459 LOC)                          ║
-║  Subsysteme: Wallets, FirmLedger, Fiscal, Taxes, LaborMarket,  ║
-║    StateWageMarket, OddjobMarket, WarehouseMarket,             ║
-║    StateWarehouses, TransportMarket, ReligionMarket, Liturgy,  ║
-║    ConstructionHoardController, PropertyMarketController,     ║
-║    CrisisDispatch, FlowPrices, FlowMeter, PolityPriceAnchor,  ║
-║    ScarcitySignal, Roster, EconIndicators, EconProgression,    ║
-║    WealthStats, WealthHappiness, PropertyHappiness,            ║
-║    DebtDiplomacyBuffer, HandoutRelief, CorveeController,       ║
-║    AccessAutomation, DiagnosticExporter, EventLog,              ║
-║    AffordabilityGate, FoodPlanController, GrainDole,           ║
-║    ServiceMarket, ServicePlanController, PurchasePlanController║
+║  SCHICHT 2: Wirtschafts-Logik (`core/`, 110 Dateien)           ║
+║  Orchestrator: EconomySim — 6 Engines + 1 Facade (Sprint M-1) ║
 ╚═════════════════════════════════════╤══════════════════════════╝
                                        ▼
 ╔════════════════════════════════════════════════════════════════╗
-║  SCHICHT 3: UI (`ui/`, 5 Dateien, 16 inhärente Tabs)           ║
-║  EconWindowBase (368 LOC) — abstrakte Basis mit KPI-Header,    ║
-║   TabBar, lastSet() für Top-Rendering, mouseClick mit            ║
-║   LEFT/RIGHT/MIDDLE, isShown(), toggle()                        ║
-║  WindowOverview (744 LOC) — 4 Tabs                              ║
-║   DashboardTab, DemographicsTab, AdvisorTab, PropertyTab        ║
-║  WindowEconomy (510 LOC) — 6 Tabs                              ║
-║   MarketsTab, PricesTab, FirmsTab, WagesTab, SubsidiesTab,      ║
-║   BooksTab                                                     ║
-║  WindowState (528 LOC) — 6 Tabs                                ║
-║   WarehousesTab, FiscalTab, PublicWorksTab, SocialTab,         ║
-║   FaithTab, DebugTab (permanent sichtbar)                        ║
-║  WindowQuickview (195 LOC) — kompakte Anzeige (Numpad 0)        ║
+║  SCHICHT 3: UI (`ui/`, 5 Dateien, 16 Tabs)                     ║
 ╚════════════════════════════════════════════════════════════════╝
 ```
+
+### Warehouse-Subsystem (Sprint M-1, v0.13.61)
+
+Ehemals 1 God-Class (`WarehouseMarket`, 1.902 LOC) → jetzt 8 kohäsive Dateien:
+
+```
+WarehouseMarket (Facade, ~320 LOC)
+├── MarketSharedState (T-101, 51 LOC) — shared data container
+├── WholesaleEngine (T-102, 553 LOC) — buy/sell/distribute
+├── CrownTitleEngine (T-103, 200 LOC) — crown-title operations
+├── RetailSyncEngine (T-104, 200 LOC) — retail delivery sync
+├── AutoProcurementEngine (T-105, 175 LOC) — construction/export procurement
+├── MarketMaintenanceEngine (T-106, 260 LOC) — prune/seizures/intake-locks
+└── MarketTaxEngine (T-107, 60 LOC) — inventory taxation
+```
+
+Alle Engines liegen im selben Package `vannon.syx.economy.core`. MarketSharedState
+im Subpackage `warehouse.market` (public Felder für cross-package access).
+Save-Format: FORMAT 8 (backward-compatible mit V7). 14 Inner Records verbleiben
+in WarehouseMarket (Book, DirectClaim, RetailBook, RetailLot, 4× Pending*,
+Purchase, CrownStorage, SaleDistribution, Settlement, RetailQuote, OwnerlessRetailClaims).
 
 ### Truth-Tabelle (keine Phantom-Dateien)
 
@@ -158,6 +147,66 @@ Keine. Jeder Vanilla-Adapter hat seinen eigenen BypassGate mit eigenem
 `initOk`-Flag. Consumer prüfen `ISyx*.isAvailable()` pro Adapter individuell
 → granulare Degradation bleibt erhalten. Ein fehlgeschlagener Diplomacy-
 Adapter deaktiviert nicht den Transport-Adapter. Phase B–E, v0.13.10.
+
+### Sprint A-1 — Full Engine Access Layer (Planned)
+
+Geplant: 6 bestehende Adapter erweitern + 6 neue Adapter + EngineAccessCatalog + Unified Logging.
+Ziel: Vollständige Vanilla-Engine-Abdeckung (12 Interfaces, 26 Dateien, ~3.100 LoC).
+
+**Geplante neue Interfaces:**
+| Interface | Vanilla-Ziel | Status |
+|---|---|---|
+| `ISyxTrade` | `ResourcePrices`, `TradeManager`, `FBUYER/FSELLER` | Planned |
+| `ISyxStats` | `StatsFood`, `StatsPopulation`, `StatsWork`, `StatsDisease`, `StatsLaw`, `StatsEquip`, `StatsService` | Planned |
+| `ISyxRoyalty` | `Royalty`, `NPCCourt`, `ROPINION`, `RTrust`, `ROpper` | Planned |
+| `ISyxMaintenance` | `MAINTENANCE`, `MConsumption`, `MRoom`, `ROOM_DEGRADER` | Planned |
+| `ISyxTime` | `TIME`, `TIMECYCLE`, `Seasons`, `Light` | Planned |
+| `ISyxReligion` | `RELIGIONS`, `Religion`, `StatsReligion` | Planned |
+
+**Geplante Erweiterungen bestehender Interfaces:**
+| Interface | Neue Methoden (geplant) |
+|---|---|
+| `ISyxWarehouse` | +7: `storedD`, `fetchingSet`, `getUsedSpace`, `crateSize`, `totalCrates`, `setSpecialAmount`, `moveCapacityAm` |
+| `ISyxTransport` | +7: `efficiency`, `fetchTime`, `stationWorkers`, `stationProblem`, `resource`, `radiusRaw`, `radiusRawSet` |
+| `ISyxDiplomacy` | +4: `coalitionAdvantage`, `distress`, `potential`, `proxy` |
+| `ISyxAI` | +6: `WorkFarmer`, `WorkPolice`, `WorkGuard`, `Theft`, `Murder` + 1 Crime-Plan |
+| `ISyxBoosting` | +12: SPOILAGE, MAINTENANCE, IMMIGRATION, DEFLATION, HAPPINESS, LOYALTY + 6 CIVICS |
+| `ISyxNpc` | +6: `getStockpile`, `getBonus`, `getRequest`, `getRace`, `getCitizens`, `getOffensivePower` |
+
+**EngineAccessCatalog:** Zentrale Klasse die ALLE Adapter-Zugriffe katalogisiert (analog `EconConfig`).
+Jeder Adapter registriert sich mit: Interface-Name, Vanilla-Zielklasse, Zugriffsmethode, Status, initOk.
+
+Siehe `ROADMAP.md` §Sprint A-1 für vollständige Task-Liste.
+
+### Sprint A-1 — Full Engine Access Layer (Planned)
+
+Geplant: 6 bestehende Adapter erweitern + 6 neue Adapter + EngineAccessCatalog + Unified Logging.
+Ziel: Vollständige Vanilla-Engine-Abdeckung (12 Interfaces, 26 Dateien, ~3.100 LoC).
+
+**Geplante neue Interfaces:**
+| Interface | Vanilla-Ziel | Status |
+|---|---|---|
+| `ISyxTrade` | `ResourcePrices`, `TradeManager`, `FBUYER/FSELLER` | Planned |
+| `ISyxStats` | `StatsFood`, `StatsPopulation`, `StatsWork`, `StatsDisease`, `StatsLaw`, `StatsEquip`, `StatsService` | Planned |
+| `ISyxRoyalty` | `Royalty`, `NPCCourt`, `ROPINION`, `RTrust`, `ROpper` | Planned |
+| `ISyxMaintenance` | `MAINTENANCE`, `MConsumption`, `MRoom`, `ROOM_DEGRADER` | Planned |
+| `ISyxTime` | `TIME`, `TIMECYCLE`, `Seasons`, `Light` | Planned |
+| `ISyxReligion` | `RELIGIONS`, `Religion`, `StatsReligion` | Planned |
+
+**Geplante Erweiterungen bestehender Interfaces:**
+| Interface | Neue Methoden (geplant) |
+|---|---|
+| `ISyxWarehouse` | +7: `storedD`, `fetchingSet`, `getUsedSpace`, `crateSize`, `totalCrates`, `setSpecialAmount`, `moveCapacityAm` |
+| `ISyxTransport` | +7: `efficiency`, `fetchTime`, `stationWorkers`, `stationProblem`, `resource`, `radiusRaw`, `radiusRawSet` |
+| `ISyxDiplomacy` | +4: `coalitionAdvantage`, `distress`, `potential`, `proxy` |
+| `ISyxAI` | +6: `WorkFarmer`, `WorkPolice`, `WorkGuard`, `Theft`, `Murder` + 1 weiterer Crime-Plan |
+| `ISyxBoosting` | +12: SPOILAGE, MAINTENANCE, IMMIGRATION, DEFLATION, HAPPINESS, LOYALTY + 6 weitere CIVICS |
+| `ISyxNpc` | +6: `getStockpile`, `getBonus`, `getRequest`, `getRace`, `getCitizens`, `getOffensivePower` |
+
+**EngineAccessCatalog:** Zentrale Klasse die ALLE Adapter-Zugriffe katalogisiert (analog `EconConfig`).
+Jeder Adapter registriert sich mit: Interface-Name, Vanilla-Zielklasse, Zugriffsmethode, Status, initOk.
+
+Siehe `ROADMAP.md` §Sprint A-1 für vollständige Task-Liste.
 
 ### Package-Private Brücken (4, in `src/settlement/room/`)
 | Datei | Vanilla-Klasse | Zweck |

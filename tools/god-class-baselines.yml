@@ -152,13 +152,12 @@ legacy_baselines:
     status_at_emit: block
     reason_at_emit: pubM 31 > warn 25; fields 62 > block 24
   src/vannon/syx/economy/core/WarehouseMarket.java:
-    loc: 1785
-    pubM: 33
-    fields: 91
-    imports: 55
-    status_at_emit: block
-    reason_at_emit: loc 1785 > block 800; fields 91 > block 24; imports 55 > block
-      40 (coupling density)
+    loc: 415
+    pubM: 37
+    fields: 23
+    imports: 18
+    status_at_emit: warn
+    reason_at_emit: loc 415 (under block 800); pubM 37 > warn 25 (facade overhead); fields 23 > warn 18
   src/vannon/syx/economy/ui/EconWindowBase.java:
     loc: 278
     pubM: 6
