@@ -5,7 +5,7 @@
 > Stam-Doku-Synchron-Anker: Die obenstehende Versions-Zeile MUSS identisch mit `pom.xml` `<version>` sein.
 > Der Sync-Gate `tools/verify-doc-sync.sh` validiert dies vor jedem `mvn compile`.
 >
-> Strukturierte Übersicht der **128 Java-Dateien** des Mods.
+> Strukturierte Übersicht der **139 Java-Dateien** des Mods.
 
 ---
 
@@ -139,7 +139,14 @@ Diese Klassen liegen im selben Java-Package wie die Vanilla-Klassen → kein Ref
 |---|---|
 | **`StateWarehouses`** | Verwaltet alle Staatslager: `setAllLiquidating/setStoring`, Trade-Modi `NORMAL/BUY_ONLY/SELL_ONLY`, persistierte Buy-Preise via `WarehouseLedger`. |
 | **`WarehouseAutomation`** | Auto-Bewirtschaftung: knappe Ressourcen, Bau-Materialien, 3-Tage-Nahrungs-Puffer. Budget-aware. |
-| **`WarehouseMarket`** | Staatlicher Im-/Export (Kauf/Verkauf via `StockpileInstance`). Marktsteuer (`marketTaxRate`) abgeschöpft. |
+| **`WarehouseMarket`** | Reine Facade (~320 LOC) — delegiert an 6 Engines. Enthält save/load (FORMAT 8) + 14 Inner Records + Static-Helper. Sprint M-1. |
+| **`WholesaleEngine`** | T-102: Wholesale-Einkauf/Verkauf/Distribution (553 LOC). |
+| **`CrownTitleEngine`** | T-103: Crown-Title-Operationen — producerless output, crown goods buying, ownerless claims (200 LOC). |
+| **`RetailSyncEngine`** | T-104: Retail-Delivery-Sync + Wholesale-Quotes für Tavernen/Märkte (200 LOC). |
+| **`AutoProcurementEngine`** | T-105: Construction/Export-Auto-Procurement — fixed T-102 tracking divergence (175 LOC). |
+| **`MarketMaintenanceEngine`** | T-106: Prune, Seizure-Settlement, Intake-Locks, Pending-Resolution (260 LOC). |
+| **`MarketTaxEngine`** | T-107: Per-Season Inventory Taxation (60 LOC). |
+| **`MarketSharedState`** | T-101: Shared-State-Container für alle Warehouse-Engines (51 LOC, Subpackage `warehouse.market`). |
 | **`WarehouseKernel`** | Reine Hilfsfunktionen für WarehouseMarket. Kein State. |
 | **`ConstructionHoardController`** | Reservierungs-Karte (`targetedResources`). Verhindert 50 Bauarbeiter auf 1 Holz. |
 | **`ConstructionHoardPlan`** | AI-Plan für Bauarbeiter, nutzt Controller. |
@@ -281,15 +288,15 @@ Jede Tab-Klasse implementiert das `TabContent`-Interface, das in `EconWindowBase
 | Kategorie | Anzahl Dateien | Schicht |
 |---|---:|---|
 | 🟦 Vanilla Wrapper | 18 | Adapter + Brücken |
-| 🟩 Simulation | 100 | Wirtschaftslogik |
+| 🟩 Simulation | 110 | Wirtschaftslogik |
 | 🟥 UI | 5 | 4 Fenster + Base |
 | 🟨 Entry + Benchmark | 2 | Main + Benchmark |
-| **GESAMT** | **128** | Σ `find src -name '*.java'` |
+| **GESAMT** | **139** | Σ `find src -name '*.java'` |
 
 Diese Zahlen sind **maschinell** verifizierbar:
 ```bash
-find src -name '*.java' | wc -l                                       # 128
-ls src/vannon/syx/economy/core/*.java | wc -l                         # 100
+find src -name '*.java' | wc -l                                       # 139
+ls src/vannon/syx/economy/core/*.java | wc -l                         # 110
 ls src/vannon/syx/economy/adapter/*.java | wc -l                       # 14
 ls src/vannon/syx/economy/ui/*.java | wc -l                            # 5
 grep -rE 'class [A-Z][A-Za-z]+Tab' src/vannon/syx/economy/ui/ | wc -l  # 16

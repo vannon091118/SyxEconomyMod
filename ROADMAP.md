@@ -51,6 +51,27 @@ Maschinenlesbare Validation der Dep-Edges ist Sprint-10-Folgeaufgabe (Gate 11 in
 
 ---
 
+## Sprint M-1 — WarehouseMarket God-Class-Sanierung (→ CHANGELOG v0.13.61)
+
+**T-101..T-108** (8 Tasks) — 1 God-Class (1.902 LOC) → 6 Engines + 1 SharedState + 1 Facade (320 LOC)
+
+| Task | Engine | LOC | Status |
+|---|---|---|---|
+| T-101 B-001 | MarketSharedState | 51 | ✅ Closed |
+| T-102 | WholesaleEngine | 553 | ✅ Closed |
+| T-103 | CrownTitleEngine | 200 | ✅ Closed |
+| T-104 | RetailSyncEngine | 200 | ✅ Closed |
+| T-105 | AutoProcurementEngine | 175 | ✅ Closed |
+| T-106 | MarketMaintenanceEngine | 260 | ✅ Closed |
+| T-107 | MarketTaxEngine | 60 | ✅ Closed |
+| T-108 | Save V8 + Facade Cleanup | — | ✅ Closed |
+| **Total** | **8 Dateien** | **1.499** | **BUILD SUCCESS** |
+
+Offene Punkte: `mvn test` Integrationstest, `WarehouseMarketIsolationTest` FORMAT-8-Migration.
+Siehe `docs/superpowers/specs/HANDOFF_M1.md`.
+
+---
+
 ## Sprint 10 — Diagnostik-Fixes + UI-Zentralisierung (→ CHANGELOG v0.13.57)
 
 **D-001–D-006** (6 Tasks) + **UI-Zentralisierung** + **Dead-Code-Audit** → alle in CHANGELOG.md §v0.13.57 dokumentiert.
