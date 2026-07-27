@@ -1,6 +1,6 @@
 # SyxEconomyMod — Entwicklung & Roadmap
 
-> **Version:** v0.13.62 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-26
+> **Version:** v0.13.63 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-26
 >
 > Stam-Doku-Synchron-Anker: `tools/verify-doc-sync.sh` (9 Checks).
 > Abgeschlossene Sprints → [`CHANGELOG.md`](CHANGELOG.md).
@@ -48,7 +48,7 @@
 | **UI-CENT** | ✅ Closed | **UI-Zentralisierung:** 122 GText → 10 FONTW_*-Konstanten in EconWindowBase | ~15 | 10 |
 | **AUDIT-1** | 📝 Notiert | **emigrationRisk = Dead Code** — AtomicInteger nie gelesen, D-002 wirkungslos | — | 10 |
 
-**Total:** 34 Tasks (17 bestehende + 17 Sprint A-1) — 6×Closed D-001–D-006 (→ CHANGELOG v0.13.57), 2×Closed Sprint 10 (UI-CENT, AUDIT-1), 5×Sprint 9 Active (7-1a, 7-1b, 7-2, 8-1, 7-3), 4×Sprint 9 Planned (8-2–8-5), 6×P3 Backlog.
+**Total:** 46 Tasks (17 bestehende + 17 Sprint A-1 + 12 Sprint M-3) — 6×Closed D-001–D-006 (→ CHANGELOG v0.13.57), 2×Closed Sprint 10 (UI-CENT, AUDIT-1), 5×Sprint 9 Active (7-1a, 7-1b, 7-2, 8-1, 7-3), 4×Sprint 9 Planned (8-2–8-5), 12×Sprint M-3 Planned, 6×P3 Backlog.
 
 **Sprint 9 Dependency-Edges (Rule 1.7 Pre-Note):**
 
@@ -67,19 +67,6 @@
 Maschinenlesbare Validation der Dep-Edges ist Sprint-10-Folgeaufgabe (Gate 11 in eigenem Folge-Sprint).
 
 ---
-
-| **T-GC-01** | 🟢 P3 | `tools/god-class-guard/parse_metrics.py` Per-File-Metrik-Parser (LOC/PubM/Fields/Imports, Annotation-Prefix-faehig). | ~140 | M-3 (in Sprint) |
-| **T-GC-02** | 🟢 P3 | `tools/god-class-guard/parse_yaml.py` YAML-Loader mit Validation (try/except, pre-compile regex, leerer-Regex-Schutz). | ~280 | M-3 (in Sprint) |
-| **T-GC-03** | 🟢 P3 | `tools/god-class-guard/emit_yaml.py` Auto-Generator fuer `tools/god-class-baselines.yml`. | ~110 | M-3 (in Sprint) |
-| **T-GC-04** | 🟢 P3 | `tools/god-class-guard.sh` + `run_check.py` Master-Wrapper mit `--mode=dry\|soft\|hard`. | ~235 | M-3 (in Sprint) |
-| **T-GC-05** | 🟢 P3 | `tools/god-class-baselines.yml` (auto-generiert, 19 grandfathered entries). | ~140 | M-3 (in Sprint) |
-| **T-GC-06** | 🟢 P3 | `tools/god-class-guard.on-failure.md` Recovery-Anleitung (3 Pfade). | ~70 | M-3 (in Sprint) |
-| **T-GC-07** | 🟢 P3 | `tools/tests/god-class-guard/run_meta_tests.sh` (4-Stub Meta-Tests + Assertions). | ~120 | M-3 (in Sprint) |
-| **T-GC-08** | 🟢 P3 | `tools/build-gate.sh` Gate 9 hinzu (`SKIP_GOD_GUARD=1` Toggle). | ~25 | M-3 (in Sprint) |
-| **T-GC-09** | 🟢 P3 | `pom.xml` `<execution>preflight-god-class-guard</execution>` (validate-Phase, failonerror=true). | ~25 | M-3 (in Sprint) |
-| **T-GC-10** | 🟢 P3 | `tools/install-hooks.sh` Pre-Commit-Hook Schritt `[4/4]`. | ~10 | M-3 (in Sprint) |
-| **T-GC-11** | 🟢 P3 | Stam-Docs integrieren: `agents.md` Rule 14, CHANGELOG M-3 Header, ARCHITECTURE Gate 9, README Build-Gates-Tabelle (4→9), GLOSSARY Tooling-Infrastruktur, ROADMAP §Global Task Index (diese Zeilen). | ~250 | M-3 (in Sprint) |
-| **T-GC-12** | 🟢 P3 | M-3 Atomic Commit + `mvn verify install -DskipTests -Dskip.bump=true` + Code-Reviewer-Pass. | 0 | M-3 (in Sprint) |
 
 ## Sprint A-1 — Full Engine Access Layer
 
@@ -185,6 +172,28 @@ A-16 ──→ A-17 (Stam-Docs + ARCHITECTURE.md + CHANGELOG)
 
 Offene Punkte: `mvn test` Integrationstest, `WarehouseMarketIsolationTest` FORMAT-8-Migration.
 Siehe `docs/superpowers/specs/HANDOFF_M1.md`.
+
+---
+
+## Sprint M-3 — God-Class-Guard CI-Tooling (Planned)
+
+**T-GC-01..T-GC-12** (12 Tasks) — 7 Tools + YAML-Baseline + Build-Gate Gate 9 + Pre-Commit-Hook + Stam-Docs
+
+| Task | Tool/Datei | LOC | Status |
+|---|---|---|---|
+| T-GC-01 | `tools/god-class-guard/parse_metrics.py` — Metrik-Parser | ~140 | ⏳ Planned |
+| T-GC-02 | `tools/god-class-guard/parse_yaml.py` — YAML-Loader | ~280 | ⏳ Planned |
+| T-GC-03 | `tools/god-class-guard/emit_yaml.py` — Auto-Generator | ~110 | ⏳ Planned |
+| T-GC-04 | `tools/god-class-guard.sh` + `run_check.py` — Master-Wrapper | ~235 | ⏳ Planned |
+| T-GC-05 | `tools/god-class-baselines.yml` — Baseline (19 entries) | ~140 | ⏳ Planned |
+| T-GC-06 | `tools/god-class-guard.on-failure.md` — Recovery-Anleitung | ~70 | ⏳ Planned |
+| T-GC-07 | `tools/tests/god-class-guard/run_meta_tests.sh` — Meta-Tests | ~120 | ⏳ Planned |
+| T-GC-08 | `tools/build-gate.sh` Gate 9 (`SKIP_GOD_GUARD=1` Toggle) | ~25 | ⏳ Planned |
+| T-GC-09 | `pom.xml` preflight Execution (validate-Phase) | ~25 | ⏳ Planned |
+| T-GC-10 | `tools/install-hooks.sh` Schritt [4/4] | ~10 | ⏳ Planned |
+| T-GC-11 | Stam-Docs: agents.md Rule 14, CHANGELOG, ARCHITECTURE, README, GLOSSARY, ROADMAP | ~250 | ⏳ Planned |
+| T-GC-12 | Atomic Commit + Build + Review | 0 | ⏳ Planned |
+| **Total** | **12 Dateien** | **~1.405** | **⏳ Planned** |
 
 ---
 
