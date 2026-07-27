@@ -42,11 +42,12 @@ Mod-Pfad: `${user.home}/.local/share/songsofsyx/mods/SyxEconomyMod/V71/`
 ## Struktur
 
 ```
-src/vannon/syx/economy/        ← Mod-Eigentum (128 .java-Dateien, ~23k LOC)
-├── core/        100 Dateien,  19.247 LOC   (Economy-Sim, Wallets, Firmen, Logs)
-├── adapter/      17 Dateien,  1.162 LOC   (Engine-API-Wrapper, Reflection-Kapselung)
-├── ui/           5 Dateien,   2.345 LOC   (4 Fenstrer + Base, 16 inline Tabs)
-└── benchmark/    1 Datei,     ~200 LOC    (Reflection-vs-MethodHandle-Messung)
+src/vannon/syx/economy/        ← Mod-Eigentum (150 .java-Dateien, ~29.5k LOC)
+├── core/        112 Dateien,  21.062 LOC   (Economy-Sim, Wallets, Firmen, Logs)
+├── adapter/      27 Dateien,   5.086 LOC   (EngineMirror-SDK + ISyx* + Vanilla + Bypass-SDK)
+├── ui/            5 Dateien,   2.622 LOC   (4 Fenster + Base, 16 inline Tabs)
+├── benchmark/     1 Datei,       328 LOC   (Reflection-vs-MethodHandle-Messung)
+└── warehouse/market/ 1 Datei,    51 LOC   (MarketSharedState, Sprint M-1)
 
 src/settlement/room/..         ← 4 Package-Private Brücken (compile-time-safe Zugriff)
                                   (LaborMarketAccess, EconomyTavern/Eatery/CanteenAccess)
@@ -163,7 +164,7 @@ Plus dokumentarisch: `docs-truth-consistency.sh` (Pre-Commit-Hook via `install-h
 ## Test
 
 ```bash
-mvn test                  # 138+ JUnit-Tests in test/java/
+mvn test                  # 402 @Test-Annotationen in test/java/
 mvn jacoco:report         # Coverage-Report für die 7 Kernel-Klassen
 ```
 

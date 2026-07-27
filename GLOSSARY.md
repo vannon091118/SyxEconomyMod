@@ -265,7 +265,7 @@ private Zugriffe via BypassGate SDK, public Zugriffe via direkte Compilezeit-Lin
 | **`CompactNumber`** | 1500 → "1.5K", 2_300_000 → "2.3M". |
 | **`SimpleHistory`** | Ring-Buffer (60 letzte Werte) für Charts. |
 | **`AuditKernel`** | Geldmengen-Konservierungs-Check + Drift-Akkumulator. |
-| **`EngineSeams`** | Legacy-Fassade: alle Methoden `@Deprecated`, delegieren an `economySim.aiAdapter()` etc. |
+| **`EngineSeams`** | Legacy-Fassade (0 @Deprecated — alle Methoden live), delegieren an `economySim.aiAdapter()` etc. |
 | **`ChunkedSave`** | TLV-Helper für Save/Load. Unbekannte Tags werden übersprungen. |
 | **`Saveable`** | Interface: `save(FilePutter)`, `load(FileGetter)`. |
 
@@ -326,11 +326,11 @@ Jede Tab-Klasse implementiert das `TabContent`-Interface, das in `EconWindowBase
 
 | Kategorie | Anzahl Dateien | Schicht |
 |---|---:|---|
-| 🟦 Vanilla Wrapper | 18 | Adapter + Brücken |
-| 🟩 Simulation | 110 | Wirtschaftslogik |
+| 🟦 Vanilla Wrapper | 31 | Adapter (27) + Brücken (4) |
+| 🟩 Simulation | 112 | Wirtschaftslogik |
 | 🟥 UI | 5 | 4 Fenster + Base |
 | 🟨 Entry + Benchmark | 2 | Main + Benchmark |
-| **GESAMT** | **139** | Σ `find src -name '*.java'` |
+| **GESAMT** | **150** | Σ `find src -name '*.java'` |
 
 Diese Zahlen sind **maschinell** verifizierbar:
 ```bash
@@ -352,7 +352,7 @@ grep -rE 'class [A-Z][A-Za-z]+Tab' src/vannon/syx/economy/ui/ | wc -l  # 16
 | **`FlowMeter`** | Wrapper um Vanilla `FResources` — KEIN eigener Resource-Tracker. |
 | **`FirmLedger`** | Buchhaltung + Analytics + CSV-Export-Source — drei Rollen. |
 | **`DebtDiplomacyBuffer`** | Militär-Puffer: zählt abgeschreckte Fraktionen, nicht Schulden. |
-| **`EngineSeams`** | Legacy-Fassade: alle Methoden `@Deprecated`, delegieren an Adapter. Wird entfernt wenn alle Caller migriert sind. |
+| **`EngineSeams`** | Legacy-Fassade (0 @Deprecated — alle Methoden live). Wird entfernt wenn alle Caller auf EngineMirror migriert sind. |
 | **`Yard-Sale`** | P2P-Geld-Transfer (Bürger→Bürger) via `Wallets.applyExchange`. |
 | **`SubjectJob`** | Bürger-Hover-Overlay: AI-Plan + Wirtschafts-Kontext. |
 | **`AccessAutomation`** | Raum-Zugangs-Politik nach Bürger-Klasse. |

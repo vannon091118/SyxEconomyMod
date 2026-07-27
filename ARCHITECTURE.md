@@ -46,14 +46,14 @@ Spec-Migration: BINDUNGSMATRIX.csv ist Single-Source-of-Truth.
 
 Das Mod fügt Songs of Syx eine parallele Wirtschaftsschicht hinzu. Jeder Siedler hat ein eigenes Wallet, Firmen rechnen边际isch ab, der Staat kann Steuern erheben und Subventionen verteilen. Das Mod ersetzt keine Vanilla-Systeme, sondern arbeitet über einen **Adapter-Layer** strikt getrennt daneben.
 
-Modul-Bilanz: **149 Java-Dateien, ~28.970 LOC** (core 20.954 + adapter 5.086 + ui 2.622 + bridges 309)
+Modul-Bilanz: **150 Java-Dateien, ~29.458 LOC** (core 21.062 + adapter 5.086 + ui 2.622 + benchmark 328 + warehouse/market 51 + bridges 309)
 
 | Modul | Dateien | LOC | Aufgabe |
 |---|---:|---:|---|
-| `vannon/syx/economy/core/` | 111 | ~20.954 | Wirtschafts-Sim + Subsysteme (inkl. EngineLevers 103 Toggles) |
+| `vannon/syx/economy/core/` | 112 | ~21.062 | Wirtschafts-Sim + Subsysteme (inkl. EngineLevers 103 Toggles) |
 | `vannon/syx/economy/adapter/` | 27 | ~5.086 | EngineMirror-SDK (9) + ISyx* Legacy (7) + Vanilla (5) + Bypass-SDK (5) + Dispatcher (1) |
 | `vannon/syx/economy/ui/` | 5 | ~2.622 | 4 Fenster + Base |
-| `vannon/syx/economy/benchmark/` | 1 | ~330 | Reflection-vs-MethodHandle-Benchmark |
+| `vannon/syx/economy/benchmark/` | 1 | ~328 | Reflection-vs-MethodHandle-Benchmark |
 | `vannon/syx/economy/warehouse/market/` | 1 | ~51 | MarketSharedState (Sprint M-1) |
 | `settlement/room/...` | 4 | ~309 | Package-Private Brücken (compile-time-safe, außerhalb mod-package) |
 
@@ -106,10 +106,10 @@ Purchase, CrownStorage, SaleDistribution, Settlement, RetailQuote, OwnerlessReta
 
 | Datei | Existiert? | Pfad |
 |---|---|---|
-| `EconWindowBase.java` | ✅ | `src/vannon/syx/economy/ui/EconWindowBase.java` (368 LOC) |
-| `WindowEconomy.java` | ✅ | `src/vannon/syx/economy/ui/WindowEconomy.java` (510 LOC) |
-| `WindowOverview.java` | ✅ | `src/vannon/syx/economy/ui/WindowOverview.java` (744 LOC) |
-| `WindowState.java` | ✅ | `src/vannon/syx/economy/ui/WindowState.java` (528 LOC) |
+| `EconWindowBase.java` | ✅ | `src/vannon/syx/economy/ui/EconWindowBase.java` (413 LOC) |
+| `WindowEconomy.java` | ✅ | `src/vannon/syx/economy/ui/WindowEconomy.java` (528 LOC) |
+| `WindowOverview.java` | ✅ | `src/vannon/syx/economy/ui/WindowOverview.java` (841 LOC) |
+| `WindowState.java` | ✅ | `src/vannon/syx/economy/ui/WindowState.java` (645 LOC) |
 | `WindowQuickview.java` | ✅ | `src/vannon/syx/economy/ui/WindowQuickview.java` (195 LOC) |
 | ~~`EconContext.java`~~ | ❌ nicht mehr — Inhalt wurde in die 4 Window-Files integriert | — |
 | ~~`EconTab.java`~~ | ❌ nicht mehr — `TabContent`-Interface direkt in `EconWindowBase` | — |
