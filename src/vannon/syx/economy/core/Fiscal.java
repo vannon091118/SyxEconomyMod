@@ -11,6 +11,8 @@ import settlement.room.main.RoomInstance;
 import snake2d.util.file.FileGetter;
 import snake2d.util.file.FilePutter;
 import vannon.syx.economy.core.AffordabilityGate;
+import vannon.syx.economy.adapter.EngineMirror;
+import vannon.syx.economy.adapter.IHumanoidAccess;
 import vannon.syx.economy.core.EconConfig;
 import vannon.syx.economy.core.EngineSeams;
 import vannon.syx.economy.core.FirmLedger;
@@ -85,7 +87,8 @@ public final class Fiscal implements Saveable {
                 wallets.accrueTax(h, due);
                 collected += (long)due;
             }
-            if ((shortfall = EconConfig.perHeadTax - due) <= 0 || !EngineSeams.isEnslaveablePleb(h)) continue;
+            IHumanoidAccess hum = EngineMirror.api() != null ? EngineMirror.api().humanoids() : null;
+            if ((shortfall = EconConfig.perHeadTax - due) <= 0 || !(hum != null ? hum.isEnslaveablePleb(h) : EngineSeams.isEnslaveablePleb(h))) continue;
             wallets.addDebt(h, shortfall);
         }
         if (collected > 0L) {

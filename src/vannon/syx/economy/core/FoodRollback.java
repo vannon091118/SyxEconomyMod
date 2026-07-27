@@ -14,6 +14,10 @@ import settlement.room.main.RoomInstance;
 import settlement.room.service.food.canteen.ROOM_CANTEEN;
 import settlement.room.service.food.eatery.ROOM_EATERY;
 import settlement.stats.STATS;
+import snake2d.util.sets.LIST;
+import vannon.syx.economy.adapter.EngineMirror;
+import vannon.syx.economy.adapter.IRoomAccess;
+import vannon.syx.economy.core.EngineSeams;
 import vannon.syx.economy.core.FoodRollbackKernel;
 
 public final class FoodRollback {
@@ -22,13 +26,20 @@ public final class FoodRollback {
         int[] stock;
         StallSnapshot nearest = null;
         long bestDistance = Long.MAX_VALUE;
-        for (ROOM_EATERY eatery : EngineSeams.settRoomsEateries()) {
+        IRoomAccess rooms = EngineMirror.api() != null ? EngineMirror.api().rooms() : null;
+        @SuppressWarnings({"rawtypes","unchecked"})
+        LIST eateries = rooms != null ? (LIST) rooms.getEateries() : EngineSeams.settRoomsEateries();
+        for (Object _obj : eateries != null ? eateries : java.util.Collections.emptyList()) {
+            ROOM_EATERY eatery = (ROOM_EATERY) _obj;
             result = FoodRollback.nearestInstance(humanoid, eatery, stock = FoodRollback.eateryStock(eatery), bestDistance);
             if (result == null) continue;
             nearest = result.snapshot;
             bestDistance = result.distanceSquared;
         }
-        for (ROOM_CANTEEN canteen : EngineSeams.settRoomsCanteens()) {
+        @SuppressWarnings({"rawtypes","unchecked"})
+        LIST canteens = rooms != null ? (LIST) rooms.getCanteens() : EngineSeams.settRoomsCanteens();
+        for (Object _obj2 : canteens != null ? canteens : java.util.Collections.emptyList()) {
+            ROOM_CANTEEN canteen = (ROOM_CANTEEN) _obj2;
             result = FoodRollback.nearestInstance(humanoid, canteen, stock = FoodRollback.canteenStock(canteen), bestDistance);
             if (result == null) continue;
             nearest = result.snapshot;

@@ -58,6 +58,7 @@ import vannon.syx.economy.core.ServiceMarket;
 import vannon.syx.economy.core.ServicePlanController;
 import vannon.syx.economy.core.StateWageMarket;
 import vannon.syx.economy.adapter.AdapterDispatcher;
+import vannon.syx.economy.adapter.EngineMirror;
 import vannon.syx.economy.adapter.ISyxAI;
 import vannon.syx.economy.adapter.ISyxNpc;
 import vannon.syx.economy.adapter.ISyxBoosting;
@@ -614,8 +615,8 @@ public final class EconomySim {
         // Live-Diagnose beobachteten mean_wage-/SimpleHistory-Drift verstärkte.
         if (!this.updateGuard.tryEnter()) return;
         try {
-            this.debtDiplomacyBuffer.update();
-            if (!EngineSeams.entitiesAvailable()) {
+        this.debtDiplomacyBuffer.update();
+        if (!(EngineMirror.api() != null && EngineMirror.api().rooms() != null ? EngineMirror.api().rooms().entitiesAvailable() : EngineSeams.entitiesAvailable())) {
                 return;
             }
             if (ds <= 0.0) {
@@ -1627,7 +1628,7 @@ public final class EconomySim {
      * Konsequenzen die naechste Firmen-Target-Berechnung beeinflussen.
      */
     private void updateDemography() {
-        if (!EngineSeams.entitiesAvailable()) return;
+        if (!(EngineMirror.api() != null && EngineMirror.api().rooms() != null ? EngineMirror.api().rooms().entitiesAvailable() : EngineSeams.entitiesAvailable())) return;
         int threshold = EconConfig.hungerDeathThreshold;
         if (threshold <= 0) return;
         int damage = EconConfig.hungerDamageRate;

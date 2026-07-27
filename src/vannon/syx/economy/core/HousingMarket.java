@@ -15,7 +15,10 @@ import settlement.room.main.RoomInstance;
 import settlement.stats.STATS;
 import snake2d.util.file.FileGetter;
 import snake2d.util.file.FilePutter;
+import vannon.syx.economy.adapter.EngineMirror;
+import vannon.syx.economy.adapter.IRoomAccess;
 import vannon.syx.economy.core.EconConfig;
+import vannon.syx.economy.core.EngineSeams;
 import vannon.syx.economy.core.FirmLedger;
 import vannon.syx.economy.core.PropertyLedger;
 import vannon.syx.economy.core.Roster;
@@ -70,7 +73,8 @@ public final class HousingMarket implements Saveable {
     }
 
     private void collectFromHomes(Roster roster, Wallets wallets, FirmLedger firmLedger) {
-        ROOM_HOME homeBp = EngineSeams.settRoomsHome();
+        IRoomAccess rooms = EngineMirror.api() != null ? EngineMirror.api().rooms() : null;
+        ROOM_HOME homeBp = rooms != null ? rooms.getHome() : EngineSeams.settRoomsHome();
         if (homeBp == null || homeBp.service == null) {
             return;
         }
@@ -86,7 +90,8 @@ public final class HousingMarket implements Saveable {
     }
 
     private void collectFromChambers(Roster roster, Wallets wallets, FirmLedger firmLedger) {
-        ROOM_CHAMBER chamberBp = EngineSeams.settRoomsChamber();
+        IRoomAccess rm2 = EngineMirror.api() != null ? EngineMirror.api().rooms() : null;
+        ROOM_CHAMBER chamberBp = rm2 != null ? rm2.getChamber() : EngineSeams.settRoomsChamber();
         if (chamberBp == null) {
             return;
         }

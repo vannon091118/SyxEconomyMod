@@ -15,6 +15,7 @@ import vannon.syx.economy.core.EconConfig;
 import vannon.syx.economy.core.EngineSeams;
 import vannon.syx.economy.core.Roster;
 import vannon.syx.economy.core.StateWarehouses;
+import vannon.syx.economy.adapter.EngineMirror;
 
 final class ConstructionHoardController {
     private static final String WORK_WAIT_PLAN = "settlement.entity.humanoid.ai.work.PlanHangArround";
@@ -62,7 +63,8 @@ final class ConstructionHoardController {
             HAI hAI = worker.ai();
             if (!(hAI instanceof AIManager) || (manager = (AIManager)hAI).resourceCarried() != null) continue;
             boolean oddjobber = EconomySim.active().aiAdapter().isOddjobbing(worker);
-            RoomInstance workplace = EngineSeams.employedRoom(worker);
+            RoomInstance workplace = EngineMirror.api() != null && EngineMirror.api().humanoids() != null
+                    ? EngineMirror.api().humanoids().getEmployedRoom(worker) : EngineSeams.employedRoom(worker);
             boolean bl = idleBuilder = workplace != null && workplace.blueprint() == SETT.ROOMS().BUILDER && manager.plan() != null && WORK_WAIT_PLAN.equals(manager.plan().getClass().getName());
             if (!oddjobber && !idleBuilder) continue;
             

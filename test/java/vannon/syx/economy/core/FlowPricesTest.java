@@ -70,9 +70,11 @@ class FlowPricesTest {
 
     @Test
     void effectiveCoverage_negativeProjected_returnsZero() {
-        // stock=0, supply=0, demand=10 → projected=0+1*(-10)=-10 → coverage=0
+        // stock=0, supply=0, demand=10 → Cold-Start-Guard: coverage=0.4
+        // (Livetest v0.13.56: ohne Guard → 7.1× Preis-Spike bei Spielstart)
+        // D-004 bleibt intakt: stock>0 + supply=0 → coverage=0 (siehe d004_* Tests)
         double cov = FlowPrices.effectiveCoverage(0.0, 0.0, 10.0, 6.0, 1.0);
-        assertEquals(0.0, cov, 1e-9);
+        assertEquals(0.4, cov, 1e-9);
     }
 
     @Test

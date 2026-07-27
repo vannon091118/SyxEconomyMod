@@ -11,6 +11,8 @@ import settlement.room.service.hygine.well.ROOM_WELL;
 import settlement.room.service.module.RoomServiceAccess;
 import settlement.stats.service.StatService;
 import snake2d.util.sets.LIST;
+import vannon.syx.economy.adapter.EngineMirror;
+import vannon.syx.economy.adapter.IHumanoidAccess;
 import vannon.syx.economy.core.EconConfig;
 import vannon.syx.economy.core.EngineSeams;
 import vannon.syx.economy.core.FirmLedger;
@@ -90,7 +92,8 @@ public final class ServiceMarket {
             ++this.admitted;
             return true;
         }
-        int urgency = service.need instanceof NEED_E ? Math.max(0, Math.min(4, EngineSeams.eventNeedPriority(humanoid, service.need))) : (int)Math.ceil(4.0 * (1.0 - EngineSeams.serviceFulfilment(humanoid, (StatService)service.stats())));
+        IHumanoidAccess hum = EngineMirror.api() != null ? EngineMirror.api().humanoids() : null;
+        int urgency = service.need instanceof NEED_E ? Math.max(0, Math.min(4, (hum != null ? hum.getEventNeedPriority(humanoid, service.need) : EngineSeams.eventNeedPriority(humanoid, service.need)))) : (int)Math.ceil(4.0 * (1.0 - (hum != null ? hum.getServiceFulfilment(humanoid, (StatService)service.stats()) : EngineSeams.serviceFulfilment(humanoid, (StatService)service.stats()))));
         int price = this.price(service);
         int offered = ServiceMarket.bid((double)urgency / 4.0, wallets.spendable(humanoid), EconConfig.serviceBasePrice, EconConfig.serviceBidWealthWeight);
         boolean bl = won = service.available() > 0 && offered >= price;

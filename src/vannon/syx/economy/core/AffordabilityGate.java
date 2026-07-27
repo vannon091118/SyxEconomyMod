@@ -14,6 +14,8 @@ import settlement.entity.humanoid.Humanoid;
 import settlement.room.main.RoomInstance;
 import settlement.stats.equip.WearableResource;
 import snake2d.util.sets.LIST;
+import vannon.syx.economy.adapter.EngineMirror;
+import vannon.syx.economy.adapter.IHumanoidAccess;
 import vannon.syx.economy.core.EconConfig;
 import vannon.syx.economy.core.EngineSeams;
 import vannon.syx.economy.core.Escrow;
@@ -364,7 +366,7 @@ public final class AffordabilityGate {
         if (this.grainDole.isOnRoll(humanoid.indu())) {
             return true;
         }
-        if (humanoid.indu().hType() == HTYPES.CHILD() && EngineSeams.livingParent(humanoid) == null) {
+        if (humanoid.indu().hType() == HTYPES.CHILD() && livingParent(humanoid) == null) {
             return true;
         }
         // Kein Blanko-Safety-Net mehr — nur GrainDole-Empfänger,
@@ -374,8 +376,13 @@ public final class AffordabilityGate {
         return false;
     }
 
+    private static Humanoid livingParent(Humanoid child) {
+        IHumanoidAccess hum = EngineMirror.api() != null ? EngineMirror.api().humanoids() : null;
+        return hum != null ? hum.getLivingParent(child) : EngineSeams.livingParent(child);
+    }
+
     private static Humanoid foodPayer(Humanoid humanoid) {
-        return humanoid.indu().hType() == HTYPES.CHILD() ? EngineSeams.livingParent(humanoid) : humanoid;
+        return humanoid.indu().hType() == HTYPES.CHILD() ? livingParent(humanoid) : humanoid;
     }
 
     private static int safeAdd(int a, int b) {

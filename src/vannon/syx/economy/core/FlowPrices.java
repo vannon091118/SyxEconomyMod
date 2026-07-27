@@ -6,6 +6,12 @@ import vannon.syx.economy.core.FlowMeter;
 public final class FlowPrices {
     private static final double COVERAGE_FLOOR = 0.005;
 
+    /** Cold-Start / Full-Depletion Coverage. Gibt bei supply=0 UND stock=0
+     *  einen moderaten Scarcity-Signal (~2× Anker bei Elasticity 0.8) statt
+     *  maximalen Spike (7.1×). Trennt Cold-Start von Mid-Game-Breakdown
+     *  (stock>0 umgeht den Guard → D-004 bleibt intakt). Livetest v0.13.56. */
+    private static final double COLD_START_COVERAGE = 0.4;
+
     private double[] price = new double[0];
     private double[] anchor = new double[0];
     private double[] coverage = new double[0];
@@ -104,11 +110,22 @@ public final class FlowPrices {
      *  fälschlich Überfluss (coverage=8.7) → Preis kollabiert auf 0.05× Anker → Firmen
      *  finden kein Holz obwohl Lager voll ist (broken link: Lager-Tracking ≠ Firmen-Input).
      *  Mit Fix: supplyPerDay≤0 → effectiveStock=0 → coverage fällt → Preis steigt →
-     *  Scarcity-Signal korrekt. */
+     *  Scarcity-Signal korrekt.
+     *
+     *  Livetest v0.13.56 Cold-Start-Guard: Bei Spielstart ohne Lager/Werkstatt ist
+     *  supplyPerDay=0 UND stock=0 → effectiveStock=0 → projected negativ → coverage=0
+     *  → maximaler Scarcity-Multiplier → Steinpreis schießt auf 7.1× Anker.
+     *  Fix: Wenn supply=0 UND stock=0 (Cold-Start), neutrale Coverage (1.0) zurückgeben
+     *  statt 0 — "wissen wir noch nicht" statt "alles ist knapp". */
     public static double effectiveCoverage(double stock, double supplyPerDay, double demandPerDay, double targetCoverageDays, double flowLookaheadDays) {
         double target = FlowPrices.targetStock(demandPerDay, targetCoverageDays);
         if (!(target > 0.0) || !Double.isFinite(target)) {
             return 1.0;
+        }
+        // Cold-Start / Full-Depletion Guard: supply=0 UND stock=0.
+        // Mid-Game-Breakdown (supply=0, stock>0) umgeht diesen Guard → D-004 bleibt intakt.
+        if (supplyPerDay <= 0.0 && stock <= 0.0) {
+            return COLD_START_COVERAGE;
         }
         double beta = Math.max(0.0, flowLookaheadDays);
         double effectiveStock = supplyPerDay > 0.0 ? Math.max(0.0, stock) : 0.0;

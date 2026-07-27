@@ -10,6 +10,9 @@ import settlement.entity.humanoid.Humanoid;
 import snake2d.util.file.FileGetter;
 import snake2d.util.file.FilePutter;
 import snake2d.util.rnd.RND;
+import vannon.syx.economy.adapter.EngineMirror;
+import vannon.syx.economy.adapter.IHumanoidAccess;
+import vannon.syx.economy.adapter.IStatsAccess;
 import vannon.syx.economy.core.EconConfig;
 import vannon.syx.economy.core.EngineSeams;
 import vannon.syx.economy.core.Roster;
@@ -34,7 +37,8 @@ public final class ReligionMarket implements Saveable {
     }
 
     public static void ensureSized() {
-        int n = EngineSeams.religionCount();
+        IStatsAccess stats = EngineMirror.api() != null ? EngineMirror.api().stats() : null;
+        int n = stats != null ? stats.getReligionCount() : EngineSeams.religionCount();
         if (EconConfig.religionHeadTax.length != n) {
             int[] grown = new int[n];
             int oldLen = EconConfig.religionHeadTax.length;
@@ -85,12 +89,13 @@ public final class ReligionMarket implements Saveable {
         int cheapest = ReligionMarket.cheapestReligion();
         int cheapestRate = cheapest < 0 ? 0 : ReligionMarket.rateOf(cheapest);
         long collected = 0L;
+        IHumanoidAccess hum = EngineMirror.api() != null ? EngineMirror.api().humanoids() : null;
         for (int i = 0; i < roster.size(); ++i) {
             boolean canFlee;
             int religion;
             int rate;
             Humanoid h = roster.get(i);
-            if (h.indu().hType() == HTYPES.CHILD() || h.indu().hType() == HTYPES.CHILD_SLAVE() || h.indu().clas() == HCLASSES.SLAVE() || (rate = ReligionMarket.rateOf(religion = EngineSeams.religionIndexOf(h))) <= 0) continue;
+            if (h.indu().hType() == HTYPES.CHILD() || h.indu().hType() == HTYPES.CHILD_SLAVE() || h.indu().clas() == HCLASSES.SLAVE() || (rate = ReligionMarket.rateOf(religion = (hum != null ? hum.getReligionIndexOf(h) : EngineSeams.religionIndexOf(h)))) <= 0) continue;
             int spendable = wallets.spendable(h);
             if (spendable >= rate) {
                 wallets.add(h, -rate);
@@ -100,11 +105,11 @@ public final class ReligionMarket implements Saveable {
             }
             boolean bl = canFlee = cheapest >= 0 && religion != cheapest && cheapestRate < rate;
             if (canFlee && (double)RND.rFloat() < 0.5) {
-                EngineSeams.convertTo(h, cheapest);
+                if (hum != null) hum.convertTo(h, cheapest); else EngineSeams.convertTo(h, cheapest);
                 ++this.lastConversions;
                 continue;
             }
-            if (!EngineSeams.isEnslaveablePleb(h)) continue;
+            if (!(hum != null ? hum.isEnslaveablePleb(h) : EngineSeams.isEnslaveablePleb(h))) continue;
             wallets.addDebt(h, rate);
             ++this.lastDebtors;
         }

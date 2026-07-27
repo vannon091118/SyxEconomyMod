@@ -9,6 +9,8 @@ import settlement.room.main.RoomInstance;
 
 import snake2d.util.file.FileGetter;
 import snake2d.util.file.FilePutter;
+import vannon.syx.economy.adapter.EngineMirror;
+import vannon.syx.economy.adapter.IRoomAccess;
 
 import java.io.IOException;
 
@@ -64,14 +66,16 @@ public final class PropertyMarketController {
         ledger.cleanupGoneRooms();
 
         // 1. Home purchase
+        IRoomAccess rooms = EngineMirror.api() != null ? EngineMirror.api().rooms() : null;
         if (EconConfig.homePurchaseEnabled && SETT.ROOMS() != null) {
-            if (EngineSeams.settRoomsHome() != null && EngineSeams.settRoomsHome().service != null) {
+            settlement.room.home.house.ROOM_HOME homeRoom = rooms != null ? rooms.getHome() : EngineSeams.settRoomsHome();
+            if (homeRoom != null && homeRoom.service != null) {
                 int tw = SETT.TWIDTH;
                 int th = SETT.THEIGHT;
                 for (int ty = 0; ty < th; ++ty) {
                     for (int tx = 0; tx < tw; ++tx) {
                         settlement.room.home.house.HomeInstance home =
-                            EngineSeams.settRoomsHome().service.get(tx, ty);
+                            homeRoom.service.get(tx, ty);
                         if (home == null || home.occupants() <= 0) continue;
                         PropertyLedger.Entry e = ledger.get(home, "HOME");
                         if (e == null || !e.isStateOwned()) continue;
@@ -88,10 +92,11 @@ public final class PropertyMarketController {
                     }
                 }
             }
-            if (EngineSeams.settRoomsChamber() != null) {
-                for (int i = 0; i < EngineSeams.settRoomsChamber().instancesSize(); ++i) {
+            settlement.room.home.chamber.ROOM_CHAMBER chamberRoom = rooms != null ? rooms.getChamber() : EngineSeams.settRoomsChamber();
+            if (chamberRoom != null) {
+                for (int i = 0; i < chamberRoom.instancesSize(); ++i) {
                     settlement.room.home.chamber.ChamberInstance chamber =
-                        EngineSeams.settRoomsChamber().getInstance(i);
+                        chamberRoom.getInstance(i);
                     if (chamber == null || !chamber.exists() || chamber.occupants() <= 0) continue;
                     PropertyLedger.Entry e = ledger.get(chamber, "CHAMBER");
                     if (e == null || !e.isStateOwned()) continue;
@@ -114,7 +119,7 @@ public final class PropertyMarketController {
 
         // 3. Firm share purchases and dividend cycle
         if (EconConfig.workplaceSharesEnabled) {
-            ledger.accrueDividends(this.firmLedger, EngineSeams.settRoomsImps());
+            ledger.accrueDividends(this.firmLedger, rooms != null ? rooms.getRoomImps() : EngineSeams.settRoomsImps());
             this.propertyDividendsPaid += ledger.payDividends(this.wallets, this.roster, season);
 
             for (int i = 0; i < this.roster.size(); ++i) {

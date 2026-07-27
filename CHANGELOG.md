@@ -1,6 +1,6 @@
 # SyxEconomyMod — Changelog
 
-> **Version:** v0.13.63 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-26
+> **Version:** v0.13.67 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-26
 >
 > Stam-Doku-Synchron-Anker: Die obenstehende Versions-Zeile MUSS identisch mit `pom.xml` `<version>` sein.
 > Der Sync-Gate `tools/verify-doc-sync.sh` scheitert wenn dieser Anker driftet.
@@ -33,7 +33,7 @@
 
 ---
 
-## v0.13.63 — 2026-07-26
+## v0.13.67 — 2026-07-26
 
 ### 🔬 Handshake: Warum wir Phantom-Bugs gejagt haben
 

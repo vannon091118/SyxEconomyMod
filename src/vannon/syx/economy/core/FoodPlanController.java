@@ -6,6 +6,8 @@ import settlement.entity.humanoid.ai.main.AIManager;
 import settlement.entity.humanoid.ai.main.AIPLAN;
 import settlement.entity.humanoid.ai.main.HAI;
 import vannon.syx.economy.core.AffordabilityGate;
+import vannon.syx.economy.adapter.EngineMirror;
+import vannon.syx.economy.adapter.IHumanoidAccess;
 import vannon.syx.economy.core.EconConfig;
 import vannon.syx.economy.core.EngineSeams;
 import vannon.syx.economy.core.FoodTransactionPlan;
@@ -57,6 +59,7 @@ public final class FoodPlanController {
             || manager.plan() == null
             || !EconomySim.active().aiAdapter().isFoodPlan(manager.plan()))
             return;
-        EngineSeams.overwritePlan(humanoid, (AIPLAN)this.plan);
+        IHumanoidAccess hum = EngineMirror.api() != null ? EngineMirror.api().humanoids() : null;
+        if (hum != null) hum.overwritePlan(humanoid, (AIPLAN)this.plan); else EngineSeams.overwritePlan(humanoid, (AIPLAN)this.plan);
     }
 }

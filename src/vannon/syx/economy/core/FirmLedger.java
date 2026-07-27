@@ -18,6 +18,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import vannon.syx.economy.adapter.EngineMirror;
+import vannon.syx.economy.adapter.IRoomAccess;
 import java.util.List;
 import java.util.Map;
 import snake2d.util.sets.LIST;
@@ -34,7 +36,6 @@ import snake2d.util.file.FileGetter;
 import snake2d.util.file.FilePutter;
 import vannon.syx.economy.core.EconConfig;
 import vannon.syx.economy.core.EconomicRoles;
-import vannon.syx.economy.core.EngineSeams;
 import vannon.syx.economy.core.FirmEconomyKernel;
 import vannon.syx.economy.core.FlowMeter;
 import vannon.syx.economy.core.FlowPrices;
@@ -220,7 +221,8 @@ public final class FirmLedger {
             state.lastIncomePaidThisTick = 0;
             state.workersUnpaidThisTick = 0;
         }
-        for (RoomBlueprintIns<?> blueprint : EngineSeams.settRoomsIns()) {
+        IRoomAccess roomAccess = EngineMirror.api() != null ? EngineMirror.api().rooms() : null;
+        for (RoomBlueprintIns<?> blueprint : (roomAccess != null ? roomAccess.getRoomIns() : EngineSeams.settRoomsIns())) {
             for (int i = 0; i < blueprint.instancesSize(); ++i) {
                 RoomInstance room = blueprint.getInstance(i);
                 if (room == null || !room.exists() || room.employees() == null || room.employees().max() <= 0 || this.excludedFromMarketSizing(room)) continue;
@@ -231,7 +233,7 @@ public final class FirmLedger {
                     state.targetInitialized = true;
                 }
                 if (room.employees().hardTarget() == state.marketTarget) continue;
-                EngineSeams.setFirmTarget(room, state.marketTarget);
+                if (roomAccess != null) roomAccess.setFirmTarget(room, state.marketTarget); else EngineSeams.setFirmTarget(room, state.marketTarget);
             }
         }
         this.blueprints.clear();
@@ -290,7 +292,7 @@ public final class FirmLedger {
                 int minimum = Math.min(roomInstance.employees().max(), Math.max(0, EconConfig.minimumWorkersPerWorkplace));
                 state.marketTarget = minimum;
                 state.hill = new FirmEconomyKernel.HillState(minimum, 0.0, 1, true);
-                EngineSeams.setFirmTarget(roomInstance, minimum);
+                if (roomAccess != null) roomAccess.setFirmTarget(roomInstance, minimum); else EngineSeams.setFirmTarget(roomInstance, minimum);
             }
             RoomBlueprintIns<?> blueprint = roomInstance.blueprintI();
             BlueprintState aggregate = this.blueprints.computeIfAbsent(blueprint.key, ignored -> new BlueprintState());
@@ -298,7 +300,7 @@ public final class FirmLedger {
             aggregate.marginalNumerator += state.marginal * (double)Math.max(1, roomInstance.employees().employed());
             aggregate.marginalWeight += Math.max(1, roomInstance.employees().employed());
         }
-        for (RoomBlueprintIns<?> blueprint : EngineSeams.settRoomsIns()) {
+        for (RoomBlueprintIns<?> blueprint : (roomAccess != null ? roomAccess.getRoomIns() : EngineSeams.settRoomsIns())) {
             Double serviceVal = this.serviceRevenue.remove(blueprint.key);
             if (serviceVal == null) continue;
             BlueprintState aggregate = this.blueprints.computeIfAbsent(blueprint.key, ignored -> new BlueprintState());
@@ -337,7 +339,7 @@ public final class FirmLedger {
                 state.marketTarget = minimum;
                 state.hill = new FirmEconomyKernel.HillState(minimum, 0.0, 1, true);
                 if (room.employees() != null) {
-                    EngineSeams.setFirmTarget(room, minimum);
+                    if (roomAccess != null) roomAccess.setFirmTarget(room, minimum); else EngineSeams.setFirmTarget(room, minimum);
                 }
             }
         }
@@ -416,7 +418,8 @@ public final class FirmLedger {
     private static void restoreMilitaryCapacity() {
         LIST<RoomBlueprintIns<?>> rooms;
         try {
-            rooms = EngineSeams.settRoomsIns();
+            IRoomAccess roomAccess = EngineMirror.api() != null ? EngineMirror.api().rooms() : null;
+            rooms = roomAccess != null ? roomAccess.getRoomIns() : EngineSeams.settRoomsIns();
         } catch (LinkageError e) {
             // SETT (or a dependent class) has not been initialized — this happens
             // in unit tests that run without the Songs of Syx engine. In production
@@ -539,11 +542,12 @@ public final class FirmLedger {
     }
 
     private void size(RoomInstance room, FirmState state) {
+        IRoomAccess roomAccess = EngineMirror.api() != null ? EngineMirror.api().rooms() : null;
         int minimum = Math.min(room.employees().max(), Math.max(0, EconConfig.minimumWorkersPerWorkplace));
         if (FirmEconomyKernel.shouldIdle(state.profit, EconConfig.firmSizingHysteresis)) {
             state.marketTarget = minimum;
             state.hill = new FirmEconomyKernel.HillState(minimum, 0.0, 1, true);
-            EngineSeams.setFirmTarget(room, minimum);
+            if (roomAccess != null) roomAccess.setFirmTarget(room, minimum); else EngineSeams.setFirmTarget(room, minimum);
             return;
         }
         int target = Math.max(minimum, state.marketTarget);
@@ -560,7 +564,7 @@ public final class FirmLedger {
             state.marginal = slopeClamp(result.observedSlope());
         }
         state.marketTarget = result.nextTarget();
-        EngineSeams.setFirmTarget(room, state.marketTarget);
+        if (roomAccess != null) roomAccess.setFirmTarget(room, state.marketTarget); else EngineSeams.setFirmTarget(room, state.marketTarget);
     }
 
     static int initialMarketTarget(int employed, int maximum, int minimum) {
@@ -595,7 +599,8 @@ public final class FirmLedger {
     }
 
     private void applyStateWageMarginals() {
-        for (RoomBlueprintIns<?> blueprint : EngineSeams.settRoomsIns()) {
+        IRoomAccess roomAccess2 = EngineMirror.api() != null ? EngineMirror.api().rooms() : null;
+        for (RoomBlueprintIns<?> blueprint : (roomAccess2 != null ? roomAccess2.getRoomIns() : EngineSeams.settRoomsIns())) {
             Double marginalVal = this.stateWageMarginal.get(blueprint.key);
             if (marginalVal == null) continue;
             BlueprintState aggregate = this.blueprints.computeIfAbsent(blueprint.key, ignored -> new BlueprintState());

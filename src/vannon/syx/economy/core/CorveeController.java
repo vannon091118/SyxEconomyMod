@@ -4,6 +4,9 @@ import game.time.TIME;
 import settlement.main.SETT;
 import settlement.room.main.RoomBlueprintIns;
 import settlement.room.main.RoomInstance;
+import vannon.syx.economy.adapter.EngineMirror;
+import vannon.syx.economy.adapter.IHumanoidAccess;
+import vannon.syx.economy.adapter.IRoomAccess;
 import vannon.syx.economy.core.EconConfig;
 import vannon.syx.economy.core.EngineSeams;
 import vannon.syx.economy.core.Roster;
@@ -82,7 +85,8 @@ public final class CorveeController {
         }
         int employable = 0;
         for (int i = 0; i < roster.size(); ++i) {
-            if (!EngineSeams.isEmployableWorker(roster.get(i))) continue;
+            IHumanoidAccess hum = EngineMirror.api() != null ? EngineMirror.api().humanoids() : null;
+            if (!(hum != null ? hum.isEmployableWorker(roster.get(i)) : EngineSeams.isEmployableWorker(roster.get(i)))) continue;
             ++employable;
         }
         if (employable <= 0) {
@@ -118,7 +122,8 @@ public final class CorveeController {
                 if (kept < 0) {
                     kept = 0;
                 }
-                EngineSeams.setFirmTarget(room, kept);
+                IRoomAccess rm = EngineMirror.api() != null ? EngineMirror.api().rooms() : null;
+                if (rm != null) rm.setFirmTarget(room, kept); else EngineSeams.setFirmTarget(room, kept);
                 ++this.lastDraftedFirms;
             }
         }

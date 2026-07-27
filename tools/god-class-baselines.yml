@@ -1,6 +1,6 @@
 version: '1.0'
 auto_generated: true
-generated_at: '2026-07-27T15:42:41'
+generated_at: '2026-07-27T20:04:08'
 generator: tools/god-class-guard/emit_yaml.py
 limits:
   loc_warn: 600
@@ -29,6 +29,27 @@ heuristic_exemptions:
   rule: fields>=50 AND pubM==0
   applies_to: fields_cap_only
 legacy_baselines:
+  src/vannon/syx/economy/adapter/FactionAccessImpl.java:
+    loc: 438
+    pubM: 1
+    fields: 31
+    imports: 17
+    status_at_emit: block
+    reason_at_emit: fields 31 > block 24
+  src/vannon/syx/economy/adapter/HumanoidAccessImpl.java:
+    loc: 361
+    pubM: 8
+    fields: 25
+    imports: 28
+    status_at_emit: block
+    reason_at_emit: fields 25 > block 24; imports 28 > warn 25 (coupling density)
+  src/vannon/syx/economy/adapter/RoomAccessImpl.java:
+    loc: 584
+    pubM: 2
+    fields: 33
+    imports: 28
+    status_at_emit: block
+    reason_at_emit: fields 33 > block 24; imports 28 > warn 25 (coupling density)
   src/vannon/syx/economy/core/AffordabilityGate.java:
     loc: 372
     pubM: 25
@@ -58,13 +79,20 @@ legacy_baselines:
     status_at_emit: block
     reason_at_emit: fields 46 > block 24
   src/vannon/syx/economy/core/EconomySim.java:
-    loc: 1381
+    loc: 1382
     pubM: 74
     fields: 129
-    imports: 73
+    imports: 74
     status_at_emit: block
-    reason_at_emit: loc 1381 > block 800; pubM 74 > block 35; fields 129 > block 24;
-      imports 73 > block 40 (coupling density)
+    reason_at_emit: loc 1382 > block 800; pubM 74 > block 35; fields 129 > block 24;
+      imports 74 > block 40 (coupling density)
+  src/vannon/syx/economy/core/EngineLevers.java:
+    loc: 159
+    pubM: 5
+    fields: 104
+    imports: 2
+    status_at_emit: block
+    reason_at_emit: fields 104 > block 24
   src/vannon/syx/economy/core/EngineSeams.java:
     loc: 156
     pubM: 18
@@ -73,20 +101,27 @@ legacy_baselines:
     status_at_emit: warn
     reason_at_emit: fields 21 > warn 18; imports 28 > warn 25 (coupling density)
   src/vannon/syx/economy/core/FirmLedger.java:
-    loc: 757
+    loc: 762
     pubM: 19
     fields: 38
-    imports: 40
+    imports: 41
     status_at_emit: block
-    reason_at_emit: loc 757 > warn 600; fields 38 > block 24; imports 40 > warn 25
+    reason_at_emit: loc 762 > warn 600; fields 38 > block 24; imports 41 > block 40
       (coupling density)
   src/vannon/syx/economy/core/FlowMeter.java:
-    loc: 412
+    loc: 424
     pubM: 23
     fields: 23
-    imports: 26
+    imports: 29
     status_at_emit: warn
-    reason_at_emit: fields 23 > warn 18; imports 26 > warn 25 (coupling density)
+    reason_at_emit: fields 23 > warn 18; imports 29 > warn 25 (coupling density)
+  src/vannon/syx/economy/core/FlowPrices.java:
+    loc: 147
+    pubM: 12
+    fields: 19
+    imports: 2
+    status_at_emit: warn
+    reason_at_emit: fields 19 > warn 18
   src/vannon/syx/economy/core/FoodTransactionPlan.java:
     loc: 565
     pubM: 17
@@ -156,8 +191,8 @@ legacy_baselines:
     pubM: 37
     fields: 23
     imports: 18
-    status_at_emit: warn
-    reason_at_emit: loc 415 (under block 800); pubM 37 > warn 25 (facade overhead); fields 23 > warn 18
+    status_at_emit: block
+    reason_at_emit: pubM 37 > block 35
   src/vannon/syx/economy/ui/EconWindowBase.java:
     loc: 278
     pubM: 6

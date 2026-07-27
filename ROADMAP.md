@@ -1,6 +1,6 @@
 # SyxEconomyMod — Entwicklung & Roadmap
 
-> **Version:** v0.13.63 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-26
+> **Version:** v0.13.67 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-26
 >
 > Stam-Doku-Synchron-Anker: `tools/verify-doc-sync.sh` (9 Checks).
 > Abgeschlossene Sprints → [`CHANGELOG.md`](CHANGELOG.md).
@@ -19,36 +19,25 @@
 | **7-3** | 🟡 P2 | ✅ **Booster-Eval abgeschlossen (v0.13.51).** 12 Boostable-Kategorien evaluiert (402 total, 3 genutzt, 399 ungenutzt). **Ergebnis: 2/6 Behaviour-Booster wirtschaftsrelevant** (LOYALTY=genutzt via GiniConsequences, HAPPI=Konsum-Multiplikator). LAWFULNESS/SUBMISSION/HAPPI_SLAVES/SANITY für zukünftige Vektoren (Kriminalität, Sklaven-Ökonomie). Siehe §Booster-Eval unten. | ~30 | 9 |
 | **8-1** | 🟠 P1 | Mockito-Inject Coverage: Fiscal/Housing/Labor/Affordability/EconProgression + JaCoCo line=30% / branch=15%. **Anti-Bias-Wording (Rule 1.6):** Schwellen sind Ziel-Werte, keine Pflicht-Quoten. Wenn Coverage nach Mockito-Inject unter Schwellen bleibt → Sprint-Abschluss mit dokumentiertem Befund, kein Pflicht-Sprint-Folgesprint. `ggf.`-Pfad als B-014 (separater Sprint). **Reihenfolge:** Unabhängig vom 7-1a/b/2-Pfad; Mess-Basis für 7-3. | ~600 | 9 |
 | **8-2** | 🟡 P2 | 5 ungetestete Klassen: NpcFactionAdapter, AdapterDispatcher, SchemaValidator, DebugCsv, LoggingAdapter | ~200 | 8 |
-| **8-3** | 🟡 P2 | FlowMeter: `SETT.ROOMS().ins()` für ROOM_PRODUCER_INSTANCE iterieren (B-001) | ~25 | 8 |
-| **8-4** | 🟡 P2 | Oddjob-Clamp: harte Grenze via `EconConfig.oddjobMaxPay` (B-005) | ~12 | 8 |
-| **8-5** | 🟡 P2 | Hungersignal → Bevölkerungs-Kopplung: MeticImmigration + Roster (B-009) | ~18 | 8 |
-| *B-004* | 🟢 P3 | Vermögensklassen-Drift: WealthStats ↔ CitizenClass angleichen | ~30 | — |
-| *B-002* | 🟢 P3 | AccessAutomation-Spam: Rate-Limiter für Statusmeldungen | ~6 | — |
+| **8-3** | ✅ Closed (v0.13.64) | FlowMeter: `SETT.ROOMS().ins()` für ROOM_PRODUCER_INSTANCE iterieren (B-001) | ~25 | 8 |
+| **8-4** | ✅ Closed (v0.13.64) | Oddjob-Clamp: harte Grenze via `EconConfig.oddjobWageCeilingRatio` (B-005) | ~12 | 8 |
+| **8-5** | ✅ Closed (v0.13.64) | Hungersignal → Bevölkerungs-Kopplung: MeticImmigration + Roster (B-009) | ~18 | 8 |
+| *B-004* | ✅ Closed (v0.13.61) | Vermögensklassen-Drift: WealthStats ↔ CitizenClass angleichen | ~30 | — |
+| *B-002* | ✅ Closed (v0.13.57) | AccessAutomation-Spam: Rate-Limiter für Statusmeldungen | ~6 | — |
 | *B-006* | 🟢 P3 | IdentityHashMap-Migration Phase 2/3 | ~50 | — |
-| *B-008* | 🟢 P3 | EngineSeams-Direkt-Calls: 31→0 | ~40 | — |
-| *B-010* | 🟢 P3 | Carpenter targetWage=0 in FlowPrices | ~8 | — |
+| *B-008* | ✅ Closed (v0.13.66) | EngineSeams-Direkt-Calls: 55→0 (Phase 1: 25, Phase 2: 30 — alle migriert auf EngineMirror mit Fallback) | ~40 | — |
+| *B-010* | ✅ Closed (v0.13.46) | Carpenter targetWage=0 in FlowPrices | ~8 | — |
 | *T22* | 🟢 P3 | Savegame-Compat-Headless-Test | ~50 | — |
-| **A-01** | 🔴 P0 | ISyx\* Interfaces erweitern — 6 bestehende Interfaces um neue Methodensignaturen | ~120 | A-1 |
-| **A-02** | 🔴 P0 | WarehouseAdapter erweitern — storedD, fetchingSet, getUsedSpace, crateSize, totalCrates, setSpecialAmount, moveCapacityAm | ~180 | A-1 |
-| **A-03** | 🔴 P0 | TransportAdapter erweitern — efficiency, fetchTime, stationWorkers, stationProblem, resource, radiusRaw | ~160 | A-1 |
-| **A-04** | 🟠 P1 | DiplomacyAdapter erweitern — coalitionAdvantage, distress, potential, proxy | ~120 | A-1 |
-| **A-05** | 🟠 P1 | AIAdapter erweitern — Work/Crime-Module: WorkFarmer, WorkPolice, WorkGuard, Theft, Murder | ~100 | A-1 |
-| **A-06** | 🟠 P1 | BoostingAdapter erweitern — CIVICS: SPOILAGE, MAINTENANCE, IMMIGRATION, DEFLATION, HAPPINESS, LOYALTY | ~150 | A-1 |
-| **A-07** | 🟠 P1 | NpcAdapter erweitern — getStockpile, getBonus, getRequest, getRace, getCitizens, getOffensivePower | ~140 | A-1 |
-| **A-08** | 🟠 P1 | ISyxTrade + VanillaTradeAdapter — ResourcePrices, TradeManager, FBUYER/FSELLER | ~200 | A-1 |
-| **A-09** | 🟠 P1 | ISyxStats + VanillaStatsAdapter — StatsFood, StatsPopulation, StatsWork, StatsDisease, StatsLaw, StatsEquip | ~180 | A-1 |
-| **A-10** | 🟡 P2 | ISyxRoyalty + VanillaRoyaltyAdapter — Royalty, NPCCourt, ROPINION, RTrust | ~160 | A-1 |
-| **A-11** | 🟡 P2 | ISyxMaintenance + VanillaMaintenanceAdapter — MAINTENANCE, MConsumption, MRoom, ROOM_DEGRADER | ~140 | A-1 |
-| **A-12** | 🟡 P2 | ISyxTime + VanillaTimeAdapter — TIME, TIMECYCLE, Seasons, Light | ~100 | A-1 |
-| **A-13** | 🟡 P2 | ISyxReligion + VanillaReligionAdapter — RELIGIONS, Religion, StatsReligion | ~100 | A-1 |
-| **A-14** | 🔴 P0 | EngineAccessCatalog — Zentraler Adapter-Registry + Startup-Dump (analog EconConfig) | ~200 | A-1 |
-| **A-15** | 🟠 P1 | Unified Adapter Logging — LoggingAdapter.csvTrace() in alle Adapter (init + runtime) | ~80 | A-1 |
-| **A-16** | 🟠 P1 | SchemaValidator + vanilla-schema.yaml erweitern — alle neuen Klassen/Felder/Methoden | ~60 | A-1 |
-| **A-17** | 🟠 P1 | Stam-Docs — ARCHITECTURE.md (14→26 Dateien), ROADMAP.md, CHANGELOG.md | ~100 | A-1 |
+| **A-01** | ✅ Closed (v0.13.64) | **EngineLevers.java** — Config-Toggles pro Vanilla-Zugriff (~80 Felder, analog EconConfig) | ~200 | A-1 |
+| **A-02** | ✅ Closed (v0.13.64) | **IRoomAccess + RoomAccessImpl** — Stockpile, Transport, Room-Iteration, Service (bündelt ISyxWarehouse + ISyxTransport + EngineSeams) | ~500 | A-1 |
+| **A-03** | ✅ Closed (v0.13.64) | **IFactionAccess + FactionAccessImpl** — NPC, Diplomacy, Trade, Royalty, Player (bündelt ISyxDiplomacy + ISyxNpc + public API) | ~600 | A-1 |
+| **A-04** | ✅ Closed (v0.13.64) | **IHumanoidAccess + HumanoidAccessImpl** — AI-Plans (12), Stats, Boosting (bündelt ISyxAI + ISyxBoosting + EngineSeams) | ~500 | A-1 |
+| **A-04b** | ✅ Closed (v0.13.64) | **IStatsAccess + remaining** — Maintenance, Time, Religion, Weather, Tourism, Events | ~300 | A-1 |
+| **A-05** | ✅ Closed (v0.13.64) | **EngineMirror.java + AdapterDispatcher + Stam-Docs** — Zentrale Fassade, ersetzt EngineSeams graduell | ~400 | A-1 |
 | **UI-CENT** | ✅ Closed | **UI-Zentralisierung:** 122 GText → 10 FONTW_*-Konstanten in EconWindowBase | ~15 | 10 |
 | **AUDIT-1** | 📝 Notiert | **emigrationRisk = Dead Code** — AtomicInteger nie gelesen, D-002 wirkungslos | — | 10 |
 
-**Total:** 46 Tasks (17 bestehende + 17 Sprint A-1 + 12 Sprint M-3) — 6×Closed D-001–D-006 (→ CHANGELOG v0.13.57), 2×Closed Sprint 10 (UI-CENT, AUDIT-1), 5×Sprint 9 Active (7-1a, 7-1b, 7-2, 8-1, 7-3), 4×Sprint 9 Planned (8-2–8-5), 12×Sprint M-3 Planned, 6×P3 Backlog.
+**Total:** 35 Tasks (17 bestehende + 6 Sprint A-1 + 12 Sprint M-3) — 6×Closed D-001–D-006 (→ CHANGELOG v0.13.57), 2×Closed Sprint 10 (UI-CENT, AUDIT-1), 5×Sprint 9 Active (7-1a, 7-1b, 7-2, 8-1, 7-3), 4×Sprint 9 Planned (8-2–8-5), 12×Sprint M-3 Planned, 6×P3 Backlog.
 
 **Sprint 9 Dependency-Edges (Rule 1.7 Pre-Note):**
 
@@ -68,89 +57,97 @@ Maschinenlesbare Validation der Dep-Edges ist Sprint-10-Folgeaufgabe (Gate 11 in
 
 ---
 
-## Sprint A-1 — Full Engine Access Layer
+## Sprint A-1 — EngineMirror: Full Engine Access Layer (→ CHANGELOG v0.13.64)
 
-**Ziel:** Vollständige Adapter-Abdeckung aller Vanilla-Engine-Systeme. 6 bestehende Adapter erweitern + 6 neue Adapter + zentrale Katalogisierung + Unified Logging.
+**Ziel:** EIN zentraler EngineMirror der ALLE Vanilla-Zugriffe bündelt — private (via BypassGate)
+und public (direkt). Jeder Zugriff wird katalogisiert, geloggt und mod-intern konfigurierbar.
+Version-gebunden für V71.44. SDK-Generic kommt später (alle 4–6 Monate Vanilla-Update).
 
-**Gesamtumfang:** 14 Tasks, ~3.100 LoC | **Naming:** `A-` Prefix für Adapter-Sprints
+**Architektur:** Hybride Fassade (Option D):
+- **Private Zugriffe** → bestehende ISyx\* Adapter via BypassGate SDK (bleiben wie sie sind)
+- **Public Zugriffe** → direkte Compilezeit-Links (SETT, STATS, TIME, FACTIONS etc.)
+- **Config** → `EngineLevers.java` (analog `EconConfig` — Toggle pro Zugriff)
+- **Logging** → `LoggingAdapter.csvTrace()` in jedem Mirror-Method
+- **Katalog** → `EngineMirror.java` als zentrale Fassade mit Sub-Interfaces
+
+**Gesamtumfang:** 6 Tasks, ~2.500 LoC | **Naming:** `A-` Prefix für EngineMirror-Sprints
 
 ### Dependency-Chain
 
 ```
-A-01 (ISyx* Interfaces erweitern) ──→ A-02..A-07 (Implementierungen, parallel)
-A-08 (ISyxTrade)  ──┐
-A-09 (ISyxStats)  ──┤
-A-10 (ISyxRoyalty)──┼──→ A-14 (EngineAccessCatalog)
-A-11 (ISyxMaintenance)┤
-A-12 (ISyxTime)   ──┤
-A-14 (Catalog) ──→ A-16 (SchemaValidator + vanilla-schema.yaml)
-A-16 ──→ A-17 (Stam-Docs + ARCHITECTURE.md + CHANGELOG)
+A-01 (EngineLevers Config)      ──→ A-02..A-04b (Sub-Interfaces, parallel)
+A-02 (RoomAccess)               ──┐
+A-03 (FactionAccess)            ──┤
+A-04 (HumanoidAccess)           ──┼──→ A-05 (EngineMirror Fassade + Migration)
+A-04b (StatsAccess + remaining) ──┘
 ```
 
-### Task-Liste — Gruppe 1: Bestehende Adapter ERWEITERN
+### Task-Liste
 
-| Task | Prio | Beschreibung | Vanilla-Ziel | Neue Methoden | LoC |
-|---|---|---|---|---|---|
-| **A-01** | 🔴 P0 | **ISyx\* Interfaces erweitern** — 6 bestehende Interfaces um neue Methodensignaturen erweitern (isAvailable + initOk Pattern beibehalten) | — | — | ~120 |
-| **A-02** | 🔴 P0 | **WarehouseAdapter erweitern** — `storedD(RESOURCE)`, `fetchingSet(boolean)`, `getUsedSpace()`, `crateSize()`, `totalCrates()`, `setSpecialAmount(RESOURCE,int)`, `moveCapacityAm(RESOURCE)` | `StockpileInstance` | 7 | ~180 |
-| **A-03** | 🔴 P0 | **TransportAdapter erweitern** — `efficiency()`, `getFetchTime()`, `getStationWorkers()`, `hasStationProblem()`, `resource()`, `radiusRaw()`, `radiusRawSet(byte)` | `TransportInstance` | 7 | ~160 |
-| **A-04** | 🟠 P1 | **DiplomacyAdapter erweitern** — `coalitionAdvantage()`, `distress(Faction)`, `getPotential()`, `getProxy()` | `DipWarPlayer` | 4 | ~120 |
-| **A-05** | 🟠 P1 | **AIAdapter erweitern** — Work/Crime-Module: `WorkFarmer`, `WorkPolice`, `WorkGuard`, `Theft`, `Murder` | 6 neue AI-Plan-Klassen | 6 | ~100 |
-| **A-06** | 🟠 P1 | **BoostingAdapter erweitern** — CIVICS: `SPOILAGE`, `MAINTENANCE`, `IMMIGRATION`, `DEFLATION`, `HAPPINESS`, `LOYALTY` | `BOOSTABLES.CIVICS()` | 12 | ~150 |
-| **A-07** | 🟠 P1 | **NpcAdapter erweitern** — `getStockpile()`, `getBonus()`, `getRequest()`, `getRace()`, `getCitizens(Race)`, `getOffensivePower()` | `FactionNPC` | 6 | ~140 |
-
-### Task-Liste — Gruppe 2: NEUE Adapter erstellen
-
-| Task | Prio | Beschreibung | Vanilla-Ziel | Methoden | LoC |
-|---|---|---|---|---|---|
-| **A-08** | 🟠 P1 | **ISyxTrade + VanillaTradeAdapter** — `ResourcePrices.getWorldPrice()`, `TradeManager.toll/tarif()`, `FBUYER/FSELLER`-Zugriff | `ResourcePrices`, `TradeManager`, `FBUYER`, `FSELLER` | 6 | ~200 |
-| **A-09** | 🟠 P1 | **ISyxStats + VanillaStatsAdapter** — `StatsFood`, `StatsPopulation`, `StatsWork`, `StatsStored`, `StatsDisease`, `StatsLaw`, `StatsEquip`, `StatsService` | 7 Stat-Klassen | 8 | ~180 |
-| **A-10** | 🟡 P2 | **ISyxRoyalty + VanillaRoyaltyAdapter** — `Royalty`, `NPCCourt`, `ROPINION`, `RTrust`, `ROpper` | 5 Royalty-Klassen | 6 | ~160 |
-| **A-11** | 🟡 P2 | **ISyxMaintenance + VanillaMaintenanceAdapter** — `MAINTENANCE`, `MConsumption`, `MRoom`, `ROOM_DEGRADER` | 4 Maintenance-Klassen | 5 | ~140 |
-| **A-12** | 🟡 P2 | **ISyxTime + VanillaTimeAdapter** — `TIME`, `TIMECYCLE`, `Seasons`, `Light` | 4 Time-Klassen | 5 | ~100 |
-| **A-13** | 🟡 P2 | **ISyxReligion + VanillaReligionAdapter** — `RELIGIONS`, `Religion`, `StatsReligion` | 3 Religion-Klassen | 4 | ~100 |
-
-### Task-Liste — Gruppe 3: Katalogisierung & Infrastructure
-
-| Task | Prio | Beschreibung | LoC |
-|---|---|---|---|
-| **A-14** | 🔴 P0 | **EngineAccessCatalog** — Zentrale Klasse die ALLE Adapter-Zugriffe katalogisiert (analog `EconConfig`). Jeder Adapter registriert sich: Interface-Name, Vanilla-Zielklasse, Zugriffsmethode, Status, initOk. Dump via `EventLog` bei Startup. | ~200 |
-| **A-15** | 🟠 P1 | **Unified Adapter Logging** — `LoggingAdapter.csvTrace()` in ALLE Adapter (init + runtime). Bestehende `EventLog.log()` ergänzen, nicht ersetzen. | ~80 |
-| **A-16** | 🟠 P1 | **SchemaValidator + vanilla-schema.yaml erweitern** — Alle neuen Klassen/Felder/Methoden registrieren. | ~60 |
-| **A-17** | 🟠 P1 | **Stam-Docs** — ARCHITECTURE.md (14→26 Dateien), ROADMAP.md, CHANGELOG.md Sprint A-1 Header. | ~100 |
-
-### Adapter-Coverage nach Sprint A-1
-
-| Kategorie | Interface | Vorher | Nachher | Vanilla-Ziel |
+| Task | Prio | Beschreibung | Vanilla-Ziel | LoC |
 |---|---|---|---|---|
-| Warehouse | ISyxWarehouse | 2 Methoden | 9 | `StockpileInstance` (storing, fetching, limits, crates) |
-| Transport | ISyxTransport | 3 Methoden | 10 | `TransportInstance` (distance, efficiency, fetch, radius) |
-| Diplomacy | ISyxDiplomacy | 4 Methoden | 8 | `DipWarPlayer` (war, coalition, distress, potential) |
-| AI | ISyxAI | 5 Methoden | 11 | 12 AI-Plan-Klassen (food, oddjob, market, work, crime) |
-| Boosting | ISyxBoosting | 2 Methoden | 14 | `BOOSTABLES.CIVICS()` (12 Boostables) + `ROOMS` |
-| NPC | ISyxNpc | 8 Methoden | 14 | `FactionNPC` (stockpile, bonus, race, military) |
-| Trade | **ISyxTrade** | ❌ | 6 | `ResourcePrices`, `TradeManager`, `FBUYER/FSELLER` |
-| Stats | **ISyxStats** | ❌ | 8 | 7 Stat-Klassen (food, pop, work, disease, law, equip) |
-| Royalty | **ISyxRoyalty** | ❌ | 6 | `Royalty`, `NPCCourt`, `ROPINION`, `RTrust` |
-| Maintenance | **ISyxMaintenance** | ❌ | 5 | `MAINTENANCE`, `MConsumption`, `MRoom` |
-| Time | **ISyxTime** | ❌ | 5 | `TIME`, `TIMECYCLE`, `Seasons`, `Light` |
-| Religion | **ISyxReligion** | ❌ | 4 | `RELIGIONS`, `Religion`, `StatsReligion` |
-| **Katalog** | **EngineAccessCatalog** | ❌ | — | Zentraler Adapter-Registry + Startup-Dump |
-| **Logging** | **Unified** | EventLog nur | csvTrace | Alle Adapter via `LoggingAdapter` |
+| **A-01** | ✅ Closed (v0.13.64) | **EngineLevers.java** — Config-Klasse analog `EconConfig`. Jeder Vanilla-Zugriff hat einen `boolean`-Toggle (default true). ~80 Felder für V71.44. Startup-Dump via `LoggingAdapter`. | — | ~200 |
+| **A-02** | ✅ Closed (v0.13.64) | **IRoomAccess + RoomAccessImpl** — Stockpile (storedD, fetchingSet, getUsedSpace, crateSize, totalCrates, setSpecialAmount, storingSet), Transport (distance, efficiency, fetchTime, stationWorkers, resource, radius), Room-Iteration (SETT.ROOMS().ins(), EATERIES, CANTEENS, HOME, CHAMBER, JANITOR), Service-Metriken. Bündelt ISyxWarehouse + ISyxTransport + EngineSeams-Room-Aufrufe. | `StockpileInstance`, `TransportInstance`, `SETT.ROOMS()` | ~500 |
+| **A-03** | ✅ Closed (v0.13.64) | **IFactionAccess + FactionAccessImpl** — NPC (preise, treasury, stockpile, bonus, request, race, citizens, military), Diplomacy (war power, coalition, distress, willing, potential, proxy), Trade (worldPrice, toll, tariff, buyer/seller), Royalty (opinion, trust), Player (credits, tech, levels). Bündelt ISyxDiplomacy + ISyxNpc + public API. | `FactionNPC`, `DipWarPlayer`, `FACTIONS`, `ResourcePrices`, `TradeManager`, `Royalty` | ~600 |
+| **A-04** | ✅ Closed (v0.13.64) | **IHumanoidAccess + HumanoidAccessImpl** — AI-Plan-Erkennung (12 Pläne: food, oddjob, market, work, crime), Stats (hunger, religion, work, employment), Boosting (alle CIVICS + BEHAVIOUR + PHYSICS), Entity-Metriken. Bündelt ISyxAI + ISyxBoosting + EngineSeams-Humanoid-Aufrufe. | `Humanoid`, `AIPLAN`, `BOOSTABLES`, `STATS` | ~500 |
+| **A-04b** | 🟠 P1 | **IStatsAccess + remaining Sub-Interfaces** — Maintenance (MAINTENANCE, MConsumption, MRoom, ROOM_DEGRADER), Time (TIME, TIMECYCLE, Seasons), Religion (RELIGIONS, StatsReligion), Weather, Tourism, Events. Alles was nicht in A-02..A-04 passt. | `MAINTENANCE`, `TIME`, `RELIGIONS`, `WEATHER` | ~300 |
+| **A-05** | 🔴 P0 | **EngineMirror.java + AdapterDispatcher-Erweiterung + Stam-Docs** — Zentrale Fassade: `EngineMirror.initialize(AdapterBundle)`, `EngineMirror.api().rooms()/.factions()/.humanoids()/.stats()`. Ersetzt `EngineSeams` graduell. Logging in JEDEM Mirror-Method. ARCHITECTURE.md + CHANGELOG.md. | — | ~400 |
+
+### Architektur-Diagramm
+
+```
+╔══════════════════════════════════════════════════════════════╗
+║  EngineLevers.java — Config-Toggles pro Zugriff (~80 Felder) ║
+╚═════════════════════════════════════╤════════════════════════╝
+                                       ▼
+╔══════════════════════════════════════════════════════════════╗
+║  EngineMirror.java — Zentrale Fassade (initialize + api())    ║
+║  ├── .rooms()      → IRoomAccess (Stockpile, Transport, SETT) ║
+║  ├── .factions()   → IFactionAccess (NPC, Diplo, Trade, Roy)  ║
+║  ├── .humanoids()  → IHumanoidAccess (AI, Stats, Boosting)    ║
+║  └── .stats()      → IStatsAccess (Maint, Time, Rel, Weather) ║
+╚═════════════════════════════════════╤════════════════════════╝
+                                       ▼
+╔══════════════════════════════════════════════════════════════╗
+║  Implementierungen — Hybrid: BypassGate (private) + direkt    ║
+║  RoomAccessImpl, FactionAccessImpl, HumanoidAccessImpl, ...   ║
+║  Jede Methode: if (!EngineLevers.xxx) return; + csvTrace()    ║
+╚═════════════════════════════════════╤════════════════════════╝
+                                       ▼
+╔══════════════════════════════════════════════════════════════╗
+║  Vanilla Engine (V71.44) — 2.443 Java-Files                   ║
+║  Private: BypassGate/VarHandle/MethodHandle (3-6× schneller)  ║
+║  Public:  Compilezeit-Links (SETT, STATS, TIME, FACTIONS)     ║
+╚══════════════════════════════════════════════════════════════╝
+```
+
+### Vanilla-Coverage nach Sprint A-1
+
+| Sub-Interface | Zugriffe | Vanilla-Ziel |
+|---|---|---|
+| **IRoomAccess** | ~30 | Stockpile (storedD, storing, fetching, crates, limits, space), Transport (distance, efficiency, fetch, radius, resource), Room-Iteration (ins, EATERIES, CANTEENS, HOME, CHAMBER, JANITOR), Service-Metriken |
+| **IFactionAccess** | ~25 | NPC (preise, treasury, stockpile, bonus, request, race, citizens, military), Diplomacy (war, coalition, distress, willing, potential), Trade (worldPrice, toll, tariff, buyer/seller), Royalty (opinion, trust), Player (credits) |
+| **IHumanoidAccess** | ~25 | AI-Plans (12 Klassen), Stats (hunger, religion, work, employment), Boosting (12 CIVICS + 6 BEHAVIOUR + 6 PHYSICS), Entity-Metriken |
+| **IStatsAccess** | ~15 | Maintenance (consumption, room, degrader), Time (time, seasons, light), Religion (religions, stats), Weather, Tourism, Events |
+| **Total** | **~95** | **Alle Vanilla-Zugriffe die das Mod braucht, zentral katalogisiert** |
 
 ### Freeze-Override
 
-`adapter/` ist seit Sprint 6 ❄️ FROZEN. Sprint A-1 hebt das Freeze **temporär** auf — der Zweck ist gerade, die Adapter-Schicht vollständig zu machen. Nach Sprint A-1 wird `adapter/` wieder eingefroren.
+`adapter/` ist seit Sprint 6 ❄️ FROZEN. Sprint A-1 hebt das Freeze **temporär** auf.
+Die bestehenden ISyx\* Adapter werden in die EngineMirror-Implementierungen
+**integriert** (nicht ersetzt) — die Adapter bleiben als interne Detail-Klassen.
+Nach Sprint A-1 wird `adapter/` + `core/EngineMirror*` wieder eingefroren.
 
 ### Definition of Done
 
 1. `mvn verify install -DskipTests` — BUILD SUCCESS
 2. `mvn test` — alle bestehenden Tests grün
 3. `bash tools/verify-doc-sync.sh` — PASS
-4. Jeder Adapter loggt init-Status via `LoggingAdapter.csvTrace("ADAPTER", "SEAM", ...)`
-5. `EngineAccessCatalog.dump()` zeigt vollständige Adapter-Übersicht bei Startup
-6. `tools/vanilla-schema.yaml` aktualisiert für alle neuen Klassen/Felder
-7. ARCHITECTURE.md: Adapter-Layer-Sektion aktualisiert (14→26 Dateien, 6→12 Interfaces)
+4. `EngineMirror.api()` liefert vollständige Fassade mit 4 Sub-Interfaces
+5. `EngineLevers` hat ~80 Toggles, alle default `true`
+6. Jeder Mirror-Method loggt via `LoggingAdapter.csvTrace("MIRROR", ...)`
+7. `EngineMirror.dump()` zeigt vollständige Zugriffs-Übersicht bei Startup
+8. ARCHITECTURE.md aktualisiert mit EngineMirror-Diagramm
 
 ---
 
@@ -175,25 +172,25 @@ Siehe `docs/superpowers/specs/HANDOFF_M1.md`.
 
 ---
 
-## Sprint M-3 — God-Class-Guard CI-Tooling (Planned)
+## Sprint M-3 — God-Class-Guard CI-Tooling (→ CHANGELOG v0.13.61)
 
 **T-GC-01..T-GC-12** (12 Tasks) — 7 Tools + YAML-Baseline + Build-Gate Gate 9 + Pre-Commit-Hook + Stam-Docs
 
 | Task | Tool/Datei | LOC | Status |
 |---|---|---|---|
-| T-GC-01 | `tools/god-class-guard/parse_metrics.py` — Metrik-Parser | ~140 | ⏳ Planned |
-| T-GC-02 | `tools/god-class-guard/parse_yaml.py` — YAML-Loader | ~280 | ⏳ Planned |
-| T-GC-03 | `tools/god-class-guard/emit_yaml.py` — Auto-Generator | ~110 | ⏳ Planned |
-| T-GC-04 | `tools/god-class-guard.sh` + `run_check.py` — Master-Wrapper | ~235 | ⏳ Planned |
-| T-GC-05 | `tools/god-class-baselines.yml` — Baseline (19 entries) | ~140 | ⏳ Planned |
-| T-GC-06 | `tools/god-class-guard.on-failure.md` — Recovery-Anleitung | ~70 | ⏳ Planned |
-| T-GC-07 | `tools/tests/god-class-guard/run_meta_tests.sh` — Meta-Tests | ~120 | ⏳ Planned |
-| T-GC-08 | `tools/build-gate.sh` Gate 9 (`SKIP_GOD_GUARD=1` Toggle) | ~25 | ⏳ Planned |
-| T-GC-09 | `pom.xml` preflight Execution (validate-Phase) | ~25 | ⏳ Planned |
-| T-GC-10 | `tools/install-hooks.sh` Schritt [4/4] | ~10 | ⏳ Planned |
-| T-GC-11 | Stam-Docs: agents.md Rule 14, CHANGELOG, ARCHITECTURE, README, GLOSSARY, ROADMAP | ~250 | ⏳ Planned |
-| T-GC-12 | Atomic Commit + Build + Review | 0 | ⏳ Planned |
-| **Total** | **12 Dateien** | **~1.405** | **⏳ Planned** |
+| T-GC-01 | `tools/god-class-guard/parse_metrics.py` — Metrik-Parser | ~140 | ✅ Closed (v0.13.61) |
+| T-GC-02 | `tools/god-class-guard/parse_yaml.py` — YAML-Loader | ~280 | ✅ Closed (v0.13.61) |
+| T-GC-03 | `tools/god-class-guard/emit_yaml.py` — Auto-Generator | ~110 | ✅ Closed (v0.13.61) |
+| T-GC-04 | `tools/god-class-guard.sh` + `run_check.py` — Master-Wrapper | ~235 | ✅ Closed (v0.13.61) |
+| T-GC-05 | `tools/god-class-baselines.yml` — Baseline (19 entries) | ~140 | ✅ Closed (v0.13.61) |
+| T-GC-06 | `tools/god-class-guard.on-failure.md` — Recovery-Anleitung | ~70 | ✅ Closed (v0.13.61) |
+| T-GC-07 | `tools/tests/god-class-guard/run_meta_tests.sh` — Meta-Tests | ~120 | ✅ Closed (v0.13.61) |
+| T-GC-08 | `tools/build-gate.sh` Gate 9 (`SKIP_GOD_GUARD=1` Toggle) | ~25 | ✅ Closed (v0.13.61) |
+| T-GC-09 | `pom.xml` preflight Execution (validate-Phase) | ~25 | ✅ Closed (v0.13.61) |
+| T-GC-10 | `tools/install-hooks.sh` Schritt [4/4] | ~10 | ✅ Closed (v0.13.61) |
+| T-GC-11 | Stam-Docs: agents.md Rule 14, CHANGELOG, ARCHITECTURE, README, GLOSSARY, ROADMAP | ~250 | ✅ Closed (v0.13.61) |
+| T-GC-12 | Atomic Commit + Build + Review | 0 | ✅ Closed (v0.13.61) |
+| **Total** | **12 Dateien** | **~1.405** | **✅ Closed (v0.13.61)** |
 
 ---
 

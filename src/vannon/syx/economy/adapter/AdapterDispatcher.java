@@ -41,7 +41,12 @@ public final class AdapterDispatcher {
         ISyxAI          ai         = buildAi(report);
         ISyxNpc         npc        = buildNpc(report);
 
-        return new AdapterBundle(transport, warehouse, boosting, diplomacy, ai, npc);
+        AdapterBundle bundle = new AdapterBundle(transport, warehouse, boosting, diplomacy, ai, npc);
+
+        // 4. Initialize the EngineMirror facade with all sub-interfaces.
+        EngineMirror.initFromBundle(bundle);
+
+        return bundle;
     }
 
     // ─── Schema registration (keep in-sync with tools/vanilla-schema.yaml) ────

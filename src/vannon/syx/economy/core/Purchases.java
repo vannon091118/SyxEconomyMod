@@ -13,6 +13,8 @@ import settlement.stats.STATS;
 import settlement.stats.equip.WearableResource;
 import snake2d.util.sets.LIST;
 import vannon.syx.economy.core.AffordabilityGate;
+import vannon.syx.economy.adapter.EngineMirror;
+import vannon.syx.economy.adapter.IHumanoidAccess;
 import vannon.syx.economy.core.EconConfig;
 import vannon.syx.economy.core.EconomySim;
 import vannon.syx.economy.core.EngineSeams;
@@ -116,7 +118,8 @@ public final class Purchases {
         if (EconConfig.foodAffordabilityGateEnabled) {
             int amount = FoodRollback.estimateUnitsEaten(h, prev, now);
             FoodRollback.restore(h, FoodRollback.nearestStallSnapshot(h), amount);
-            EngineSeams.hungerRawSet(h, prev);
+            IHumanoidAccess hum = EngineMirror.api() != null ? EngineMirror.api().humanoids() : null;
+            if (hum != null) hum.setHungerRaw(h, prev); else EngineSeams.hungerRawSet(h, prev);
             this.lastHunger.put(indu, prev);
             return 0;
         }

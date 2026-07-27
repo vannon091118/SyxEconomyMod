@@ -139,9 +139,11 @@ public final class EconHud {
         section.add(lbl, x, y);
     }
 
-    /** Position the HUD section further left (shifted left by >2x button width). */
+    /** Position the HUD section further left (shifted left by >2x button width).
+     *  Livetest v0.13.56: 820 caused overlap with vanilla UI elements.
+     *  760 shifts the panel right by ~2 icon-widths. */
     public void initPosition() {
-        section.body().moveX2(C.WIDTH() - 820);
+        section.body().moveX2(C.WIDTH() - 760);
         section.body().moveY1(2);
     }
 

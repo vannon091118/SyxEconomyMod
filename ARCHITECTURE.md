@@ -1,6 +1,6 @@
 # SyxEconomyMod — Architektur
 
-> **Version:** v0.13.63 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-26
+> **Version:** v0.13.67 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-26
 >
 > Stam-Doku-Synchron-Anker: Die obenstehende Versions-Zeile MUSS identisch mit `pom.xml` `<version>` sein.
 > Der Sync-Gate `tools/verify-doc-sync.sh` validiert dies vor jedem `mvn compile`.
@@ -46,15 +46,15 @@ Spec-Migration: BINDUNGSMATRIX.csv ist Single-Source-of-Truth.
 
 Das Mod fügt Songs of Syx eine parallele Wirtschaftsschicht hinzu. Jeder Siedler hat ein eigenes Wallet, Firmen rechnen边际isch ab, der Staat kann Steuern erheben und Subventionen verteilen. Das Mod ersetzt keine Vanilla-Systeme, sondern arbeitet über einen **Adapter-Layer** strikt getrennt daneben.
 
-Modul-Bilanz: **139 Java-Dateien, ~23.900 LOC**
+Modul-Bilanz: **149 Java-Dateien, ~29.200 LOC**
 
 | Modul | Dateien | LOC | Aufgabe |
 |---|---:|---:|---|
-| `vannon/syx/economy/core/` | 110 | ~20.542 | Wirtschafts-Sim + Subsysteme |
-| `vannon/syx/economy/adapter/` | 14 | ~1.050 | Engine-API-Wrapper + Bypass-SDK |
-| `vannon/syx/economy/ui/` | 5 | ~2.345 | 4 Fenster + Base |
-| `vannon/syx/economy/benchmark/` | 1 | ~200 | Reflection-vs-MethodHandle-Benchmark |
-| `settlement/room/...` | 4 | ~600 | Package-Private Brücken (compile-time-safe) |
+| `vannon/syx/economy/core/` | 111 | ~20.800 | Wirtschafts-Sim + Subsysteme |
+| `vannon/syx/economy/adapter/` | 24 | ~4.400 | EngineMirror-SDK (4 Sub-Interfaces) + ISyx* Legacy + Bypass-SDK |
+| `vannon/syx/economy/ui/` | 5 | ~2.600 | 4 Fenster + Base |
+| `vannon/syx/economy/benchmark/` | 1 | ~330 | Reflection-vs-MethodHandle-Benchmark |
+| `settlement/room/...` | 4 | ~310 | Package-Private Brücken (compile-time-safe) |
 
 ---
 
@@ -66,8 +66,8 @@ Modul-Bilanz: **139 Java-Dateien, ~23.900 LOC**
 ╚═════════════════════════════════════╤══════════════════════════╝
                                        ▼
 ╔════════════════════════════════════════════════════════════════╗
-║  SCHICHT 1: Adapter-Layer (14 Dateien)                         ║
-║  5 Interfaces + 5 Vanilla-Impls + 4 Bypass-SDK                 ║
+║  SCHICHT 1: Adapter-Layer (24 Dateien)                         ║
+║  EngineMirror-SDK (10) + 5 ISyx* Legacy + 5 Vanilla + 4 Bypass ║
 ╚═════════════════════════════════════╤══════════════════════════╝
                                        ▼
 ╔════════════════════════════════════════════════════════════════╗
@@ -119,7 +119,7 @@ Purchase, CrownStorage, SaleDistribution, Settlement, RetailQuote, OwnerlessReta
 
 ---
 
-## Adapter-Layer (14 Dateien, vollständig aufgelistet)
+## Adapter-Layer (24 Dateien, vollständig aufgelistet)
 
 ### Bypass-SDK (`adapter/seam/`, 4 Dateien — Phase A, v0.13.3)
 
@@ -148,65 +148,48 @@ Keine. Jeder Vanilla-Adapter hat seinen eigenen BypassGate mit eigenem
 → granulare Degradation bleibt erhalten. Ein fehlgeschlagener Diplomacy-
 Adapter deaktiviert nicht den Transport-Adapter. Phase B–E, v0.13.10.
 
-### Sprint A-1 — Full Engine Access Layer (Planned)
+### EngineMirror-SDK (IMPLEMENTIERT, v0.13.64)
 
-Geplant: 6 bestehende Adapter erweitern + 6 neue Adapter + EngineAccessCatalog + Unified Logging.
-Ziel: Vollständige Vanilla-Engine-Abdeckung (12 Interfaces, 26 Dateien, ~3.100 LoC).
+Zentrale Fassade die ALLE Vanilla-Zugriffe bündelt. Hybride Architektur:
+- **Private Zugriffe** → bestehende ISyx\* Adapter via BypassGate SDK
+- **Public Zugriffe** → direkte Compilezeit-Links (SETT, STATS, TIME, FACTIONS)
+- **Config** → `EngineLevers.java` (96 Toggles, granulare Degradation pro Zugriff)
+- **Logging** → `LoggingAdapter.csvTrace()` in jedem Mirror-Method
+- **Version-gebunden** V71.44 — SDK-Generic kommt später
 
-**Geplante neue Interfaces:**
-| Interface | Vanilla-Ziel | Status |
-|---|---|---|
-| `ISyxTrade` | `ResourcePrices`, `TradeManager`, `FBUYER/FSELLER` | Planned |
-| `ISyxStats` | `StatsFood`, `StatsPopulation`, `StatsWork`, `StatsDisease`, `StatsLaw`, `StatsEquip`, `StatsService` | Planned |
-| `ISyxRoyalty` | `Royalty`, `NPCCourt`, `ROPINION`, `RTrust`, `ROpper` | Planned |
-| `ISyxMaintenance` | `MAINTENANCE`, `MConsumption`, `MRoom`, `ROOM_DEGRADER` | Planned |
-| `ISyxTime` | `TIME`, `TIMECYCLE`, `Seasons`, `Light` | Planned |
-| `ISyxReligion` | `RELIGIONS`, `Religion`, `StatsReligion` | Planned |
+**10 Dateien, 3.223 LoC implementiert:**
 
-**Geplante Erweiterungen bestehender Interfaces:**
-| Interface | Neue Methoden (geplant) |
-|---|---|
-| `ISyxWarehouse` | +7: `storedD`, `fetchingSet`, `getUsedSpace`, `crateSize`, `totalCrates`, `setSpecialAmount`, `moveCapacityAm` |
-| `ISyxTransport` | +7: `efficiency`, `fetchTime`, `stationWorkers`, `stationProblem`, `resource`, `radiusRaw`, `radiusRawSet` |
-| `ISyxDiplomacy` | +4: `coalitionAdvantage`, `distress`, `potential`, `proxy` |
-| `ISyxAI` | +6: `WorkFarmer`, `WorkPolice`, `WorkGuard`, `Theft`, `Murder` + 1 Crime-Plan |
-| `ISyxBoosting` | +12: SPOILAGE, MAINTENANCE, IMMIGRATION, DEFLATION, HAPPINESS, LOYALTY + 6 CIVICS |
-| `ISyxNpc` | +6: `getStockpile`, `getBonus`, `getRequest`, `getRace`, `getCitizens`, `getOffensivePower` |
+| Datei | LOC | Aufgabe |
+|---|---:|---|
+| `EngineMirror.java` | 184 | Zentrale Fassade: `api().rooms()/.factions()/.humanoids()/.stats()` |
+| `EngineLevers.java` | 288 | 97 boolean Toggles für granulare Degradation |
+| `IRoomAccess.java` | 233 | Interface: 32 Methoden (Stockpile, Transport, Rooms, Station) |
+| `RoomAccessImpl.java` | 712 | BypassGate hybrid Implementation (inkl. Station tally via cached Methods) |
+| `IFactionAccess.java` | 206 | Interface: 28 Methoden (NPC, Diplomacy, Trade, Royalty) |
+| `FactionAccessImpl.java` | 548 | Compilezeit-only Implementation |
+| `IHumanoidAccess.java` | 224 | Interface: 18 Methoden + PlanCatalog (6 AI-Plan-Klassen) |
+| `HumanoidAccessImpl.java` | 463 | ClassResolver für package-private AI-Plans |
+| `IStatsAccess.java` | 100 | Interface: 12 Methoden (BOOSTABLES, Religion, Weather) |
+| `StatsAccessImpl.java` | 265 | BypassGate für BOOSTABLES-Zugriffe |
 
-**EngineAccessCatalog:** Zentrale Klasse die ALLE Adapter-Zugriffe katalogisiert (analog `EconConfig`).
-Jeder Adapter registriert sich mit: Interface-Name, Vanilla-Zielklasse, Zugriffsmethode, Status, initOk.
+```
+EngineLevers.java (97 Config-Toggles)
+       ↓
+EngineMirror.java (Fassade: api().rooms()/.factions()/.humanoids()/.stats())
+       ↓
+4 Sub-Interfaces + 4 Impl (Hybrid: BypassGate + direkt, Logging)
+       ↓
+Vanilla Engine V71.44 (2.443 Java-Files)
+```
 
-Siehe `ROADMAP.md` §Sprint A-1 für vollständige Task-Liste.
+~88 Vanilla-Zugriffe total (30 Room + 28 Faction + 18 Humanoid + 12 Stats).
+Bestehende ISyx\* Adapter bleiben als Legacy — EngineMirror ersetzt langfristig.
 
-### Sprint A-1 — Full Engine Access Layer (Planned)
+**B-008 Migration (Phase 1 abgeschlossen, v0.13.64):** 25 von 55 EngineSeams-Aufrufen
+in 6 Core-Dateien auf EngineMirror migriert (Fallback-Pattern:
+`EngineMirror.api() != null ? ... : EngineSeams.*`). 30 verbleibende warten auf Phase 2.
 
-Geplant: 6 bestehende Adapter erweitern + 6 neue Adapter + EngineAccessCatalog + Unified Logging.
-Ziel: Vollständige Vanilla-Engine-Abdeckung (12 Interfaces, 26 Dateien, ~3.100 LoC).
-
-**Geplante neue Interfaces:**
-| Interface | Vanilla-Ziel | Status |
-|---|---|---|
-| `ISyxTrade` | `ResourcePrices`, `TradeManager`, `FBUYER/FSELLER` | Planned |
-| `ISyxStats` | `StatsFood`, `StatsPopulation`, `StatsWork`, `StatsDisease`, `StatsLaw`, `StatsEquip`, `StatsService` | Planned |
-| `ISyxRoyalty` | `Royalty`, `NPCCourt`, `ROPINION`, `RTrust`, `ROpper` | Planned |
-| `ISyxMaintenance` | `MAINTENANCE`, `MConsumption`, `MRoom`, `ROOM_DEGRADER` | Planned |
-| `ISyxTime` | `TIME`, `TIMECYCLE`, `Seasons`, `Light` | Planned |
-| `ISyxReligion` | `RELIGIONS`, `Religion`, `StatsReligion` | Planned |
-
-**Geplante Erweiterungen bestehender Interfaces:**
-| Interface | Neue Methoden (geplant) |
-|---|---|
-| `ISyxWarehouse` | +7: `storedD`, `fetchingSet`, `getUsedSpace`, `crateSize`, `totalCrates`, `setSpecialAmount`, `moveCapacityAm` |
-| `ISyxTransport` | +7: `efficiency`, `fetchTime`, `stationWorkers`, `stationProblem`, `resource`, `radiusRaw`, `radiusRawSet` |
-| `ISyxDiplomacy` | +4: `coalitionAdvantage`, `distress`, `potential`, `proxy` |
-| `ISyxAI` | +6: `WorkFarmer`, `WorkPolice`, `WorkGuard`, `Theft`, `Murder` + 1 weiterer Crime-Plan |
-| `ISyxBoosting` | +12: SPOILAGE, MAINTENANCE, IMMIGRATION, DEFLATION, HAPPINESS, LOYALTY + 6 weitere CIVICS |
-| `ISyxNpc` | +6: `getStockpile`, `getBonus`, `getRequest`, `getRace`, `getCitizens`, `getOffensivePower` |
-
-**EngineAccessCatalog:** Zentrale Klasse die ALLE Adapter-Zugriffe katalogisiert (analog `EconConfig`).
-Jeder Adapter registriert sich mit: Interface-Name, Vanilla-Zielklasse, Zugriffsmethode, Status, initOk.
-
-Siehe `ROADMAP.md` §Sprint A-1 für vollständige Task-Liste.
+Siehe `ROADMAP.md` §Sprint A-1 + B-008 für vollständige Task-Liste + Definition of Done.
 
 ### Package-Private Brücken (4, in `src/settlement/room/`)
 | Datei | Vanilla-Klasse | Zweck |
@@ -243,7 +226,7 @@ public final class EconomySim {
 Update-Pfad pro Tick (`ds` Game-Sekunden):
 1. Re-Entry-Guard-Check (`ReentryGuard.tryEnter()`).
 2. `debtDiplomacyBuffer.update()` — IMMER im Tick, auch bei `roster<2`.
-3. `EngineSeams.entitiesAvailable()` + `ds>0` Guards.
+3. `EngineMirror.api().rooms().entitiesAvailable()` + `ds>0` Guards (Fallback: EngineSeams).
 4. `roster.rebuild()` — Bevölkerung neu laden.
 5. Treasury-Crisis-Check (`CrisisDispatch.update`).
 6. `warehouseMarket.beginTick()` + `stateWarehouses.beginTick()`.
@@ -383,7 +366,7 @@ Mit Hysterese: `climbStepsDown`/`climbStepsUp` verhindern Flackern an Tier-Grenz
 |---|---|
 | `mvn validate` BUILD SUCCESS | Stam-Doku-Sync + Code-Audit + Version-Consistency + Adapter-Signaturen (alle 4 Gates) |
 | `mvn compile` BUILD SUCCESS | Keine Compiler-Errors, keine Mod-Code-Warnings |
-| `mvn test` 138+ Tests grün | `mvn surefire:test` |
+| `mvn test` 397 Tests grün | `mvn surefire:test` |
 | `mvn package` produziert `_Info.txt` | Maven-Filter aus `pom.xml` `<mod.info>` & `<mod.changelog>` |
 | `mvn clean install` bumpt `<version>` +0.0.1 | Antrun-Block in install-Phase |
 | Drift-Freiheit | `tools/verify-doc-sync.sh` PASS |

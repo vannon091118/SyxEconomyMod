@@ -7,6 +7,8 @@ import settlement.entity.humanoid.ai.main.HAI;
 import vannon.syx.economy.adapter.ISyxAI;
 import vannon.syx.economy.core.AffordabilityGate;
 import vannon.syx.economy.core.DrinkTransactionPlan;
+import vannon.syx.economy.adapter.EngineMirror;
+import vannon.syx.economy.adapter.IHumanoidAccess;
 import vannon.syx.economy.core.EconConfig;
 import vannon.syx.economy.core.EngineSeams;
 import vannon.syx.economy.core.GoodsTransactionPlan;
@@ -63,10 +65,12 @@ public final class PurchasePlanController {
             return;
         AIPLAN current = manager.plan();
         if (this.ai.isTavernPlan(current)) {
-            EngineSeams.overwritePlan(humanoid, (AIPLAN)this.drink);
+            IHumanoidAccess hum = EngineMirror.api() != null ? EngineMirror.api().humanoids() : null;
+            if (hum != null) hum.overwritePlan(humanoid, (AIPLAN)this.drink); else EngineSeams.overwritePlan(humanoid, (AIPLAN)this.drink);
             return;
         }
         if (!this.ai.isMarketPlan(current)) return;
-        EngineSeams.overwritePlan(humanoid, (AIPLAN)this.goods);
+        IHumanoidAccess hum2 = EngineMirror.api() != null ? EngineMirror.api().humanoids() : null;
+        if (hum2 != null) hum2.overwritePlan(humanoid, (AIPLAN)this.goods); else EngineSeams.overwritePlan(humanoid, (AIPLAN)this.goods);
     }
 }

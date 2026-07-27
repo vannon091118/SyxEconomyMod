@@ -23,6 +23,9 @@ import settlement.room.industry.module.ROOM_PRODUCER_INSTANCE;
 import settlement.room.main.RoomBlueprintImp;
 import settlement.room.main.RoomBlueprintIns;
 import settlement.room.main.RoomInstance;
+import vannon.syx.economy.adapter.EngineMirror;
+import vannon.syx.economy.adapter.IRoomAccess;
+import snake2d.util.sets.LIST;
 import settlement.room.service.food.canteen.ROOM_CANTEEN;
 import settlement.room.service.food.eatery.ROOM_EATERY;
 import util.statistics.HISTORY_COLLECTION;
@@ -102,7 +105,11 @@ public final class FlowMeter {
         // SETT.ROOMS().industries.all registriert ist (Farms, Pastures, WORKSHOP_POTTERY,
         // …). Vor diesem Patch hatten solche Räume permanent total_output_value_per_day=0.00.
         // Wir teilen seen mit dem Industry-Loop oben — Doppel-Sampling ist unmöglich.
-        for (RoomBlueprintIns<?> blueprint : EngineSeams.settRoomsIns()) {
+        IRoomAccess rooms = EngineMirror.api() != null ? EngineMirror.api().rooms() : null;
+        @SuppressWarnings({"rawtypes","unchecked"})
+        LIST allIns = rooms != null ? rooms.getRoomIns() : EngineSeams.settRoomsIns();
+        for (Object obj : allIns != null ? allIns : java.util.Collections.emptyList()) {
+            RoomBlueprintIns<?> blueprint = (RoomBlueprintIns<?>) obj;
             for (int i = 0; i < blueprint.instancesSize(); ++i) {
                 RoomInstance room = blueprint.getInstance(i);
                 if (!(room instanceof ROOM_PRODUCER_INSTANCE) || seen.contains(room)) continue;
@@ -246,11 +253,16 @@ public final class FlowMeter {
         if (edible == null) {
             return total;
         }
-        for (ROOM_EATERY eatery : EngineSeams.settRoomsEateries()) {
-            total += eatery.amount((ResG)edible);
+        IRoomAccess rooms = EngineMirror.api() != null ? EngineMirror.api().rooms() : null;
+        @SuppressWarnings({"rawtypes","unchecked"})
+        LIST eateries = rooms != null ? rooms.getEateries() : EngineSeams.settRoomsEateries();
+        for (Object obj : eateries != null ? eateries : java.util.Collections.emptyList()) {
+            total += ((ROOM_EATERY) obj).amount((ResG)edible);
         }
-        for (ROOM_CANTEEN canteen : EngineSeams.settRoomsCanteens()) {
-            total += canteen.amount((ResG)edible);
+        @SuppressWarnings({"rawtypes","unchecked"})
+        LIST canteens = rooms != null ? rooms.getCanteens() : EngineSeams.settRoomsCanteens();
+        for (Object obj : canteens != null ? canteens : java.util.Collections.emptyList()) {
+            total += ((ROOM_CANTEEN) obj).amount((ResG)edible);
         }
         return total;
     }

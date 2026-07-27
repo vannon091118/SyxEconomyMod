@@ -10,6 +10,8 @@ import settlement.stats.Induvidual;
 import snake2d.LOG;
 import snake2d.util.file.FileGetter;
 import snake2d.util.file.FilePutter;
+import vannon.syx.economy.adapter.EngineMirror;
+import vannon.syx.economy.adapter.IHumanoidAccess;
 import vannon.syx.economy.core.EconConfig;
 import vannon.syx.economy.core.EngineSeams;
 import vannon.syx.economy.core.Roster;
@@ -152,7 +154,8 @@ public final class Taxes implements Saveable {
             int paid = Math.min(tax, wallets.spendable(h));
             wallets.accrueTax(h, paid);
             int shortfall = tax - paid;
-            if (shortfall > 0 && EngineSeams.isEnslaveablePleb(h)) {
+            IHumanoidAccess hum = EngineMirror.api() != null ? EngineMirror.api().humanoids() : null;
+            if (shortfall > 0 && (hum != null ? hum.isEnslaveablePleb(h) : EngineSeams.isEnslaveablePleb(h))) {
                 wallets.addDebt(h, shortfall);
             }
             if (paid <= 0) continue;

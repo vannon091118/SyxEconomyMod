@@ -1,6 +1,6 @@
 ID;Datenpunkt;Wert-Typ;Quelle-Klasse;Zugriffspfad;Zugriffsart;Mod nutzt;UI-Kandidat;Status;Lücke;ModVerifiziert
-MZ.1_SEKTOR-TIEFE;Sektor-Tiefe fehlt komplett (F1-F7 EXISTIERT NICHT);ModArchitecture;Mod-Code (101 core/.java);Recipe-Graph, Sektor-Klassifikation, Leontief;static;nein;nein;[!];Alle 7 F1-F7 HEBELs identifiziert -- Mod rechnet mit Angebot/Nachfrage OHNE Verstaendnis was aus was hergestellt wird (ResourceRecipeIndex, Topo-Sort, Branching, Leontief-Inverse, Sektor-Klassifikation RAW/PROCESSED/LUXURY, valueMultiplier, defaultScarcity). Konsequenz: Industry-Output wird als black-box in FlowMeter aggregiert -- Preise-zu-Sektor-Risiko nicht modelliert.;??
-MZ.2_BOOSTER-COVERAGE;Booster-Coverage 3 von 402;EngineAPI;BOOSTABLES (Engine);Boostable-Verteilung;static;ja-3/402;ja;[x];Engine bietet 402 Verhaltens-Hebel. Mod nutzt nur LOYALTY (GiniConsequences.java), IMMIGRATION (MeticImmigration.register()) und GOV (EconProgression.adminBoostActive). Verbleibende 399 Booster als 'public final' in Engine vorhanden aber toter Code fuer den Mod. I8 BEHAVIOUR: 5 von 6 ungenutzt (LAWFULNESS/SUBMISSION/HAPPI/HAPPI_SLAVES/SANITY). I9 PHYSICS: 11 von 11 ignoriert. I10 NOBLE: 6 von 6 ungenutzt. I11 EQUIP: 32 Tool-Booster ohne Werkzeug-Produktivitaetskopplung.;??
+MZ.1_SEKTOR-TIEFE;Sektor-Tiefe fehlt komplett (F1-F7 EXISTIERT NICHT);ModArchitecture;Mod-Code (111 core/.java);Recipe-Graph, Sektor-Klassifikation, Leontief;static;nein;nein;[!];Alle 7 F1-F7 HEBELs identifiziert -- Mod rechnet mit Angebot/Nachfrage OHNE Verstaendnis was aus was hergestellt wird (ResourceRecipeIndex, Topo-Sort, Branching, Leontief-Inverse, Sektor-Klassifikation RAW/PROCESSED/LUXURY, valueMultiplier, defaultScarcity). Konsequenz: Industry-Output wird als black-box in FlowMeter aggregiert -- Preise-zu-Sektor-Risiko nicht modelliert.;??
+MZ.2_BOOSTER-COVERAGE;Booster-Coverage 16 von 402 (v0.13.64);EngineAPI;BOOSTABLES (Engine);Boostable-Verteilung;static;ja-16/402;ja;[x];EngineMirror SDK (v0.13.64) bündelt 16 BOOSTABLES-Zugriffe ueber IStatsAccess (StatsAccessImpl, 265 LOC). Direkte Mod-Writer: LOYALTY (GiniConsequences), IMMIGRATION (MeticImmigration), GOV (EconProgression). Plus: 96 boolean Toggles in EngineLevers (285 LOC) fuer granulare Degradation. I8 BEHAVIOUR: LOYALTY aktiv, 5 andere via EngineMirror lesbar. I9 PHYSICS: 11 via IStatsAccess erreichbar. I10 NOBLE: 6 via IStatsAccess lesbar. I11 EQUIP: 32 Tool-Booster via EngineMirror.;v0.13.64
 MZ.3_TRADE_LAW_LUECKEN;Trade-System umgangen + StatsLaw ungenutzt;ModArchitecture;Mod-Code;SettlementLayer + StatsLaw;static;nein;nein;[!];TradeManager/SettTrade/PBuyer/PSeller komplett umgangen -- Mod-Settlement via Fiscal.settlePurchase (C8 Rebuttal: Mod-Pfad ersetzt bewusst Engine-Trade-Layer). Trade-Toll laeuft parallel -- Doppelhandelskosten moeglich. StatsLaw lesbar (alle 5 HEBEL K1-K5 + K6 CRIMES public final) aber komplett ignoriert. Mod implementiert CorveeController/PovertyPressure/HealthPressure als Ersatz.;??
 A1;price-Array Override;double[];ResourcePrices;price[TR.ALL().size()];static;nein;nein;[x];Mod-Polity-Layer statt Override;??
 A1;get(TRADABLE) public;public;ResourcePrices;get(TRADABLE);static;ja;ja;[x];Aufgerufen in PolityPriceAnchor.priceOf();++
@@ -15,7 +15,8 @@ A5;refresh Alle 60 Tage;void;FlowPrices;refresh();static;ja;ja;[x];flowPriceRefr
 A5;localPrice = anchor*pow;double;FlowPrices;anchor * pow(COVERAGE_FLOOR=0.005, coverage), -elasticity;static;ja;ja;[x];UP-Branch bei coverage<1.0;++
 A5;FlowPrices.price(good);double;FlowPrices;price(good);direct;ja;ja;[x];Refresh flowPriceRefreshDays=0.2 Tage;++
 A5;FlowPrices.anchor(good);double;FlowPrices;anchor(good);direct;ja;ja;[x];Quelle: PolityPriceAnchor.priceOf();++
-A5;FlowPrices.coverage(good);double;FlowPrices;coverage(good);direct;ja;ja;[x];effectiveCoverage mit Lookahead;++
+A5;FlowPrices.coverage(good);double;FlowPrices;coverage(good);direct;ja;ja;[x];effectiveCoverage mit Lookahead. Cold-Start-Guard: COLD_START_COVERAGE=0.4 bei supply<=0 AND stock<=0 (v0.13.64);++
+A5;FlowPrices.COLD_START_COVERAGE=0.4;double;FlowPrices;COLD_START_COVERAGE;static;ja;ja;[x];v0.13.64 Livetest-Fix: moderater ~2x Anker statt 7.1x Spike bei Cold-Start. D-004 intakt (stock>0 umgeht Guard);v0.13.64
 A6;LocalPrices.scarcity();double;LocalPrices;scarcity(perCapita, target);static;ja;ja;[x];TANH-basiert mit Cap 1.5/0.5;++
 A6;TANH-Formel -tanh(log);double;LocalPrices;pow(1.5, -tanh(log(perCapita/target)/1.0));static;ja;ja;[x];Formula explizit;++
 A6;scarcityMaxMultiple = 1.5;double;EconConfig;scarcityMaxMultiple;static;ja;ja;[x];EconConfig.java:354;++
@@ -84,7 +85,7 @@ C1;Toll-Formel corrected;double;TradeManager;max(0,(20+dist)*0.25)/(player?proxi
 C2;TradeManager.playerTarif() private;double;TradeManager;playerTarif();static;nein;nein;[x];Import=0, Export=0.9 cap;??
 C2;playerTarif Cap 0.9;double;TradeManager;private cap;static;nein;nein;[x];Mod unbeeinflusst;??
 C3;TradeManager.totalFee();int;TradeManager;totalFee();static;nein;nein;[x];(int)(floor(toll+tarif)*amount);??
-C4;WORLD_PROXIMITY_TOLL;Boostable;BOOSTABLES.WORLD;PROXIMITY_TOLL;static;nein;nein;[!];Runtime-Dump noetig;??
+C4;WORLD_PROXIMITY_TOLL;Boostable;BOOSTING.push();PROXIMITY_TOLL;static;nein;nein;[!];DESIGN GAP: Kein BOOSTABLES.WORLD(). Dynamisch via BOOSTING.push() registriert (RDDistance.java:77).;v0.13.64
 C4;RD.DIST().bProximityToll;boolean;RD.DIST;bProximityToll;instance;nein;nein;[x];proximityToll Quelle;??
 C5;TradeSorter.sellPlayer();double;TradeSorter;sellPlayer();static;nein;nein;[x];package-private;??
 C5;TradeSorter.buy();double;TradeSorter;buy();static;nein;nein;[x];package-private;??
@@ -109,10 +110,10 @@ D1;FCredits.CTYPE.TAX;Enum;FCredits;CTYPE.TAX;enum;ja;ja;[x];Mod katalogisiert k
 D2;EconomySim.settleTaxSeason();void;EconomySim;settleTaxSeason();instance;ja;nein;[x];Phase 6 Settle -- separation wage<->tax;++
 D3;EconConfig.perHeadTax=0;int;EconConfig;perHeadTax;static;ja;ja;[x];RACIALLY-skaliert? unklar;++
 D3;EconConfig.perHeadTaxExemptionThreshold=500;int;EconConfig;perHeadTaxExemptionThreshold;static;ja;ja;[x];Subvention fuer Arme;??
-D4;WORLD_TAX_INCOME_YEARLY;Boostable;BOOSTABLES.WORLD;TAX_INCOME_YEARLY;static;nein;nein;[!];Runtime-Dump noetig;??
-D5;WORLD_BUILDING_GLOBAL_TAX;Boostable;BOOSTABLES.WORLD;BUILDING_GLOBAL_TAX;static;nein;nein;[!];Runtime-Dump noetig;??
+D4;WORLD_TAX_INCOME_YEARLY;Boostable;BOOSTING.push();TAX_INCOME_YEARLY;static;nein;nein;[!];DESIGN GAP: Kein BOOSTABLES.WORLD(). Dynamisch via BOOSTING.push() registriert.;v0.13.64
+D5;WORLD_BUILDING_GLOBAL_TAX;Boostable;BOOSTING.push();BUILDING_GLOBAL_TAX;static;nein;nein;[!];DESIGN GAP: Kein BOOSTABLES.WORLD(). Dynamisch via BOOSTING.push() registriert.;v0.13.64
 D6;FactionResource Engine;EngineClass;FactionResource;-;static;nein;nein;[x];Mod-Hooks auf SETT.ROOMS().STOCKPILE direkt;??
-D7;WORLD_TAX_INCOME daily;Boostable;BOOSTABLES.WORLD;TAX_INCOME;static;nein;nein;[!];Runtime-Dump noetig;??
+D7;WORLD_TAX_INCOME daily;Boostable;BOOSTING.push();TAX_INCOME;static;nein;nein;[!];DESIGN GAP: Kein BOOSTABLES.WORLD(). Dynamisch via BOOSTING.push() registriert.;v0.13.64
 D8;BOOSTABLES.CIVICS().GOV default=5;Boostable;BOOSTABLES.CIVICS;GOV;static;ja;ja;[x];EconProgression nutzt via BoosterValue;++
 E1;Wages.realizedWage(room);double;Wages;realizedWage(room);instance;ja;ja;[x];SOLL-Lohn;??
 E1;Wages.lastWorkersPaid;int;Wages;lastWorkersPaid;instance;ja;ja;[~];intern getrackt, kein UI-Leser;??
@@ -144,14 +145,14 @@ G4;FResources.RTYPE.SPOILAGE;RTYPE;FResources;RTYPE.SPOILAGE;static;nein;ja;[x];
 G5;BOOSTABLES.CIVICS().SPOILAGE;Boostable;BOOSTABLES.CIVICS;SPOILAGE;static;nein;ja;[x];default=1.0, Verderb-Beschleuniger;??
 G6;STOCKPILE.amountTotal();long;ROOM_STOCKPILE;tally().amountTotal();instance;ja;ja;[x];Mod lesend via Industry;??
 G7;ForeignTradeLedger.trackt;Sum;ForeignTradeLedger;recordImport/Export;instance;ja;ja;[~];NICHT von FlowMeter erfasst, bahnhofs-stations fehlen;??
-G8;ROOM_STATION.tally();long;ROOM_STATION;tally();instance;nein;nein;[!];Bahnhofsbestände fehlen;??
+G8;ROOM_STATION.tally();long;ROOM_STATION;tally();instance;ja;ja;[x];v0.13.64: IRoomAccess.getStationTally(RESOURCE) via cached Method objects. Gap geschlossen.;v0.13.64
 H1;POP.physical(c,r);int;POP;physical(c,r);static;ja;ja;[x];CITIZEN+CHILD+RIOTER+DERANGED, Mod nutzt;++
 H1;POP.tot(c,r);int;POP;tot(c,r);static;ja;ja;[x];= physical+others;++
 H1;POP.next(c,r);int;POP;next(c,r);static;ja;ja;[x];tot+PARENT+onTheirWay;++
 H1;POP.incoming(c,r);int;POP;incoming(c,r);static;ja;ja;[x];ohne tot;??
-H2;WORLD_MAX_CITY_POPCITIZEN;Boostable;BOOSTABLES.WORLD;MAX_CITY_POPCITIZEN;static;nein;nein;[!];WORLD-Booster dynamisch;??
-H3;WORLD_MAX_CITY_POPSLAVE;Boostable;BOOSTABLES.WORLD;MAX_CITY_POPSLAVE;static;nein;nein;[!];WORLD-Booster dynamisch;??
-H4;WORLD_FULFILLMENT_EXPONENT_CITIZEN;Boostable;BOOSTABLES.WORLD;FULFILLMENT_EXPONENT_CITIZEN;static;nein;nein;[!];WORLD-Booster dynamisch;??
+H2;WORLD_MAX_CITY_POPCITIZEN;Boostable;BOOSTING.push();MAX_CITY_POPCITIZEN;static;nein;nein;[!];DESIGN GAP: Kein BOOSTABLES.WORLD() in Vanilla. Dynamisch via BOOSTING.push() registriert (StandingCitizen.java:110). Zugriff nur via BOOSTING.available() Dump.;v0.13.64
+H3;WORLD_MAX_CITY_POPSLAVE;Boostable;BOOSTING.push();MAX_CITY_POPSLAVE;static;nein;nein;[!];DESIGN GAP: Kein BOOSTABLES.WORLD(). Dynamisch via BOOSTING.push() registriert.;v0.13.64
+H4;WORLD_FULFILLMENT_EXPONENT_CITIZEN;Boostable;BOOSTING.push();FULFILLMENT_EXPONENT_CITIZEN;static;nein;nein;[!];DESIGN GAP: Kein BOOSTABLES.WORLD(). Dynamisch via BOOSTING.push() registriert (StandingCitizen.java:109).;v0.13.64
 H5;BOOSTABLES.CIVICS().IMMIGRATION;Boostable;BOOSTABLES.CIVICS;IMMIGRATION;static;ja;ja;[x];default=4.5,MeticImmigration.register() modifiziert;++
 H5;MeticImmigration.register();void;MeticImmigration;register();static;ja;ja;[x];Mod-Booster-Hook;??
 H5;EconConfig.meticImmigrationSteepness;double;EconConfig;meticImmigrationSteepness;static;ja;ja;[x];10.0, EconProgression IMPERIUM=8.0;++
@@ -161,9 +162,9 @@ H7;RACES.all().get(i).population().growth;double;RACES;all get;instance;ja;ja;[x
 H8;phaseFactor EXISTIERT NICHT;-;<none>;<none>;static;nein;nein;[x];phaseFactor Mod-side EXISTIERT NICHT -- HEBEL bestaetigt diese Absenz (mutual confirmation). Mod akzeptiert Preise-Clamp-Falle bei Pop<300 als Designentscheidung.;++
 I1;ROOM_* Booster (~35);Boostable;SETT.ROOMS;industries;instance;ja;nein;[x];Mod liest indirect via Industry;++
 I2;ROOM_CONSUMPTION_*;Boostable;Industry;ins().amounts();instance;ja;nein;[~];vermutlich gelesen via Industry.ins().amounts();??
-I3;WORLD_PRODUCTION_*;Boostable;BOOSTABLES.WORLD;PRODUCTION_*;static;nein;nein;[!];WORLD-Booster dynamisch;??
-I4;WORLD_BUILDING_*;Boostable;BOOSTABLES.WORLD;BUILDING_*;static;nein;nein;[!];WORLD-Booster dynamisch;??
-I5;WORLD_PRODUCTION_RES_<res>_YEARLY;Boostable;BOOSTABLES.WORLD;PRODUCTION_RES_YEARLY;static;nein;nein;[!];WORLD-Booster dynamisch;??
+I3;WORLD_PRODUCTION_*;Boostable;BOOSTING.push();PRODUCTION_*;static;nein;nein;[!];DESIGN GAP: Kein BOOSTABLES.WORLD(). Dynamisch via BOOSTING.push() registriert.;v0.13.64
+I4;WORLD_BUILDING_*;Boostable;BOOSTING.push();BUILDING_*;static;nein;nein;[!];DESIGN GAP: Kein BOOSTABLES.WORLD(). Dynamisch via BOOSTING.push() registriert.;v0.13.64
+I5;WORLD_PRODUCTION_RES_<res>_YEARLY;Boostable;BOOSTING.push();PRODUCTION_RES_YEARLY;static;nein;nein;[!];DESIGN GAP: Multi-Instance (pro Resource). Kein BOOSTABLES.WORLD(). Dynamisch via BOOSTING.push().;v0.13.64
 I6;BOOSTABLES.RATES.*;Boostable;BOOSTABLES.RATES;RATES_HUNGER etc.;static;ja;partial;[x];Mod-Influence via AffordabilityGate;++
 I7;BOOSTABLES.CIVICS.*;Boostable;BOOSTABLES.CIVICS;CIVIC_GUILD etc.;static;ja;partial;[x];guildSurplusShare=0.25;++
 I8;BOOSTABLES.Behaviour.LOYALTY;Boostable;BOOSTABLES.Behaviour;LOYALTY;static;ja;ja;[x];GiniConsequences.java modifiziert;++
@@ -185,7 +186,7 @@ I10;BOOSTABLES.Noble.MERCY;Boostable;BOOSTABLES.Noble;MERCY;static;nein;nein;[x]
 I10;BOOSTABLES.Noble.COMPETANCE;Boostable;BOOSTABLES.Noble;COMPETANCE;static;nein;nein;[x];Mod ignoriert KI-Steuerung;??
 I10;BOOSTABLES.Noble.TOLERANCE;Boostable;BOOSTABLES.Noble;TOLERANCE;static;nein;nein;[x];Mod ignoriert KI-Steuerung;??
 I11;EQUIP_LEVEL_TOOL_* (32);Boostable;Equip;EQUIP_LEVEL_TOOL_*;static;nein;nein;[~];Equip-Subsystem,NICHT BOOSTABLES;??
-I12;WORLD_* (~15);Boostable;BOOSTABLES.WORLD;WORLD_*;static;nein;nein;[!];WORLD-Booster dynamisch;??
+I12;WORLD_* (~15);Boostable;BOOSTING.push();WORLD_*;static;nein;nein;[!];DESIGN GAP: Kein BOOSTABLES.WORLD() in Vanilla. Alle WORLD-Booster werden dynamisch via BOOSTING.push() aus JSON-Files registriert (BOOSTABLES Constructor liest dynamicBoost/ Folder). Kein statischer Zugriff möglich.;v0.13.64
 J1;KILLER StatsBehaviour;BoolStat;StatsBehaviour;KILLER;static;nein;nein;[!];Engine-Stats,nicht Mod;??
 J2;PROSECUTION;BoolStat;StatsBehaviour;PROSECUTION;static;nein;nein;[!];Engine-Stats,nicht Mod;??
 J3;EMANCIPATE;BoolStat;StatsBehaviour;EMANCIPATE;static;nein;nein;[!];Engine-Stats,nicht Mod;??
@@ -235,6 +236,12 @@ M7;ConfigStore Migrations;-;ConfigStore;Migration-Slot;static;nein;nein;[~];More
 M8;EXISTIERT NICHT (MoreOptions);-;ConfigApplier;-;static;nein;nein;[!];MoreOptions-File fehlt;??
 M9;EXISTIERT NICHT (MoreOptions);-;ConfigMerger;-;static;nein;nein;[!];MoreOptions-File fehlt;??
 M10;EXISTIERT NICHT (MoreOptions);-;BoosterService;-;static;nein;nein;[!];MoreOptions-File fehlt;??
+M11;EngineMirror.api();Singleton;EngineMirror;api();static;ja;ja;[x];Zentrale Fassade 3.146 LOC — api().rooms()/.factions()/.humanoids()/.stats();v0.13.64
+M12;IRoomAccess 30 Methoden;Interface;IRoomAccess+RoomAccessImpl;rooms()/factions()/humanoids()/stats();static;ja;ja;[x];872 LOC (220+652) — BypassGate hybrid, getRoomIns/getHome/getChamber/getEateries/getCanteens/getJanitor/setFirmTarget/entitiesAvailable;v0.13.64
+M13;IFactionAccess 28 Methoden;Interface;IFactionAccess+FactionAccessImpl;factions();static;ja;ja;[x];754 LOC (206+548) — NPC-Diplomacy-Trade-Royalty, KEIN Reflection;v0.13.64
+M14;IHumanoidAccess 18 Methoden;Interface;IHumanoidAccess+HumanoidAccessImpl;humanoids();static;ja;ja;[x];687 LOC (224+463) — ClassResolver fuer 6 AI-Plan-Klassen + PlanCatalog;v0.13.64
+M15;IStatsAccess 12 Methoden;Interface;IStatsAccess+StatsAccessImpl;stats();static;ja;ja;[x];364 LOC (99+265) — BypassGate fuer BOOSTABLES, Religion, Wetter;v0.13.64
+M16;EngineLevers 96 Toggles;Config;EngineLevers;public static boolean;static;ja;ja;[x];285 LOC — 96 boolean Toggles fuer granulare Degradation jedes EngineMirror-Zugriffs;v0.13.64
 N93;IdentityMapRegistry Saveables;List;IdentityMapRegistry;saveables;static;ja;ja;[~];10 Saveables identifiziert;++
 N93;Saveable.save/load;void;Saveable;save/load;instance;ja;ja;[~];Mod-interface;??
 N93;ChunkedSave.CHUNKED_VERSION;int;ChunkedSave;CHUNKED_VERSION;static;ja;ja;[~];Mod-internal Version;??
@@ -296,7 +303,7 @@ X.PropertyHappiness.register(prop, h);void;PropertyHappiness;register(prop, h);s
 X.PovertyPressure.register(wealth, h);void;PovertyPressure;register(wealth, happiness);static;ja;ja;[x];Happiness-Hook;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;++
 X.GiniConsequences.update(gini, loyalty);void;GiniConsequences;update(gini, loyalty);instance;ja;ja;[x];LOYALTY-Update;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;++
 X.MeticImmigration.register();void;MeticImmigration;register();static;ja;ja;[x];CIVIC_IMMIGRATION-Hook;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;++
-X.EconHud.update();void;EconHud;update();instance;ja;ja;[x];Top-HUD;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;??
+X.EconHud.update();void;EconHud;update();instance;ja;ja;[x];Top-HUD, Offset C.WIDTH()-760 (v0.13.64 Livetest-Fix, war 820);Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;v0.13.64
 X.WindowState.DebugTab;UI-Tab;WindowState;DebugTab;instance;ja;ja;[x];5 Buttons;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;??
 X.DiagnosticExporter.makroExport();void;DiagnosticExporter;makroExport();static;ja;ja;[x];CSV-Output;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;??
 X.ChartPanel.show(snap);void;ChartPanel;show(snap);instance;ja;ja;[x];History-Diagram;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;??

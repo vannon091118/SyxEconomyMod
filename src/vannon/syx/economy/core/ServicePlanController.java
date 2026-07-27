@@ -13,6 +13,8 @@ import settlement.main.SETT;
 import settlement.room.main.Room;
 import settlement.room.service.module.RoomServiceAccess;
 import vannon.syx.economy.core.BrokeServicePlan;
+import vannon.syx.economy.adapter.EngineMirror;
+import vannon.syx.economy.adapter.IHumanoidAccess;
 import vannon.syx.economy.core.EconConfig;
 import vannon.syx.economy.core.EngineSeams;
 import vannon.syx.economy.core.FirmLedger;
@@ -86,7 +88,8 @@ public final class ServicePlanController {
                 this.admittedPlans.put(h, plan);
                 continue;
             }
-            EngineSeams.overwritePlan(h, (AIPLAN)this.deniedPlan);
+            IHumanoidAccess hum = EngineMirror.api() != null ? EngineMirror.api().humanoids() : null;
+            if (hum != null) hum.overwritePlan(h, (AIPLAN)this.deniedPlan); else EngineSeams.overwritePlan(h, (AIPLAN)this.deniedPlan);
         }
         this.admittedPlans.keySet().retainAll(this.living);
     }
