@@ -8,6 +8,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -39,6 +43,32 @@ import java.util.concurrent.Executors;
  * justieren → Schleife wiederholen.</p>
  */
 public final class DiagnosticExporter {
+
+    // ═══════════════════════════════════════════════════════
+    // DC-01: Summary-Event-Record — agent-lesbares Compact-Format
+    // Statt 39.6M TRACE-Zeilen: nur State-Changes mit Kontext.
+    // ═══════════════════════════════════════════════════════
+
+    /** Ein signifikanter State-Change zur Diagnose. */
+    private record SummaryEvent(
+            long day, String entity, String eventType, String field,
+            double fromVal, double toVal, String context) {}
+
+    /** Max. Events im In-Memory-Buffer (RingBuffer-Semantik). */
+    private static final int MAX_BUFFER_EVENTS = 10_000;
+
+    /** Buffer: akkumuliert Events bis zum nächsten Save. */
+    private static final List<SummaryEvent> eventBuffer = new ArrayList<>(MAX_BUFFER_EVENTS / 2);
+
+    /** State-Tracker: entity → field → lastValue. Verhindert Duplikat-Events. */
+    private static final Map<String, Map<String, Double>> lastState = new HashMap<>();
+
+    /** Summary-Change-Thresholds (gleiche Semantik wie tools/change_detector.py). */
+    private static final double COVERAGE_THRESHOLD = 0.10;
+    private static final double PRICE_CHANGE_THRESHOLD = 0.20;
+    private static final double GINI_THRESHOLD = 0.05;
+
+    // ═══════════════════════════════════════════════════════
 
     /** Session-Epoch als Suffix des Dateinamens. nanoTime ist kollisionsfreier als millis. */
     private static final long SESSION_EPOCH = System.nanoTime();
@@ -185,6 +215,10 @@ public final class DiagnosticExporter {
                         : ("idx_" + i);
                 resourceRows.append(formatResourceRow(day, season, resourceName,
                         anchor, market, coverage, supply, demand, stock, daysOfSupply, starving));
+
+                // DC-01: Summary-Change-Detection pro Resource
+                detectResourceChanges(day, resourceName, anchor, market, coverage,
+                        supply, demand, stock, daysOfSupply, starving);
             }
 
             // ── Firmen-Daten ──────────────────────────────────────────
@@ -201,6 +235,9 @@ public final class DiagnosticExporter {
             // überschritten werden. Nur bei Erstüberschreitung oder
             // signifikanter Verschlechterung (>10%) — kein Spam.
             checkRebalanceAlerts(stats.gini, sim.auditDelta(), day);
+
+            // DC-01: Macro-Summary-Change-Detection
+            detectMacroChanges(day, sim, stats);
         } catch (RuntimeException t) {
             System.err.println("[ECON] DiagnosticExport snapshot failed for day " + day
                     + ": " + t.getClass().getSimpleName() + ": " + t.getMessage());
@@ -376,6 +413,177 @@ public final class DiagnosticExporter {
     /** Diagnose-Pfad für externe Tools (z. B. Tests oder UI-Hilfetexte). */
     public static String diagnosticDirectory() {
         return DIAG_DIR.toString();
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // DC-01: Summary-Event-System — Change-Detection + Buffer + Save-Flush
+    // ═══════════════════════════════════════════════════════
+
+    /**
+     * Registriert einen State-Change im Summary-Buffer.
+     * Dedupliziert automatisch: nur wenn sich der Wert gegenüber dem
+     * letzten gespeicherten State geändert hat.
+     */
+    private static void recordChange(long day, String entity, String eventType,
+                                      String field, double fromVal, double toVal,
+                                      String contextJson) {
+        // Deduplizierung: gleicher Tag + gleiche Entity + gleiches Field = nur letzter Wert
+        Map<String, Double> fields = lastState.computeIfAbsent(entity, k -> new HashMap<>());
+        Double prev = fields.get(field);
+        if (prev != null && Math.abs(prev - toVal) < 1e-9) return; // identischer Wert
+        fields.put(field, toVal);
+
+        synchronized (eventBuffer) {
+            if (eventBuffer.size() >= MAX_BUFFER_EVENTS) {
+                eventBuffer.remove(0); // ältestes Event verwerfen (RingBuffer)
+            }
+            eventBuffer.add(new SummaryEvent(day, entity, eventType, field,
+                    fromVal, toVal, contextJson));
+        }
+    }
+
+    /**
+     * Schreibt den Summary-Buffer als CSV und leert ihn.
+     * Wird aus {@code InstanceScript.save()} beim Spiel-Save aufgerufen.
+     * Format: {@code summary_[seed].csv}, Semicolon-getrennt, 7 Spalten.
+     *
+     * @param seed Session-Identifikator (nanoTime beim Session-Start)
+     */
+    public static void flush(long seed) {
+        List<SummaryEvent> snapshot;
+        synchronized (eventBuffer) {
+            if (eventBuffer.isEmpty()) return;
+            snapshot = new ArrayList<>(eventBuffer);
+            eventBuffer.clear();
+        }
+
+        try {
+            ensureDir();
+            Path out = DIAG_DIR.resolve("summary_" + seed + ".csv");
+            boolean exists = Files.exists(out);
+            StringBuilder sb = new StringBuilder(snapshot.size() * 200);
+
+            if (!exists) {
+                sb.append("day;entity;event_type;field;from_val;to_val;context_json\n");
+            }
+
+            for (SummaryEvent e : snapshot) {
+                sb.append(e.day()).append(';')
+                        .append(csvEsc(e.entity())).append(';')
+                        .append(e.eventType()).append(';')
+                        .append(e.field()).append(';')
+                        .append(fmt(e.fromVal(), 2)).append(';')
+                        .append(fmt(e.toVal(), 2)).append(';')
+                        .append(csvEsc(e.context())).append('\n');
+            }
+
+            Files.writeString(out, sb.toString(),
+                    StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+
+            EventLog.log("DIAG", "Summary geflusht: " + snapshot.size()
+                    + " Events → " + out.getFileName());
+        } catch (IOException e) {
+            System.err.println("[ECON] Summary flush failed: "
+                    + e.getClass().getSimpleName() + ": " + e.getMessage());
+        }
+    }
+
+    /** Öffentlicher Zugriff für InstanceScript — seed = SESSION_EPOCH. */
+    public static long sessionSeed() {
+        return SESSION_EPOCH;
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // DC-01: Change-Detection — recordChange() pro Resource + Makro
+    // ═══════════════════════════════════════════════════════
+
+    /**
+     * Prüft pro Resource auf signifikante State-Changes und ruft
+     * recordChange() wenn ein Threshold überschritten wird.
+     */
+    private static void detectResourceChanges(long day, String resourceName,
+            float anchor, int marketPrice, double coverage,
+            double supply, double demand, double stock,
+            double daysOfSupply, int starving) {
+        String entity = resourceName;
+
+        // Coverage-Change
+        recordIfChanged(day, entity, "COVERAGE_CRASH", "coverage",
+                coverage, COVERAGE_THRESHOLD,
+                "{stock:" + fmt(stock, 1) + ",dsupply:" + fmt(daysOfSupply, 1)
+                        + ",demand:" + fmt(demand, 2) + ",price:" + marketPrice + "}");
+
+        // Preis-Spike relativ zum Anchor
+        double priceDelta = anchor > 0 ? Math.abs(marketPrice - anchor) / anchor : 0;
+        if (priceDelta >= PRICE_CHANGE_THRESHOLD && anchor > 0) {
+            recordChange(day, entity,
+                    marketPrice > anchor ? "PRICE_SPIKE" : "PRICE_CRASH",
+                    "market_price",
+                    anchor, marketPrice,
+                    "{coverage:" + fmt(coverage, 2)
+                            + ",supply:" + fmt(supply, 2)
+                            + ",demand:" + fmt(demand, 2)
+                            + ",anchor:" + fmt(anchor, 1) + "}");
+        }
+
+        // Supply-Toggle (0↔non-zero)
+        recordToggle(day, entity, "SUPPLY_TOGGLE", "supply_per_day",
+                supply, "{demand:" + fmt(demand, 2) + ",stock:" + fmt(stock, 1) + "}");
+
+        // Demand-Toggle (0↔non-zero)
+        recordToggle(day, entity, "DEMAND_TOGGLE", "demand_per_day",
+                demand, "{supply:" + fmt(supply, 2) + ",stock:" + fmt(stock, 1) + "}");
+
+        // Starving-Signal
+        if (starving == 1) {
+            recordChange(day, entity, "STARVING", "starving_signal",
+                    0, 1,
+                    "{stock:" + fmt(stock, 1) + ",dsupply:" + fmt(daysOfSupply, 1)
+                            + ",demand:" + fmt(demand, 2) + ",price:" + marketPrice + "}");
+        }
+    }
+
+    /** Prüft Makro-Indikatoren auf kritische State-Changes. */
+    private static void detectMacroChanges(long day, EconomySim sim,
+            WealthStats stats) {
+        // Gini-Änderung
+        recordIfChanged(day, "ECONOMY", "GINI_SPIKE", "gini",
+                stats.gini, GINI_THRESHOLD,
+                "{treasury:" + sim.treasury()
+                        + ",mean_wage:" + fmt(sim.laborMarket().meanWage(), 1)
+                        + ",food_basket:" + LocalPrices.flowFoodBasketPrice() + "}");
+
+        // Treasury-Crisis
+        long treasury = sim.treasury();
+        int crisisTier = TreasuryCrisis.activeTier();
+        if (crisisTier >= 1) {
+            recordChange(day, "TREASURY", "CRISIS_TIER_" + crisisTier,
+                    "treasury", 0, treasury,
+                    "{gini:" + fmt(stats.gini, 3)
+                            + ",food_basket:" + LocalPrices.flowFoodBasketPrice() + "}");
+        }
+    }
+
+    /** Wert-Change-Detection mit Threshold. */
+    private static void recordIfChanged(long day, String entity, String eventType,
+            String field, double newVal, double threshold, String contextJson) {
+        Map<String, Double> fields = lastState.computeIfAbsent(entity, k -> new HashMap<>());
+        Double prev = fields.get(field);
+        if (prev != null && Math.abs(prev - newVal) < threshold) return;
+        recordChange(day, entity, eventType, field,
+                prev != null ? prev : newVal, newVal, contextJson);
+    }
+
+    /** Toggle-Detection: meldet nur den Übergang 0↔non-zero. */
+    private static void recordToggle(long day, String entity, String eventType,
+            String field, double newVal, String contextJson) {
+        Map<String, Double> fields = lastState.computeIfAbsent(entity, k -> new HashMap<>());
+        Double prev = fields.get(field);
+        boolean wasZero = prev == null || prev == 0.0;
+        boolean isZero = newVal == 0.0;
+        if (wasZero == isZero) return;
+        recordChange(day, entity, eventType, field,
+                prev != null ? prev : 0.0, newVal, contextJson);
     }
 
     // ── Hard-Threshold Rebalance-Alerts ────────────────────────────────
