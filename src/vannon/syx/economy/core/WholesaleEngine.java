@@ -273,7 +273,8 @@ public final class WholesaleEngine {
         return titled + (int)Math.min((long)remaining, Math.min(Integer.MAX_VALUE, producerUnits));
     }
 
-    private WarehouseMarket.SaleDistribution distributeSaleDetailed(int[] resourceQuantities, int amount, Roster roster, Wallets wallets, FirmLedger ledger, boolean crownFirst, boolean consumeCrownRemainder) {
+    // package-private: accessible by AutoProcurementEngine (T-105) for construction/export procurement
+    WarehouseMarket.SaleDistribution distributeSaleDetailed(int[] resourceQuantities, int amount, Roster roster, Wallets wallets, FirmLedger ledger, boolean crownFirst, boolean consumeCrownRemainder) {
         if (amount <= 0 || resourceQuantities == null) {
             return new WarehouseMarket.SaleDistribution(0, 0, 0, 0);
         }
@@ -356,7 +357,8 @@ public final class WholesaleEngine {
         return new MerchantDistribution(credited, claimableAmount, (int)backed);
     }
 
-    private void recordDirectClaim(RoomInstance producer, RESOURCE resource, int units) {
+    // package-private: accessible by MarketMaintenanceEngine (T-106) for resolvePending
+    void recordDirectClaim(RoomInstance producer, RESOURCE resource, int units) {
         if (producer == null || resource == null || units <= 0) return;
         ArrayList<WarehouseMarket.DirectClaim> claims = this.sharedState.directClaims.computeIfAbsent(resource.index(), ignored -> new ArrayList<WarehouseMarket.DirectClaim>());
         for (WarehouseMarket.DirectClaim claim : claims) {

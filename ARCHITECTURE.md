@@ -46,11 +46,11 @@ Spec-Migration: BINDUNGSMATRIX.csv ist Single-Source-of-Truth.
 
 Das Mod fügt Songs of Syx eine parallele Wirtschaftsschicht hinzu. Jeder Siedler hat ein eigenes Wallet, Firmen rechnen边际isch ab, der Staat kann Steuern erheben und Subventionen verteilen. Das Mod ersetzt keine Vanilla-Systeme, sondern arbeitet über einen **Adapter-Layer** strikt getrennt daneben.
 
-Modul-Bilanz: **128 Java-Dateien, ~22.700 LOC**
+Modul-Bilanz: **139 Java-Dateien, ~23.900 LOC**
 
 | Modul | Dateien | LOC | Aufgabe |
 |---|---:|---:|---|
-| `vannon/syx/economy/core/` | 100 | ~19.247 | Wirtschafts-Sim + Subsysteme |
+| `vannon/syx/economy/core/` | 110 | ~20.542 | Wirtschafts-Sim + Subsysteme |
 | `vannon/syx/economy/adapter/` | 14 | ~1.050 | Engine-API-Wrapper + Bypass-SDK |
 | `vannon/syx/economy/ui/` | 5 | ~2.345 | 4 Fenster + Base |
 | `vannon/syx/economy/benchmark/` | 1 | ~200 | Reflection-vs-MethodHandle-Benchmark |
@@ -63,54 +63,43 @@ Modul-Bilanz: **128 Java-Dateien, ~22.700 LOC**
 ```
 ╔════════════════════════════════════════════════════════════════╗
 ║  SCHICHT 0: Vanilla Engine (Songs of Syx V71)                  ║
-║  unverändert, ~10.992 Klassen                                  ║
 ╚═════════════════════════════════════╤══════════════════════════╝
-                                       │ nur über
                                        ▼
 ╔════════════════════════════════════════════════════════════════╗
 ║  SCHICHT 1: Adapter-Layer (14 Dateien)                         ║
-║  5 Interfaces                                                  ║
-║   ISyxAI, ISyxTransport, ISyxWarehouse, ISyxBoosting,          ║
-║   ISyxDiplomacy                                                ║
-║  5 Vanilla-Implementierungen (via BypassGate SDK,               ║
-║   VarHandle/MethodHandle auto-select)                           ║
-║  4 Bypass-SDK-Klassen (FieldAccessor, MethodAccessor,           ║
-║   ClassResolver, BypassGate)                                    ║
-║  Engine-Zugriff erlaubt AUSSCHLIESSLICH hier                    ║
+║  5 Interfaces + 5 Vanilla-Impls + 4 Bypass-SDK                 ║
 ╚═════════════════════════════════════╤══════════════════════════╝
                                        ▼
 ╔════════════════════════════════════════════════════════════════╗
-║  SCHICHT 2: Wirtschafts-Logik (`core/`, 100 Dateien)           ║
-║  Orchestrator: EconomySim (1.459 LOC)                          ║
-║  Subsysteme: Wallets, FirmLedger, Fiscal, Taxes, LaborMarket,  ║
-║    StateWageMarket, OddjobMarket, WarehouseMarket,             ║
-║    StateWarehouses, TransportMarket, ReligionMarket, Liturgy,  ║
-║    ConstructionHoardController, PropertyMarketController,     ║
-║    CrisisDispatch, FlowPrices, FlowMeter, PolityPriceAnchor,  ║
-║    ScarcitySignal, Roster, EconIndicators, EconProgression,    ║
-║    WealthStats, WealthHappiness, PropertyHappiness,            ║
-║    DebtDiplomacyBuffer, HandoutRelief, CorveeController,       ║
-║    AccessAutomation, DiagnosticExporter, EventLog,              ║
-║    AffordabilityGate, FoodPlanController, GrainDole,           ║
-║    ServiceMarket, ServicePlanController, PurchasePlanController║
+║  SCHICHT 2: Wirtschafts-Logik (`core/`, 110 Dateien)           ║
+║  Orchestrator: EconomySim — 6 Engines + 1 Facade (Sprint M-1) ║
 ╚═════════════════════════════════════╤══════════════════════════╝
                                        ▼
 ╔════════════════════════════════════════════════════════════════╗
-║  SCHICHT 3: UI (`ui/`, 5 Dateien, 16 inhärente Tabs)           ║
-║  EconWindowBase (368 LOC) — abstrakte Basis mit KPI-Header,    ║
-║   TabBar, lastSet() für Top-Rendering, mouseClick mit            ║
-║   LEFT/RIGHT/MIDDLE, isShown(), toggle()                        ║
-║  WindowOverview (744 LOC) — 4 Tabs                              ║
-║   DashboardTab, DemographicsTab, AdvisorTab, PropertyTab        ║
-║  WindowEconomy (510 LOC) — 6 Tabs                              ║
-║   MarketsTab, PricesTab, FirmsTab, WagesTab, SubsidiesTab,      ║
-║   BooksTab                                                     ║
-║  WindowState (528 LOC) — 6 Tabs                                ║
-║   WarehousesTab, FiscalTab, PublicWorksTab, SocialTab,         ║
-║   FaithTab, DebugTab (permanent sichtbar)                        ║
-║  WindowQuickview (195 LOC) — kompakte Anzeige (Numpad 0)        ║
+║  SCHICHT 3: UI (`ui/`, 5 Dateien, 16 Tabs)                     ║
 ╚════════════════════════════════════════════════════════════════╝
 ```
+
+### Warehouse-Subsystem (Sprint M-1, v0.13.61)
+
+Ehemals 1 God-Class (`WarehouseMarket`, 1.902 LOC) → jetzt 8 kohäsive Dateien:
+
+```
+WarehouseMarket (Facade, ~320 LOC)
+├── MarketSharedState (T-101, 51 LOC) — shared data container
+├── WholesaleEngine (T-102, 553 LOC) — buy/sell/distribute
+├── CrownTitleEngine (T-103, 200 LOC) — crown-title operations
+├── RetailSyncEngine (T-104, 200 LOC) — retail delivery sync
+├── AutoProcurementEngine (T-105, 175 LOC) — construction/export procurement
+├── MarketMaintenanceEngine (T-106, 260 LOC) — prune/seizures/intake-locks
+└── MarketTaxEngine (T-107, 60 LOC) — inventory taxation
+```
+
+Alle Engines liegen im selben Package `vannon.syx.economy.core`. MarketSharedState
+im Subpackage `warehouse.market` (public Felder für cross-package access).
+Save-Format: FORMAT 8 (backward-compatible mit V7). 14 Inner Records verbleiben
+in WarehouseMarket (Book, DirectClaim, RetailBook, RetailLot, 4× Pending*,
+Purchase, CrownStorage, SaleDistribution, Settlement, RetailQuote, OwnerlessRetailClaims).
 
 ### Truth-Tabelle (keine Phantom-Dateien)
 
