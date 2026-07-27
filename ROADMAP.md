@@ -57,14 +57,20 @@
 | **BA-01** | 🟠 P1 | **Treasury-Drain bei 37 Siedlern:** -1.8M D trotz nur 5 Arbeitern — Lohn/Subventions-Spirale im Early-Game. Grace Period existiert (v0.13.67), aber reicht nicht. | ~15 | BA |
 | **BA-02** | 🟡 P2 | **Extrem-Gini 0.946:** 3 Ausreißer (333K/500K/1.3M), 34 Bürger bei Median 4D. GiniConsequences greift, aber Effekt nicht spürbar. | ~10 | BA |
 | **BA-03** | 🔴 P0 | **Arbeitslosigkeits-Todesspirale:** Bürger broke → BrokeFoodPlan → desperate → kein Oddjob → verhungern. Kreislauf: Geldmangel→kein Essen→Tod statt Geldmangel→Arbeit→Geld→Essen→Überleben. Covered by L-01. | ~0 | L-1 |
-| **DOC-01** | 🟡 P2 | **ARCHITECTURE.md Phantom-Dateien:** 4 settlement/room/*-Brücken gelöscht, ARCHITECTURE behauptet sie existieren. Adapter-Zahl 24→22. | ~5 | DOC |
+| **DOC-01** | 🟡 P2 | **ARCHITECTURE.md + GLOSSARY.md Brücken-Korrektur:** 4 settlement/room/*-Brücken existieren (309 LOC in `src/settlement/room/`). Wurden in v0.13.67 fälschlich gelöscht, jetzt restauriert mit korrekten LOC-Zahlen. | ~0 | DOC |
 | **DOC-02** | 🟡 P2 | **BINDUNGSMATRIX J1-J6:** StatsBehaviour → StatsMultipliers (Vanilla-Source-verifiziert). CIVICS-Count korrigieren. | ~5 | DOC |
 | **DOC-03** | 🟡 P2 | **agents.md Canary-Update:** Flachwitz-Refresh nach Rule-7-Pflicht (Session-Start, doc-Update). | ~2 | DOC |
+| **DOC-04** | 🟡 P2 | **settlement/room/ Bridges existieren:** 4 Dateien (309 LOC) in `src/settlement/room/` — ARCHITECTURE+GLOSSARY hatten sie fälschlich gelöscht. Korrigiert in v0.13.67. | ~0 | DOC |
+| **LOC-01** | 🟠 P1 | **358 hartcodierte Strings, 0 Lokalisierung:** `EconTexts.java` (358 Konstanten) + 369 UI-String-Literale — alles deutsch, kein Übersetzungssystem. Tagebuch-Claim „357 Strings" bestätigt. | ~200 | LOC |
+| **TECHD-01** | 🟡 P2 | **EconomySim 1382 LOC wächst:** God-Class-Guard grandfathered (1382/74/129/74). WarehouseMarket wurde gesplittet (Sprint M-1), EconomySim nicht. Tagebuch: „wie ein Kontinent". | ~0 | TECHD |
+| **TECHD-02** | 🟡 P2 | **EconConfig 207 Felder Constants-Dump:** 55 bool + 75 int + 61 double + 16 other. Keine Sub-Config-Klassen. Grandfathered vom God-Class-Guard. Tagebuch: „mittelgroßes Buch". | ~0 | TECHD |
+| **TEST-01** | 🟠 P1 | **Save-Migration-Integrationstest fehlt:** CHUNKED_VERSION=33, keine Headless-Test-Suite für Savegame-Migration. Tagebuch: „Migrations-Pfad im Feld unbewiesen". | ~80 | TEST |
+| **DA-01** | 🟡 P2 | **Tagebuch-Abgleich v0.13.67:** 17 Claims gegen Code verifiziert (11 bestätigt, 6 korrigiert, 0 widerlegt). Detaillierte Tabelle unten. | ~0 | DOC |
 | **DIPLO-01** | 🔴 P0 | **Opinion/Trust-Mechanik fehlt:** Vanilla `ROPINION.trust()`, `bOpinion` (1.5), `TRUST` (0) — Mod liest nur in DebtDiplomacyBuffer, schreibt NIE. `royaltyOpinionEnabled` = toter Config-Flag. Kein Opinion-Zerfall-Monitoring, keine Reaktion auf Wirtschafts-Kollaps. | ~60 | DIPLO |
 | **DIPLO-02** | 🟠 P1 | **IFactionAccess Opinion/Trust-Lücke:** Interface deklariert "Royalty — Opinion, Trust" aber implementiert nur `getKing()` + `getRulerName()`. `getFactionTrust(Faction)` + `setFactionOpinion(Faction, double)` fehlen. **Ref:** `FactionAccessImpl.java:418` (TODO TradeManager.tarif). | ~25 | DIPLO |
 | **DIPLO-03** | 🟡 P2 | **BINDUNGSMATRIX: ROPINION + bOpinion + TRUST katalogisieren** — 3 Engine-Hebel fehlen komplett in der Matrix. | ~10 | DIPLO |
 
-**Total:** 60 Tasks (35 bestehende + 9 UI + 3 B-FIX + 3 Labor + 3 Logging + 3 DIPLO + 3 Balance + 3 Doc — 25 neue) — plus 40×Closed.
+**Total:** 67 Tasks (60 bestehende + 7 neue: DOC-04, LOC-01, TECHD-01, TECHD-02, TEST-01, DA-01) — plus 40 Closed.
 
 **Sprint 9 Dependency-Edges (Rule 1.7 Pre-Note):**
 
@@ -374,9 +380,55 @@ Siehe `docs/superpowers/specs/HANDOFF_M1.md`.
 
 | Task | Prio | Befund | Fix |
 |---|---|---|---|
-| **DOC-01** | 🟡 P2 | ARCHITECTURE.md: 4 settlement/room/*-Brücken als existierend gelistet, tatsächlich 0 Dateien. Adapter-Zahl 24→22. | Phantom-Dateien aus ARCHITECTURE.md entfernen, Dateizahlen auf Ist-Wert korrigieren. |
-| **DOC-02** | 🟡 P2 | BINDUNGSMATRIX J1–J6: `StatsBehaviour` → `StatsMultipliers` (Vanilla-Source-verifiziert). | Quell-Klasse in BINDUNGSMATRIX korrigieren. |
-| **DOC-03** | 🟡 P2 | agents.md Rule 7 Flachwitz nach Session-Start fällig (Canary-Pflicht). | Neuen Flachwitz liefern. |
+| **DOC-01** | 🟡 P2 | **ARCHITECTURE.md + GLOSSARY.md Brücken-Korrektur:** 4 settlement/room/*-Brücken existieren (309 LOC in `src/settlement/room/`). Wurden in v0.13.67 fälschlich gelöscht, jetzt restauriert mit korrekten LOC-Zahlen. | ~0 | DOC |
+| **DOC-02** | 🟡 P2 | **BINDUNGSMATRIX J1–J6:** `StatsBehaviour` → `StatsMultipliers` (Vanilla-Source-verifiziert). | Quell-Klasse in BINDUNGSMATRIX korrigieren. |
+| **DOC-03** | 🟡 P2 | **agents.md Canary-Update:** Flachwitz-Refresh nach Rule-7-Pflicht (Session-Start, doc-Update). | ~2 | DOC |
+
+---
+
+## Tagebuch-Abgleich — Claims vs Code (v0.13.67)
+
+**Quelle:** Senior-Dev-Tagebuch, Wochenende 26.7.26. 17 Claims systematisch gegen den Code geprüft.
+
+### Verifizierte Claims (11/17 bestätigt)
+
+| # | Tagebuch-Claim | Code-Realität | Status |
+|---|---|---|---|
+| 1 | 5 Wirtschaftsstufen: Subsistenz→Handel→Industrie→Wohlstand→Imperium | `EconProgression.Stage`: SUBSISTENZ, HANDEL, INDUSTRIE, WOHLSTAND, IMPERIUM | ✅ |
+| 2 | SAVE_VERSION = 33 | `EconomySim.CHUNKED_VERSION = 33` | ✅ |
+| 3 | TreasuryCrisis 5 Tiers + Hard Floor + Grace Period | Tier 1–5, Grace unterdrückt 1–4, Tier 5 immer aktiv | ✅ ~5 Tiers, nicht 6 |
+| 4 | Gini→Loyalty-Kopplung existiert | `GiniConsequences` bindet Gini an `BOOSTABLES.BEHAVIOUR().LOYALTY` | ✅ |
+| 5 | ReentryGuard mit `volatile` + injizierbarem Log-Kanal | `volatile inProgress/hasWarned` + `Consumer<String> logSink` im Konstruktor | ✅ |
+| 6 | God-Class-Guard existiert als Build-Gate | Gate 9 in `build-gate.sh`, 149 Dateien gescannt, `SKIP_GOD_GUARD=1` Toggle | ✅ |
+| 7 | WarehouseMarket wurde aufgeteilt | WholesaleEngine 555 LOC + AutoProcurementEngine 187 LOC + WarehouseMarket Facade 496 LOC | ✅ |
+| 8 | SchemaValidator Fail-Fast existiert | `Class.forName` + `getDeclaredField` in `validate()`, tracked `failed` count | ✅ |
+| 9 | Save-Migration existiert (v32→v33) | `EconomySim.load()`: `if (version >= CHUNKED_VERSION)` Migrations-Pfad | ✅ |
+| 10 | settlement/room/ Brücken existieren | 4 Dateien, 309 LOC, direkt in `src/settlement/room/` (NICHT unter vannon-package) | ✅ |
+| 11 | Hartcodierte Strings, keine Lokalisierung | `EconTexts.java`: 358 String-Konstanten. UI: 369 String-Literale. 0 Übersetzungssystem. | ✅ |
+
+### Korrigierte Claims (6/17 — Tagebuch weicht ab)
+
+| # | Tagebuch-Claim | Code-Realität | Delta |
+|---|---|---|---|
+| 12 | "175 Java-Dateien" | 149 Source-Dateien (145 vannon + 4 bridges) + 26 Test-Dateien = 175 total | ✅ Summe stimmt, aber 149 Source (nicht 175) |
+| 13 | "EconomySim 1683 LOC" | 1382 LOC (God-Class-Guard-Baseline) | −301 LOC — Tagebuch überschätzt |
+| 14 | "EconConfig 205 Felder" | 207 Felder (55 bool + 75 int + 61 double + 16 other) | +2 — Tagebuch unterschätzt knapp |
+| 15 | "357 hartcodierte Strings" | 358 EconTexts Konstanten + 369 UI-Literale | +1 (EconTexts) — Tagebuch minimal unterschätzt |
+| 16 | "26 echte Tests" | 402 @Test-Methoden in 26 Test-Dateien | Tagebuch meinte Test-DATEIEN, nicht Test-METHODEN |
+| 17 | "TreasuryCrisis 6 Tiers" | 5 Tiers + Grace Period (kein 6. Tier) | −1 Tier — Tagebuch zählte Grace als Tier |
+
+### Neue ROADMAP-Tasks aus diesem Abgleich
+
+| Task | Prio | Beschreibung |
+|---|---|---|
+| **LOC-01** | 🟠 P1 | 358 Strings lokalisieren — Übersetzungssystem fehlt komplett |
+| **TECHD-01** | 🟡 P2 | EconomySim 1382 LOC — Split planen (wie WarehouseMarket M-1) |
+| **TECHD-02** | 🟡 P2 | EconConfig 207 Felder — Sub-Config-Klassen extrahieren |
+| **TEST-01** | 🟠 P1 | Save-Migration-Integrationstest (CHUNKED_VERSION 33) |
+| **DA-01** | 🟡 P2 | Tagebuch-Abgleich v0.13.67 (diese Sektion) |
+
+**Fazit:** 11/17 Claims bestätigt, 6 numerische Abweichungen (alle ±klein, keine strukturellen Fehler).
+Das Tagebuch ist eine akkurate Außenperspektive auf den Code-Stand v0.13.64→v0.13.67.
 
 ---
 

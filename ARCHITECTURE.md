@@ -46,7 +46,7 @@ Spec-Migration: BINDUNGSMATRIX.csv ist Single-Source-of-Truth.
 
 Das Mod fügt Songs of Syx eine parallele Wirtschaftsschicht hinzu. Jeder Siedler hat ein eigenes Wallet, Firmen rechnen边际isch ab, der Staat kann Steuern erheben und Subventionen verteilen. Das Mod ersetzt keine Vanilla-Systeme, sondern arbeitet über einen **Adapter-Layer** strikt getrennt daneben.
 
-Modul-Bilanz: **145 Java-Dateien, ~28.660 LOC** (core 20.954 + adapter 5.086 + ui 2.622)
+Modul-Bilanz: **149 Java-Dateien, ~28.970 LOC** (core 20.954 + adapter 5.086 + ui 2.622 + bridges 309)
 
 | Modul | Dateien | LOC | Aufgabe |
 |---|---:|---:|---|
@@ -55,6 +55,7 @@ Modul-Bilanz: **145 Java-Dateien, ~28.660 LOC** (core 20.954 + adapter 5.086 + u
 | `vannon/syx/economy/ui/` | 5 | ~2.622 | 4 Fenster + Base |
 | `vannon/syx/economy/benchmark/` | 1 | ~330 | Reflection-vs-MethodHandle-Benchmark |
 | `vannon/syx/economy/warehouse/market/` | 1 | ~51 | MarketSharedState (Sprint M-1) |
+| `settlement/room/...` | 4 | ~309 | Package-Private Brücken (compile-time-safe, außerhalb mod-package) |
 
 ---
 
@@ -191,12 +192,18 @@ in 6 Core-Dateien auf EngineMirror migriert (Fallback-Pattern:
 
 Siehe `ROADMAP.md` §Sprint A-1 + B-008 für vollständige Task-Liste + Definition of Done.
 
-### Package-Private Brücken (0 — gelöscht in v0.13.64)
+### Package-Private Brücken (4, in `src/settlement/room/` — außerhalb `vannon.syx.economy`)
 
-Die 4 `settlement/room/`-Bridge-Klassen (`LaborMarketAccess`, `EconomyTavernAccess`,
-`EconomyEateryAccess`, `EconomyCanteenAccess`) wurden mit Sprint A-1 (EngineMirror)
-abgelöst. Ihre Funktionalität ist jetzt in `RoomAccessImpl` via BypassGate integriert.
-Das `settlement/room/`-Verzeichnis ist leer (0 Dateien).
+> **Achtung:** Diese Dateien liegen NICHT unter `src/vannon/syx/economy/`, sondern direkt
+> im Spiel-Package-Namensraum `src/settlement/room/`. Sie teilen das Package mit den
+> Vanilla-Klassen → kein Reflection nötig. Der God-Class-Guard scannt sie korrekt.
+
+| Datei | LOC | Vanilla-Klasse | Zweck |
+|---|---|---|---|
+| `LaborMarketAccess.java` | 68 | `RoomEmployment.Priority` | Direkter Lese-/Schreibzugriff auf `priority` |
+| `EconomyTavernAccess.java` | 80 | `TavernInstance` | Drink-Vorrat lesen |
+| `EconomyEateryAccess.java` | 68 | `EateryInstance` | Food-Vorrat lesen |
+| `EconomyCanteenAccess.java` | 93 | `CanteenInstance` | Food-Vorrat lesen |
 
 ---
 

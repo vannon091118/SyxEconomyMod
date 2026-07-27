@@ -5,7 +5,7 @@
 > Stam-Doku-Synchron-Anker: Die obenstehende Versions-Zeile MUSS identisch mit `pom.xml` `<version>` sein.
 > Der Sync-Gate `tools/verify-doc-sync.sh` validiert dies vor jedem `mvn compile`.
 >
-> Strukturierte Übersicht der **145 Java-Dateien** (core 111 + adapter 27 + ui 5 + warehouse/market 1 + benchmark 1) des Mods.
+> Strukturierte Übersicht der **149 Java-Dateien** (core 111 + adapter 27 + ui 5 + warehouse/market 1 + benchmark 1 + bridges 4) des Mods.
 
 ---
 
@@ -43,11 +43,20 @@ Consumer prüfen `ISyx*.isAvailable()` pro Adapter individuell — granulare Deg
 bleibt erhalten (z. B. Transport läuft weiter, wenn nur Diplomacy-Reflection scheitert).
 Phase B–E, v0.13.10.
 
-### Package-Private Brücken (0 — gelöscht mit Sprint A-1, v0.13.64)
+### Package-Private Brücken (4 Dateien in `src/settlement/room/` — außerhalb mod-package)
 
-Die 4 Bridge-Klassen (`LaborMarketAccess`, `EconomyTavernAccess`, `EconomyEateryAccess`,
-`EconomyCanteenAccess`) wurden mit Sprint A-1 abgelöst. Ihre Funktionalität lebt jetzt
-in `RoomAccessImpl` via BypassGate. Das `settlement/room/`-Verzeichnis ist leer (0 Dateien).
+> Diese Dateien liegen NICHT unter `src/vannon/syx/economy/`, sondern direkt im
+> Spiel-Package `src/settlement/room/`. Sie teilen das Package mit Vanilla-Klassen.
+
+| Klasse | LOC | Vanilla-Package | Zweck |
+|---|---|---|---|
+| `LaborMarketAccess.java` | 68 | `settlement.room.main.employment` | Direktzugriff auf `RoomEmployment.Priority` |
+| `EconomyTavernAccess.java` | 80 | `settlement.room.service.food.tavern` | Liest `TavernInstance`-Vorrat |
+| `EconomyEateryAccess.java` | 68 | `settlement.room.service.food.eatery` | Liest `EateryInstance`-Vorrat |
+| `EconomyCanteenAccess.java` | 93 | `settlement.room.service.food.canteen` | Liest `CanteenInstance`-Vorrat |
+
+Kein Reflection nötig — der Compiler prüft die Zugriffe. Der God-Class-Guard scannt
+sie korrekt (30–93 LOC, 2–4 pubM, 2–7 fields).
 
 ### EngineMirror-SDK (9 Dateien in `adapter/` + `EngineLevers.java` in `core/` — Sprint A-1, v0.13.64)
 
@@ -309,7 +318,7 @@ Jede Tab-Klasse implementiert das `TabContent`-Interface, das in `EconWindowBase
 |---|---|---|
 | **MainScript.java** | `src/vannon/syx/economy/core/` | Registriert alle Booster beim Spiel-Start. |
 | **AdapterReflectionBenchmark** | `src/vannon/syx/economy/benchmark/` | Reflection vs MethodHandle Benchmark. |
-| **`settlement/room/.../*Access.java`** (0 Dateien — gelöscht v0.13.64) | `src/settlement/...` | Ehemalige Package-Private Brücken. Funktionalität jetzt in RoomAccessImpl. |
+| **`settlement/room/.../*Access.java`** (4 Dateien, 309 LOC) | `src/settlement/...` | Package-Private Brücken — teilen Package-Namensraum mit Vanilla-Klassen. Kein Reflection. |
 
 ---
 
