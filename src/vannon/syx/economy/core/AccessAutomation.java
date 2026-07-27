@@ -25,18 +25,31 @@ public final class AccessAutomation {
     private static int lastErrorLogTick = -ERROR_LOG_INTERVAL;
     /** Globales Flag: Zugangserkennung wurde wegen einer Exception deaktiviert. */
     private static boolean accessDetectionDisabled = false;
+    /** Tick, an dem die Deaktivierung erfolgte. Fuer Mid-Session-Recovery. */
+    private static int disabledAtTick = 0;
+    /** Nach 1800 Ticks (~6 Ingame-Tage) wird ein Reaktivierungsversuch unternommen. */
+    private static final int RECOVERY_INTERVAL = 1800;
 
     public void update(FlowMeter.Snapshot snap, int ticks) {
         if (accessDetectionDisabled) {
-            // Rate-limited Erinnerung, dass die Erkennung abgeschaltet ist.
-            // Robust gegen tick-Reset/Overflow: log once after wrap-around.
-            boolean due = ticks >= lastErrorLogTick + ERROR_LOG_INTERVAL || ticks < lastErrorLogTick;
-            if (due) {
-                lastErrorLogTick = ticks;
+            // Mid-Session-Recovery: Nach RECOVERY_INTERVAL Ticks Reaktivierung versuchen.
+            // B-011: static boolean blieb nach erstem Fehler permanent tot —
+            // Housing-Einrichtungsziele funktionierten danach nicht mehr.
+            boolean recoveryDue = ticks >= disabledAtTick + RECOVERY_INTERVAL || ticks < disabledAtTick;
+            if (recoveryDue) {
+                accessDetectionDisabled = false;
                 EventLog.log("ACCESS",
-                        "AccessAutomation room scan disabled after earlier failure — Zugangs-Erkennung deaktiviert.");
+                        "AccessAutomation re-enabled — retrying after recovery interval.");
+            } else {
+                // Rate-limited Erinnerung, dass die Erkennung abgeschaltet ist.
+                boolean due = ticks >= lastErrorLogTick + ERROR_LOG_INTERVAL || ticks < lastErrorLogTick;
+                if (due) {
+                    lastErrorLogTick = ticks;
+                    EventLog.log("ACCESS",
+                            "AccessAutomation room scan disabled — retry in " + (RECOVERY_INTERVAL - (ticks - disabledAtTick)) + " ticks.");
+                }
+                return;
             }
-            return;
         }
 
         if (ticks - lastUpdateTick < UPDATE_INTERVAL) {
@@ -69,11 +82,12 @@ public final class AccessAutomation {
                     }
                 }
             }
-        } catch (RuntimeException t) {  // T-004 (Phase-4.7): catch breit → RuntimeException. Errors (OOM, StackOverflow) propagieren weiter — die globale accessDetectionDisabled-Tonne wird NUR bei recoverable Fehlern gefüllt (Vanilla-API-Drift, NullPointer bei Race).
+        } catch (RuntimeException t) {  // T-004 (Phase-4.7): catch breit → RuntimeException.
             accessDetectionDisabled = true;
+            disabledAtTick = ticks;
             lastErrorLogTick = ticks;
             EventLog.log("ACCESS", "AccessAutomation room scan failed: "
-                    + t.getClass().getSimpleName() + " — Zugangs-Erkennung deaktiviert.");
+                    + t.getClass().getSimpleName() + " — deaktiviert fuer " + RECOVERY_INTERVAL + " ticks.");
         }
     }
 
@@ -86,5 +100,6 @@ public final class AccessAutomation {
     public static void reset() {
         lastErrorLogTick = 0;
         accessDetectionDisabled = false;
+        disabledAtTick = 0;
     }
 }

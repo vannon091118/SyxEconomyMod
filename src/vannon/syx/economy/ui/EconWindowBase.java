@@ -223,8 +223,8 @@ public abstract class EconWindowBase {
 
     /** Tab labels, column headers, button labels. Default: 64. */
     public static final int FONTW_LABEL    = 64;
-    /** KPI labels and values, slider labels. Default: 128. */
-    public static final int FONTW_KPI    = 128;
+    /** KPI labels and values, slider labels. Default: 128. U-01: 128→144 — "-1.9M D" Overflow bei Treasury-Werten. */
+    public static final int FONTW_KPI    = 144;
     /** Section headers, tutorial headers, chart labels. Default: 256. */
     public static final int FONTW_HDR    = 256;
     /** Tutorial body, event log, advice, status messages. Default: 512. */
@@ -236,7 +236,7 @@ public abstract class EconWindowBase {
     /** Resource names, blueprint keys. Default: 100. */
     public static final int FONTW_NAME   = 100;
     /** LiveSlider value. Default: 80. */
-    public static final int FONTW_SLVAL  = 80;
+    public static final int FONTW_SLVAL  = 96;  // U-02: 80→96 — "####-500D#" Overflow bei negativen Werten (Kopfsteuer)
     /** LiveSlider bar. Default: 120. */
     public static final int FONTW_SLBAR  = 120;
     /** Wage columns, medium metrics. Default: 56. */
@@ -310,11 +310,11 @@ public abstract class EconWindowBase {
             add(bar, 32, 16);
 
             val = new GText(UI.FONT().M, FONTW_SLVAL);
-            add(val, 120, 16);
+            add(val, 112, 16);
 
             GButt.ButtPanel plus = new GButt.ButtPanel("+", 24);
             plus.clickActionSet(plusAction);
-            add(plus, 200, 14);
+            add(plus, 216, 14);
 
             // Initial render with current value
             updateDisplay(supplier.getAsInt());

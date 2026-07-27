@@ -36,8 +36,8 @@
 | **A-05** | ✅ Closed (v0.13.64) | **EngineMirror.java + AdapterDispatcher + Stam-Docs** — Zentrale Fassade, ersetzt EngineSeams graduell | ~400 | A-1 |
 | **UI-CENT** | ✅ Closed | **UI-Zentralisierung:** 122 GText → 10 FONTW_*-Konstanten in EconWindowBase | ~15 | 10 |
 | **AUDIT-1** | 📝 Notiert | **emigrationRisk = Dead Code** — AtomicInteger nie gelesen, D-002 wirkungslos | — | 10 |
-| **U-01** | 🔴 P0 | **Treasury-Display-Inkonsistenz:** Quickview -19M vs Dashboard -1.9M — CompactNumber oder Treasury-Snapshot-Drift | ~10 | U-1 |
-| **U-02** | 🔴 P0 | **GText-Overflow Kopfsteuer:** `####-500D#` bei negativem Treasury — Feldbreite zu klein | ~8 | U-1 |
+| **U-01** | ✅ Closed (v0.13.67) | **Treasury-Display-Inkonsistenz:** Quickview -19M vs Dashboard -1.9M — FONTW_KPI 128→144, GText-Overflow behoben. `AccessAutomation.java:30` | ~10 | U-1 |
+| **U-02** | ✅ Closed (v0.13.67) | **GText-Overflow Kopfsteuer:** `####-500D#` bei negativem Treasury — FONTW_SLVAL 80→96, Plus-Button x 200→216. `EconWindowBase.java:239,312` | ~8 | U-1 |
 | **U-03** | 🟠 P1 | **CitizenClass-Tabelle leer:** 37 Siedler, 0 Zeilen gerendert — Klassifikation läuft nicht | ~20 | U-1 |
 | **U-04** | 🟡 P2 | **Firmen-Namen als interne Keys:** FARM_GRAIN/FISHERY_NORMAL statt lokalisierter Namen | ~10 | U-1 |
 | **U-05** | 🟡 P2 | **Ampel-Pfeile inkonsistent:** "Finanzen →", "Gleichheit →" aber "Arbeit"/"Wachstum"/"Versorgung" ohne Pfeil | ~5 | U-1 |
@@ -45,10 +45,10 @@
 | **U-07** | 🟡 P2 | **Religionssteuer-Label-Overflow:** WindowEconomy GText-Feld x+300 zu eng (x+308 in WindowState) | ~4 | U-1 |
 | **U-08** | 🟡 P2 | **Onboarding überlebt Krisenzustand:** SCHRITT 4/4 bei -1.8M Treasury — keine Priorisierung | ~15 | U-1 |
 | **U-09** | 🟠 P1 | **Bücher-Tab Konsistenzzeile:** "Kasse + Umlauf = 203.3K D" widerspricht -1.8M Treasury — widersprüchliche Anzeige | ~15 | U-1 |
-| **B-011** | 🔴 P0 | **AccessAutomation permanent deaktiviert:** `accessDetectionDisabled` (static) bei erster Exception=true, kein Mid-Session-Reset. Housing-Einrichtungsziele tot. | ~5 | B-FIX |
+| **B-011** | ✅ Closed (v0.13.67) | **AccessAutomation permanent deaktiviert:** `accessDetectionDisabled` (static) → Mid-Session-Recovery nach 1800 Ticks. `AccessAutomation.java:30-44` | ~5 | B-FIX |
 | **B-012** | 🟠 P1 | **EconProgression 3850 Tage Subsistenz:** checkAdvance() blockiert durch Taverne/Labor die nicht gebaut sind. Progression erwartet Gebäude die der Spieler nicht priorisiert. | ~20 | B-FIX |
 | **B-013** | 🟡 P2 | **Advisor-Preis-Disconnect:** Berater empfiehlt Export bei Stone 75.3x/Wood 73.7x — Preisdaten nicht mit Advisor-Empfehlungen verknüpft | ~25 | B-FIX |
-| **L-01** | 🔴 P0 | **BrokeFoodPlan-Escape:** Vor `desperate` prüfen ob Bürger Oddjob machen kann → Arbeit statt Verhungern. Vanilla-verifiziert: PlanOddjobber existiert. | ~20 | L-1 |
+| **L-01** | ✅ Closed (v0.13.67) | **BrokeFoodPlan-Escape:** `con()` prüft jetzt `hunger.isMax()` vor desperate-Aktivierung. Hunger < MAX → normale AI-Pipeline (Oddjob). `BrokeFoodPlan.java:38-42` | ~20 | L-1 |
 | **L-02** | 🟠 P1 | **SubjectFatigue + FatiguePressure:** Fatigue pro Tick, STAMINA-Booster-Registrierung (Vanilla: `BOOSTABLES.PHYSICS().STAMINA` existiert), forcedRest bei Schwellenwert. StatsMultipliers.OVERTIME/DAY_OFF existieren. | ~100 | L-1 |
 | **L-03** | 🟡 P2 | **WealthRest:** Reiche Bürger (>2× Median) arbeiten nur noch Teilzeit via reduzierter Fatigue-Schwelle. `EconConfig.wealthRestEnabled` + `wealthRestThreshold`. | ~40 | L-1 |
 | **LOG-01** | 🟠 P1 | **ACTION-Logging:** Alle clickActionSet-Calls in 4 UI-Fenstern mit EventLog verknüpfen (old→new Transition). 25 Action-Stellen, derzeit 0 geloggt. | ~35 | LOG-1 |
