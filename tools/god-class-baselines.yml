@@ -65,12 +65,12 @@ legacy_baselines:
     status_at_emit: block
     reason_at_emit: fields 30 > block 24
   src/vannon/syx/economy/core/EconConfig.java:
-    loc: 274
+    loc: 288
     pubM: 7
-    fields: 205
+    fields: 207
     imports: 0
     status_at_emit: block
-    reason_at_emit: fields 205 > block 24
+    reason_at_emit: fields 207 > block 24
   src/vannon/syx/economy/core/EconProgression.java:
     loc: 279
     pubM: 9

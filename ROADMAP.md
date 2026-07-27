@@ -61,9 +61,9 @@
 | **DOC-02** | 🟡 P2 | **BINDUNGSMATRIX J1-J6:** StatsBehaviour → StatsMultipliers (Vanilla-Source-verifiziert). CIVICS-Count korrigieren. | ~5 | DOC |
 | **DOC-03** | 🟡 P2 | **agents.md Canary-Update:** Flachwitz-Refresh nach Rule-7-Pflicht (Session-Start, doc-Update). | ~2 | DOC |
 | **DOC-04** | 🟡 P2 | **settlement/room/ Bridges existieren:** 4 Dateien (309 LOC) in `src/settlement/room/` — ARCHITECTURE+GLOSSARY hatten sie fälschlich gelöscht. Korrigiert in v0.13.67. | ~0 | DOC |
-| **LOC-01** | 🟠 P1 | **358 hartcodierte Strings, 0 Lokalisierung:** `EconTexts.java` (358 Konstanten) + 369 UI-String-Literale — alles deutsch, kein Übersetzungssystem. Tagebuch-Claim „357 Strings" bestätigt. | ~200 | LOC |
-| **TECHD-01** | 🟡 P2 | **EconomySim 1382 LOC wächst:** God-Class-Guard grandfathered (1382/74/129/74). WarehouseMarket wurde gesplittet (Sprint M-1), EconomySim nicht. Tagebuch: „wie ein Kontinent". | ~0 | TECHD |
-| **TECHD-02** | 🟡 P2 | **EconConfig 207 Felder Constants-Dump:** 55 bool + 75 int + 61 double + 16 other. Keine Sub-Config-Klassen. Grandfathered vom God-Class-Guard. Tagebuch: „mittelgroßes Buch". | ~0 | TECHD |
+| **LOC-01** | 🟠 P1 | **358 hartcodierte Strings, 0 Lokalisierung:** `EconTexts.java` (358 Konstanten) + 369 UI-String-Literale — alles deutsch, kein Übersetzungssystem. **Code:** `EconTexts.java:1-358`, 5 UI-Dateien (`WindowEconomy.java`, `WindowOverview.java`, `WindowState.java`, `WindowQuickview.java`, `EconHud.java`). **Plan:** `LocaleStrings.java` (74 LOC, erstellt v0.13.67) + `EconConfig.locale` (neu). Schrittweise Migration über `LocaleStrings.t("key", EconTexts.¤¤fallback)`. English-Fallback via `LocaleStrings.en` Map. | ~200 | LOC |
+| **TECHD-01** | 🟡 P2 | **EconomySim 1692 LOC — Modularisierung:** God-Class-Guard-Baseline ist 1382, Realität 1692 (+310 Drift). 74 pub-Methoden, 129 Felder, 73 Imports. **Plan (3 Extraktionen):** (a) `EconomySaveLoad.java` (~400 LOC) — saveChunked/loadChunked + 21 Chunk-Tags + StateBundle-Pattern. Ref: `EconomySim.java:1147-1350`. (b) `EconomyTickOrchestrator.java` (~250 LOC) — update()-Phasen 7-10 (Wages→Taxes→Fiscal→Ledger). Ref: `EconomySim.java:700-950`. (c) `EconomyAuditEngine.java` (~150 LOC) — Phase 11 (AuditKernel + MoneySupply-Check). Ref: `EconomySim.java:950-1050`. **Ziel:** EconomySim auf ~900 LOC, unter God-Class-Guard-Schwelle (800). | ~800 | TECHD |
+| **TECHD-02** | 🟡 P2 | **EconConfig 207 Felder Constants-Dump:** 55 bool + 75 int + 61 double + 16 other. 555 LOC. **Plan:** 3 Sub-Configs extrahieren: `BalanceConfig` (Preise, Löhne, Steuern), `BehaviorConfig` (Toggles, Schwellwerte), `PhaseConfig` (Progression, Stufen). AffinConfig-Nested-Class existiert bereits (leer). `EconConfig.locale` hinzugefügt (v0.13.67). | ~150 | TECHD |
 | **TEST-01** | 🟠 P1 | **Save-Migration-Integrationstest fehlt:** CHUNKED_VERSION=33, keine Headless-Test-Suite für Savegame-Migration. Tagebuch: „Migrations-Pfad im Feld unbewiesen". | ~80 | TEST |
 | **DA-01** | 🟡 P2 | **Tagebuch-Abgleich v0.13.67:** 17 Claims gegen Code verifiziert (11 bestätigt, 6 korrigiert, 0 widerlegt). Detaillierte Tabelle unten. | ~0 | DOC |
 | **DIPLO-01** | 🔴 P0 | **Opinion/Trust-Mechanik fehlt:** Vanilla `ROPINION.trust()`, `bOpinion` (1.5), `TRUST` (0) — Mod liest nur in DebtDiplomacyBuffer, schreibt NIE. `royaltyOpinionEnabled` = toter Config-Flag. Kein Opinion-Zerfall-Monitoring, keine Reaktion auf Wirtschafts-Kollaps. | ~60 | DIPLO |
@@ -119,12 +119,12 @@ A-04b (StatsAccess + remaining) ──┘
 
 | Task | Prio | Beschreibung | Vanilla-Ziel | LoC |
 |---|---|---|---|---|
-| **A-01** | ✅ Closed (v0.13.64) | **EngineLevers.java** — Config-Klasse analog `EconConfig`. Jeder Vanilla-Zugriff hat einen `boolean`-Toggle (default true). ~80 Felder für V71.44. Startup-Dump via `LoggingAdapter`. | — | ~200 |
-| **A-02** | ✅ Closed (v0.13.64) | **IRoomAccess + RoomAccessImpl** — Stockpile (storedD, fetchingSet, getUsedSpace, crateSize, totalCrates, setSpecialAmount, storingSet), Transport (distance, efficiency, fetchTime, stationWorkers, resource, radius), Room-Iteration (SETT.ROOMS().ins(), EATERIES, CANTEENS, HOME, CHAMBER, JANITOR), Service-Metriken. Bündelt ISyxWarehouse + ISyxTransport + EngineSeams-Room-Aufrufe. | `StockpileInstance`, `TransportInstance`, `SETT.ROOMS()` | ~500 |
-| **A-03** | ✅ Closed (v0.13.64) | **IFactionAccess + FactionAccessImpl** — NPC (preise, treasury, stockpile, bonus, request, race, citizens, military), Diplomacy (war power, coalition, distress, willing, potential, proxy), Trade (worldPrice, toll, tariff, buyer/seller), Royalty (opinion, trust), Player (credits, tech, levels). Bündelt ISyxDiplomacy + ISyxNpc + public API. | `FactionNPC`, `DipWarPlayer`, `FACTIONS`, `ResourcePrices`, `TradeManager`, `Royalty` | ~600 |
-| **A-04** | ✅ Closed (v0.13.64) | **IHumanoidAccess + HumanoidAccessImpl** — AI-Plan-Erkennung (12 Pläne: food, oddjob, market, work, crime), Stats (hunger, religion, work, employment), Boosting (alle CIVICS + BEHAVIOUR + PHYSICS), Entity-Metriken. Bündelt ISyxAI + ISyxBoosting + EngineSeams-Humanoid-Aufrufe. | `Humanoid`, `AIPLAN`, `BOOSTABLES`, `STATS` | ~500 |
-| **A-04b** | 🟠 P1 | **IStatsAccess + remaining Sub-Interfaces** — Maintenance (MAINTENANCE, MConsumption, MRoom, ROOM_DEGRADER), Time (TIME, TIMECYCLE, Seasons), Religion (RELIGIONS, StatsReligion), Weather, Tourism, Events. Alles was nicht in A-02..A-04 passt. | `MAINTENANCE`, `TIME`, `RELIGIONS`, `WEATHER` | ~300 |
-| **A-05** | 🔴 P0 | **EngineMirror.java + AdapterDispatcher-Erweiterung + Stam-Docs** — Zentrale Fassade: `EngineMirror.initialize(AdapterBundle)`, `EngineMirror.api().rooms()/.factions()/.humanoids()/.stats()`. Ersetzt `EngineSeams` graduell. Logging in JEDEM Mirror-Method. ARCHITECTURE.md + CHANGELOG.md. | — | ~400 |
+| **A-01** | ✅ Closed (v0.13.64) | **EngineLevers.java** — Config-Toggles pro Vanilla-Zugriff (97 boolean Toggles, 103 public static Felder). Startup-Dump via `LoggingAdapter`. | — | ~200 |
+| **A-02** | ✅ Closed (v0.13.64) | **IRoomAccess + RoomAccessImpl** — Stockpile, Transport, Room-Iteration, Service (bündelt ISyxWarehouse + ISyxTransport + EngineSeams) | ~500 | A-1 |
+| **A-03** | ✅ Closed (v0.13.64) | **IFactionAccess + FactionAccessImpl** — NPC, Diplomacy, Trade, Royalty, Player (bündelt ISyxDiplomacy + ISyxNpc + public API) | ~600 | A-1 |
+| **A-04** | ✅ Closed (v0.13.64) | **IHumanoidAccess + HumanoidAccessImpl** — AI-Plans (12), Stats, Boosting (bündelt ISyxAI + ISyxBoosting + EngineSeams) | ~500 | A-1 |
+| **A-04b** | ✅ Closed (v0.13.64) | **IStatsAccess + StatsAccessImpl** — Maintenance, Time, Religion, Weather, Tourism, Events. Beide Dateien existieren: `IStatsAccess.java` (100 LOC) + `StatsAccessImpl.java` (265 LOC). | ~300 | A-1 |
+| **A-05** | ✅ Closed (v0.13.64) | **EngineMirror.java + AdapterDispatcher + Stam-Docs** — Zentrale Fassade, ersetzt EngineSeams graduell | ~400 | A-1 |
 
 ### Architektur-Diagramm
 
@@ -282,7 +282,7 @@ Siehe `docs/superpowers/specs/HANDOFF_M1.md`.
 ## Definition of Done
 
 1. `mvn verify install -DskipTests` — 7/7 Gates
-2. `mvn test` — 296 Tests, 0 Fail
+2. `mvn test` — 402 Tests, 0 Fail
 3. `bash tools/verify-doc-sync.sh` — 9 Checks PASS
 4. Pre-Commit-Hook: `.git/hooks/pre-commit → tools/build-gate.sh`
 
@@ -421,9 +421,9 @@ Siehe `docs/superpowers/specs/HANDOFF_M1.md`.
 
 | Task | Prio | Beschreibung |
 |---|---|---|
-| **LOC-01** | 🟠 P1 | 358 Strings lokalisieren — Übersetzungssystem fehlt komplett |
-| **TECHD-01** | 🟡 P2 | EconomySim 1382 LOC — Split planen (wie WarehouseMarket M-1) |
-| **TECHD-02** | 🟡 P2 | EconConfig 207 Felder — Sub-Config-Klassen extrahieren |
+| **LOC-01** | 🟠 P1 | 358 Strings → `LocaleStrings.java` (74 LOC) + `EconConfig.locale`. Schrittweise Migration über `LocaleStrings.t("key", EconTexts.¤¤fallback)`. |
+| **TECHD-01** | 🟡 P2 | EconomySim 1692 LOC → 3 Extraktionen: `EconomySaveLoad` (Save/Load, ~400 LOC), `EconomyTickOrchestrator` (Phasen 7-10, ~250 LOC), `EconomyAuditEngine` (Phase 11, ~150 LOC). Ziel: ~900 LOC. |
+| **TECHD-02** | 🟡 P2 | EconConfig 555 LOC → 3 Sub-Configs: `BalanceConfig`, `BehaviorConfig`, `PhaseConfig`. `EconConfig.locale` hinzugefügt. |
 | **TEST-01** | 🟠 P1 | Save-Migration-Integrationstest (CHUNKED_VERSION 33) |
 | **DA-01** | 🟡 P2 | Tagebuch-Abgleich v0.13.67 (diese Sektion) |
 
@@ -454,6 +454,68 @@ Das Tagebuch ist eine akkurate Außenperspektive auf den Code-Stand v0.13.64→v
 | **DIPLO-03** | 🟡 P2 | **BINDUNGSMATRIX: ROPINION + bOpinion + TRUST katalogisieren** — 3 Engine-Hebel dokumentieren (Klasse, Zugriffspfad, Mod-Nutzung). | ~10 |
 
 **Geschätzt:** 3 Tasks, ~95 LoC
+
+---
+
+## Sprint TECHD — EconomySim Modularisierung (v0.13.67 Plan)
+
+**Problem:** `EconomySim.java` hat **1692 LOC** (God-Class-Guard-Baseline: 1382, Drift: +310).
+74 pub-Methoden, 129 Felder, 73 Imports. Die God-Class wächst unkontrolliert.
+WarehouseMarket wurde erfolgreich gesplittet (M-1: 1902→320 LOC Facade),
+EconomySim nicht.
+
+**Lösung: StateBundle-Extraction-Pattern** (wie M-1, aber für Save/Load):
+
+### Extraktion 1: EconomySaveLoad.java (~400 LOC)
+- **Quelle:** `EconomySim.java:1147-1350` (save/load-Methoden)
+- **Enthält:** `saveChunked(FilePutter)`, `loadChunked(FileGetter)`,
+  21 Chunk-Tags (TAG_CORE_SCALARS..TAG_TREASURY_CRISIS),
+  `saveSubsystemChunk()`, `loadSubsystemChunk()`, Legacy-Stream-Fallback,
+  CHUNK_MAGIC, CHUNKED_VERSION
+- **Interface:** `EconomySaveLoad.load(EconomySimStateBundle, FileGetter)`
+  und `EconomySaveLoad.save(EconomySimStateBundle, FilePutter)`
+- **StateBundle:** Neues inneres Record mit allen 21 Subsystem-Referenzen
+
+### Extraktion 2: EconomyTickOrchestrator.java (~250 LOC)
+- **Quelle:** `EconomySim.java:700-950` (update()-Methode, Phasen 7-10)
+- **Enthält:** Wages→Taxes→Fiscal→FirmLedger Phasen-Ausführung,
+  FlowPrices.refresh(), LaborMarket.update(), ServiceMarket.tick()
+- **Interface:** `EconomyTickOrchestrator.tick(EconomySimStateBundle, int day)`
+
+### Extraktion 3: EconomyAuditEngine.java (~150 LOC)
+- **Quelle:** `EconomySim.java:950-1050` (update()-Methode, Phase 11+Diagnostik)
+- **Enthält:** AuditKernel.run(), MoneySupply-Check, GiniConsequences,
+  EconSnapshot-Sampling, DiagnosticExporter-Trigger
+- **Interface:** `EconomyAuditEngine.audit(EconomySimStateBundle)`
+
+### Goal
+- EconomySim nach Extraktion: **~900 LOC** (unter God-Class-Guard-Schwelle 800? Fast.)
+- God-Class-Guard-Baseline updaten: 1692→900
+- Kein Verhalten ändern — nur Datei-Split
+
+---
+
+## Sprint LOC — Lokalisierungs-Brücke (v0.13.67)
+
+**Problem:** 727 Strings (358 EconTexts-Konstanten + 369 UI-Literale),
+alles hartcodiert auf Deutsch. Kein Übersetzungssystem.
+
+**Lösung (nicht-invasiv):** `LocaleStrings.java` (74 LOC, erstellt in v0.13.67)
++ `EconConfig.locale` Flag ("de"|"en").
+
+### Migrationspfad
+1. ✅ **LocaleStrings.java** erstellt — English-Fallback-Map + `t(key, de)` API
+2. ✅ **EconConfig.locale** Feld hinzugefügt (default "de")
+3. **Phase 1:** Tab-Namen + Window-Titel migrieren (17 Strings → `LocaleStrings.t()`)
+4. **Phase 2:** UI-Labels migrieren (Denari, /Tag, /Einheit — ~10 Strings)
+5. **Phase 3:** EconTexts-Flächendeckung (verbleibende ~330 Konstanten)
+
+### Referenzen
+- `EconTexts.java:1-358` — 358 String-Konstanten
+- `LocaleStrings.java:1-74` — English-Fallback-Map
+- `EconConfig.java:8-10` — `locale` Feld
+- UI-Dateien: `WindowEconomy.java`, `WindowOverview.java`, `WindowState.java`,
+  `WindowQuickview.java`, `EconHud.java`
 
 ---
 

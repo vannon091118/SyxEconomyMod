@@ -1,6 +1,13 @@
 package vannon.syx.economy.core;
 
 public final class EconConfig {
+
+    /**
+     * Active locale for UI strings. {@code "de"} (default) uses EconTexts German constants.
+     * {@code "en"} switches to LocaleStrings English translations where available.
+     * Future: read from game engine's {@code SETT.INFO().language} on startup.
+     */
+    public static String locale = "de";
     
     /** Range clamping utility for configuration integers. */
     public static int clamp(int val, int min, int max) {
