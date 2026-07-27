@@ -58,9 +58,9 @@ legacy_baselines:
     status_at_emit: block
     reason_at_emit: fields 29 > block 24
   src/vannon/syx/economy/core/DiagnosticExporter.java:
-    loc: 431
-    pubM: 4
-    fields: 41
+    loc: 443
+    pubM: 6
+    fields: 43
     imports: 10
     status_at_emit: block
     reason_at_emit: fields 30 > block 24

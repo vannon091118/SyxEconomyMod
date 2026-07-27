@@ -461,6 +461,7 @@ public final class EconomySim {
         FACTIONS.player().credits().inc((double) amount, FCredits.CTYPE.MISC);
         LOG.ln("[ECON CHEAT] minted " + amount + " D into treasury (new balance: " + treasury() + " D)");
         EventLog.log("CHEAT", "Minted " + amount + " D — new treasury: " + treasury());
+        DiagnosticExporter.logPlayerAction(this.ticks, "CHEAT_MINT", "amount=" + amount + ",treasury=" + treasury());
     }
 
     /** Cheat: force a diagnostic CSV export now (bypasses daily guard). */
@@ -469,6 +470,7 @@ public final class EconomySim {
         DiagnosticExporter.exportDay(this);
         LOG.ln("[ECON CHEAT] forced diagnostic export");
         EventLog.log("CHEAT", "Forced diagnostic export");
+        DiagnosticExporter.logPlayerAction(this.ticks, "CHEAT_EXPORT", "forced");
     }
 
     /** Cheat: log current audit delta to EventLog + stdout. */
@@ -895,6 +897,8 @@ public final class EconomySim {
             int delta = stockpiles - this.lastStockpileCount;
             DebugTracer.trace(DebugTracer.BUILD,
                 "stockpile " + (delta > 0 ? "+" : "") + delta + " → now " + stockpiles);
+            DiagnosticExporter.logPlayerAction(this.ticks, "BUILD_STOCKPILE",
+                    "delta=" + delta + ",total=" + stockpiles);
         }
         this.lastStockpileCount = stockpiles;
 
@@ -913,6 +917,8 @@ public final class EconomySim {
             int delta = workplaces - this.lastWorkplaceCount;
             DebugTracer.trace(DebugTracer.BUILD,
                 "workplaces " + (delta > 0 ? "+" : "") + delta + " → now " + workplaces);
+            DiagnosticExporter.logPlayerAction(this.ticks, "BUILD_WORKPLACE",
+                    "delta=" + delta + ",total=" + workplaces);
         }
         this.lastWorkplaceCount = workplaces;
     }

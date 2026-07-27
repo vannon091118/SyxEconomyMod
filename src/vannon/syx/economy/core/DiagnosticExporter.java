@@ -495,6 +495,28 @@ public final class DiagnosticExporter {
 
     // ═══════════════════════════════════════════════════════
     // DC-01: Change-Detection — recordChange() pro Resource + Makro
+
+    // ═══════════════════════════════════════════════════════
+    // DC-02: Player-Action-Logging — Baumaßnahmen, Config-Änderungen
+    // ═══════════════════════════════════════════════════════
+
+    /** Loggt eine Spieler-Aktion im Summary-Buffer (Bau, Konfig, etc.).
+     *  Nutzt den action-Namen als field um Dedup pro Aktionstyp zu vermeiden. */
+    public static void logPlayerAction(long tick, String action, String detail) {
+        long day = (long) (tick / EconConfig.DEFAULT_TICKS_PER_DAY);
+        recordChange(day, "PLAYER", action, action, 0, (double) tick,
+                "{" + detail + "}");
+        EventLog.log("PLAYER", "[" + tick + "] " + action + ": " + detail);
+    }
+
+    /** Loggt eine EconConfig-Änderung (von UI-Slidern ausgelöst). */
+    public static void logConfigChange(String configKey, int oldVal, int newVal) {
+        long tick = LoggingAdapter.currentTick();
+        long day = (long) (tick / EconConfig.DEFAULT_TICKS_PER_DAY);
+        recordChange(day, "PLAYER", "CONFIG_CHANGE", configKey,
+                oldVal, newVal, "{tick:" + tick + "}");
+    }
+
     // ═══════════════════════════════════════════════════════
 
     /**

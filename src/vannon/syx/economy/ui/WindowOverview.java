@@ -10,6 +10,7 @@ import util.gui.misc.GButt;
 import util.gui.misc.GText;
 import util.gui.panel.GPanel;
 import vannon.syx.economy.core.CompactNumber;
+import vannon.syx.economy.core.DiagnosticExporter;
 import vannon.syx.economy.core.EconConfig;
 import vannon.syx.economy.core.EconIndicators;
 import vannon.syx.economy.core.EconProgression;
@@ -126,8 +127,8 @@ public final class WindowOverview extends EconWindowBase {
                 new ACTION() { @Override public void exe() { wh.setWage(Math.max(0, wh.wage() - EconConfig.wageStep)); } });
 
             addSlider(content, x + 380, y, "Kopfsteuer/Saison", () -> EconConfig.perHeadTax, 0, 500, 5,
-                new ACTION() { @Override public void exe() { EconConfig.perHeadTax = Math.min(500, EconConfig.perHeadTax + 5); } },
-                new ACTION() { @Override public void exe() { EconConfig.perHeadTax = Math.max(0, EconConfig.perHeadTax - 5); } });
+                new ACTION() { @Override public void exe() { int old = EconConfig.perHeadTax; EconConfig.perHeadTax = Math.min(500, EconConfig.perHeadTax + 5); DiagnosticExporter.logConfigChange("perHeadTax", old, EconConfig.perHeadTax); } },
+                new ACTION() { @Override public void exe() { int old = EconConfig.perHeadTax; EconConfig.perHeadTax = Math.max(0, EconConfig.perHeadTax - 5); DiagnosticExporter.logConfigChange("perHeadTax", old, EconConfig.perHeadTax); } });
             y += 38;
 
             // Row 2: Warehouse Mode buttons & Emergency Liquidation
@@ -789,8 +790,8 @@ public final class WindowOverview extends EconWindowBase {
             y += 22;
 
             addSlider(content, x, y, "Miete/Kachel", () -> EconConfig.housingBaseRentPerTile, 0, 500, 5,
-                new ACTION() { @Override public void exe() { EconConfig.housingBaseRentPerTile = Math.min(500, EconConfig.housingBaseRentPerTile + 5); } },
-                new ACTION() { @Override public void exe() { EconConfig.housingBaseRentPerTile = Math.max(0, EconConfig.housingBaseRentPerTile - 5); } });
+                new ACTION() { @Override public void exe() { int old = EconConfig.housingBaseRentPerTile; EconConfig.housingBaseRentPerTile = Math.min(500, EconConfig.housingBaseRentPerTile + 5); DiagnosticExporter.logConfigChange("housingBaseRentPerTile", old, EconConfig.housingBaseRentPerTile); } },
+                new ACTION() { @Override public void exe() { int old = EconConfig.housingBaseRentPerTile; EconConfig.housingBaseRentPerTile = Math.max(0, EconConfig.housingBaseRentPerTile - 5); DiagnosticExporter.logConfigChange("housingBaseRentPerTile", old, EconConfig.housingBaseRentPerTile); } });
             y += 38;
 
             addSlider(content, x, y, "Raeumung bei Schulden >", () -> EconConfig.housingEvictionDebtThreshold, 0, 5000, 100,
