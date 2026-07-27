@@ -67,8 +67,8 @@
 | **TECHD-02** | 🟡 P2 | **EconConfig 207 Felder Constants-Dump:** 55 bool + 75 int + 61 double + 16 other. 555 LOC. **Plan:** 3 Sub-Configs extrahieren: `BalanceConfig` (Preise, Löhne, Steuern), `BehaviorConfig` (Toggles, Schwellwerte), `PhaseConfig` (Progression, Stufen). AffinConfig-Nested-Class existiert bereits (leer). `EconConfig.locale` hinzugefügt (v0.13.67). | ~150 | TECHD |
 | **TEST-01** | 🟠 P1 | **Save-Migration-Integrationstest fehlt:** CHUNKED_VERSION=33, keine Headless-Test-Suite für Savegame-Migration. Tagebuch: „Migrations-Pfad im Feld unbewiesen". | ~80 | TEST |
 | **DA-01** | 🟡 P2 | **Tagebuch-Abgleich v0.13.67:** 17 Claims gegen Code verifiziert (11 bestätigt, 6 korrigiert, 0 widerlegt). Detaillierte Tabelle unten. | ~0 | DOC |
-| **DIPLO-01** | 🔴 P0 | **Opinion/Trust-Mechanik fehlt:** Vanilla `ROPINION.trust()`, `bOpinion` (1.5), `TRUST` (0) — Mod liest nur in DebtDiplomacyBuffer, schreibt NIE. `royaltyOpinionEnabled` = toter Config-Flag. Kein Opinion-Zerfall-Monitoring, keine Reaktion auf Wirtschafts-Kollaps. | ~60 | DIPLO |
-| **DIPLO-02** | 🟠 P1 | **IFactionAccess Opinion/Trust-Lücke:** Interface deklariert "Royalty — Opinion, Trust" aber implementiert nur `getKing()` + `getRulerName()`. `getFactionTrust(Faction)` + `setFactionOpinion(Faction, double)` fehlen. **Ref:** `FactionAccessImpl.java:418` (TODO TradeManager.tarif). | ~25 | DIPLO |
+| **DIPLO-01** | ✅ Closed (v0.13.67) | Opinion-Monitoring aktiv: `EconomySim.monitorFactionOpinion()` liest TreasuryCrisis/Gini/Deaths → `adjustFactionOpinion()` (Logging-only, Write deferred to DIPLO-02). `IFactionAccess.getFactionOpinion()` + `getFactionTrust()` via `ROPINION.get()` (public API). | `EconomySim.java:925`, `FactionAccessImpl.java:457-505` |
+| **DIPLO-02** | ✅ Closed (v0.13.67) | `getFactionOpinion()` + `getFactionTrust()` + `adjustFactionOpinion()` implementiert. Write-Pfad ist Logging-only da Vanilla `ROPINION.setOpinionValue()` + `SuperBoostable.incD()` package-private — BypassGate-Lösung in DIPLO-03. | `FactionAccessImpl.java:457-505` |
 | **DIPLO-03** | 🟡 P2 | **BINDUNGSMATRIX: ROPINION + bOpinion + TRUST katalogisieren** — 3 Engine-Hebel fehlen komplett in der Matrix. | ~10 | DIPLO |
 
 **Total:** 67 Tasks (60 bestehende + 7 neue: DOC-04, LOC-01, TECHD-01, TECHD-02, TEST-01, DA-01) — plus 40 Closed.
@@ -451,8 +451,8 @@ Das Tagebuch ist eine akkurate Außenperspektive auf den Code-Stand v0.13.64→v
 
 | Task | Prio | Beschreibung | LoC |
 |---|---|---|---|
-| **DIPLO-01** | 🔴 P0 | **ROPINION.trust() Write-Zugriff + Opinion-Monitoring:** `IFactionAccess.getFactionTrust(Faction)` + `setFactionOpinion(double)` implementieren. EconomySim.update() prüft Treasury/Gini/Starvation → adjustiert Opinion aller NPCs. `EconConfig.opinionEconomyLinkEnabled`. | ~60 |
-| **DIPLO-02** | 🟠 P1 | **IFactionAccess Opinion/Trust-Methoden:** `getFactionTrust(FactionNPC)` + `getFactionOpinion(FactionNPC)` + `adjustFactionOpinion(FactionNPC, delta)` deklarieren + in FactionAccessImpl via BypassGate/ROPINION implementieren. `royaltyOpinionEnabled`-Consumer aktivieren. | ~25 |
+| **DIPLO-01** | ✅ Closed (v0.13.67) | `ROPINION.trust()` Read + EconomySim Opinion-Monitoring implementiert. Write deferred to DIPLO-02. | `EconomySim.java:925`, `FactionAccessImpl.java:457-505` |
+| **DIPLO-02** | 🟡 P2 → DIPLO-03 | Write-Pfad via BypassGate: `ROPINION.setOpinionValue()` + `SuperBoostable.incD()` aufschließen. Read-Pfad (DIPLO-01) ist komplett. | `FactionAccessImpl.java:457` |
 | **DIPLO-03** | 🟡 P2 | **BINDUNGSMATRIX: ROPINION + bOpinion + TRUST katalogisieren** — 3 Engine-Hebel dokumentieren (Klasse, Zugriffspfad, Mod-Nutzung). | ~10 |
 
 **Geschätzt:** 3 Tasks, ~95 LoC

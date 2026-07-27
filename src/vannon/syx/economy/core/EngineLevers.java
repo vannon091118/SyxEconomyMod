@@ -143,7 +143,10 @@ public final class EngineLevers {
 
     // ─── Royalty ────────────────────────────────────────────
     public static boolean royaltyOpinionEnabled = true;
+    public static boolean royaltyOpinionReadEnabled = true;
+    public static boolean royaltyOpinionWriteEnabled = true;
     public static boolean royaltyTrustEnabled = true;
+    public static boolean royaltyTrustReadEnabled = true;
     public static boolean royaltyCourtEnabled = true;
     public static boolean royaltyKingEnabled = true;
 

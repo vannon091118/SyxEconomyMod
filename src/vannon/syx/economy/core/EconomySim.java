@@ -2,6 +2,7 @@ package vannon.syx.economy.core;
 
 import game.faction.FACTIONS;
 import game.faction.FCredits;
+import game.faction.npc.FactionNPC;
 import game.time.TIME;
 import init.resources.RESOURCE;
 import init.resources.RESOURCES;
@@ -758,6 +759,16 @@ public final class EconomySim {
             GiniConsequences.announceIfCrossed(snap, TIME.seasons().bitsSinceStart());
         }
 
+        // DIPLO-01: Opinion-Monitoring — Wirtschafts-Indikatoren beeinflussen NPC-Meinung.
+        // Läuft langsamer als EconIndicators (alle 300 statt 60 Ticks) da Diplomatie
+        // sich auf der Spieltag-Skala bewegt.
+        if (EconConfig.opinionEconomyLinkEnabled
+                && this.ticks % EconConfig.opinionMonitorIntervalTicks == 0
+                && EngineMirror.api() != null
+                && EngineMirror.api().factions() != null) {
+            monitorFactionOpinion();
+        }
+
         this.updateRenderCaches();
         this.trackBuildingChanges();
 
@@ -904,6 +915,63 @@ public final class EconomySim {
                 "workplaces " + (delta > 0 ? "+" : "") + delta + " → now " + workplaces);
         }
         this.lastWorkplaceCount = workplaces;
+    }
+
+    /** DIPLO-01: Überwacht Wirtschafts-Indikatoren und passt NPC-Opinion an.
+     *  Läuft alle {@code EconConfig.opinionMonitorIntervalTicks} Ticks.
+     *  <p>Verknüpfungen:
+     *  <ul>
+     *    <li>TreasuryCrisis Tier ≥ 1 → jede aktive NPC-Fraktion verliert Opinion
+     *        proportional zum Krisen-Level.</li>
+     *    <li>Gini ≥ 0.5 → leichter Opinion-Verlust (Ungleichheit schadet
+     *        diplomatischem Ansehen).</li>
+     *    <li>Deaths seit letztem Check > 0 → Opinion-Verlust (Hunger-Tote
+     *        schaden dem Ruf).</li>
+     *  </ul></p> */
+    private void monitorFactionOpinion() {
+        try {
+            LIST<FactionNPC> npcList = FACTIONS.NPCs();
+            if (npcList == null) return;
+            int crisisTier = TreasuryCrisis.activeTier();
+            double gini = this.stats.gini;
+            int deathsSince = this.deaths;
+
+            for (int i = 0; i < npcList.size(); i++) {
+                FactionNPC npc = npcList.get(i);
+                if (npc == null || !npc.isActive()) continue;
+                double delta = 0.0;
+
+                // Treasury-Krise: Je höher das Tier, desto stärker der Opinion-Verlust.
+                if (crisisTier >= 1) {
+                    delta -= 0.5 * crisisTier;
+                }
+
+                // Gini ≥ 0.5: Leichter Opinion-Verlust durch Ungleichheit.
+                if (gini >= 0.5) {
+                    delta -= (gini - 0.4) * 0.5;
+                }
+
+                // Todesfälle: Jeder Tote kostet 0.1 Opinion.
+                if (deathsSince > 0) {
+                    delta -= deathsSince * 0.1;
+                }
+
+                if (delta != 0.0) {
+                    EngineMirror.api().factions().adjustFactionOpinion(npc, delta);
+                }
+            }
+
+            // Einmal pro Aktivierung loggen.
+            if (crisisTier >= 1 || gini >= 0.5 || deathsSince > 0) {
+                EventLog.logSampled("DIPLO",
+                        "Opinion-Monitor: crisis=" + crisisTier
+                        + " gini=" + String.format("%.2f", gini)
+                        + " deaths=" + deathsSince
+                        + " — Write-Pfad pending (DIPLO-02 BypassGate).");
+            }
+        } catch (Throwable t) {
+            // Opinion-Monitoring ist nicht kritisch für die Wirtschafts-Simulation.
+        }
     }
 
     private void refreshFlowPrices() {

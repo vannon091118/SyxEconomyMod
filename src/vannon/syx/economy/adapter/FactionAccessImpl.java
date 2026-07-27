@@ -11,6 +11,7 @@ import game.faction.diplomacy.DipWarPlayer;
 import game.faction.npc.FactionNPC;
 import game.faction.player.Player;
 import game.faction.royalty.Royalty;
+import game.faction.royalty.opinion.ROPINION;
 import game.faction.trade.TradeManager;
 import init.resources.RESOURCE;
 import init.race.Race;
@@ -447,6 +448,53 @@ public final class FactionAccessImpl implements IFactionAccess {
             return v;
         } catch (Throwable t) {
             return fail("royalty_rulerName", t, null);
+        }
+    }
+
+    // ─── Opinion / Trust (DIPLO-01) ─────────────────────────
+
+    @Override
+    public double getFactionOpinion(FactionNPC npc) {
+        if (!canAccess("royalty_opinion", EngineLevers.royaltyOpinionReadEnabled)) return 0.0;
+        if (npc == null) return 0.0;
+        try {
+            double v = ROPINION.get(npc);
+            trace("royalty_opinion", String.valueOf(v), "npc=" + (npc.race() != null ? npc.race().key : "?"));
+            return v;
+        } catch (Throwable t) {
+            return fail("royalty_opinion", t, 0.0);
+        }
+    }
+
+    @Override
+    public double getFactionTrust(FactionNPC npc) {
+        if (!canAccess("royalty_trust", EngineLevers.royaltyTrustReadEnabled)) return 0.0;
+        if (npc == null) return 0.0;
+        try {
+            double v = ROPINION.trust().get(npc);
+            trace("royalty_trust", String.valueOf(v), "npc=" + (npc.race() != null ? npc.race().key : "?"));
+            return v;
+        } catch (Throwable t) {
+            return fail("royalty_trust", t, 0.0);
+        }
+    }
+
+    @Override
+    public void adjustFactionOpinion(FactionNPC npc, double delta) {
+        if (!canAccess("royalty_opinionWrite", EngineLevers.royaltyOpinionWriteEnabled)) return;
+        if (npc == null || delta == 0.0) return;
+        // DIPLO-01 (v0.13.67): Opinion-Write via direkter Engine-API ist
+        // package-private geschützt (ROPINION.setOpinionValue + SuperBoostable.incD).
+        // Write-Pfad wird in DIPLO-02 via BypassGate aufgelöst.
+        // Für jetzt: Logging des Intents, Monitoring liest via ROPINION.get().
+        try {
+            double current = ROPINION.get(npc);
+            trace("royalty_opinionWrite", "INTENT delta=" + delta
+                    + " current=" + String.format("%.1f", current),
+                    "npc=" + (npc.race() != null ? npc.race().key : "?")
+                    + " — deferred to DIPLO-02 BypassGate");
+        } catch (Throwable t) {
+            failVoid("royalty_opinionWrite", t);
         }
     }
 

@@ -30,9 +30,9 @@ heuristic_exemptions:
   applies_to: fields_cap_only
 legacy_baselines:
   src/vannon/syx/economy/adapter/FactionAccessImpl.java:
-    loc: 438
-    pubM: 1
-    fields: 31
+    loc: 479
+    pubM: 2
+    fields: 34
     imports: 17
     status_at_emit: block
     reason_at_emit: fields 31 > block 24
