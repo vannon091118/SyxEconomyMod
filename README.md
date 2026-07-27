@@ -14,7 +14,7 @@
 ## Quickstart
 
 ```bash
-mvn validate                 # Preflight: 4 Gates (Sync, Audit, Version, Adapter)
+mvn validate                 # Preflight: 9 Gates (Sync, Audit, Version, Adapter, Bytecode, Sim, Schema, Balance, God-Class) (Sync, Audit, Version, Adapter)
 mvn clean install -DskipTests  # Baut + installiert das Mod + bumpt version 0.0.1+
 # → target/out/SyxEconomyMod/ ins Mod-Verzeichnis kopieren
 ```
@@ -150,6 +150,11 @@ Das Skript hat aktuell keinen Exit-Code-Bound (kein CI-Gate-Verhalten). Sprint 9
 | 2 | Code-Audit | `code-audit.sh` | `validate` | ✅ (bei `printStackTrace`/leeren-catches) |
 | 3 | Version ↔ Changelog | `verify-version-consistency.sh` | `validate` | ✅ |
 | 4 | Adapter ↔ Engine-Signaturen | inline in `build-gate.sh` | `validate` | ✅ |
+| 5 | Bytecode-Injection Audit | `audit-bytecode.sh` | `validate` | ✅ |
+| 6 | Sim-Logic Audit | `audit-sim-logic.sh` | `validate` | ✅ |
+| 7 | Schema-Validierung | inline (YAML ↔ Adapter) | `validate` | ✅ |
+| 8 | Balance-Regression | `balance-regression-check.sh` | `validate` | ✅ |
+| **9** | **God-Class-Guard** | **`god-class-guard.sh`** | **`validate`** | **✅** |
 
 Plus dokumentarisch: `docs-truth-consistency.sh` (Pre-Commit-Hook via `install-hooks.sh`).
 

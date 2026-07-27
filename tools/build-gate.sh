@@ -54,7 +54,7 @@ gate_skip() {
 }
 
 echo -e "${CYAN}╔════════════════════════════════════════════════════════╗${NC}"
-echo -e "${CYAN}║  SyxEconomyMod — Build Gate v0.13.33                  ║${NC}"
+echo -e "${CYAN}║  SyxEconomyMod — Build Gate v0.13.61 (M-3: 9 Gates) ║${NC}"
 echo -e "${CYAN}╚════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
@@ -212,7 +212,7 @@ fi
 echo ""
 
 # ── Gate 8: Balance-Regression (Sprint 9 / 7-2) ──────────────────────────────
-echo -e "${CYAN}[8/8] Balance-Regression (EconConfig-Referenzwerte)${NC}"
+echo -e "${CYAN}[8/9] Balance-Regression (EconConfig-Referenzwerte)${NC}"
 if [ "${SKIP_BALANCE:-0}" = "1" ]; then
     gate_skip "Balance-Check uebersprungen (SKIP_BALANCE=1)"
 else
@@ -220,6 +220,25 @@ else
         gate_pass "Balance-Konstanten im Soll-Bereich"
     else
         gate_fail "Balance-Drift — tools/balance-regression-check.sh Details"
+    fi
+fi
+echo ""
+
+# ── Gate 9: God-Class-Guard (Hard-Block Struktur-Quo) — Sprint M-3 ────────
+echo -e "${CYAN}[9/9] God-Class-Guard (LOC/PubM/Fields-Caps + Baseline-Drift)${NC}"
+if [ "${SKIP_GOD_GUARD:-0}" = "1" ]; then
+    gate_skip "God-Class-Guard uebersprungen (SKIP_GOD_GUARD=1)"
+else
+    # Mode=hard: WARN zählt als BLOCKER (god-class-guard.sh --mode=hard)
+    if bash tools/god-class-guard.sh --mode=hard 2>/dev/null; then
+        gate_pass "Keine God-Class-Blocker; Baselines eingehalten"
+    else
+        GUARD_EXIT=$?
+        if [ "$GUARD_EXIT" -eq 2 ]; then
+            gate_fail "BLOCKER — God-Class-Cap ueberschritten oder Drift > +5%/-YAML-Outdated (siehe tools/god-class-guard.on-failure.md)"
+        else
+            gate_fail "WARN — Annäherung an God-Class-Limit (siehe tools/god-class-guard.on-failure.md)"
+        fi
     fi
 fi
 echo ""
