@@ -56,7 +56,8 @@
 | **LOG-03** | 🟡 P2 | **4-Log-Split (Variante C Hybrid):** log_berechnung/log_aktionen/log_zugriffe/log_sonstiges.csv via LoggingAdapter. economy_events.log bleibt als In-Game-Chronik. debug.csv + rebalance_*.csv entfallen. | ~150 | LOG-1 |
 | **BA-01** | 🟠 P1 | **Treasury-Drain bei 37 Siedlern:** -1.8M D trotz nur 5 Arbeitern — Lohn/Subventions-Spirale im Early-Game. Grace Period existiert (v0.13.67), aber reicht nicht. | ~15 | BA |
 | **BA-02** | 🟡 P2 | **Extrem-Gini 0.946:** 3 Ausreißer (333K/500K/1.3M), 34 Bürger bei Median 4D. GiniConsequences greift, aber Effekt nicht spürbar. | ~10 | BA |
-| **BA-03** | 🔴 P0 | **Arbeitslosigkeits-Todesspirale:** Bürger broke → BrokeFoodPlan → desperate → kein Oddjob → verhungern. Kreislauf: Geldmangel→kein Essen→Tod statt Geldmangel→Arbeit→Geld→Essen→Überleben. Covered by L-01. | ~0 | L-1 |
+| **BA-03** | ✅ Closed (v0.13.67) | **Arbeitslosigkeits-Todesspirale:** Covered by L-01 (BrokeFoodPlan con() prüft hunger.isMax()). | ~0 | L-1 |
+| **BA-04** | ✅ Closed (v0.13.67) | **Thron-Bug / Bootstrap-Lücke:** Bürger verbrauchen Startkapital bevor Wirtschaft Einkommen generiert → Thron-Essen → Pleite-Spirale. Fix: `earlySettlerDoleThreshold` (5000D) — alle Bürger essen gratis solange pop < 50. `EconConfig.java:541, GrainDole.java:74-78` | ~15 | BA |
 | **DOC-01** | 🟡 P2 | **ARCHITECTURE.md + GLOSSARY.md Brücken-Korrektur:** 4 settlement/room/*-Brücken existieren (309 LOC in `src/settlement/room/`). Wurden in v0.13.67 fälschlich gelöscht, jetzt restauriert mit korrekten LOC-Zahlen. | ~0 | DOC |
 | **DOC-02** | 🟡 P2 | **BINDUNGSMATRIX J1-J6:** StatsBehaviour → StatsMultipliers (Vanilla-Source-verifiziert). CIVICS-Count korrigieren. | ~5 | DOC |
 | **DOC-03** | 🟡 P2 | **agents.md Canary-Update:** Flachwitz-Refresh nach Rule-7-Pflicht (Session-Start, doc-Update). | ~2 | DOC |
@@ -372,7 +373,8 @@ Siehe `docs/superpowers/specs/HANDOFF_M1.md`.
 |---|---|---|---|
 | **BA-01** | 🟠 P1 | -1.8M Treasury bei 37 Siedlern, 5 Arbeitern | Lohn/Subventions-Spirale: 5 Arbeiter × 50D + MilitaryPayroll + HandoutRelief + Maintenance. Grace Period (v0.13.67) existiert, aber Early-Game-Phase reicht über Jahr 1 hinaus. |
 | **BA-02** | 🟡 P2 | Gini 0.946 — 3 Ausreißer vs 34 Mittellose | `relativeWealth` = money/median. Wenn median=4D und 3 Bürger 333K–1.3M haben → Faktor 83.000×. GiniConsequences bestraft Loyalty, aber kein Mechanismus reduziert die Konzentration. |
-| **BA-03** | 🔴 P0 | Arbeitslosigkeits-Todesspirale | Siehe L-01. Bürger broke → kein Essen → desperate → verhungern. Statt: broke → Oddjob → Geld → Essen. |
+| **BA-03** | ✅ Closed (v0.13.67) | Arbeitslosigkeits-Todesspirale | Siehe L-01. BrokeFoodPlan con() prüft jetzt hunger.isMax(). |
+| **BA-04** | ✅ Closed (v0.13.67) | **Thron-Bug:** Bürger verbrauchen Startkapital (500D) → Thron-Essen → Pleite. Fix: `earlySettlerDoleThreshold` = 5000D bootstrap threshold in GrainDole. | `EconConfig.java:541, GrainDole.java:74-78` | ~15 |
 
 ---
 

@@ -77,11 +77,12 @@ public final class GrainDole implements Saveable {
             this.lastRollSize = 0;
             return;
         }
+        int effectiveThreshold = effectiveDoleThreshold();
         int n = roster.size();
         ArrayList<Humanoid> eligible = new ArrayList<Humanoid>();
         for (int i = 0; i < n; ++i) {
             Humanoid h = roster.get(i);
-            if (!EconConfig.grainDoleToSlaves && h.indu().clas() == HCLASSES.SLAVE() || wallets.netWorth(h) >= EconConfig.doleWealthThreshold) continue;
+            if (!EconConfig.grainDoleToSlaves && h.indu().clas() == HCLASSES.SLAVE() || wallets.netWorth(h) >= effectiveThreshold) continue;
             eligible.add(h);
         }
         eligible.sort((a, b) -> Integer.compare(wallets.netWorth((Humanoid)a), wallets.netWorth((Humanoid)b)));
@@ -94,9 +95,10 @@ public final class GrainDole implements Saveable {
 
     public int eligibleCount(Roster roster, Wallets wallets) {
         int c = 0;
+        int effectiveThreshold = effectiveDoleThreshold();
         for (int i = 0; i < roster.size(); ++i) {
             Humanoid h = roster.get(i);
-            if (!EconConfig.grainDoleToSlaves && h.indu().clas() == HCLASSES.SLAVE() || wallets.netWorth(h) >= EconConfig.doleWealthThreshold) continue;
+            if (!EconConfig.grainDoleToSlaves && h.indu().clas() == HCLASSES.SLAVE() || wallets.netWorth(h) >= effectiveThreshold) continue;
             ++c;
         }
         return c;
@@ -117,6 +119,14 @@ public final class GrainDole implements Saveable {
         this.roll.clear();
         this.lastRollSize = 0;
         this.lastSeason = -1;
+    }
+
+    /** BA-04: Bootstrap-Dole-Schwellwert — 5000 während earlySettlerBuff, sonst doleWealthThreshold. */
+    private static int effectiveDoleThreshold() {
+        return (EconConfig.earlySettlerBuffEnabled
+                && EconConfig.population < EconConfig.earlySettlerPopThreshold)
+                ? EconConfig.earlySettlerDoleThreshold
+                : EconConfig.doleWealthThreshold;
     }
 
     public void reset() {
