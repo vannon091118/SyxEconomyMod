@@ -5,13 +5,13 @@
 > Stam-Doku-Synchron-Anker: Die obenstehende Versions-Zeile MUSS identisch mit `pom.xml` `<version>` sein.
 > Der Sync-Gate `tools/verify-doc-sync.sh` validiert dies vor jedem `mvn compile`.
 >
-> Strukturierte Übersicht der **139 Java-Dateien** des Mods.
+> Strukturierte Übersicht der **145 Java-Dateien** (core 111 + adapter 27 + ui 5 + warehouse/market 1 + benchmark 1) des Mods.
 
 ---
 
-## 🟦 Kategorie 1: VANILLA WRAPPER (18 Dateien)
+## 🟦 Kategorie 1: VANILLA WRAPPER (27 Dateien — adapter/ + adapter/seam/)
 
-### Bypass-SDK (`adapter/seam/`, 4 Dateien — Phase A)
+### Bypass-SDK (`adapter/seam/`, 5 Dateien — Phase A)
 
 - **BypassGate** — Zentraler Entry-Point für Private-Access-Bypasses. Hält MethodHandles.Lookup, typisierte Factories für FieldAccessor (IntField, DoubleField, FloatField, RefField<T>), MethodAccessor (VoidMethod, BooleanMethod) und ClassResolver. All-or-nothing: ein Feld-Fehler → isAvailable()=false.
 - **FieldAccessor** — Typisierte Feld-Zugriffe mit VarHandle (primär, 3–6× Speedup) und Reflection-Fallback. Statische Varianten via getStatic()/setStatic().
@@ -43,16 +43,46 @@ Consumer prüfen `ISyx*.isAvailable()` pro Adapter individuell — granulare Deg
 bleibt erhalten (z. B. Transport läuft weiter, wenn nur Diplomacy-Reflection scheitert).
 Phase B–E, v0.13.10.
 
-### Package-Private Brücken (4 Dateien in `src/settlement/room/`)
+### Package-Private Brücken (0 — gelöscht mit Sprint A-1, v0.13.64)
 
-| Klasse | Vanilla-Package | Zweck |
-|---|---|---|
-| `LaborMarketAccess.java` | `settlement.room.main.employment` | Direktzugriff auf `RoomEmployment.Priority` |
-| `EconomyTavernAccess.java` | `settlement.room.service.food.tavern` | Liest `TavernInstance`-Vorrat |
-| `EconomyEateryAccess.java` | `settlement.room.service.food.eatery` | Liest `EateryInstance`-Vorrat |
-| `EconomyCanteenAccess.java` | `settlement.room.service.food.canteen` | Liest `CanteenInstance`-Vorrat |
+Die 4 Bridge-Klassen (`LaborMarketAccess`, `EconomyTavernAccess`, `EconomyEateryAccess`,
+`EconomyCanteenAccess`) wurden mit Sprint A-1 abgelöst. Ihre Funktionalität lebt jetzt
+in `RoomAccessImpl` via BypassGate. Das `settlement/room/`-Verzeichnis ist leer (0 Dateien).
 
-Diese Klassen liegen im selben Java-Package wie die Vanilla-Klassen → kein Reflection, Compiler prüft die Zugriffe.
+### EngineMirror-SDK (9 Dateien in `adapter/` + `EngineLevers.java` in `core/` — Sprint A-1, v0.13.64)
+
+Zentrale Fassade die ALLE Vanilla-Zugriffe bündelt. Hybride Architektur:
+private Zugriffe via BypassGate SDK, public Zugriffe via direkte Compilezeit-Links.
+
+| Klasse | LOC | Was sie tut |
+|---|---:|---|
+| **`EngineMirror`** | 184 | Zentrale Fassade: `api().rooms()/.factions()/.humanoids()/.stats()`. Init via `initFromBundle()`. |
+| **`EngineLevers`** | 289 | 103 Config-Toggles (97 boolean + 6 non-boolean) pro Vanilla-Zugriff für granulare Degradation. Liegt in `core/`. |
+| **`IRoomAccess`** | 233 | Interface: 32 Methoden (Stockpile, Transport, Room-Iteration, Service). |
+| **`RoomAccessImpl`** | 712 | BypassGate hybrid Implementation. Station tally via cached Methods. |
+| **`IFactionAccess`** | 206 | Interface: 28 Methoden (NPC, Diplomacy, Trade, Royalty). Opinion/Trust-Lücke → Sprint DIPLO. |
+| **`FactionAccessImpl`** | 548 | Compilezeit-only Implementation für Faction-Zugriffe. TODO: TradeManager.tarif() in Z.418. |
+| **`IHumanoidAccess`** | 224 | Interface: 18 Methoden + PlanCatalog (6 AI-Plan-Klassen via ClassResolver). |
+| **`HumanoidAccessImpl`** | 463 | ClassResolver für package-private AI-Plans (PlanOddjobber, F_SPlanEatery, etc.). |
+| **`IStatsAccess`** | 100 | Interface: 12 Methoden (BOOSTABLES, Religion, Weather, TIME). |
+| **`StatsAccessImpl`** | 265 | BypassGate für BOOSTABLES-Zugriffe + TIME.secondsPerDay(). |
+
+~95 Vanilla-Zugriffe total (30 Room + 28 Faction + 25 Humanoid + 12 Stats).
+
+### Opinion/Trust (Vanilla-Mechanik — Mod-Lücke → Sprint DIPLO)
+
+- **ROPINION.trust()** — `Map<Faction, Double>`. Read/Write über DipWarPlayer. Mod liest nur in
+  `DebtDiplomacyBuffer:91`, schreibt NIE. Kein Opinion-Zerfall bei Wirtschaftskollaps.
+- **BOOSTABLES.CIVICS().bOpinion** (1.5) — "Determines the opinion of other factions." Ungenutzt.
+- **BOOSTABLES.CIVICS().TRUST** (0) — "How reliable a faction is." Ungenutzt.
+- **royaltyOpinionEnabled** — Toter Config-Flag in EngineLevers.java:145. Kein Consumer.
+
+### Fatigue/STAMINA (Vanilla-Mechanik — Mod-Lücke → Sprint L-1)
+
+- **BOOSTABLES.PHYSICS().STAMINA** (1.0) — "How long a subject can walk or run before needing to rest."
+  Einziger existierender Engine-Anker für ein Fatigue-System. Mod hat 0 Code der STAMINA liest/schreibt.
+- **StatsMultipliers.OVERTIME** (StatMultiplierWork) — existiert, Mod ignoriert.
+- **StatsMultipliers.DAY_OFF** (StatMultiplierAction) — existiert, Mod ignoriert.
 
 ---
 
@@ -279,7 +309,7 @@ Jede Tab-Klasse implementiert das `TabContent`-Interface, das in `EconWindowBase
 |---|---|---|
 | **MainScript.java** | `src/vannon/syx/economy/core/` | Registriert alle Booster beim Spiel-Start. |
 | **AdapterReflectionBenchmark** | `src/vannon/syx/economy/benchmark/` | Reflection vs MethodHandle Benchmark. |
-| **`settlement/room/.../*Access.java`** (4 Dateien) | `src/settlement/...` | Package-Private Brücken, kein Reflection nötig. |
+| **`settlement/room/.../*Access.java`** (0 Dateien — gelöscht v0.13.64) | `src/settlement/...` | Ehemalige Package-Private Brücken. Funktionalität jetzt in RoomAccessImpl. |
 
 ---
 

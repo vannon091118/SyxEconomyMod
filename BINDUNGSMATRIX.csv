@@ -187,12 +187,12 @@ I10;BOOSTABLES.Noble.COMPETANCE;Boostable;BOOSTABLES.Noble;COMPETANCE;static;nei
 I10;BOOSTABLES.Noble.TOLERANCE;Boostable;BOOSTABLES.Noble;TOLERANCE;static;nein;nein;[x];Mod ignoriert KI-Steuerung;??
 I11;EQUIP_LEVEL_TOOL_* (32);Boostable;Equip;EQUIP_LEVEL_TOOL_*;static;nein;nein;[~];Equip-Subsystem,NICHT BOOSTABLES;??
 I12;WORLD_* (~15);Boostable;BOOSTING.push();WORLD_*;static;nein;nein;[!];DESIGN GAP: Kein BOOSTABLES.WORLD() in Vanilla. Alle WORLD-Booster werden dynamisch via BOOSTING.push() aus JSON-Files registriert (BOOSTABLES Constructor liest dynamicBoost/ Folder). Kein statischer Zugriff möglich.;v0.13.64
-J1;KILLER StatsBehaviour;BoolStat;StatsBehaviour;KILLER;static;nein;nein;[!];Engine-Stats,nicht Mod;??
-J2;PROSECUTION;BoolStat;StatsBehaviour;PROSECUTION;static;nein;nein;[!];Engine-Stats,nicht Mod;??
-J3;EMANCIPATE;BoolStat;StatsBehaviour;EMANCIPATE;static;nein;nein;[!];Engine-Stats,nicht Mod;??
+J1;KILLER StatMultiplier;StatMultiplier;StatsMultipliers;KILLER;static;nein;nein;[!];Engine-Stats (Vanilla-verifiziert: StatsMultipliers.java);??
+J2;PROSECUTION (StatMultiplierAction);StatMultiplierAction;StatsMultipliers;PROSECUTION;static;nein;nein;[!];Engine-Stats (Vanilla-verifiziert: StatsMultipliers.java);??
+J3;EMANCIPATE (StatMultiplierAction);StatMultiplierAction;StatsMultipliers;EMANCIPATE;static;nein;nein;[!];Engine-Stats (Vanilla-verifiziert: StatsMultipliers.java);??
 J4;EconConfig.handoutWalletAmount=50;int;EconConfig;handoutWalletAmount;static;ja;ja;[!];Phase-5h-Fix,NICHT 400;++
-J5;DAY_OFF;BoolStat;StatsBehaviour;DAY_OFF;static;nein;nein;[!];Engine-Stats,nicht Mod;??
-J6;OVERTIME;BoolStat;StatsBehaviour;OVERTIME;static;nein;nein;[!];Engine-Stats,nicht Mod;??
+J5;DAY_OFF (StatMultiplierAction);StatMultiplierAction;StatsMultipliers;DAY_OFF;static;nein;nein;[!];Engine-Stats (Vanilla-verifiziert: StatsMultipliers.java);??
+J6;OVERTIME (StatMultiplierWork);StatMultiplierWork;StatsMultipliers;OVERTIME;static;nein;nein;[!];Engine-Stats (Vanilla-verifiziert: StatsMultipliers.java);??
 J7;HealthPressure.register();void;HealthPressure;register();static;ja;ja;[~];Engine-Citizen-Framework;++
 J7;povertyPressureHappinessMin=0.5;double;EconConfig;povertyPressureHappinessMin;static;ja;ja;[x];Floor fuer Poverty;++
 J8;WealthHappiness.register();void;WealthHappiness;register();static;ja;ja;[~];happinessAtPoorest=0.75 richest=1.25;++
@@ -261,6 +261,11 @@ N98;Threading;-;<engine>;Single-threaded;static;ja;nein;[~];Keine Race-Condition
 N99;BypassGate Mod-Kompatibilitaet;-;BypassGate;Read-before-Write + Conflict-Log;instance;ja;ja;[~];Partial-Loesbar via DebugTracer;??
 N100;BypassGate.isAvailable Fallback;boolean;BypassGate;isAvailable();instance;ja;ja;[x];initOk=false + runtimeFailed=true;++
 N100;runtimeFailed runtimeFailed;boolean;<adapter>;runtimeFailed;instance;ja;ja;[x];Granular per Adapter;??
+DIPLO-01;ROPINION.trust() Vanilla-Map;Map<Faction,Double>;ROPINION;trust();static;nein;nein;[!];Mod liest nur in DebtDiplomacyBuffer:91 -- schreibt NIE. Kein Opinion-Zerfall-Monitoring, keine Reaktion auf Wirtschafts-Kollaps. Vanilla-verifiziert: DipWarPlayer.java;??
+DIPLO-02;BOOSTABLES.CIVICS().bOpinion;Boostable (1.5);BOOSTABLES.CIVICS;bOpinion;static;nein;nein;[!];"Determines the opinion of other factions" -- ungenutzt, kein Consumer;??
+DIPLO-03;BOOSTABLES.CIVICS().TRUST;Boostable (0);BOOSTABLES.CIVICS;TRUST;static;nein;nein;[!];"A faction's trust is how reliable they are when it comes to keeping their treaties" -- ungenutzt;??
+DIPLO-04;STATS.RELATIONS() Individual-Opinion;StatsRelations;STATS;RELATIONS();instance;nein;nein;[!];Bit-packed individual relations (Rasse, Geschlecht, Todesursache) -- Mod ignoriert;??
+DIPLO-05;royaltyOpinionEnabled Config-Toggle;boolean;EngineLevers;royaltyOpinionEnabled;static;nein;nein;[!];Toter Flag in EngineLevers.java:145 -- kein Consumer, kein Read-Path;??
 X.LocalPrices.price(RESOURCE);double;LocalPrices;price(RESOURCE);static;ja;ja;[x];Entry-Point pro Resource;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;++
 X.LocalPrices.foodBasketPrice;int;LocalPrices;foodBasketPrice(tick);static;ja;ja;[x];Cached;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;++
 X.LocalPrices.drinkBasketPrice;int;LocalPrices;drinkBasketPrice(tick);static;ja;ja;[x];Cached;Mod-intern — kein Engine-HEBEL-Referent, vollständig implementiert im Mod-Core;++

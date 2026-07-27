@@ -105,6 +105,7 @@ public final class EconomySim {
     private static final int TAG_CORVEE = 18;
     private static final int TAG_HOUSING = 19;
     private static final int TAG_FOREIGN_TRADE_LEDGER = 20;
+    private static final int TAG_TREASURY_CRISIS = 21; // Grace Period persistence
     private static final int TAG_END = 0x7FFFFFFF;
 
     private final Wallets wallets = new Wallets();
@@ -1227,6 +1228,11 @@ public final class EconomySim {
         saveCorveeChunk(file);
         saveStateWagesChunk(file);
 
+        // TreasuryCrisis Grace Period
+        pos = ChunkedSave.startChunk(file, TAG_TREASURY_CRISIS);
+        TreasuryCrisis.save(file);
+        ChunkedSave.endChunk(file, pos);
+
         // Explicit end marker. Reading stops here; anything after is ignored.
         int endPos = ChunkedSave.startChunk(file, TAG_END);
         ChunkedSave.endChunk(file, endPos);
@@ -1408,6 +1414,9 @@ public final class EconomySim {
                         break;
                     case TAG_CORVEE:
                         loadCorvee(file);
+                        break;
+                    case TAG_TREASURY_CRISIS:
+                        TreasuryCrisis.load(file);
                         break;
                     case TAG_STATE_WAGES:
                         {

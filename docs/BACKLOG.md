@@ -26,22 +26,51 @@ T-IDs (Sprint-Tasks) und B-IDs (Live-Findings) sind dort zentral verwaltet. Dies
 
 ---
 
-## New-Findings Inbox (leer)
+## New-Findings Inbox (Livetest v0.13.64 + Vanilla-Analyse, 26.7.26)
 
-Keine neuen Findings seit dem letzten Sprint. Bekannte B-Items sind in der ROADMAP § Planned Backlog:
-[B-001](../ROADMAP.md#planned-backlog-p1p2-blocker-ready-for-sprint-4+),
-[B-002](../ROADMAP.md#planned-backlog-p1p2-blocker-ready-for-sprint-4+),
-[B-004](../ROADMAP.md#planned-backlog-p1p2-blocker-ready-for-sprint-4+),
-[B-005](../ROADMAP.md#planned-backlog-p1p2-blocker-ready-for-sprint-4+),
-[B-006](../ROADMAP.md#planned-backlog-p1p2-blocker-ready-for-sprint-4+),
-[B-008](../ROADMAP.md#planned-backlog-p1p2-blocker-ready-for-sprint-4+),
-[B-009](../ROADMAP.md#planned-backlog-p1p2-blocker-ready-for-sprint-4+),
-[B-010](../ROADMAP.md#planned-backlog-p1p2-blocker-ready-for-sprint-4+),
-[B-011](../ROADMAP.md#planned-backlog-p1p2-blocker-ready-for-sprint-4+).
+### Live Findings (aus EventLog + Screenshots + Trace-Analyse)
 
-Wenn ein neuer Live-Fund während des Spiels auftritt (z.B. via
-`consolidate-live-notes.sh` mit `gap:net-new` oder `ux:papercut` Tag),
-wird er hier erfasst und beim nächsten Sprint in die ROADMAP migriert.
+| ID | Severity | Finding | Source | ROADMAP |
+|---|---|---|---|---|
+| **B-011** | 🔴 P0 | AccessAutomation permanent deaktiviert: `accessDetectionDisabled` (static) bei erster Exception=true, kein Mid-Session-Reset. Housing-Einrichtungsziele tot. | EventLog `[ACCESS] AccessAutomation room scan disabled` | ROADMAP → Sprint B-FIX |
+| **B-012** | 🟠 P1 | EconProgression 3850 Tage in Subsistenz: checkAdvance() blockiert durch fehlende Taverne/Labor. | Screenshot: Stufe Subsistenz seit 3850 Tagen | ROADMAP → Sprint B-FIX |
+| **B-013** | 🟡 P2 | Advisor empfiehlt Export bei Stone 75.3x/Wood 73.7x Preis. Preisdaten nicht mit Advisor verknüpft. | Screenshot: Berater-Tab vs Preise-Tab | ROADMAP → Sprint B-FIX |
+| **BA-01** | 🟠 P1 | -1.8M Treasury bei 37 Siedlern, 5 Arbeitern — Lohn/Subventions-Spirale. | Screenshot: Quickview -19M (Display-Bug) | ROADMAP → BA |
+| **BA-02** | 🟡 P2 | Gini 0.946: 3 Ausreißer (333K/500K/1.3M) vs 34 Bürger mit Median 4D. | Screenshot: Demografie-Tab | ROADMAP → BA |
+| **BA-03** | 🔴 P0 | Arbeitslosigkeits-Todesspirale: Broke→Starve statt Broke→Oddjob→Arbeit→Geld→Essen. | EventLog `[LATENT_DEMAND] Food purchase rejected` | ROADMAP → Sprint L-1 (L-01) |
+
+### UI Papercuts (aus Livetest Screenshots)
+
+| ID | Severity | Finding |
+|---|---|---|
+| **U-01** | 🔴 P0 | Quickview -19M D vs Dashboard -1.9M D — CompactNumber/Treasury-Snapshot-Drift |
+| **U-02** | 🔴 P0 | GText-Overflow `####-500D#` im Kopfsteuer-Feld |
+| **U-03** | 🟠 P1 | Demografie-Tabelle: 37 Siedler, 0 Zeilen — CitizenClass.render() leer |
+| **U-04** | 🟡 P2 | Firmen-Tab: FARM_GRAIN/FISHERY_NORMAL statt lokalisierter Namen |
+| **U-05** | 🟡 P2 | Ampel-Pfeile inkonsistent |
+| **U-06** | 🟡 P2 | Berater-Text mid-sentence abgeschnitten |
+| **U-07** | 🟡 P2 | Religionssteuer-Label-Overflow (x+300 vs x+308) |
+| **U-08** | 🟡 P2 | Onboarding SCHRITT 4/4 überlebt Krisenzustand |
+| **U-09** | 🟠 P1 | Bücher-Tab: "Kasse + Umlauf = 203.3K D" widerspricht -1.8M Treasury |
+
+### Vanilla-Lücken (aus Source-Analyse 26.7.26)
+
+| ID | Severity | Finding | Vanilla-Source |
+|---|---|---|---|
+| **DIPLO-01** | 🔴 P0 | Opinion/Trust-Mechanik komplett ignoriert: ROPINION.trust() nur lesend, kein Write. bOpinion/TRUST ungenutzt. | `ROPINION.java`, `DipWarPlayer.java` |
+| **L-02** | 🟠 P1 | Fatigue/STAMINA ungenutzt: BOOSTABLES.PHYSICS().STAMINA existiert, Mod hat 0 Code. | `BOOSTABLES.java:physics.STAMINA` |
+| **DOC-02** | 🟡 P2 | BINDUNGSMATRIX J1-J6: StatsBehaviour→StatsMultipliers (Vanilla-verifiziert). | `StatsMultipliers.java` |
+
+### TODO/FIXME im Code (2 offen, Stand 26.7.26)
+
+| Datei:Zeile | Marker | Beschreibung |
+|---|---|---|
+| `FactionAccessImpl.java:418` | `// TODO: TradeManager.tarif(Faction, Faction, TRADABLE, int)` | Vanilla-Tarif-Methode noch nicht via BypassGate angebunden |
+| `FlowMeter.java:409` | `* Echte Intent-Gap-Berechnung ... ist TODO` | employeesNeeded/employeesActual-Berechnung fehlt |
+
+---
+
+## Historische Einträge (vor v0.13.31, archiviert)
 
 ---
 

@@ -173,12 +173,12 @@ legacy_baselines:
     status_at_emit: warn
     reason_at_emit: fields 24 > warn 18
   src/vannon/syx/economy/core/TreasuryCrisis.java:
-    loc: 344
-    pubM: 3
-    fields: 35
-    imports: 0
+    loc: 529
+    pubM: 5
+    fields: 42
+    imports: 1
     status_at_emit: block
-    reason_at_emit: fields 35 > block 24
+    reason_at_emit: fields 42 > block 24 (Grace Period + save/load added v0.13.67)
   src/vannon/syx/economy/core/Wallets.java:
     loc: 483
     pubM: 31

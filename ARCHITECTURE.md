@@ -46,15 +46,15 @@ Spec-Migration: BINDUNGSMATRIX.csv ist Single-Source-of-Truth.
 
 Das Mod fügt Songs of Syx eine parallele Wirtschaftsschicht hinzu. Jeder Siedler hat ein eigenes Wallet, Firmen rechnen边际isch ab, der Staat kann Steuern erheben und Subventionen verteilen. Das Mod ersetzt keine Vanilla-Systeme, sondern arbeitet über einen **Adapter-Layer** strikt getrennt daneben.
 
-Modul-Bilanz: **149 Java-Dateien, ~29.200 LOC**
+Modul-Bilanz: **145 Java-Dateien, ~28.660 LOC** (core 20.954 + adapter 5.086 + ui 2.622)
 
 | Modul | Dateien | LOC | Aufgabe |
 |---|---:|---:|---|
-| `vannon/syx/economy/core/` | 111 | ~20.800 | Wirtschafts-Sim + Subsysteme |
-| `vannon/syx/economy/adapter/` | 24 | ~4.400 | EngineMirror-SDK (4 Sub-Interfaces) + ISyx* Legacy + Bypass-SDK |
-| `vannon/syx/economy/ui/` | 5 | ~2.600 | 4 Fenster + Base |
+| `vannon/syx/economy/core/` | 111 | ~20.954 | Wirtschafts-Sim + Subsysteme (inkl. EngineLevers 103 Toggles) |
+| `vannon/syx/economy/adapter/` | 27 | ~5.086 | EngineMirror-SDK (9) + ISyx* Legacy (7) + Vanilla (5) + Bypass-SDK (5) + Dispatcher (1) |
+| `vannon/syx/economy/ui/` | 5 | ~2.622 | 4 Fenster + Base |
 | `vannon/syx/economy/benchmark/` | 1 | ~330 | Reflection-vs-MethodHandle-Benchmark |
-| `settlement/room/...` | 4 | ~310 | Package-Private Brücken (compile-time-safe) |
+| `vannon/syx/economy/warehouse/market/` | 1 | ~51 | MarketSharedState (Sprint M-1) |
 
 ---
 
@@ -66,8 +66,8 @@ Modul-Bilanz: **149 Java-Dateien, ~29.200 LOC**
 ╚═════════════════════════════════════╤══════════════════════════╝
                                        ▼
 ╔════════════════════════════════════════════════════════════════╗
-║  SCHICHT 1: Adapter-Layer (24 Dateien)                         ║
-║  EngineMirror-SDK (10) + 5 ISyx* Legacy + 5 Vanilla + 4 Bypass ║
+║  SCHICHT 1: Adapter-Layer (27 Dateien)                         ║
+║  EngineMirror-SDK (9) + ISyx* Legacy (7) + Vanilla (5) + Bypass-SDK (5) + Dispatcher (1) ║
 ╚═════════════════════════════════════╤══════════════════════════╝
                                        ▼
 ╔════════════════════════════════════════════════════════════════╗
@@ -119,9 +119,9 @@ Purchase, CrownStorage, SaleDistribution, Settlement, RetailQuote, OwnerlessReta
 
 ---
 
-## Adapter-Layer (24 Dateien, vollständig aufgelistet)
+## Adapter-Layer (27 Dateien, vollständig aufgelistet)
 
-### Bypass-SDK (`adapter/seam/`, 4 Dateien — Phase A, v0.13.3)
+### Bypass-SDK (`adapter/seam/`, 5 Dateien — Phase A, v0.13.3)
 
 Der **BypassGate** ist der zentrale Entry-Point für alle Private-Access-Bypasses.
 Er hält einen `MethodHandles.Lookup`, bietet typisierte Factories für Feld-/Methoden-Zugriffe
@@ -157,7 +157,7 @@ Zentrale Fassade die ALLE Vanilla-Zugriffe bündelt. Hybride Architektur:
 - **Logging** → `LoggingAdapter.csvTrace()` in jedem Mirror-Method
 - **Version-gebunden** V71.44 — SDK-Generic kommt später
 
-**10 Dateien, 3.223 LoC implementiert:**
+**9 Dateien (EngineLevers.java liegt in core/, nicht adapter/), 3.223 LoC implementiert:**
 
 | Datei | LOC | Aufgabe |
 |---|---:|---|
@@ -177,7 +177,7 @@ EngineLevers.java (97 Config-Toggles)
        ↓
 EngineMirror.java (Fassade: api().rooms()/.factions()/.humanoids()/.stats())
        ↓
-4 Sub-Interfaces + 4 Impl (Hybrid: BypassGate + direkt, Logging)
+4 Sub-Interfaces + Stats + 4 Impl (Hybrid: BypassGate + direkt, Logging)
        ↓
 Vanilla Engine V71.44 (2.443 Java-Files)
 ```
@@ -191,15 +191,12 @@ in 6 Core-Dateien auf EngineMirror migriert (Fallback-Pattern:
 
 Siehe `ROADMAP.md` §Sprint A-1 + B-008 für vollständige Task-Liste + Definition of Done.
 
-### Package-Private Brücken (4, in `src/settlement/room/`)
-| Datei | Vanilla-Klasse | Zweck |
-|---|---|---|
-| `settlement/room/main/employment/LaborMarketAccess.java` | `RoomEmployment.Priority` | Direkter Lese-/Schreibzugriff auf `priority` |
-| `settlement/room/service/food/tavern/EconomyTavernAccess.java` | `TavernInstance` | Drink-Vorrat lesen |
-| `settlement/room/service/food/eatery/EconomyEateryAccess.java` | `EateryInstance` | Food-Vorrat lesen |
-| `settlement/room/service/food/canteen/EconomyCanteenAccess.java` | `CanteenInstance` | Food-Vorrat lesen |
+### Package-Private Brücken (0 — gelöscht in v0.13.64)
 
-Diese Klassen existieren im SELBEN Java-Package wie die Vanilla-Klassen → Reflection ist nicht nötig, der Compiler prüft die Zugriffe.
+Die 4 `settlement/room/`-Bridge-Klassen (`LaborMarketAccess`, `EconomyTavernAccess`,
+`EconomyEateryAccess`, `EconomyCanteenAccess`) wurden mit Sprint A-1 (EngineMirror)
+abgelöst. Ihre Funktionalität ist jetzt in `RoomAccessImpl` via BypassGate integriert.
+Das `settlement/room/`-Verzeichnis ist leer (0 Dateien).
 
 ---
 
@@ -366,7 +363,7 @@ Mit Hysterese: `climbStepsDown`/`climbStepsUp` verhindern Flackern an Tier-Grenz
 |---|---|
 | `mvn validate` BUILD SUCCESS | Stam-Doku-Sync + Code-Audit + Version-Consistency + Adapter-Signaturen (alle 4 Gates) |
 | `mvn compile` BUILD SUCCESS | Keine Compiler-Errors, keine Mod-Code-Warnings |
-| `mvn test` 397 Tests grün | `mvn surefire:test` |
+| `mvn test` 402 Tests grün | `mvn surefire:test` |
 | `mvn package` produziert `_Info.txt` | Maven-Filter aus `pom.xml` `<mod.info>` & `<mod.changelog>` |
 | `mvn clean install` bumpt `<version>` +0.0.1 | Antrun-Block in install-Phase |
 | Drift-Freiheit | `tools/verify-doc-sync.sh` PASS |

@@ -57,14 +57,23 @@ public final class EconConfig {
      */
     public static int effectiveInitialWallet() {
         EconomySim sim = EconomySim.active();
-        if (sim == null || sim.progression() == null) return WALLET_SUBSISTENZ;
-        return switch (sim.progression().stage) {
-            case SUBSISTENZ -> WALLET_SUBSISTENZ;
-            case HANDEL     -> WALLET_HANDEL;
-            case INDUSTRIE  -> WALLET_INDUSTRIE;
-            case WOHLSTAND  -> WALLET_WOHLSTAND;
-            case IMPERIUM   -> WALLET_WOHLSTAND; // Deckel: max 5000
-        };
+        int base;
+        if (sim == null || sim.progression() == null) {
+            base = WALLET_SUBSISTENZ;
+        } else {
+            base = switch (sim.progression().stage) {
+                case SUBSISTENZ -> WALLET_SUBSISTENZ;
+                case HANDEL     -> WALLET_HANDEL;
+                case INDUSTRIE  -> WALLET_INDUSTRIE;
+                case WOHLSTAND  -> WALLET_WOHLSTAND;
+                case IMPERIUM   -> WALLET_WOHLSTAND; // Deckel: max 5000
+            };
+        }
+        // Early-Settler-Buff: Pop < 50 → +300 D extra Kaufkraft
+        if (earlySettlerBuffEnabled && population < earlySettlerPopThreshold) {
+            base += earlySettlerWalletBonus;
+        }
+        return base;
     }
 
     /** Stage-gated immigrant wallet — gleiche Skalierung wie initial, aber anteilig (1/5). */
@@ -506,6 +515,23 @@ public final class EconConfig {
     public static boolean phaseFactorEnabled = true;
     public static int phaseFactorThreshold = 300;
     public static double phaseFactorMin = 0.5;
+
+    // ─── Early-Game Safeties (Livetest v0.13.67) ───────────────────────
+    /** Grace Period: TreasuryCrisis feuert Tiers 1-4 nicht waehrend der ersten
+     *  {@code treasuryGracePeriodTicks} Ticks (~1 Spieljahr = 365 Tage × 300 Ticks).
+     *  Tier 5 (Safety-Net bei -5M) feuert IMMER — Grace schuetzt vor False-Alarm,
+     *  nicht vor echtem Kollaps. */
+    public static boolean treasuryGracePeriodEnabled = true;
+    public static int treasuryGracePeriodTicks = 365 * 300; // 109.500
+
+    /** Early-Settler-Buff: Buerger mit Pop < {@code earlySettlerPopThreshold}
+     *  bekommen {@code earlySettlerWalletBonus} Denari extra auf ihr Start-Wallet.
+     *  Verhindert dass die ersten 50 Siedler sofort verhungern weil noch kein
+     *  Markt/Lager existiert. Kombiniert mit phaseFactor (0.5× Preise) fuer
+     *  sanften Early-Game-Einstieg. */
+    public static boolean earlySettlerBuffEnabled = true;
+    public static int earlySettlerPopThreshold = 50;
+    public static int earlySettlerWalletBonus = 300; // +300 D auf SUBSISTENZ=200 → effektiv 500 D
 
     // T8: Live-Population, gesetzt von EconomySim.update(). FlowPrices liest das.
     public static int population = 0;

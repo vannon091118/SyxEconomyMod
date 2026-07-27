@@ -73,6 +73,11 @@ public final class TreasuryCrisis {
     private static boolean tier1Logged, tier2Logged, tier3Logged,
                            tier4Logged, tier5Logged, recoveryLogged;
 
+    /** Grace Period Zaehler: Waehrend >0 werden Tiers 1-4 unterdrueckt.
+     *  Tier 5 (Safety-Net -5M) feuert IMMER. Wird in reset() initialisiert
+     *  und in save()/load() persistiert. */
+    private static int graceTicksRemaining = 0;
+
     private TreasuryCrisis() {}
 
     /**
@@ -83,6 +88,10 @@ public final class TreasuryCrisis {
      * @param sim EconomySim für erzwungene Aktionen (Liquidation, etc.)
      */
     public static void update(long treasury, EconomySim sim) {
+        // Grace Period countdown — dekrementiert pro Tick
+        if (EconConfig.treasuryGracePeriodEnabled && graceTicksRemaining > 0) {
+            graceTicksRemaining--;
+        }
         int newTier = classify(treasury);
 
         if (newTier > activeTier) {
@@ -111,9 +120,12 @@ public final class TreasuryCrisis {
 
     /* ═══════════════════════════════════════════════════════════════════ */
 
-    /** Aktivierungs-Schwellen (strenger = niedriger). */
+    /** Aktivierungs-Schwellen (strenger = niedlower). Tier 5 ignoriert Grace. */
     private static int classify(long treasury) {
-        if (treasury <= TIER5_COLLAPSE) return 5;
+        if (treasury <= TIER5_COLLAPSE) return 5; // Safety-Net: IMMER feuern
+        if (EconConfig.treasuryGracePeriodEnabled && graceTicksRemaining > 0) {
+            return 0; // Grace: Tiers 1-4 unterdruecken
+        }
         if (treasury <= TIER4_BANKRUPT) return 4;
         if (treasury <= TIER3_FIRESALE) return 3;
         if (treasury <= TIER2_AUSTERITY) return 2;
@@ -463,7 +475,20 @@ public final class TreasuryCrisis {
      *
      * Muss idempotent sein: Mehrfach-Aufruf == einzelner Aufruf.
      */
+    /** Grace-Period Save-Format: 1 int. */
+    public static void save(snake2d.util.file.FilePutter file) {
+        file.i(graceTicksRemaining);
+    }
+
+    /** Grace-Period Load-Format: 1 int. */
+    public static void load(snake2d.util.file.FileGetter file) throws java.io.IOException {
+        graceTicksRemaining = file.i();
+    }
+
     public static void reset() {
+        // Grace Period auf Config-Default setzen (wird von load() ueberschrieben)
+        graceTicksRemaining = EconConfig.treasuryGracePeriodEnabled ? EconConfig.treasuryGracePeriodTicks : 0;
+
         // saved*-Stash (17 Wage + 3 Tax/Headcap/Head-Tax = 20 Felder)
         savedMilitaryTrainingWage = 0;
         savedExportDepotWage      = 0;

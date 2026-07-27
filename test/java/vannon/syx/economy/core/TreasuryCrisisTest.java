@@ -38,6 +38,10 @@ class TreasuryCrisisTest {
 
     @BeforeEach
     void resetAllState() {
+        // Grace Period deaktivieren — existierende Tests erwarten sofortige Tier-Aktivierung
+        EconConfig.treasuryGracePeriodEnabled = false;
+        EconConfig.earlySettlerBuffEnabled = false;
+
         // EconConfig auf bekannte Defaults
         EconConfig.defaultWage       = 50;
         EconConfig.perHeadTax        = 0;
@@ -81,6 +85,10 @@ class TreasuryCrisisTest {
         EconConfig.prisonWagePerDay       = 50;
 
         // TreasuryCrisis komplett zurücksetzen — Recovery von vorherigen Tests
+        // WICHTIG: Grace MUSS deaktiviert sein BEVOR reset() aufgerufen wird,
+        // sonst initialisiert reset() graceTicksRemaining=109500 und alle
+        // Tiers 1-4 werden maskiert.
+        TreasuryCrisis.reset();
         forceRecoveryToTier0();
     }
 
@@ -344,6 +352,76 @@ class TreasuryCrisisTest {
         updateTo(-10_000L);
         assertTrue(TreasuryCrisis.isInCrisis());
         assertFalse(TreasuryCrisis.isHardFloor());
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════ */
+    /*  Grace Period Tests (Livetest v0.13.67)                            */
+    /* ═══════════════════════════════════════════════════════════════════ */
+
+    @Test
+    void gracePeriod_suppressesTier1to4() {
+        EconConfig.treasuryGracePeriodEnabled = true;
+        EconConfig.treasuryGracePeriodTicks = 1000;
+        TreasuryCrisis.reset();
+
+        // Tier 1 Schwelle (-5K) wird waehrend Grace nicht feuern
+        updateTo(-10_000L);
+        assertEquals(0, TreasuryCrisis.activeTier(),
+                "Grace: Tier 1 unterdrueckt bei -10K");
+    }
+
+    @Test
+    void gracePeriod_tier5stillFires() {
+        EconConfig.treasuryGracePeriodEnabled = true;
+        EconConfig.treasuryGracePeriodTicks = 1000;
+        TreasuryCrisis.reset();
+
+        // Tier 5 (-5M) feuert IMMER, auch waehrend Grace
+        updateTo(-6_000_000L);
+        assertEquals(5, TreasuryCrisis.activeTier(),
+                "Grace: Tier 5 feuert IMMER (Safety-Net)");
+    }
+
+    @Test
+    void gracePeriod_expiresAfterTicks() {
+        EconConfig.treasuryGracePeriodEnabled = true;
+        EconConfig.treasuryGracePeriodTicks = 3; // nur 3 Ticks Grace
+        TreasuryCrisis.reset();
+
+        // Grace laeuft ab nach 3 Ticks (update dekrementiert pro Aufruf)
+        updateTo(-10_000L); // tick 1: Grace=2, Tier maskiert
+        assertEquals(0, TreasuryCrisis.activeTier());
+        updateTo(-10_000L); // tick 2: Grace=1, Tier maskiert
+        assertEquals(0, TreasuryCrisis.activeTier());
+        updateTo(-10_000L); // tick 3: Grace=0, Tier feuert!
+        assertEquals(1, TreasuryCrisis.activeTier(),
+                "Grace abgelaufen: Tier 1 feuert");
+    }
+
+    @Test
+    void earlySettlerBuff_appliesWhenPopLow() {
+        EconConfig.earlySettlerBuffEnabled = true;
+        EconConfig.earlySettlerPopThreshold = 50;
+        EconConfig.earlySettlerWalletBonus = 300;
+        EconConfig.population = 20; // unter Schwelle
+
+        int wallet = EconConfig.effectiveInitialWallet();
+        // SUBSISTENZ=200 + Buff=300 = 500
+        assertEquals(500, wallet,
+                "Early-Settler: 200+300=500 bei Pop 20");
+    }
+
+    @Test
+    void earlySettlerBuff_doesNotApplyWhenPopHigh() {
+        EconConfig.earlySettlerBuffEnabled = true;
+        EconConfig.earlySettlerPopThreshold = 50;
+        EconConfig.earlySettlerWalletBonus = 300;
+        EconConfig.population = 100; // ueber Schwelle
+
+        int wallet = EconConfig.effectiveInitialWallet();
+        // SUBSISTENZ=200, kein Buff
+        assertEquals(200, wallet,
+                "Kein Buff bei Pop 100");
     }
 
     /* ═══════════════════════════════════════════════════════════════════ */

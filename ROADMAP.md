@@ -36,8 +36,35 @@
 | **A-05** | ✅ Closed (v0.13.64) | **EngineMirror.java + AdapterDispatcher + Stam-Docs** — Zentrale Fassade, ersetzt EngineSeams graduell | ~400 | A-1 |
 | **UI-CENT** | ✅ Closed | **UI-Zentralisierung:** 122 GText → 10 FONTW_*-Konstanten in EconWindowBase | ~15 | 10 |
 | **AUDIT-1** | 📝 Notiert | **emigrationRisk = Dead Code** — AtomicInteger nie gelesen, D-002 wirkungslos | — | 10 |
+| **U-01** | 🔴 P0 | **Treasury-Display-Inkonsistenz:** Quickview -19M vs Dashboard -1.9M — CompactNumber oder Treasury-Snapshot-Drift | ~10 | U-1 |
+| **U-02** | 🔴 P0 | **GText-Overflow Kopfsteuer:** `####-500D#` bei negativem Treasury — Feldbreite zu klein | ~8 | U-1 |
+| **U-03** | 🟠 P1 | **CitizenClass-Tabelle leer:** 37 Siedler, 0 Zeilen gerendert — Klassifikation läuft nicht | ~20 | U-1 |
+| **U-04** | 🟡 P2 | **Firmen-Namen als interne Keys:** FARM_GRAIN/FISHERY_NORMAL statt lokalisierter Namen | ~10 | U-1 |
+| **U-05** | 🟡 P2 | **Ampel-Pfeile inkonsistent:** "Finanzen →", "Gleichheit →" aber "Arbeit"/"Wachstum"/"Versorgung" ohne Pfeil | ~5 | U-1 |
+| **U-06** | 🟡 P2 | **Advisor-Text clipped:** mid-sentence Abbruch, kein Scrollindikator, kein Hinweis auf weiteren Inhalt | ~10 | U-1 |
+| **U-07** | 🟡 P2 | **Religionssteuer-Label-Overflow:** WindowEconomy GText-Feld x+300 zu eng (x+308 in WindowState) | ~4 | U-1 |
+| **U-08** | 🟡 P2 | **Onboarding überlebt Krisenzustand:** SCHRITT 4/4 bei -1.8M Treasury — keine Priorisierung | ~15 | U-1 |
+| **U-09** | 🟠 P1 | **Bücher-Tab Konsistenzzeile:** "Kasse + Umlauf = 203.3K D" widerspricht -1.8M Treasury — widersprüchliche Anzeige | ~15 | U-1 |
+| **B-011** | 🔴 P0 | **AccessAutomation permanent deaktiviert:** `accessDetectionDisabled` (static) bei erster Exception=true, kein Mid-Session-Reset. Housing-Einrichtungsziele tot. | ~5 | B-FIX |
+| **B-012** | 🟠 P1 | **EconProgression 3850 Tage Subsistenz:** checkAdvance() blockiert durch Taverne/Labor die nicht gebaut sind. Progression erwartet Gebäude die der Spieler nicht priorisiert. | ~20 | B-FIX |
+| **B-013** | 🟡 P2 | **Advisor-Preis-Disconnect:** Berater empfiehlt Export bei Stone 75.3x/Wood 73.7x — Preisdaten nicht mit Advisor-Empfehlungen verknüpft | ~25 | B-FIX |
+| **L-01** | 🔴 P0 | **BrokeFoodPlan-Escape:** Vor `desperate` prüfen ob Bürger Oddjob machen kann → Arbeit statt Verhungern. Vanilla-verifiziert: PlanOddjobber existiert. | ~20 | L-1 |
+| **L-02** | 🟠 P1 | **SubjectFatigue + FatiguePressure:** Fatigue pro Tick, STAMINA-Booster-Registrierung (Vanilla: `BOOSTABLES.PHYSICS().STAMINA` existiert), forcedRest bei Schwellenwert. StatsMultipliers.OVERTIME/DAY_OFF existieren. | ~100 | L-1 |
+| **L-03** | 🟡 P2 | **WealthRest:** Reiche Bürger (>2× Median) arbeiten nur noch Teilzeit via reduzierter Fatigue-Schwelle. `EconConfig.wealthRestEnabled` + `wealthRestThreshold`. | ~40 | L-1 |
+| **LOG-01** | 🟠 P1 | **ACTION-Logging:** Alle clickActionSet-Calls in 4 UI-Fenstern mit EventLog verknüpfen (old→new Transition). 25 Action-Stellen, derzeit 0 geloggt. | ~35 | LOG-1 |
+| **LOG-02** | 🟡 P2 | **Session-Identifikation:** nanoTime-Epoch im Dateinamen vereinheitlichen (DebugTracer/DebugCsv/DiagnosticExporter). Gemeinsamer Session-Join-Key. | ~20 | LOG-1 |
+| **LOG-03** | 🟡 P2 | **4-Log-Split (Variante C Hybrid):** log_berechnung/log_aktionen/log_zugriffe/log_sonstiges.csv via LoggingAdapter. economy_events.log bleibt als In-Game-Chronik. debug.csv + rebalance_*.csv entfallen. | ~150 | LOG-1 |
+| **BA-01** | 🟠 P1 | **Treasury-Drain bei 37 Siedlern:** -1.8M D trotz nur 5 Arbeitern — Lohn/Subventions-Spirale im Early-Game. Grace Period existiert (v0.13.67), aber reicht nicht. | ~15 | BA |
+| **BA-02** | 🟡 P2 | **Extrem-Gini 0.946:** 3 Ausreißer (333K/500K/1.3M), 34 Bürger bei Median 4D. GiniConsequences greift, aber Effekt nicht spürbar. | ~10 | BA |
+| **BA-03** | 🔴 P0 | **Arbeitslosigkeits-Todesspirale:** Bürger broke → BrokeFoodPlan → desperate → kein Oddjob → verhungern. Kreislauf: Geldmangel→kein Essen→Tod statt Geldmangel→Arbeit→Geld→Essen→Überleben. Covered by L-01. | ~0 | L-1 |
+| **DOC-01** | 🟡 P2 | **ARCHITECTURE.md Phantom-Dateien:** 4 settlement/room/*-Brücken gelöscht, ARCHITECTURE behauptet sie existieren. Adapter-Zahl 24→22. | ~5 | DOC |
+| **DOC-02** | 🟡 P2 | **BINDUNGSMATRIX J1-J6:** StatsBehaviour → StatsMultipliers (Vanilla-Source-verifiziert). CIVICS-Count korrigieren. | ~5 | DOC |
+| **DOC-03** | 🟡 P2 | **agents.md Canary-Update:** Flachwitz-Refresh nach Rule-7-Pflicht (Session-Start, doc-Update). | ~2 | DOC |
+| **DIPLO-01** | 🔴 P0 | **Opinion/Trust-Mechanik fehlt:** Vanilla `ROPINION.trust()`, `bOpinion` (1.5), `TRUST` (0) — Mod liest nur in DebtDiplomacyBuffer, schreibt NIE. `royaltyOpinionEnabled` = toter Config-Flag. Kein Opinion-Zerfall-Monitoring, keine Reaktion auf Wirtschafts-Kollaps. | ~60 | DIPLO |
+| **DIPLO-02** | 🟠 P1 | **IFactionAccess Opinion/Trust-Lücke:** Interface deklariert "Royalty — Opinion, Trust" aber implementiert nur `getKing()` + `getRulerName()`. `getFactionTrust(Faction)` + `setFactionOpinion(Faction, double)` fehlen. **Ref:** `FactionAccessImpl.java:418` (TODO TradeManager.tarif). | ~25 | DIPLO |
+| **DIPLO-03** | 🟡 P2 | **BINDUNGSMATRIX: ROPINION + bOpinion + TRUST katalogisieren** — 3 Engine-Hebel fehlen komplett in der Matrix. | ~10 | DIPLO |
 
-**Total:** 35 Tasks (17 bestehende + 6 Sprint A-1 + 12 Sprint M-3) — 6×Closed D-001–D-006 (→ CHANGELOG v0.13.57), 2×Closed Sprint 10 (UI-CENT, AUDIT-1), 5×Sprint 9 Active (7-1a, 7-1b, 7-2, 8-1, 7-3), 4×Sprint 9 Planned (8-2–8-5), 12×Sprint M-3 Planned, 6×P3 Backlog.
+**Total:** 60 Tasks (35 bestehende + 9 UI + 3 B-FIX + 3 Labor + 3 Logging + 3 DIPLO + 3 Balance + 3 Doc — 25 neue) — plus 40×Closed.
 
 **Sprint 9 Dependency-Edges (Rule 1.7 Pre-Note):**
 
@@ -252,6 +279,129 @@ Siehe `docs/superpowers/specs/HANDOFF_M1.md`.
 2. `mvn test` — 296 Tests, 0 Fail
 3. `bash tools/verify-doc-sync.sh` — 9 Checks PASS
 4. Pre-Commit-Hook: `.git/hooks/pre-commit → tools/build-gate.sh`
+
+---
+
+## Sprint U-1 — Livetest UI-Fixes (v0.13.64-B868DC9-DIRTY)
+
+**Quelle:** Livetest v0.13.64, 26.7.26, 37 Siedler, 3850 Tage, `-B868DC9-DIRTY`
+
+**Ziel:** Alle 9 UI-Bugs aus dem Livetest beheben — von kritischen Anzeigefehlern bis kosmetischen Inkonsistenzen.
+
+| Task | Prio | Befund | Ursache | Fix |
+|---|---|---|---|---|
+| **U-01** | 🔴 P0 | Quickview `-19M D`, Dashboard `-1.9M D` | CompactNumber.format(treasury) unterschiedlicher Snapshot-Zeitpunkt oder treasury()-Pfad | Treasury-Snapshot zum gleichen Tick einfrieren oder CompactNumber-Format prüfen |
+| **U-02** | 🔴 P0 | `####-500D#` im Kopfsteuer-Feld | GText-Feldbreite < labelText-Länge → Render-Overflow | GText.maxWidth erhöhen oder Label kürzen/abbreviieren |
+| **U-03** | 🟠 P1 | Demografie-Tabelle: 37 Siedler, 0 Zeilen | CitizenClass.classifiablePopulationCount() = 0 oder Render-Loop überspringt alle | Debug-Log in CitizenClass + Render-Bedingung prüfen |
+| **U-04** | 🟡 P2 | Firmen-Tab: `FARM_GRAIN` statt lokalisiertem Namen | `blueprint.key` statt `blueprint.name` verwendet | `blueprint.info.name` verwenden |
+| **U-05** | 🟡 P2 | Ampel-Pfeile inkonsistent | Nicht alle Ampel-Typen rendern denselben Pfeil-Indikator | Einheitliches Pfeil-Rendering pro Ampel |
+| **U-06** | 🟡 P2 | Berater-Text mid-sentence abgeschnitten | GText ohne Scroll/Expand, Textlänge > Feldkapazität | Scroll-Panel oder Expand-Button |
+| **U-07** | 🟡 P2 | Religionssteuer-Label-Overflow | x+300 in WindowEconomy vs x+308 in WindowState | Breite vereinheitlichen |
+| **U-08** | 🟡 P2 | Onboarding SCHRITT 4/4 bei -1.8M Treasury | Tutorial-State unabhängig von Crisis-State | Onboarding ausblenden wenn CrisisDispatch.active==true |
+| **U-09** | 🟠 P1 | Bücher-Tab: "Kasse + Umlauf = 203.3K D" bei -1.8M Treasury | Addiert treasury + circulating falsch oder verwendet veralteten Snapshot | Formel prüfen: treasury() + wallets().circulating() muss mit seedSupply() übereinstimmen |
+
+**Geschätzt:** 9 Tasks, ~100 LoC
+
+---
+
+## Sprint B-FIX — Livetest Verhaltens-Fixes (v0.13.64-B868DC9-DIRTY)
+
+**Quelle:** Livetest v0.13.64 + EventLog-Analyse
+
+| Task | Prio | Befund | Ursache | Fix |
+|---|---|---|---|---|
+| **B-011** | 🔴 P0 | AccessAutomation permanent deaktiviert | `accessDetectionDisabled` (static) bei erster Exception=true, `reset()` nur bei Save/Load → kein Mid-Session-Recovery | Periodischer Reset nach N Ticks ODER retry-Logik mit Backoff |
+| **B-012** | 🟠 P1 | 3850 Tage in Subsistenz | EconProgression.checkAdvance() blockiert durch Taverne/Labor die Spieler nicht baut | Entweder: Meilenstein-Logik lockern (≠ require buildings) oder Advisor-Empfehlung deutlicher machen |
+| **B-013** | 🟡 P2 | Advisor empfiehlt Export bei Stone/Wood 73-75× Preis | Advisor-Logik unabhängig von FlowPrices.scarcitySignal | Preisdaten in Advisor-Empfehlungen einfließen lassen (wenn scarcity > 10× → "Baue X produzierende Gebäude" statt "Exportiere") |
+
+**Geschätzt:** 3 Tasks, ~50 LoC
+
+---
+
+## Sprint L-1 — Labor-Kreislauf: Arbeit, Fatigue, Reichtum
+
+**Ziel:** Den Teufelskreis "Broke→Starve" durchbrechen und einen natürlichen Arbeitszyklus einführen.
+
+**Vanilla-Verifikation (26.7.26):**
+- `BOOSTABLES.PHYSICS().STAMINA` = 1.0 — Beschreibung: *"How long a subject can walk or run before needing to rest."*
+- `StatsMultipliers.OVERTIME` (StatMultiplierWork) + `.DAY_OFF` (StatMultiplierAction) existieren
+- `PlanOddjobber` existiert in `settlement/entity/humanoid/ai/work/` (package-private)
+- `AIPLAN.PLANRES.WAIT_AND_EXIT` existiert
+
+| Task | Prio | Beschreibung | Vanilla-Anker | LoC |
+|---|---|---|---|---|
+| **L-01** | 🔴 P0 | **BrokeFoodPlan-Escape:** Vor `desperate`-Sprung prüfen: `isEmployableWorker && isSurplusLaborer` → Oddjob-Plan aktivieren. Statt: kein Geld → kein Essen → verhungern. Neu: kein Geld → Oddjob → Geld → Essen. | `PlanOddjobber`, `AIPLAN.PLANRES` | ~20 |
+| **L-02** | 🟠 P1 | **SubjectFatigue + FatiguePressure:** Pro gearbeitetem Tick Fatigue inkrementieren. Bei Schwellenwert `forcedRest` via `AI.SUBS().rest.activate()`. STAMINA-Booster modifizieren. `EconConfig.fatigueEnabled`, `fatiguePerTick`, `fatigueRestThreshold`, `fatigueRecoveryRate`. | `BOOSTABLES.PHYSICS().STAMINA`, `StatsMultipliers.OVERTIME`/`.DAY_OFF` | ~100 |
+| **L-03** | 🟡 P2 | **WealthRest:** Bei `relativeWealth > wealthRestThreshold` (2× Median) → Fatigue-Schwelle halbieren → Bürger arbeiten 50% weniger. Kein "Ruhestand", nur Teilzeit. `EconConfig.wealthRestEnabled`, `wealthRestMedianMultiplier`. | `WealthHappiness.relativeWealth()`, `BOOSTABLES.BEHAVIOUR().HAPPI` | ~40 |
+
+**Dependency-Chain:** L-01 (BrokeFoodPlan) → L-02 (Fatigue) → L-03 (WealthRest). L-01 kann unabhängig deployed werden.
+
+**Geschätzt:** 3 Tasks, ~160 LoC
+
+---
+
+## Sprint LOG-1 — Diagnose-Infrastruktur (Session-Livetest v0.13.64)
+
+**Quelle:** Session-Identifikations-Analyse + 4-Log-Split-Vorschlag
+
+**Bestehende Probleme (verifiziert):**
+- 3 parallele Log-Schemata: EventLog (Freitext), DebugCsv (`;`-separiert), DiagnosticExporter (`,`-separiert)
+- 25 `clickActionSet`-Calls in 4 UI-Fenstern — **0** geloggt
+- `DiagnosticExporter.SESSION_EPOCH = System.nanoTime()` — DebugTracer nimmt `nanoTime()` beim DUMP, nicht beim Session-Start → kein Join möglich
+- DebugCsv day = Float, DiagnosticExporter day = Long → kein SQL-Join möglich
+
+| Task | Prio | Beschreibung | LoC |
+|---|---|---|---|
+| **LOG-01** | 🟠 P1 | **ACTION-Logging:** Alle `clickActionSet`-Calls (25 in WindowOverview/Quickview/State) mit `EventLog.log("ACTION", "slider=headTax old=45 new=135")` verknüpfen. Old/New-Transition dokumentieren. | ~35 |
+| **LOG-02** | 🟡 P2 | **Session-Identifikation:** `SESSION_EPOCH` als zentrale Konstante in `DiagnosticExporter`. DebugTracer.dump() verwendet diesen Epoch, nicht eigenen nanoTime(). DebugCsv schreibt Epoch in Header-Zeile. | ~20 |
+| **LOG-03** | 🟡 P2 | **4-Log-Split (Variante C Hybrid):** `log_berechnung.csv` (ECON/TREND/STAGE/REBALANCE), `log_aktionen.csv` (ACTION), `log_zugriffe.csv` (SEAM/ACCESS/BOOSTERS/ADAPTER), `log_sonstiges.csv` (SYSTEM/CHEAT/CONFIG/TRACE). `economy_events.log` bleibt In-Game-Chronik. `debug.csv` + `rebalance_*.csv` entfallen, Schema in 4-Log übernommen. | ~150 |
+
+**Geschätzt:** 3 Tasks, ~205 LoC
+
+---
+
+## Balance-Audit (BA) — Livetest v0.13.64
+
+| Task | Prio | Befund | Ursache |
+|---|---|---|---|
+| **BA-01** | 🟠 P1 | -1.8M Treasury bei 37 Siedlern, 5 Arbeitern | Lohn/Subventions-Spirale: 5 Arbeiter × 50D + MilitaryPayroll + HandoutRelief + Maintenance. Grace Period (v0.13.67) existiert, aber Early-Game-Phase reicht über Jahr 1 hinaus. |
+| **BA-02** | 🟡 P2 | Gini 0.946 — 3 Ausreißer vs 34 Mittellose | `relativeWealth` = money/median. Wenn median=4D und 3 Bürger 333K–1.3M haben → Faktor 83.000×. GiniConsequences bestraft Loyalty, aber kein Mechanismus reduziert die Konzentration. |
+| **BA-03** | 🔴 P0 | Arbeitslosigkeits-Todesspirale | Siehe L-01. Bürger broke → kein Essen → desperate → verhungern. Statt: broke → Oddjob → Geld → Essen. |
+
+---
+
+## Doc-Audit (DOC) — Aktueller Stand
+
+| Task | Prio | Befund | Fix |
+|---|---|---|---|
+| **DOC-01** | 🟡 P2 | ARCHITECTURE.md: 4 settlement/room/*-Brücken als existierend gelistet, tatsächlich 0 Dateien. Adapter-Zahl 24→22. | Phantom-Dateien aus ARCHITECTURE.md entfernen, Dateizahlen auf Ist-Wert korrigieren. |
+| **DOC-02** | 🟡 P2 | BINDUNGSMATRIX J1–J6: `StatsBehaviour` → `StatsMultipliers` (Vanilla-Source-verifiziert). | Quell-Klasse in BINDUNGSMATRIX korrigieren. |
+| **DOC-03** | 🟡 P2 | agents.md Rule 7 Flachwitz nach Session-Start fällig (Canary-Pflicht). | Neuen Flachwitz liefern. |
+
+---
+
+## Sprint DIPLO — Faction-Opinion/Trust-Mechanik (Vanilla-Lücke)
+
+**Quelle:** Vanilla-Source-Analyse `BOOSTABLES.CIVICS().bOpinion` + `ROPINION.trust()` vs. Mod-Code
+
+**Befund:** Die Vanilla-Mechanik "Faktionen verlieren Wohlwollen" ist im Mod praktisch nicht abgebildet:
+- `ROPINION.trust()` wird NUR in DebtDiplomacyBuffer.java:91 GELESEN (um Kriegsbereitschaft zu prüfen)
+- Der Mod schreibt NIEMALS Trust/Opinion-Werte — kann sie also nicht beeinflussen
+- `BOOSTABLES.CIVICS().bOpinion` (default 1.5, "Determines the opinion of other factions") — ungenutzt
+- `BOOSTABLES.CIVICS().TRUST` (default 0, "A faction's trust") — ungenutzt
+- `royaltyOpinionEnabled = true` in EngineLevers — toter Config-Flag, kein Consumer
+- IFactionAccess deklariert "Royalty — Opinion, Trust" aber implementiert nur `getKing()` + `getRulerName()`
+- BINDUNGSMATRIX hat 0 Einträge für `ROPINION`, `bOpinion`, `TRUST`
+
+**Warum das wichtig ist:** Wenn die Spieler-Wirtschaft kollabiert (Treasury -1.8M, Gini 0.946, Bürger verhungern), sollten NPC-Fraktionen das Vertrauen verlieren → Handel wird teurer/schwieriger, Krieg wahrscheinlicher. Ohne diese Rückkopplung ist der Wirtschafts-Kollaps folgenlos für die Außenpolitik.
+
+| Task | Prio | Beschreibung | LoC |
+|---|---|---|---|
+| **DIPLO-01** | 🔴 P0 | **ROPINION.trust() Write-Zugriff + Opinion-Monitoring:** `IFactionAccess.getFactionTrust(Faction)` + `setFactionOpinion(double)` implementieren. EconomySim.update() prüft Treasury/Gini/Starvation → adjustiert Opinion aller NPCs. `EconConfig.opinionEconomyLinkEnabled`. | ~60 |
+| **DIPLO-02** | 🟠 P1 | **IFactionAccess Opinion/Trust-Methoden:** `getFactionTrust(FactionNPC)` + `getFactionOpinion(FactionNPC)` + `adjustFactionOpinion(FactionNPC, delta)` deklarieren + in FactionAccessImpl via BypassGate/ROPINION implementieren. `royaltyOpinionEnabled`-Consumer aktivieren. | ~25 |
+| **DIPLO-03** | 🟡 P2 | **BINDUNGSMATRIX: ROPINION + bOpinion + TRUST katalogisieren** — 3 Engine-Hebel dokumentieren (Klasse, Zugriffspfad, Mod-Nutzung). | ~10 |
+
+**Geschätzt:** 3 Tasks, ~95 LoC
 
 ---
 
