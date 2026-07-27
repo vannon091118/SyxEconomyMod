@@ -58,6 +58,12 @@
 | **BA-02** | 🟡 P2 | **Extrem-Gini 0.946:** 3 Ausreißer (333K/500K/1.3M), 34 Bürger bei Median 4D. GiniConsequences greift, aber Effekt nicht spürbar. | ~10 | BA |
 | **BA-03** | ✅ Closed (v0.13.67) | **Arbeitslosigkeits-Todesspirale:** Covered by L-01 (BrokeFoodPlan con() prüft hunger.isMax()). | ~0 | L-1 |
 | **BA-04** | ✅ Closed (v0.13.67) | **Thron-Bug / Bootstrap-Lücke:** Bürger verbrauchen Startkapital bevor Wirtschaft Einkommen generiert → Thron-Essen → Pleite-Spirale. Fix: `earlySettlerDoleThreshold` (5000D) — alle Bürger essen gratis solange pop < 50. `EconConfig.java:541, GrainDole.java:74-78` | ~15 | BA |
+| **BA-05** | 🔴 P0 | **effectiveCoverage() Stock-Fallback (D-004):** `FlowPrices.java:134` — `double effectiveStock = supplyPerDay > 0.0 ? stock : 0.0`. Wenn supplyPerDay=0 UND stock>0 (Mid-Game: First-Demand-Appearing), wird stock verworfen → coverage=0 → 6× Preis-Explosion → Rationing-Loop → Gini 0.903 → Treasury −60K in 63 Tagen. **Livetest-Beweis:** Tag 88 VEGETABLE: stock=22, demand=0.43, supply=0 → coverage 0.0, Preis 208→1278. Fix: Stock-basierte Coverage wenn supply=0 AND stock>0. | `FlowPrices.java:120-138` | ~15 | BA |
+| **DC-03** | 🟠 P1 | **mean_wage Feldname irreführend:** `rebalance_macro.csv` Spalte `mean_wage` zeigt 1000 ab Tag 96, aber `actual_mean_wage` bleibt 50. `mean_wage` ist kein Durchschnittslohn — es ist der `wageMax`-Config-Wert (1000). Feld umbenennen in `wage_config_max` oder CSV-Header dokumentieren. **Livetest-Beweis:** Seed 24123371076350, Tag 71→151. | `DiagnosticExporter.java:exportDay()` | ~5 | DC |
+| **DC-04** | 🟠 P1 | **FirmLedger Logging-Trigger zu streng:** `rebalance_firms.csv` komplett leer (nur Header) trotz 3 Workplaces ab Tag 55. Entweder Logging-Trigger erst wenn `profit_per_day != 0`, oder Threshold/Filter zu hoch. Prüfen: wann genau schreibt FirmLedger eine Zeile? | `FirmLedger.java`, `DiagnosticExporter.java` | ~10 | DC |
+| **DC-05** | 🟡 P2 | **_WOOD Supply-Spike-Anomalie:** `rebalance_resources.csv` zeigt _WOOD supply=45.371 und 84.698 D/Tag (unrealistisch — Vanilla-Holzfäller produziert keine 45k/Tag). Coverage bleibt trotzdem 0.4 (2.25× anchor). Vermutlich Float-Precision-Problem oder Tick-Aggregat statt Tages-Wert. Kein Breaking-Bug, aber Diagnostik-Rauschen. | `FlowMeter.java` | ~8 | DC |
+| **DC-06** | 🟡 P2 | **Duplicate Day 43 im Exporter:** `rebalance_macro.csv` Zeile 43 (Season 3) erscheint zweimal mit leicht unterschiedlichen Werten (max_wealth 1837→1843). Frame-Boundary-Problem oder Doppel-Export bei Event auf Schreibtakt-Grenze. | `DiagnosticExporter.java` | ~5 | DC |
+| **SK-07** | 🟡 P2 | **AccessAutomation Chronicle-UI-Flood:** Drei identische `[ACCESS]`-Zeilen im Chronik-Panel pro Tick — `LOG.ln()`-Aufrufe aus AccessAutomation fluten das UI-Chronik-Panel. Gleicher Bug wie B-011 (NPE→disabled), anderer Symptomkanal (UI statt Funktionalität). Fix: LOG.ln()-Aufrufe aus AccessAutomation entfernen oder via EventLog-Kanal statt UI-Chronik. | `AccessAutomation.java:LOG.ln()` | ~5 | DC |
 | **DOC-01** | 🟡 P2 | **ARCHITECTURE.md + GLOSSARY.md Brücken-Korrektur:** 4 settlement/room/*-Brücken existieren (309 LOC in `src/settlement/room/`). Wurden in v0.13.67 fälschlich gelöscht, jetzt restauriert mit korrekten LOC-Zahlen. | ~0 | DOC |
 | **DOC-02** | 🟡 P2 | **BINDUNGSMATRIX J1-J6:** StatsBehaviour → StatsMultipliers (Vanilla-Source-verifiziert). CIVICS-Count korrigieren. | ~5 | DOC |
 | **DOC-03** | 🟡 P2 | **agents.md Canary-Update:** Flachwitz-Refresh nach Rule-7-Pflicht (Session-Start, doc-Update). | ~2 | DOC |
@@ -71,7 +77,7 @@
 | **DIPLO-02** | ✅ Closed (v0.13.67) | `getFactionOpinion()` + `getFactionTrust()` + `adjustFactionOpinion()` implementiert. Write-Pfad ist Logging-only da Vanilla `ROPINION.setOpinionValue()` + `SuperBoostable.incD()` package-private — BypassGate-Lösung in DIPLO-03. | `FactionAccessImpl.java:457-505` |
 | **DIPLO-03** | 🟡 P2 | **BINDUNGSMATRIX: ROPINION + bOpinion + TRUST katalogisieren** — 3 Engine-Hebel fehlen komplett in der Matrix. | ~10 | DIPLO |
 
-**Total:** 67 Tasks (60 bestehende + 7 neue: DOC-04, LOC-01, TECHD-01, TECHD-02, TEST-01, DA-01) — plus 40 Closed.
+**Total:** 73 Tasks (60 bestehende + 13 neue: BA-05, DC-03, DC-04, DC-05, DC-06, SK-07, DOC-04, LOC-01, TECHD-01, TECHD-02, TEST-01, DA-01, DIPLO-03) — plus 44 Closed.
 
 **Sprint 9 Dependency-Edges (Rule 1.7 Pre-Note):**
 
