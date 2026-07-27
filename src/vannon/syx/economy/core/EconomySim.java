@@ -593,10 +593,6 @@ public final class EconomySim {
         WarehouseAutomation.reset();
         GiniConsequences.reset();
         CitizenClass.reset();
-        // P4: rngLoggedOnce zuruecksetzen damit Save/Load wieder frische Logs bekommt
-        if (active != null) {
-            active.rngLoggedOnce = false;
-        }
         active = null;
     }
 
@@ -1699,14 +1695,12 @@ public final class EconomySim {
     }
 
     // T6 (B-009): Hunger→Demographie Tracking
-    private final java.util.concurrent.atomic.AtomicInteger emigrationRisk = new java.util.concurrent.atomic.AtomicInteger();
     private int starvationRiskCount = 0;
-    private boolean rngLoggedOnce = false; // T6-Final: rate-limited RNG-Crash-Logging
 
     /**
      * T6 (B-009): Hunger→Demographie-Konsequenz. Pro Tick wird pro Buerger der
      * Engine-Hunger-Stat (NEEDS.TYPES().HUNGER) geprueft. Wenn > hungerDeathThreshold,
-     * wird Geld-Schaden (hungerDamageRate) abgezogen und Emigrations-Risiko erhoeht.
+     * wird Geld-Schaden (hungerDamageRate) abgezogen und Hunger-Todes-Risiko erhoeht.
      * Hook zwischen foodPlanController.update() und firmLedger.update(), damit die
      * Konsequenzen die naechste Firmen-Target-Berechnung beeinflussen.
      */
@@ -1737,30 +1731,9 @@ public final class EconomySim {
             if (this.wallets.get(h) >= walletDamage) {
                 this.wallets.charge(h, walletDamage);
             }
-            // D-002: Emigration 0.0001→0.00003 (1%/Tag statt 3%/Tag pro kritischem Bürger).
-            // Diagnose: 9/Tag bei median_wealth=0 — 3× zu aggressiv.
-            // D-002 Polish: Population-Floor-Guard — keine Emigration bei < 20 Bürgern.
-            // Wallet-Schaden trifft weiterhin, aber einzelne Abwanderungen sind in
-            // Kleinstädten unverhältnismäßig destruktiv (irreversible Death-Spirale).
-            try {
-                if (hunger >= 90 && RND.rFloat() < 0.00003 && this.roster.size() >= 20) {
-                    this.emigrationRisk.incrementAndGet();
-                } else {
-                    hungerDeaths++;
-                }
-            } catch (RuntimeException e) {
-                // RNG-Crash: loggen statt Counter inflationieren
-                if (!this.rngLoggedOnce) {
-                    EventLog.log("DEMOGRAPHY", "updateDemography: RND.rFloat() failed — " + e.getClass().getSimpleName());
-                    this.rngLoggedOnce = true;
-                }
-            }
+            hungerDeaths++;
         }
         this.starvationRiskCount = hungerDeaths;
-        // Drain emigrationRisk einmal pro Spiel-Tag (EconConfig.ticksPerGameDay).
-        if (this.ticks > 0 && this.ticks % EconConfig.ticksPerGameDay == 0) {
-            this.emigrationRisk.set(0);
-        }
     }
 }
 

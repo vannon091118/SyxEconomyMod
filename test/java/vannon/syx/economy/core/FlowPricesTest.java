@@ -84,30 +84,31 @@ class FlowPricesTest {
         assertTrue(cov > 0.0 && cov < 1.0);
     }
 
-    // ─── D-004: stock ignored when supplyPerDay ≤ 0 ──────────────────
+    // ─── BA-05: stock counts when supplyPerDay=0 but stock>0 ───────
 
     @Test
-    void d004_stockIgnoredWhenNoProduction() {
-        // stock=414, supply=0, demand=41.93 → old: projected=414-41.93=372, cov≈8.7
-        // new: effectiveStock=0, projected=0-41.93=-41.93, cov=0
+    void ba005_stockCountsWhenNoProductionButPositiveStock() {
+        // stock=414, supply=0, demand=41.93 → projected=414-41.93=372.07, target=41.93
         double cov = FlowPrices.effectiveCoverage(414.0, 0.0, 41.93, 1.0, 1.0);
-        assertEquals(0.0, cov, 1e-9,
-                "D-004: stock must be ignored when supplyPerDay=0");
+        assertEquals(372.07 / 41.93, cov, 1e-9,
+                "BA-05: stock must be counted when supplyPerDay=0 and stock>0");
     }
 
     @Test
-    void d004_stockCountedWhenProductionActive() {
+    void ba005_midGameFirstDemand_stockBasedCoverageAvoidsSpike() {
+        // Livetest-Beweis (Tag 88 VEGETABLE): stock=22, demand=0.43, supply=0
+        // projected=22-0.43=21.57, target=0.43 → coverage≈50.16
+        double cov = FlowPrices.effectiveCoverage(22.0, 0.0, 0.43, 1.0, 1.0);
+        assertEquals(21.57 / 0.43, cov, 1e-9,
+                "BA-05: positive stock should drive coverage when first demand appears");
+    }
+
+    @Test
+    void ba005_stockCountedWhenProductionActive() {
         // supply>0 → stock counts normally
         double cov = FlowPrices.effectiveCoverage(414.0, 10.0, 41.93, 1.0, 1.0);
         // projected=414+1*(10-41.93)=382.07, target=41.93 → 9.11
         assertTrue(cov > 1.0, "stock should count when supplyPerDay > 0");
-    }
-
-    @Test
-    void d004_zeroSupply_negativeProjected_resultsInZeroCoverage() {
-        // Exact _WOOD scenario from diagnostics
-        double cov = FlowPrices.effectiveCoverage(414.0, 0.0, 41.93, 1.0, 1.0);
-        assertEquals(0.0, cov, 1e-9);
     }
 
     // ─── scarcityMultiplier ───────────────────────────────────────────

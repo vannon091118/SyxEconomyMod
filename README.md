@@ -42,10 +42,10 @@ Mod-Pfad: `${user.home}/.local/share/songsofsyx/mods/SyxEconomyMod/V71/`
 ## Struktur
 
 ```
-src/vannon/syx/economy/        ← Mod-Eigentum (150 .java-Dateien, ~29.5k LOC)
-├── core/        112 Dateien,  21.062 LOC   (Economy-Sim, Wallets, Firmen, Logs)
-├── adapter/      27 Dateien,   5.086 LOC   (EngineMirror-SDK + ISyx* + Vanilla + Bypass-SDK)
-├── ui/            5 Dateien,   2.622 LOC   (4 Fenster + Base, 16 inline Tabs)
+src/vannon/syx/economy/        ← Mod-Eigentum (150 .java-Dateien, ~29.9k LOC)
+├── core/        112 Dateien,  21.391 LOC   (Economy-Sim, Wallets, Firmen, Logs)
+├── adapter/      27 Dateien,   5.164 LOC   (EngineMirror-SDK + ISyx* + Vanilla + Bypass-SDK)
+├── ui/            5 Dateien,   2.623 LOC   (4 Fenster + Base, 16 inline Tabs)
 ├── benchmark/     1 Datei,       328 LOC   (Reflection-vs-MethodHandle-Messung)
 └── warehouse/market/ 1 Datei,    51 LOC   (MarketSharedState, Sprint M-1)
 
