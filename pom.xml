@@ -174,6 +174,28 @@
                     </execution>
 
                     <!--
+                      Gate 9 (Sprint M-3): God-Class-Guard Preflight.
+                      Hard-Block (agents.md Rule 14): neue Java-Klassen > 800 LOC,
+                      > 35 PubM oder > 24 Fields werden geblockt. Grandfathered
+                      Files via tools/god-class-baselines.yml mit 5% Drift-Toleranz.
+                      Sprint M-3.1 plant Schema-Validation in load_baselines().
+                    -->
+                    <execution>
+                        <id>preflight-god-class-guard</id>
+                        <phase>validate</phase>
+                        <goals><goal>run</goal></goals>
+                        <configuration>
+                            <skip>${gate.skip}</skip>
+                            <target>
+                                <exec executable="bash" failonerror="true" dir="${basedir}">
+                                    <arg value="tools/god-class-guard.sh"/>
+                                    <arg value="--mode=hard"/>
+                                </exec>
+                            </target>
+                        </configuration>
+                    </execution>
+
+                    <!--
                       Gate B: Voller Master-Build-Gate (Audit + Version + Adapter).
                       Reihenfolge = Deklarationsreihenfolge der <execution>-Elemente in
                       DIESER Phase gleich. Maven antrun fuehrt gleichphasige Executions

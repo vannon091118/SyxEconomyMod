@@ -1,0 +1,168 @@
+version: '1.0'
+auto_generated: true
+generated_at: '2026-07-27T15:42:41'
+generator: tools/god-class-guard/emit_yaml.py
+limits:
+  loc_warn: 600
+  loc_block: 800
+  pubM_warn: 25
+  pubM_block: 35
+  fields_warn: 18
+  fields_block: 24
+  imports_warn: 25
+  imports_block: 40
+drift:
+  loc_pct: 0.05
+  pubM_pct: 0.1
+  fields_pct: 0.1
+exempt_patterns:
+- regex: ^src/.+/ui/Window[^/]*\.java$
+  rule: Rule 6 (UI-Window sakrosankt)
+- regex: ^src/.+/adapter/seam/[^/]*\.java$
+  rule: Rule 9 (BypassGate SDK)
+- regex: ^src/.+/benchmark/[^/]*\.java$
+  rule: Benchmark-Bundle
+- regex: ^src/.+/settlement/.*\.java$
+  rule: Heilbringer-Mod-Code
+heuristic_exemptions:
+- id: constants-dump
+  rule: fields>=50 AND pubM==0
+  applies_to: fields_cap_only
+legacy_baselines:
+  src/vannon/syx/economy/core/AffordabilityGate.java:
+    loc: 372
+    pubM: 25
+    fields: 29
+    imports: 23
+    status_at_emit: block
+    reason_at_emit: fields 29 > block 24
+  src/vannon/syx/economy/core/DiagnosticExporter.java:
+    loc: 299
+    pubM: 2
+    fields: 30
+    imports: 10
+    status_at_emit: block
+    reason_at_emit: fields 30 > block 24
+  src/vannon/syx/economy/core/EconConfig.java:
+    loc: 274
+    pubM: 7
+    fields: 205
+    imports: 0
+    status_at_emit: block
+    reason_at_emit: fields 205 > block 24
+  src/vannon/syx/economy/core/EconProgression.java:
+    loc: 279
+    pubM: 9
+    fields: 46
+    imports: 18
+    status_at_emit: block
+    reason_at_emit: fields 46 > block 24
+  src/vannon/syx/economy/core/EconomySim.java:
+    loc: 1381
+    pubM: 74
+    fields: 129
+    imports: 73
+    status_at_emit: block
+    reason_at_emit: loc 1381 > block 800; pubM 74 > block 35; fields 129 > block 24;
+      imports 73 > block 40 (coupling density)
+  src/vannon/syx/economy/core/EngineSeams.java:
+    loc: 156
+    pubM: 18
+    fields: 21
+    imports: 28
+    status_at_emit: warn
+    reason_at_emit: fields 21 > warn 18; imports 28 > warn 25 (coupling density)
+  src/vannon/syx/economy/core/FirmLedger.java:
+    loc: 757
+    pubM: 19
+    fields: 38
+    imports: 40
+    status_at_emit: block
+    reason_at_emit: loc 757 > warn 600; fields 38 > block 24; imports 40 > warn 25
+      (coupling density)
+  src/vannon/syx/economy/core/FlowMeter.java:
+    loc: 412
+    pubM: 23
+    fields: 23
+    imports: 26
+    status_at_emit: warn
+    reason_at_emit: fields 23 > warn 18; imports 26 > warn 25 (coupling density)
+  src/vannon/syx/economy/core/FoodTransactionPlan.java:
+    loc: 565
+    pubM: 17
+    fields: 42
+    imports: 39
+    status_at_emit: block
+    reason_at_emit: fields 42 > block 24; imports 39 > warn 25 (coupling density)
+  src/vannon/syx/economy/core/LocalPrices.java:
+    loc: 355
+    pubM: 16
+    fields: 27
+    imports: 26
+    status_at_emit: block
+    reason_at_emit: fields 27 > block 24; imports 26 > warn 25 (coupling density)
+  src/vannon/syx/economy/core/LoggingAdapter.java:
+    loc: 73
+    pubM: 3
+    fields: 25
+    imports: 1
+    status_at_emit: block
+    reason_at_emit: fields 25 > block 24
+  src/vannon/syx/economy/core/PropertyLedger.java:
+    loc: 294
+    pubM: 25
+    fields: 22
+    imports: 16
+    status_at_emit: warn
+    reason_at_emit: fields 22 > warn 18
+  src/vannon/syx/economy/core/Purchases.java:
+    loc: 266
+    pubM: 8
+    fields: 20
+    imports: 20
+    status_at_emit: warn
+    reason_at_emit: fields 20 > warn 18
+  src/vannon/syx/economy/core/StateWarehouses.java:
+    loc: 628
+    pubM: 30
+    fields: 42
+    imports: 32
+    status_at_emit: block
+    reason_at_emit: loc 628 > warn 600; fields 42 > block 24; imports 32 > warn 25
+      (coupling density)
+  src/vannon/syx/economy/core/Taxes.java:
+    loc: 179
+    pubM: 16
+    fields: 24
+    imports: 14
+    status_at_emit: warn
+    reason_at_emit: fields 24 > warn 18
+  src/vannon/syx/economy/core/TreasuryCrisis.java:
+    loc: 344
+    pubM: 3
+    fields: 35
+    imports: 0
+    status_at_emit: block
+    reason_at_emit: fields 35 > block 24
+  src/vannon/syx/economy/core/Wallets.java:
+    loc: 483
+    pubM: 31
+    fields: 62
+    imports: 15
+    status_at_emit: block
+    reason_at_emit: pubM 31 > warn 25; fields 62 > block 24
+  src/vannon/syx/economy/core/WarehouseMarket.java:
+    loc: 1785
+    pubM: 33
+    fields: 91
+    imports: 55
+    status_at_emit: block
+    reason_at_emit: loc 1785 > block 800; fields 91 > block 24; imports 55 > block
+      40 (coupling density)
+  src/vannon/syx/economy/ui/EconWindowBase.java:
+    loc: 278
+    pubM: 6
+    fields: 33
+    imports: 19
+    status_at_emit: block
+    reason_at_emit: fields 33 > block 24

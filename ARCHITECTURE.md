@@ -338,3 +338,26 @@ Mit Hysterese: `climbStepsDown`/`climbStepsUp` verhindern Flackern an Tier-Grenz
 | `mvn package` produziert `_Info.txt` | Maven-Filter aus `pom.xml` `<mod.info>` & `<mod.changelog>` |
 | `mvn clean install` bumpt `<version>` +0.0.1 | Antrun-Block in install-Phase |
 | Drift-Freiheit | `tools/verify-doc-sync.sh` PASS |
+
+
+## Quality-Gates (9 Gates — Master-Build-Gate Orchestrator)
+
+`tools/build-gate.sh` orchestriert 9 Gates in der Maven-`validate`-Phase:
+
+| # | Gate | Skript | Skip-Toggle | Hart-Block? |
+|---|---|---|---|---|
+| 1 | Stam-Doku-Sync | `verify-doc-sync.sh` | `SKIP_SYNC` | ✅ |
+| 2 | Code-Audit (silent failure) | `code-audit.sh` | `SKIP_AUDIT` | ✅ |
+| 3 | Version ↔ Changelog | `verify-version-consistency.sh` | `SKIP_VERSION_CHECK` | ✅ |
+| 4 | Adapter ↔ Engine-Signaturen | inline in `build-gate.sh` | — | ✅ |
+| 5 | Bytecode-Injection Audit | `audit-bytecode.sh` | — | ✅ |
+| 6 | Sim-Logic Audit | `audit-sim-logic.sh` | — | ✅ |
+| 7 | Schema-Validierung | inline (YAML ↔ Adapter) | — | ✅ |
+| 8 | Balance-Regression | `balance-regression-check.sh` | `SKIP_BALANCE` | ✅ |
+| **9** | **God-Class-Guard** | **`god-class-guard.sh`** | **`SKIP_GOD_GUARD`** | **✅** |
+
+Sprint M-3 fuehrt Gate 9 ein: Hard-Block gegen neue God-Files. Schwellen
+800 LOC / 35 PubM / 24 Fields. Pattern-Exempts fuer Rule 6 (UI-Windows),
+Rule 9 (BypassGate-SDK), Benchmark und Settlement-Bridges.
+Historic-Baseline-Drift-Toleranz: +5% LOC, +10% PubM/Fields.
+Siehe `agents.md` Rule 14 fuer Policy-Spec.

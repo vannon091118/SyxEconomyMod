@@ -51,6 +51,19 @@ Maschinenlesbare Validation der Dep-Edges ist Sprint-10-Folgeaufgabe (Gate 11 in
 
 ---
 
+| **T-GC-01** | 🟢 P3 | `tools/god-class-guard/parse_metrics.py` Per-File-Metrik-Parser (LOC/PubM/Fields/Imports, Annotation-Prefix-faehig). | ~140 | M-3 (in Sprint) |
+| **T-GC-02** | 🟢 P3 | `tools/god-class-guard/parse_yaml.py` YAML-Loader mit Validation (try/except, pre-compile regex, leerer-Regex-Schutz). | ~280 | M-3 (in Sprint) |
+| **T-GC-03** | 🟢 P3 | `tools/god-class-guard/emit_yaml.py` Auto-Generator fuer `tools/god-class-baselines.yml`. | ~110 | M-3 (in Sprint) |
+| **T-GC-04** | 🟢 P3 | `tools/god-class-guard.sh` + `run_check.py` Master-Wrapper mit `--mode=dry\|soft\|hard`. | ~235 | M-3 (in Sprint) |
+| **T-GC-05** | 🟢 P3 | `tools/god-class-baselines.yml` (auto-generiert, 19 grandfathered entries). | ~140 | M-3 (in Sprint) |
+| **T-GC-06** | 🟢 P3 | `tools/god-class-guard.on-failure.md` Recovery-Anleitung (3 Pfade). | ~70 | M-3 (in Sprint) |
+| **T-GC-07** | 🟢 P3 | `tools/tests/god-class-guard/run_meta_tests.sh` (4-Stub Meta-Tests + Assertions). | ~120 | M-3 (in Sprint) |
+| **T-GC-08** | 🟢 P3 | `tools/build-gate.sh` Gate 9 hinzu (`SKIP_GOD_GUARD=1` Toggle). | ~25 | M-3 (in Sprint) |
+| **T-GC-09** | 🟢 P3 | `pom.xml` `<execution>preflight-god-class-guard</execution>` (validate-Phase, failonerror=true). | ~25 | M-3 (in Sprint) |
+| **T-GC-10** | 🟢 P3 | `tools/install-hooks.sh` Pre-Commit-Hook Schritt `[4/4]`. | ~10 | M-3 (in Sprint) |
+| **T-GC-11** | 🟢 P3 | Stam-Docs integrieren: `agents.md` Rule 14, CHANGELOG M-3 Header, ARCHITECTURE Gate 9, README Build-Gates-Tabelle (4→9), GLOSSARY Tooling-Infrastruktur, ROADMAP §Global Task Index (diese Zeilen). | ~250 | M-3 (in Sprint) |
+| **T-GC-12** | 🟢 P3 | M-3 Atomic Commit + `mvn verify install -DskipTests -Dskip.bump=true` + Code-Reviewer-Pass. | 0 | M-3 (in Sprint) |
+
 ## Sprint 10 — Diagnostik-Fixes + UI-Zentralisierung (→ CHANGELOG v0.13.57)
 
 **D-001–D-006** (6 Tasks) + **UI-Zentralisierung** + **Dead-Code-Audit** → alle in CHANGELOG.md §v0.13.57 dokumentiert.

@@ -330,3 +330,36 @@ Sed-Block einmal ausgefuehrt (alle 5 Stam-Docs auf pom.xml <version>).
 **Reference-Data vs Stam-Doc** — Stam-Docs sind pom.xml-versioniert
 (5 Dateien). Reference-Data (BINDUNGSMATRIX.csv) ist nicht versioniert,
 kein sync-gate-Subjekt. Beide leben parallel.
+
+
+## 🟪 Kategorie 5: TOOLING-INFRASTRUKTUR (Sprint M-3)
+
+### God-Class-Guard (8 Dateien seit v0.13.61)
+
+**Purpose:** Hard-Block im Build-Gate (Gate 9) gegen neue God-Files und Drift in grandfathered Klassen. Verhindert dass zukuenftige Mod-Updates wieder Tier-1+Tier-2 God-Files produzieren.
+
+| Datei | Zweck |
+|---|---|
+| `tools/god-class-guard.sh` | Shell-Wrapper mit `--mode=dry\|soft\|hard`, `--json`, `--run-meta-tests` |
+| `tools/god-class-guard/parse_metrics.py` | Regex-basierter Java-Metrik-Parser (LOC, PubM, Fields, Imports) |
+| `tools/god-class-guard/parse_yaml.py` | YAML-Loader mit Validation (try/except auf kaputte YAML, pre-compile exempt_patterns) |
+| `tools/god-class-guard/emit_yaml.py` | Auto-Generator fuer `baselines.yml` aus aktuellem Repo-State |
+| `tools/god-class-guard/run_check.py` | Hauptrunner: scan, classify, aggregiere, Exit-Code 0/1/2 |
+| `tools/god-class-baselines.yml` | SSoT fuer grandfathered Metriken (auto-generated) |
+| `tools/god-class-guard.on-failure.md` | 3-Pfad Recovery-Anleitung (Refactor / Constants-Grandfather / Hybrid-Facade) |
+| `tools/tests/god-class-guard/run_meta_tests.sh` | 4-Stub Meta-Tests (T1 TinyGod BLOCK, T2 ExemptWindow PASS, T3 ConstantsDump PASS, T4 LegacyDrift BLOCK) |
+
+**Schwellwerte** (siehe `agents.md` Rule 14): LOC 800, PubM 35, Fields 24, Imports 40 (WARN-only).
+
+**Sancta-Patterns:** `ui/Window*` (Rule 6), `adapter/seam/*` (Rule 9), `benchmark/*`, `settlement/room/`.
+
+**Constants-Dump-Heuristik:** `fields >= 50 AND pubM == 0` → Fields-Cap entfaellt.
+
+**Historic-Baseline-Drift:** +5% LOC, +10% PubM/Fields ueber grandfathered Baseline.
+
+**Pipeline-Integration:**
+- `tools/build-gate.sh` → `[9/9] God-Class-Guard` mit `SKIP_GOD_GUARD=1`
+- `pom.xml` → `<execution>preflight-god-class-guard</execution>` in Maven `validate`-Phase
+- `tools/install-hooks.sh` → Pre-Commit-Hook Schritt `[4/4]`
+
+**Bypass (Notfaelle):** `SKIP_GOD_GUARD=1`, `-Dgate.skip=true`, oder `tools/god-class-baselines.yml` Edit mit Code-Reviewer-Begruendung.

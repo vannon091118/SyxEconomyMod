@@ -520,3 +520,48 @@ Diese Pre-Flight-Antwort ist Teil des User-facing-Sprint-Vorschlags.
 **BINDUNGSMATRIX.csv ist KEINE Task-Liste** — sie ist Datenmatrix
 für Engine-Hebel-Verifikation (332 Zeilen, 11 Spalten). Beide
 Welten sind getrennt.
+
+
+## Rule 14 — God-Class-Guard ist Hard-Block im Build-Gate (verbindlich ab v0.13.62)
+
+`Sprint M-3` fuehrt einen neuen **God-Class-Guard** als Hard-Block im Build-Gate ein. Verhindert, dass neue God-Files in zukuenftigen Sprint-Updates entstehen.
+
+**Schwellwerte (Hard-Block fuer neue Klassen):**
+- `LOC > 800` (brutto, ohne Leerzeilen/Comments) → BLOCK
+- `public methods > 35` (exkl. Konstruktoren, `is*`/`get*`/`set*`-Boilerplate) → BLOCK
+- `Fields > 24` (alle Klassen-Attribute) → BLOCK
+- `Imports > 40` (Coupling-Density) → WARN; nur Soft-Warnung
+
+**Sancta-Patterns (immer exemptet):**
+- `ui/Window*.java` — Rule 6 UI-Window-Struktur (TabContent als static inner class)
+- `adapter/seam/*.java` — Rule 9 BypassGate-SDK (Field/MethodAccessor Wrapper)
+- `benchmark/*.java` — Benchmark-Bundle
+- `settlement/room/..` — Heilbringer-Mod-Code
+
+**Constants-Dump-Heuristik:** `fields >= 50 AND pubM == 0` → Fields-Cap entfaellt (EconConfig-like Dateien sind legitim).
+
+**Historic-Baseline (Grandfathering):** Aktuelle Tier-1/Tier-2-God-Files sind in `tools/god-class-baselines.yml` mit ihren aktuellen Metriken eingefroren. Drift-Toleranz:
+- `LOC`: +5% ueber Baseline
+- `PubM` / `Fields`: +10% ueber Baseline
+
+Drift-UEberschreitung ist BLOCKER. Sprint-CI bricht ab. Drift-VERBESSERUNG (Refactoring Erfolg) ist Warning mit Empfehlung die baselines.yml upzudaten (manuell, sichtbar im Commit-Diff).
+
+**Skripte:**
+- `tools/god-class-guard.sh` — Master-Wrapper (delegiert an Python)
+- `tools/god-class-guard/` — 4 Python-Module (parse_metrics, parse_yaml, emit_yaml, run_check)
+- `tools/god-class-baselines.yml` — SSoT fuer grandfathered Files
+- `tools/tests/god-class-guard/run_meta_tests.sh` — Meta-Tests
+- `tools/god-class-guard.on-failure.md` — Failure-Recovery-Anleitung
+
+**Integration:**
+- Build-Gate Gate 9 (`tools/build-gate.sh`) mit `SKIP_GOD_GUARD=1`-Toggle
+- `pom.xml` preflight-Execution in `validate`-Phase (an `--mode=hard`)
+- Pre-Commit-Hook Schritt `[4/4]` via `tools/install-hooks.sh`
+
+**Bypass (nur fuer Notfaelle):**
+- `SKIP_GOD_GUARD=1` (env-var, einzelner Build)
+- `-Dgate.skip=true` (globaler Gate-Bypass, blockt alle Preflight-Gates)
+- `tools/god-class-baselines.yml` editieren (Sprint-End-Audit mit Reviewer-Begruendung)
+
+**Hard-Block bei Sprint-Drift:**
+Sobald Sprint M-x eine Tier-1-Datei modifiziert, schrumpft die Baseline. Wachstum ueber die neue Baseline +5% ist BLOCKER. Verhindert Feature-Creep nach abgeschlossenem Refactor.

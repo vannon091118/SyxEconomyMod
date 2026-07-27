@@ -147,6 +147,48 @@ bleibt bei 1.0 für gejagte Nahrung. Keine Phantom-Preis-Spikes mehr.
 
 ---
 
+### Sprint M-3 — God-Class-Guard Activation
+
+**Theme:** Hard-Block-Guard gegen neue God-Files im Build-Gate (Rule 14).
+
+Subsummierte Tasks (12 total, 1 atomic commit):
+
+- **T-GC-01** — `tools/god-class-guard/parse_metrics.py` — Per-File-Metrik-Parser (LOC,
+  pubM, fields, imports). Annotation-Prefix-faehig fuer `@Override` etc. (MEDIUM #4 Fix).
+- **T-GC-02** — `tools/god-class-guard/parse_yaml.py` — YAML-Loader mit try/except
+  (HIGH #2 Fix), pre-compile exempt_patterns regexes mit leerer-Regex-Erkennung
+  (HIGH #3 Fix). Status-UEbergang `pass→warn→block` statt nonlocal-Workaround.
+- **T-GC-03** — `tools/god-class-guard/emit_yaml.py` — Auto-Generator fuer
+  `tools/god-class-baselines.yml`. Erfasst grandfathered Files automatisch anhand
+  aktueller Metriken. Sprint-Planning-Tool, nicht im Build-Path.
+- **T-GC-04** — `tools/god-class-guard/run_check.py` + `tools/god-class-guard.sh` —
+  Master-Runner mit `--mode=dry|soft|hard`, `--json` und `--run-meta-tests`.
+- **T-GC-05** — `tools/god-class-baselines.yml` — 19 grandfathered entries
+  (auto-generiert aus aktuellem Repo-Stand). Top-3: EconomySim (1381 LOC),
+  WarehouseMarket (1785 LOC), FirmLedger (757 LOC).
+- **T-GC-06** — `tools/god-class-guard.on-failure.md` — 3-Pfad Recovery-Anleitung
+  (Refactor → Pfad A empfohlen, Constants-Dump Grandfather → Pfad B, Hybrid-Facade
+  → Pfad C).
+- **T-GC-07** — `tools/tests/god-class-guard/run_meta_tests.sh` — 4-Stub Meta-Tests:
+  T1 BLOCK (loc+pubM Limits), T2 PASS (Window-Pattern-Exempt),
+  T3 PASS (Constants-Dump-Heuristik), T4 BLOCK (Drift-Decision).
+- **T-GC-08** — `tools/build-gate.sh` — Gate 9 hinzugefuegt. SKIP_GOD_GUARD=1 Toggle.
+- **T-GC-09** — `pom.xml` — neue `<execution>` in `validate`-Phase
+  (`preflight-god-class-guard`), failonerror=true. Hard-Block.
+- **T-GC-10** — `tools/install-hooks.sh` — Pre-Commit-Hook Schritt [4/4].
+- **T-GC-11** — Stam-Docs: `agents.md` Rule 14, `CHANGELOG.md` dieser Eintrag,
+  `ARCHITECTURE.md` Gate 9, `README.md` Build-Gates-Tabelle 9 Eintraege,
+  `GLOSSARY.md` God-Class-Guard Eintrag, `ROADMAP.md` T-GC-01..T-GC-12 Status.
+- **T-GC-12** — Atomic Commit (Rule 12). Validation: `mvn verify install -DskipTests
+  -Dskip.bump=true` PASS, Code-Reviewer PASS, Stam-Docs Sync PASS.
+
+**Verification:**
+- `bash tools/god-class-guard.sh --run-meta-tests` → exit 2 (T1+T4 BLOCK; T2+T3 PASS)
+- `bash tools/god-class-guard.sh --mode=hard` → 132 PASS / 0 WARN / 0 BLOCK auf
+  aktueller Codebasis (alle 19 grandfathered innerhalb Drift-Caps)
+- `mvn verify install -DskipTests -Dskip.bump=true` → BUILD SUCCESS
+- Stam-Doc-Version bleibt v0.13.61 (kein Bump per `-Dskip.bump=true`)
+
 ## v0.13.56 — 2026-07-26
 
 ### Sprint 9 — UI Bugfixes (SK-01, SK-06, SK-09, SK-10)
