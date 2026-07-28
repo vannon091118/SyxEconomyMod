@@ -32,6 +32,8 @@ public final class Wallets {
     private final byte[] emigrating = new byte[60000];
     private final int[] seenTick = new int[60000];
     private final byte[] citizenClass = new byte[60000];
+    /** L-02: Per-Bürger Fatigue-Tracking (extrahiert nach FatigueTracker). */
+    final FatigueTracker fatigueTracker = new FatigueTracker();
     private int[] ownedSlots = new int[1024];
     private int ownedCount = 0;
     private final ArrayList<PendingDeparture> pendingDepartures = new ArrayList<>();
@@ -39,7 +41,7 @@ public final class Wallets {
     private final Induvidual[] induOf = new Induvidual[60000];
     private final Set<Induvidual> paidThisTick = new HashSet<>();
     private boolean seeded = false;
-    public static final int FORMAT = 33;
+    public static final int FORMAT = 34; // v34: added fatigue[] for L-02 SubjectFatigue
     private static final int OLDEST_COMPATIBLE_FORMAT = 19;
     // EconomySim global save version: 32 (introduces chunked layout for EconomySim)
     // Keep this in sync with EconomySim.CHUNKED_VERSION.
@@ -130,6 +132,7 @@ public final class Wallets {
             this.lastTaxRateBp[slot] = 0;
             this.taxAccrued[slot] = 0;
             this.citizenClass[slot] = 0; // will be reclassified
+            this.fatigueTracker.onNewCitizen(slot);
             minted = this.money[slot];
             if (!slotWasOwned) {
                 this.own(slot);
@@ -402,6 +405,7 @@ public final class Wallets {
             this.relRef[slot] = 0;
             this.emigrating[slot] = 0;
             this.citizenClass[slot] = 0;
+            this.fatigueTracker.onDeparture(slot);
             if (this.induOf[slot] != null) {
                 this.induSlot.remove(this.induOf[slot]);
                 this.induOf[slot] = null;
@@ -431,6 +435,7 @@ public final class Wallets {
         Arrays.fill(this.emigrating, (byte)0);
         Arrays.fill(this.seenTick, 0);
         Arrays.fill(this.citizenClass, (byte)0);
+        this.fatigueTracker.reset();
         Arrays.fill(this.induOf, null);
         this.induSlot.clear();
         this.pendingDepartures.clear();
@@ -439,11 +444,11 @@ public final class Wallets {
     }
 
     static boolean supportsFormat(int version) {
-        return version >= 19 && version <= 33;
+        return version >= 19 && version <= 34;
     }
 
     public void save(FilePutter file) {
-        file.i(33);
+        file.i(34);
         file.bool(this.seeded);
         file.is(this.money);
         file.is(this.owner);
@@ -453,6 +458,7 @@ public final class Wallets {
         file.is(this.rentDebt);
         file.is(this.taxAccrued);
         file.bs(this.citizenClass);
+        this.fatigueTracker.save(file);
     }
 
     public int load(FileGetter file) throws IOException {
@@ -482,6 +488,11 @@ public final class Wallets {
             Arrays.fill(this.citizenClass, (byte)0);
             // Classes will be recomputed when EconomySim calls classifyAll() after load.
         }
+        if (version >= 34) {
+            this.fatigueTracker.load(file);
+        } else {
+            this.fatigueTracker.loadLegacy();
+        }
         Arrays.fill(this.reserved, 0);
         this.ownedCount = 0;
         for (int slot = 0; slot < 60000; ++slot) {
@@ -507,27 +518,13 @@ public final class Wallets {
         }
     }
 
-    /**
-     * Reclassify all citizens based on current wealth, property, and origin.
-     * Should be called after WealthStats.recompute() to have fresh median.
-     */
+    /** @deprecated Use {@link CitizenClass#classifyAll(Wallets, Roster, WealthStats, PropertyLedger)}. */
     public void classifyAll(Roster roster, WealthStats stats, PropertyLedger ledger) {
-        if (!EconConfig.citizenClassesEnabled) return;
-        int median = stats.median;
-        for (int i = 0; i < roster.size(); ++i) {
-            Humanoid h = roster.get(i);
-            int wealth = this.netWorth(h);
-            CitizenClass c = CitizenClass.classify(h, wealth, median, ledger);
-            this.setClass(h, c);
-        }
+        CitizenClass.classifyAll(this, roster, stats, ledger);
     }
 
-    /**
-     * T7 (B-004): Anzahl der Buerger die aktuell als != UNCLASSIFIED klassifiziert sind.
-     * Liefert die Differenz people - activePeople die im BACKLOG als "3 missing" Symptom
-     * beschrieben ist.
-     */
-    public int classifiedCount() {
+    /** Internal: classified count (called by CitizenClass.classifiedCount). */
+    int classifiedCountInternal() {
         int count = 0;
         for (int i = 0; i < this.ownedCount; ++i) {
             int slot = this.ownedSlots[i];
@@ -536,8 +533,27 @@ public final class Wallets {
         return count;
     }
 
-    /** U-03: Anzahl der Bürger in einer bestimmten Klasse. */
-    public int countByClass(CitizenClass cc) {
+    // —— Fatigue (L-02) ——————————————————————————————————————————————
+
+    /** L-02: Fatigue-Wert eines Bürgers abrufen (delegiert an FatigueTracker). */
+    public int getFatigue(Humanoid h) {
+        int slot = this.liveSlot(h);
+        return this.fatigueTracker.getFatigue(slot);
+    }
+
+    /** L-02: Fatigue-Wert eines Bürgers abrufen (delegiert an FatigueTracker). */
+    public int getFatigue(Induvidual indu) {
+        Integer slot = this.induSlot.get(indu);
+        return this.fatigueTracker.getFatigue(slot == null ? -1 : slot);
+    }
+
+    /** L-02: Fatigue pro Tick aktualisieren (delegiert an FatigueTracker). */
+    public void updateFatigue() {
+        this.fatigueTracker.updateFatigue(this.induOf, this.owner);
+    }
+
+    /** Internal: count by class (called by CitizenClass.countByClass). */
+    int countByClassInternal(CitizenClass cc) {
         byte target = cc.toByte();
         int count = 0;
         for (int i = 0; i < this.ownedCount; ++i) {

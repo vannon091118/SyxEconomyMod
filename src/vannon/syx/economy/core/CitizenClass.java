@@ -225,4 +225,32 @@ public enum CitizenClass {
         popFailed = false;
         relFailed = false;
     }
+
+    // —— Wallets-delegated queries (extracted for God-Class-Guard) ————————
+
+    /**
+     * Reclassify all citizens. Moved from Wallets to reduce God-Class LOC.
+     * Should be called after WealthStats.recompute() to have fresh median.
+     */
+    public static void classifyAll(Wallets wallets, Roster roster,
+            WealthStats stats, PropertyLedger ledger) {
+        if (!EconConfig.citizenClassesEnabled) return;
+        int median = stats.median;
+        for (int i = 0; i < roster.size(); ++i) {
+            Humanoid h = roster.get(i);
+            int wealth = wallets.netWorth(h);
+            CitizenClass c = classify(h, wealth, median, ledger);
+            wallets.setClass(h, c);
+        }
+    }
+
+    /** Anzahl der Bürger die als != UNCLASSIFIED klassifiziert sind. */
+    public static int classifiedCount(Wallets wallets) {
+        return wallets.classifiedCountInternal();
+    }
+
+    /** Anzahl der Bürger in einer bestimmten Klasse. */
+    public static int countByClass(Wallets wallets, CitizenClass cc) {
+        return wallets.countByClassInternal(cc);
+    }
 }

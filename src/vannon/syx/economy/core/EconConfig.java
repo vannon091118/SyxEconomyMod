@@ -424,6 +424,22 @@ public final class EconConfig {
     public static int povertyPressureWealthThreshold = 500;
     public static double povertyPressureHappinessMin = 0.5;
 
+    // —— SubjectFatigue (L-02) ————————————————————————————————————————
+    public static boolean fatigueEnabled = true;
+    /** Fatigue-Punkte pro gearbeitetem Tick. Bürger über dem Schwellenwert
+     *  werden vom STAMINA-Booster gedrosselt — die Engine vergibt dann
+     *  weniger Arbeitspriorität (forcedRest indirekt). */
+    public static int fatiguePerTick = 1;
+    /** Schwellenwert ab dem der STAMINA-Multiplikator auf fatigueStaminaMin
+     *  absinkt. Bürger erholen sich wenn sie nicht arbeiten. */
+    public static int fatigueRestThreshold = 100;
+    /** Erholungsrate: Fatigue sinkt um diesen Wert pro Tick wenn der Bürger
+     *  gerade nicht arbeitet (STATS.WORK().EMPLOYED == null). */
+    public static int fatigueRecoveryRate = 5;
+    /** Minimaler STAMINA-Multiplikator bei maximaler Fatigue.
+     *  0.5 = halbe Arbeitsleistung, 0.0 = völlige Erschöpfung. */
+    public static double fatigueStaminaMin = 0.5;
+
     public static boolean debugLoggingEnabled = true;
 
     /**

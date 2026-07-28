@@ -620,6 +620,7 @@ public final class EconomySim {
             }
             this.roster.rebuild();
             this.wallets.clearPaidThisTick();
+            this.wallets.updateFatigue(); // L-02: Fatigue pro Tick (FatigueTracker delegation)
             if (this.roster.size() < 2) {
                 this.renderCaches.update(this.roster, this.wallets, this.stateWarehouses);
                 return;
@@ -733,7 +734,7 @@ public final class EconomySim {
             this.stats.recompute(this.roster, this.wallets);
             // Reclassify citizens after wealth stats update (Phase 3)
             if (EconConfig.citizenClassesEnabled) {
-                this.wallets.classifyAll(this.roster, this.stats, this.housingMarket.ledger());
+                CitizenClass.classifyAll(this.wallets, this.roster, this.stats, this.housingMarket.ledger());
             }
         }
         int dumpInterval = Math.max(1, (int)(EconConfig.dumpIntervalDays * TIME.secondsPerDay()));
@@ -1607,7 +1608,7 @@ public final class EconomySim {
             Humanoid h = this.roster.get(i);
             int hunger;
             try {
-                hunger = EngineSeams.hungerRaw(h);
+                hunger = EngineMirror.api().humanoids().getHungerRaw(h);
             } catch (RuntimeException e) {
                 continue; // SEAM-Defensive: Engine-Stat nicht lesbar → skip
             }

@@ -367,7 +367,7 @@ public final class WindowState extends EconWindowBase {
                 Wallets wallets = sim.wallets();
                 WealthStats stats = sim.stats();
                 int totalPop = sim.roster().size();
-                int classified = wallets.classifiedCount();
+                int classified = CitizenClass.classifiedCount(wallets);
 
                 addKpi(content, x, y, UI.icons().s.human, "Klassifiziert",
                     classified + " / " + totalPop, GCOLOR.T().NORMAL);
@@ -401,7 +401,7 @@ public final class WindowState extends EconWindowBase {
 
                 for (CitizenClass cc : CitizenClass.values()) {
                     if (cc == CitizenClass.UNCLASSIFIED) continue;
-                    int count = wallets.countByClass(cc);
+                    int count = CitizenClass.countByClass(wallets, cc);
                     GText nameText = new GText(UI.FONT().S, FONTW_LABEL);
                     nameText.set(cc.displayName);
                     nameText.color(count > 0 ? GCOLOR.T().NORMAL : GCOLOR.T().INACTIVE);

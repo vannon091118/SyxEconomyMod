@@ -33,6 +33,7 @@ public final class MainScript implements SCRIPT {
         GiniConsequences.register();
         PovertyPressure.register();
         HealthPressure.register();
+        FatiguePressure.register();
     }
 
     @Override
