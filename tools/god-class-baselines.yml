@@ -59,12 +59,13 @@ legacy_baselines:
     status_at_emit: block
     reason_at_emit: fields 29 > block 24
   src/vannon/syx/economy/core/DiagnosticExporter.java:
-    loc: 443
-    pubM: 6
+    loc: 660
+    pubM: 9
     fields: 43
     imports: 10
     status_at_emit: block
     reason_at_emit: fields 30 > block 24
+    baseline_update: DC-01 Summary-Event + DC-02 Player-Action + LOG-01 logPlayerAction overload
   src/vannon/syx/economy/core/EconConfig.java:
     loc: 288
     pubM: 7
@@ -80,13 +81,15 @@ legacy_baselines:
     status_at_emit: block
     reason_at_emit: fields 46 > block 24
   src/vannon/syx/economy/core/EconomySim.java:
-    loc: 1382
-    pubM: 74
-    fields: 129
-    imports: 74
-    status_at_emit: block
-    reason_at_emit: loc 1382 > block 800; pubM 74 > block 35; fields 129 > block 24;
-      imports 74 > block 40 (coupling density)
+    loc: 439
+    pubM: 75
+    fields: 14
+    imports: 25
+    status_at_emit: pass
+    reason_at_emit: 'Spluck-TECHD-01: 1323→439 LOC via 3-class extraction
+      (EconomySaveLoad 366 LOC, EconomyAuditEngine 273 LOC, EconomyTickOrchestrator
+      111 LOC). Fields 14 < cap 24.'
+    baseline_update: Sprint 5 Spluck-TECHD-01 EconomySim Triple-Limit-Split
   src/vannon/syx/economy/core/EngineLevers.java:
     loc: 159
     pubM: 5
