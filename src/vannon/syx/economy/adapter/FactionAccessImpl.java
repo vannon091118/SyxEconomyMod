@@ -1,5 +1,6 @@
 package vannon.syx.economy.adapter;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -11,10 +12,13 @@ import game.faction.diplomacy.DipWarPlayer;
 import game.faction.npc.FactionNPC;
 import game.faction.player.Player;
 import game.faction.royalty.Royalty;
+import game.faction.royalty.opinion.ROPINION;
 import game.faction.trade.TradeManager;
 import init.resources.RESOURCE;
 import init.race.Race;
 import snake2d.util.sets.LIST;
+import vannon.syx.economy.adapter.seam.BypassGate;
+import vannon.syx.economy.adapter.seam.MethodAccessor;
 import vannon.syx.economy.core.EngineLevers;
 import vannon.syx.economy.core.EventLog;
 import vannon.syx.economy.core.LoggingAdapter;
@@ -44,6 +48,9 @@ public final class FactionAccessImpl implements IFactionAccess {
     private final ISyxDiplomacy diplomacyAdapter;
     private final ISyxNpc npcAdapter;
 
+    // ─── Opinion Write (DIPLO-03) ───────────────────────────
+    private final MethodAccessor.VoidMethod opinionWriteMethod;
+
     // ─── Status ─────────────────────────────────────────────
     private final boolean initOk;
     private final Set<String> failedMethods = Collections.synchronizedSet(new HashSet<>());
@@ -59,6 +66,20 @@ public final class FactionAccessImpl implements IFactionAccess {
     public FactionAccessImpl(ISyxDiplomacy diplomacyAdapter, ISyxNpc npcAdapter) {
         this.diplomacyAdapter = diplomacyAdapter;
         this.npcAdapter = npcAdapter;
+
+        // DIPLO-03: BypassGate for ROPINION.setOpinionValue (package-private write API).
+        MethodAccessor.VoidMethod owm = null;
+        try {
+            BypassGate opinionGate = new BypassGate("FactionAccessImpl-Opinion",
+                    MethodHandles.lookup());
+            owm = opinionGate.voidMethod(ROPINION.class, "setOpinionValue",
+                    FactionNPC.class, double.class);
+        } catch (Throwable t) {
+            EventLog.log("SEAM", "FactionAccessImpl: ROPINION.setOpinionValue"
+                    + " not available — " + t.getClass().getSimpleName()
+                    + ": " + t.getMessage());
+        }
+        this.opinionWriteMethod = owm;
 
         // initOk: always true — public API + adapters provide fallbacks.
         // No reflection needed: TradeManager is public static, DIP.WAR_PLAYER()
@@ -447,6 +468,63 @@ public final class FactionAccessImpl implements IFactionAccess {
             return v;
         } catch (Throwable t) {
             return fail("royalty_rulerName", t, null);
+        }
+    }
+
+    // ─── Opinion / Trust (DIPLO-01) ─────────────────────────
+
+    @Override
+    public double getFactionOpinion(FactionNPC npc) {
+        if (!canAccess("royalty_opinion", EngineLevers.royaltyOpinionReadEnabled)) return 0.0;
+        if (npc == null) return 0.0;
+        try {
+            double v = ROPINION.get(npc);
+            trace("royalty_opinion", String.valueOf(v), "npc=" + (npc.race() != null ? npc.race().key : "?"));
+            return v;
+        } catch (Throwable t) {
+            return fail("royalty_opinion", t, 0.0);
+        }
+    }
+
+    @Override
+    public double getFactionTrust(FactionNPC npc) {
+        if (!canAccess("royalty_trust", EngineLevers.royaltyTrustReadEnabled)) return 0.0;
+        if (npc == null) return 0.0;
+        try {
+            double v = ROPINION.trust().get(npc);
+            trace("royalty_trust", String.valueOf(v), "npc=" + (npc.race() != null ? npc.race().key : "?"));
+            return v;
+        } catch (Throwable t) {
+            return fail("royalty_trust", t, 0.0);
+        }
+    }
+
+    @Override
+    public void adjustFactionOpinion(FactionNPC npc, double delta) {
+        if (!canAccess("royalty_opinionWrite", EngineLevers.royaltyOpinionWriteEnabled)) return;
+        if (npc == null || delta == 0.0) return;
+        if (opinionWriteMethod == null) {
+            // DIPLO-03: BypassGate not available — log intent only
+            try {
+                double current = ROPINION.get(npc);
+                trace("royalty_opinionWrite", "NO_GATE delta=" + delta
+                        + " current=" + String.format("%.1f", current),
+                        "npc=" + (npc.race() != null ? npc.race().key : "?"));
+            } catch (Throwable t) {
+                failVoid("royalty_opinionWrite", t);
+            }
+            return;
+        }
+        try {
+            double before = ROPINION.get(npc);
+            opinionWriteMethod.invoke(null, npc, delta);
+            double after = ROPINION.get(npc);
+            trace("royalty_opinionWrite", "APPLIED delta=" + delta
+                    + " before=" + String.format("%.1f", before)
+                    + " after=" + String.format("%.1f", after),
+                    "npc=" + (npc.race() != null ? npc.race().key : "?"));
+        } catch (Throwable t) {
+            failVoid("royalty_opinionWrite", t);
         }
     }
 

@@ -12,7 +12,7 @@ import settlement.room.main.RoomInstance;
 import snake2d.util.datatypes.COORDINATE;
 import vannon.syx.economy.core.ConstructionHoardPlan;
 import vannon.syx.economy.core.EconConfig;
-import vannon.syx.economy.core.EngineSeams;
+import vannon.syx.economy.adapter.IHumanoidAccess;
 import vannon.syx.economy.core.Roster;
 import vannon.syx.economy.core.StateWarehouses;
 import vannon.syx.economy.adapter.EngineMirror;
@@ -63,22 +63,21 @@ final class ConstructionHoardController {
             HAI hAI = worker.ai();
             if (!(hAI instanceof AIManager) || (manager = (AIManager)hAI).resourceCarried() != null) continue;
             boolean oddjobber = EconomySim.active().aiAdapter().isOddjobbing(worker);
-            RoomInstance workplace = EngineMirror.api() != null && EngineMirror.api().humanoids() != null
-                    ? EngineMirror.api().humanoids().getEmployedRoom(worker) : EngineSeams.employedRoom(worker);
+            IHumanoidAccess hum = EngineMirror.api().humanoids();
+            RoomInstance workplace = hum.getEmployedRoom(worker);
             boolean bl = idleBuilder = workplace != null && workplace.blueprint() == SETT.ROOMS().BUILDER && manager.plan() != null && WORK_WAIT_PLAN.equals(manager.plan().getClass().getName());
             if (!oddjobber && !idleBuilder) continue;
             
             Job current = (Job)SETT.JOBS().getter.get((COORDINATE)manager.planTile);
             if (oddjobber && current != null && current.jobReservedIs(current.resourceCurrentlyNeeded())) {
-                if (!this.plan.prepare(worker, current, targetedResources)) continue;
-                EngineSeams.overwritePlan(worker, (AIPLAN)this.plan);
+                if (!this.plan.prepare(worker, current, targetedResources)) continue;                    EngineMirror.api().humanoids().overwritePlan(worker, (AIPLAN)this.plan);
                 int key = current.jobCoo().x() << 16 | (current.jobCoo().y() & 0xFFFF);
                 int wanted = Math.min(8, Math.max(1, current.jobResourcesNeeded(worker)));
                 targetedResources.put(key, targetedResources.getOrDefault(key, 0) + wanted);
                 continue;
             }
             if (!this.plan.prepare(worker, targetedResources)) continue;
-            EngineSeams.overwritePlan(worker, (AIPLAN)this.plan);
+            EngineMirror.api().humanoids().overwritePlan(worker, (AIPLAN)this.plan);
             if (this.plan.lastPreparedJob() != null) {
                 Job job = this.plan.lastPreparedJob();
                 int key = job.jobCoo().x() << 16 | (job.jobCoo().y() & 0xFFFF);

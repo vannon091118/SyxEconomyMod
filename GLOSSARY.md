@@ -1,11 +1,11 @@
 # SyxEconomyMod — Klassen-Glossar
 
-> **Version:** v0.13.67 | **Stand:** 2026-07-26
+> **Version:** v0.13.70 | **Stand:** 2026-07-26
 >
 > Stam-Doku-Synchron-Anker: Die obenstehende Versions-Zeile MUSS identisch mit `pom.xml` `<version>` sein.
 > Der Sync-Gate `tools/verify-doc-sync.sh` validiert dies vor jedem `mvn compile`.
 >
-> Strukturierte Übersicht der **149 Java-Dateien** (core 111 + adapter 27 + ui 5 + warehouse/market 1 + benchmark 1 + bridges 4) des Mods.
+> Strukturierte Übersicht der **150 Java-Dateien** (core 112 + adapter 27 + ui 5 + warehouse/market 1 + benchmark 1 + bridges 4) des Mods.
 
 ---
 
@@ -66,7 +66,7 @@ private Zugriffe via BypassGate SDK, public Zugriffe via direkte Compilezeit-Lin
 | Klasse | LOC | Was sie tut |
 |---|---:|---|
 | **`EngineMirror`** | 184 | Zentrale Fassade: `api().rooms()/.factions()/.humanoids()/.stats()`. Init via `initFromBundle()`. |
-| **`EngineLevers`** | 289 | 103 Config-Toggles (97 boolean + 6 non-boolean) pro Vanilla-Zugriff für granulare Degradation. Liegt in `core/`. |
+| **`EngineLevers`** | 289 | 103 Config-Toggles (100 boolean + 3 non-boolean) pro Vanilla-Zugriff für granulare Degradation. Liegt in `core/`. |
 | **`IRoomAccess`** | 233 | Interface: 32 Methoden (Stockpile, Transport, Room-Iteration, Service). |
 | **`RoomAccessImpl`** | 712 | BypassGate hybrid Implementation. Station tally via cached Methods. |
 | **`IFactionAccess`** | 206 | Interface: 28 Methoden (NPC, Diplomacy, Trade, Royalty). Opinion/Trust-Lücke → Sprint DIPLO. |

@@ -30,12 +30,13 @@ heuristic_exemptions:
   applies_to: fields_cap_only
 legacy_baselines:
   src/vannon/syx/economy/adapter/FactionAccessImpl.java:
-    loc: 438
-    pubM: 1
-    fields: 31
-    imports: 17
+    loc: 506
+    pubM: 2
+    fields: 34
+    imports: 21
     status_at_emit: block
     reason_at_emit: fields 31 > block 24
+    baseline_update: DIPLO-03 BypassGate for ROPINION.setOpinionValue (+27 LOC, +4 imports)
   src/vannon/syx/economy/adapter/HumanoidAccessImpl.java:
     loc: 361
     pubM: 8
@@ -58,9 +59,9 @@ legacy_baselines:
     status_at_emit: block
     reason_at_emit: fields 29 > block 24
   src/vannon/syx/economy/core/DiagnosticExporter.java:
-    loc: 299
-    pubM: 2
-    fields: 30
+    loc: 443
+    pubM: 6
+    fields: 43
     imports: 10
     status_at_emit: block
     reason_at_emit: fields 30 > block 24

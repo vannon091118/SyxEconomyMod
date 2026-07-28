@@ -302,6 +302,12 @@ public final class EconConfig {
     public static boolean disableVanillaInflation = true;
     public static boolean diplomacyDebtBufferEnabled = true;
     public static long diplomacyDebtThreshold = -100000000L;
+    /** DIPLO-01: Verknüpft Wirtschafts-Indikatoren mit NPC-Opinion.
+     *  Wenn true, passt EconomySim.update() alle {@code opinionMonitorIntervalTicks}
+     *  die Opinion aller NPC-Fraktionen basierend auf TreasuryCrisis, Gini und Hunger an. */
+    public static boolean opinionEconomyLinkEnabled = true;
+    /** DIPLO-01: Alle N Ticks wird die Opinion-Monitor-Logik ausgeführt. */
+    public static int opinionMonitorIntervalTicks = 300;
     public static double taxHappinessAtFullRate = 0.5;
     public static double taxPainReference = 0.25;
     public static double taxPainFreeRate = 0.05;

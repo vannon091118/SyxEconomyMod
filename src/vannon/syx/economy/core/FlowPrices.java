@@ -105,30 +105,25 @@ public final class FlowPrices {
         return demandPerDay * targetCoverageDays;
     }
 
-    /** D-004: stock nur in Coverage zählen wenn tatsächlich Produktions-Zufluss existiert.
-     *  Ohne diesen Guard signalisiert ein volles Lager (stock=414) bei supplyPerDay=0
-     *  fälschlich Überfluss (coverage=8.7) → Preis kollabiert auf 0.05× Anker → Firmen
-     *  finden kein Holz obwohl Lager voll ist (broken link: Lager-Tracking ≠ Firmen-Input).
-     *  Mit Fix: supplyPerDay≤0 → effectiveStock=0 → coverage fällt → Preis steigt →
-     *  Scarcity-Signal korrekt.
-     *
-     *  Livetest v0.13.56 Cold-Start-Guard: Bei Spielstart ohne Lager/Werkstatt ist
-     *  supplyPerDay=0 UND stock=0 → effectiveStock=0 → projected negativ → coverage=0
-     *  → maximaler Scarcity-Multiplier → Steinpreis schießt auf 7.1× Anker.
-     *  Fix: Wenn supply=0 UND stock=0 (Cold-Start), neutrale Coverage (1.0) zurückgeben
-     *  statt 0 — "wissen wir noch nicht" statt "alles ist knapp". */
+    /** D-004/BA-05: Bestand-basierte Coverage.
+     *  Wenn supplyPerDay>0 ist, zählt der Bestand normal als Puffer gegen die Zuflussrate.
+     *  BA-05: Wenn supplyPerDay=0 aber stock>0 (z.B. Mid-Game erste Nachfrage erscheint),
+     *  muss der vorhandene Bestand als Coverage-Grundlage dienen, damit der Preis nicht
+     *  auf 0× Anker fällt oder auf maximalen Scarcity-Spike schießt.
+     *  Cold-Start-Guard: supplyPerDay=0 UND stock=0 → neutrale Coverage (0.4),
+     *  "wissen wir noch nicht" statt "alles ist knapp". */
     public static double effectiveCoverage(double stock, double supplyPerDay, double demandPerDay, double targetCoverageDays, double flowLookaheadDays) {
         double target = FlowPrices.targetStock(demandPerDay, targetCoverageDays);
         if (!(target > 0.0) || !Double.isFinite(target)) {
             return 1.0;
         }
         // Cold-Start / Full-Depletion Guard: supply=0 UND stock=0.
-        // Mid-Game-Breakdown (supply=0, stock>0) umgeht diesen Guard → D-004 bleibt intakt.
+        // Mid-Game-Breakdown (supply=0, stock>0) umgeht diesen Guard → BA-05 zählt stock.
         if (supplyPerDay <= 0.0 && stock <= 0.0) {
             return COLD_START_COVERAGE;
         }
         double beta = Math.max(0.0, flowLookaheadDays);
-        double effectiveStock = supplyPerDay > 0.0 ? Math.max(0.0, stock) : 0.0;
+        double effectiveStock = Math.max(0.0, stock);
         double projected = effectiveStock + beta * (supplyPerDay - demandPerDay);
         if (!Double.isFinite(projected)) {
             projected = projected > 0.0 ? Double.MAX_VALUE : 0.0;
