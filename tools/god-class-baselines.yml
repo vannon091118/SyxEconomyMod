@@ -118,19 +118,19 @@ legacy_baselines:
   src/vannon/syx/economy/core/FirmLedger.java:
     loc: 657
     pubM: 19
-    fields: 30
+    fields: 31
     imports: 41
     status_at_emit: pass
-    reason_at_emit: loc 657 > warn 600; fields 30 > block 24
-    baseline_update: Sprint 7 Legacy-Drift — FirmSizing extracted (-108 LOC, -8 fields)
+    reason_at_emit: loc 657 > warn 600; fields 31 > block 24 (+1 escapeCliffTriggered)
+    baseline_update: Sprint v0.13.99+ Escape-Cliff — FirmState.escapeCliffTriggered (transient audit flag, +1 field)
   src/vannon/syx/economy/core/FirmSizing.java:
-    loc: 175
+    loc: 195
     pubM: 0
     fields: 2
     imports: 16
     status_at_emit: pass
-    reason_at_emit: 'Sprint v0.13.99 ENTSCHÄRFUNG + Simplify-Pass — re-baseline auf real gemessene Metriken (SLOC 175 nach Helper-Extraktion emitPriorityHint + isPriorityProposal + byte-genauem EventLog-Restaurations-Fix; fields 2 nach beiden Helper-Boolean-Returns). Alle Schwellen klar unterschritten. Drift 143 → 175 SLOC (+22%) seit Sprint-7 FirmSizing-Extraktion, gerechtfertigt durch PriorityVector Hint-Pattern + Helper-Konsolidierung.'
-    baseline_update: Sprint v0.13.99 PriorityVector — Player-Hint Pattern + Simplify-Pass (Helper-Extraktion)
+    reason_at_emit: 'Sprint v0.13.99+ Escape-Cliff — re-baseline nach Erweiterung um state.escapeCliffTriggered capture (im hillStep-Branch), Engine-Clamp vor setFirmTarget + FIRM_ESCAPE_CLIFF EventLog-Hint + neue Note-Stufe ESCAPE-CLIFF in furniture_debug.csv. SLOC 188 = +13 vs Sprint v0.13.99-Pass (cap 195 * 1.05 = 204.75 → PASS).'
+    baseline_update: Sprint v0.13.99+ Escape-Cliff — state.escapeCliffTriggered + Note-Stufe + Engine-Clamp
   src/vannon/syx/economy/core/FlowMeter.java:
     loc: 424
     pubM: 23

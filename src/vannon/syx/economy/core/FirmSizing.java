@@ -68,8 +68,23 @@ final class FirmSizing {
         } else if (result.observedSlope() != 0.0 && target > oldBest) {
             state.marginal = FirmLedger.slopeClamp(result.observedSlope());
         }
-        state.marketTarget = result.nextTarget();
-        roomAccess.setFirmTarget(room, state.marketTarget);
+        // Sprint v0.13.99+ Escape-Cliff: Flag persistieren für furniture_debug-Audit-Trail,
+        // UND nextTarget zwingend clampen — Engine setFirmTarget darf nie blueprint-max+1 setzen.
+        state.escapeCliffTriggered = result.escapeCliff();
+        int maxEmp = room.employees().max();
+        int clampedTarget = Math.max(minimum, Math.min(maxEmp, result.nextTarget()));
+        state.marketTarget = clampedTarget;
+        roomAccess.setFirmTarget(room, clampedTarget);
+        if (result.escapeCliff()) {
+            // raw observedSlope statt state.marginal — letzteres kann stale sein
+            // (slopeClamp-bias aus vorigen ticks wenn weder target<oldBest noch target>oldBest).
+            EventLog.log("FIRM_ESCAPE_CLIFF",
+                    (room.blueprintI() != null ? room.blueprintI().key : "?")
+                            + " at blueprint-max=" + maxEmp
+                            + " marginal=" + String.format(java.util.Locale.ROOT, "%.2f", result.observedSlope())
+                            + " profit=" + String.format(java.util.Locale.ROOT, "%.2f", state.profit)
+                            + " — build additional instance");
+        }
     }
 
     static int initialMarketTarget(int employed, int maximum, int minimum) {
@@ -168,6 +183,8 @@ final class FirmSizing {
                     }
                     int producedDelta = snap.producedSinceLastSample(0);
                     // Note-Reihenfolge: kritische Stati übersteuern den Priority-Vorschlag.
+                    // Sprint v0.13.99+: ESCAPE-CLIFF vor PRIORITY-EXPAND (escape-cliff ist
+                    // spezifischer: explizit hillStep hat blueprint-max-recommendation gegeben).
                     String note;
                     if (hardTarget == 0 || marketTarget == 0) {
                         note = "TARGET-ZERO";
@@ -175,6 +192,8 @@ final class FirmSizing {
                         note = "PROFIT-NEGATIVE";
                     } else if (producedDelta == 0 && day > 5.0) {
                         note = "OUT-STUCK";
+                    } else if (s.escapeCliffTriggered) {
+                        note = "ESCAPE-CLIFF";
                     } else if (isPriorityProposal(s, hardTarget, marketTarget)) {
                         note = "PRIORITY-EXPAND";
                     } else {
