@@ -1,6 +1,6 @@
 # SyxEconomyMod
 
-> **Version:** v0.13.67 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-26
+> **Version:** v0.13.70 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-26
 >
 > Stam-Doku-Synchron-Anker: Die obenstehende Versions-Zeile MUSS identisch mit `pom.xml` `<version>` sein.
 > Der Sync-Gate `tools/verify-doc-sync.sh` validiert dies vor jedem `mvn compile`.
@@ -43,7 +43,7 @@ Mod-Pfad: `${user.home}/.local/share/songsofsyx/mods/SyxEconomyMod/V71/`
 
 ```
 src/vannon/syx/economy/        ← Mod-Eigentum (150 .java-Dateien, ~29.9k LOC)
-├── core/        112 Dateien,  21.391 LOC   (Economy-Sim, Wallets, Firmen, Logs)
+├── core/        113 Dateien,  21.391 LOC   (Economy-Sim, Wallets, Firmen, Logs)
 ├── adapter/      27 Dateien,   5.164 LOC   (EngineMirror-SDK + ISyx* + Vanilla + Bypass-SDK)
 ├── ui/            5 Dateien,   2.623 LOC   (4 Fenster + Base, 16 inline Tabs)
 ├── benchmark/     1 Datei,       328 LOC   (Reflection-vs-MethodHandle-Messung)

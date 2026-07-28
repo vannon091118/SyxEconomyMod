@@ -1,6 +1,6 @@
 # SyxEconomyMod — Architektur
 
-> **Version:** v0.13.67 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-26
+> **Version:** v0.13.70 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-26
 >
 > Stam-Doku-Synchron-Anker: Die obenstehende Versions-Zeile MUSS identisch mit `pom.xml` `<version>` sein.
 > Der Sync-Gate `tools/verify-doc-sync.sh` validiert dies vor jedem `mvn compile`.
@@ -72,7 +72,7 @@ Modul-Bilanz: **150 Java-Dateien, ~29.866 LOC** (core 21.391 + adapter 5.164 + u
 ╚═════════════════════════════════════╤══════════════════════════╝
                                        ▼
 ╔════════════════════════════════════════════════════════════════╗
-║  SCHICHT 2: Wirtschafts-Logik (`core/`, 110 Dateien)           ║
+║  SCHICHT 2: Wirtschafts-Logik (`core/`, 113 Dateien)           ║
 ║  Orchestrator: EconomySim — 6 Engines + 1 Facade (Sprint M-1) ║
 ╚═════════════════════════════════════╤══════════════════════════╝
                                        ▼

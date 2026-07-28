@@ -7,12 +7,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import settlement.entity.humanoid.Humanoid;
 import settlement.stats.Induvidual;
-import vannon.syx.economy.adapter.EngineMirror;
-import vannon.syx.economy.adapter.IHumanoidAccess;
+import vannon.syx.economy.adapter.EngineMirror;import vannon.syx.economy.adapter.IHumanoidAccess;
 import vannon.syx.economy.adapter.IStatsAccess;
 import vannon.syx.economy.core.CorveeController;
 import vannon.syx.economy.core.EconConfig;
-import vannon.syx.economy.core.EngineSeams;
 import vannon.syx.economy.core.Roster;
 import vannon.syx.economy.core.Wallets;
 
@@ -59,12 +57,12 @@ public final class OddjobMarket {
     public long update(Roster roster, Wallets wallets) {
         this.rotateSeason();
         boolean payWork = EconConfig.oddjobWageEnabled && !CorveeController.isCorveeToday();
-        IStatsAccess stats = EngineMirror.api() != null ? EngineMirror.api().stats() : null;
-        IHumanoidAccess hum = EngineMirror.api() != null ? EngineMirror.api().humanoids() : null;
-        double now = stats != null ? stats.getGameSecondsSinceStart() : EngineSeams.gameSecondsSinceStart();
+        IStatsAccess stats = EngineMirror.api().stats();
+        IHumanoidAccess hum = EngineMirror.api().humanoids();
+        double now = stats.getGameSecondsSinceStart();
         double elapsed = OddjobMarket.clockDelta(this.lastGameSecond, now);
         this.lastGameSecond = now;
-        double cycle = stats != null ? stats.getWorkCycleSeconds() : EngineSeams.workCycleSeconds();
+        double cycle = stats.getWorkCycleSeconds();
         // Phase 5e: cap oddjob-wage at defaultWage * oddjobWageCeilingRatio (default 0.75)
         // so Tagelöhner nie reguläre Arbeiter-Löhne überbieten. Migration zu XP-Berufen (Phase 5a)
         // funktioniert nur wenn Oddjob strukturell unattraktiv bleibt.
@@ -78,12 +76,12 @@ public final class OddjobMarket {
             boolean working;
             Humanoid h = roster.get(i);
             Induvidual indu = h.indu();
-            if (!(hum != null ? hum.isEmployableWorker(h) : EngineSeams.isEmployableWorker(h))) {
+            if (!hum.isEmployableWorker(h)) {
                 this.accruedSeconds.remove(indu);
                 continue;
             }
-            boolean oddjob = (hum != null ? hum.isSurplusLaborer(h) : EngineSeams.isSurplusLaborer(h)) || EconomySim.active().aiAdapter().isOddjobbing(h);
-            boolean bl = working = oddjob && (hum != null ? hum.isWorking(h) : EngineSeams.isWorking(h));
+            boolean oddjob = hum.isSurplusLaborer(h) || EconomySim.active().aiAdapter().isOddjobbing(h);
+            boolean bl = working = oddjob && hum.isWorking(h);
             if (working) {
                 ++this.activeWorkersNow;
             }
