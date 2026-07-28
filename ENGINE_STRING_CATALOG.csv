@@ -1,0 +1,152 @@
+Domain;Kategorie;String;Typ;Quelle-Klasse;Quelle-Pfad;Bundle-Gruppe;Funktionsvorschlag
+ECONOMY;Preise;ResourcePrices;Class;ResourcePrices;jar-extract/game/faction/trade/ResourcePrices.java;Preis-System;priceOf(res) → PolityPriceAnchor kapseln
+ECONOMY;Preise;price[];Field;ResourcePrices;jar-extract/game/faction/trade/ResourcePrices.java;Preis-System;double[] Cache — Mod nutzt FlowPrices stattdessen
+ECONOMY;Preise;lastCheck[];Field;ResourcePrices;jar-extract/game/faction/trade/ResourcePrices.java;Preis-System;int[] Timestamp-Cache — 16-Tick-Refresh
+ECONOMY;Preise;get(TRADABLE);Method;ResourcePrices;jar-extract/game/faction/trade/ResourcePrices.java;Preis-System;NPC-gewichteter Preis → getWorldPrice()
+ECONOMY;Preise;edible();Method;ResourcePrices;jar-extract/game/faction/trade/ResourcePrices.java;Preis-System;Essenspreis-Durchschnitt → foodBasketPrice()
+ECONOMY;Preise;edibleLow();Method;ResourcePrices;jar-extract/game/faction/trade/ResourcePrices.java;Preis-System;Günstigstes Essen → scarcitySignal
+ECONOMY;Preise;AVERAGE_PRICE;Constant;NPCStockpile;jar-extract/game/faction/trade/ResourcePrices.java;Preis-System;400 = Fallback wenn kein NPC handelt
+ECONOMY;Preise;FACTIONS.PRICE().get();Method;FACTIONS;vanilla-schema.yaml;Preis-System;Vanilla-Weltmarktpreis → PolityPriceAnchor Fallback
+ECONOMY;Trade;PTrade;Class;PTrade;jar-extract/game/faction/player/PTrade.java;Trade-Layer;pricesBuy/Sell → Mod ersetzt via Fiscal.settlePurchase
+ECONOMY;Trade;pricesBuy;Field;PTrade;jar-extract/game/faction/player/PTrade.java;Trade-Layer;HistoryTradable — Vanilla-Import-Kosten
+ECONOMY;Trade;pricesSell;Field;PTrade;jar-extract/game/faction/player/PTrade.java;Trade-Layer;HistoryTradable — Vanilla-Export-Erlös
+ECONOMY;Trade;pricesAve;Field;PTrade;jar-extract/game/faction/player/PTrade.java;Trade-Layer;HistoryTradable — Durchschnitt
+ECONOMY;Trade;unitsImported;Field;PTrade;jar-extract/game/faction/player/PTrade.java;Trade-Layer;HistoryTradable — Import-Menge
+ECONOMY;Trade;unitsExported;Field;PTrade;jar-extract/game/faction/player/PTrade.java;Trade-Layer;HistoryTradable — Export-Menge
+ECONOMY;Trade;priceImported;Field;PTrade;jar-extract/game/faction/player/PTrade.java;Trade-Layer;HistoryTradable — Import-Gesamtkosten
+ECONOMY;Trade;priceExported;Field;PTrade;jar-extract/game/faction/player/PTrade.java;Trade-Layer;HistoryTradable — Export-Gesamterlös
+ECONOMY;Trade;outImported;Field;PTrade;jar-extract/game/faction/player/PTrade.java;Trade-Layer;HistoryTradable — Ausgaben Import
+ECONOMY;Trade;inExported;Field;PTrade;jar-extract/game/faction/player/PTrade.java;Trade-Layer;HistoryTradable — Einnahmen Export
+ECONOMY;Trade;FactionNPC;Class;FactionNPC;vanilla-schema.yaml;NPC-Wirtschaft;NPC-Preise via NpcFactionAdapter setzen
+ECONOMY;Trade;NPCResources;Class;NPCResources;vanilla-schema.yaml;NPC-Wirtschaft;NPCResources.get(res) → FactionResource
+ECONOMY;Trade;FactionResource;Class;FactionResource;vanilla-schema.yaml;NPC-Wirtschaft;priceSell/priceBuy pro Ressource
+ECONOMY;Trade;priceSell;Field;FactionResource;vanilla-schema.yaml;NPC-Wirtschaft;private int — BypassGate.setInt()
+ECONOMY;Trade;priceBuy;Field;FactionResource;vanilla-schema.yaml;NPC-Wirtschaft;private int — BypassGate.setInt()
+ECONOMY;Trade;FCredits;Class;FCredits;vanilla-schema.yaml;NPC-Wirtschaft;credits().inc(amount,CTYPE) für NPC-Treasury
+ECONOMY;Trade;credits();Method;FCredits;vanilla-schema.yaml;NPC-Wirtschaft;double — int-cast Sub-Denar-Verlust
+ECONOMY;Trade;inc(amount,CTYPE);Method;FCredits;vanilla-schema.yaml;NPC-Wirtschaft;Treasury-Änderung mit CTYPE-Tracking
+ECONOMY;Treasury;UITreasury;Class;UITreasury;jar-extract/view/ui/economy/UITreasury.java;Vanilla-UI;Vanilla-Treasury-Anzeige — Mod hat WindowState
+ECONOMY;Config;RESOURCE.priceCapDef;Field;RESOURCE;vanilla-schema.yaml;Preis-System;JSON PRICE_CAP — Preisdeckel pro Ressource
+ECONOMY;Config;RESOURCE.priceMulDef;Field;RESOURCE;vanilla-schema.yaml;Preis-System;JSON PRICE_MUL — Preismultiplikator
+ECONOMY;Config;Config.sett();Method;Config;jar-extract/init/constant/Config.java;Config;ConfigSett — happiness, tourist, time-scale
+ECONOMY;Config;Config.world();Method;Config;jar-extract/init/constant/Config.java;Config;ConfigWorld — Welt-Konfiguration
+BOOSTING;Kategorie;BOOSTABLES;Class;BOOSTABLES;jar-extract/game/boosting/BOOSTABLES.java;Boost-System;Alle 402 Boostables zentral registriert
+BOOSTING;Kategorie;PHYSICS();Method;BOOSTABLES;jar-extract/game/boosting/BOOSTABLES.java;Boost-System;9 Keys: MASS,STAMINA,SPEED,ACCELERATION,HEALTH,RESISTANCE_HOT/COLD,SOILING,DEATH_AGE
+BOOSTING;Kategorie;BEHAVIOUR();Method;BOOSTABLES;jar-extract/game/boosting/BOOSTABLES.java;Boost-System;6 Keys: LAWFULNESS,SUBMISSION,LOYALTY,HAPPINESS,HAPPINESS_SLAVE,SANITY
+BOOSTING;Kategorie;NOBLE();Method;BOOSTABLES;jar-extract/game/boosting/BOOSTABLES.java;Boost-System;6 Keys: AGGRESSION,PRIDE,HONOR,MERCY,COMPETENCE,TOLERANCE
+BOOSTING;Kategorie;CIVICS();Method;BOOSTABLES;jar-extract/game/boosting/BOOSTABLES.java;Boost-System;GOV,DEFLATION,IMMIGRATION,SPOILAGE — Mod nutzt GOV+IMMIGRATION
+BOOSTING;Kategorie;RATES();Method;BOOSTABLES;jar-extract/game/boosting/BOOSTABLES.java;Boost-System;RATES_HUNGER etc. — Mod via AffordabilityGate
+BOOSTING;Kategorie;ROOMS();Method;BOOSTABLES;jar-extract/game/boosting/BOOSTABLES.java;Boost-System;~35 Raum-Booster — Mod liest via Industry
+BOOSTING;Kategorie;CONSUMPTION();Method;BOOSTABLES;jar-extract/game/boosting/BOOSTABLES.java;Boost-System;Verbrauchs-Booster pro Raum
+BOOSTING;Kategorie;BATTLE;Class;BOOSTABLES;jar-extract/game/boosting/BOOSTABLES.java;Boost-System;OFFENCE_SKILL,DEFENCE_SKILL,FORMATION_SKILL,DEXTERITY,BLOCK,CHARGE,MORALE
+BOOSTING;Kategorie;ACTIVITY;Class;BOOSTABLES;jar-extract/game/boosting/BOOSTABLES.java;Boost-System;MOURN,PUNISHMENT,JUDGE,SOCIAL
+BOOSTING;Kategorie;BDAMAGE;Class;BOOSTABLES;jar-extract/game/boosting/BOOSTABLES.java;Boost-System;MAPPED — Kampf-Schadenstypen
+BOOSTING;API;BOOSTING;Class;BOOSTING;jar-extract/game/boosting/BOOSTING.java;Boost-API;clear(),finishSetup() — Lifecycle
+BOOSTING;API;BOOSTING.push(cat,key,val);Method;BOOSTING;jar-extract/game/boosting/BOOSTING.java;Boost-API;BoosterValue.add() via Mod → push()
+BOOSTING;API;BOOSTING.available();Method;BOOSTING;jar-extract/game/boosting/BOOSTING.java;Boost-API;String[] — DebugTab Dump aller aktiven Booster
+BOOSTING;API;BoostSpecs;Class;BoostSpecs;jar-extract/game/boosting/BoostSpecs.java;Boost-API;push(Boostable,Booster), remove(Boostable), MUL/ADD
+BOOSTING;API;BoostSpecs.push(...);Method;BoostSpecs;jar-extract/game/boosting/BoostSpecs.java;Boost-API;Mehrere Overloads — registriert Faktor auf Boostable
+BOOSTING;API;BoostSpecs.remove(target);Method;BoostSpecs;jar-extract/game/boosting/BoostSpecs.java;Boost-API;Entfernt BoostSpec — Cleanup
+BOOSTING;Konstanten;PHYSICS_MASS;Constant;BOOSTABLES.Physics;jar-extract/game/boosting/BOOSTABLES.java;Boost-Keys;80.0 default
+BOOSTING;Konstanten;PHYSICS_STAMINA;Constant;BOOSTABLES.Physics;jar-extract/game/boosting/BOOSTABLES.java;Boost-Keys;1.0 default
+BOOSTING;Konstanten;PHYSICS_SPEED;Constant;BOOSTABLES.Physics;jar-extract/game/boosting/BOOSTABLES.java;Boost-Keys;4.5 default
+BOOSTING;Konstanten;PHYSICS_DEATH_AGE;Constant;BOOSTABLES.Physics;jar-extract/game/boosting/BOOSTABLES.java;Boost-Keys;100 default — Alter-Geld-Kopplung?
+BOOSTING;Konstanten;BEHAVIOUR_LOYALTY;Constant;BOOSTABLES.Behaviour;jar-extract/game/boosting/BOOSTABLES.java;Boost-Keys;Mod nutzt via GiniConsequences
+BOOSTING;Konstanten;BEHAVIOUR_LAWFULNESS;Constant;BOOSTABLES.Behaviour;jar-extract/game/boosting/BOOSTABLES.java;Boost-Keys;Ungenutzt — StatsLaw-Ersatz denkbar
+BOOSTING;Konstanten;BEHAVIOUR_SUBMISSION;Constant;BOOSTABLES.Behaviour;jar-extract/game/boosting/BOOSTABLES.java;Boost-Keys;Ungenutzt — Enslavement-Vektor
+BOOSTING;Konstanten;BEHAVIOUR_HAPPINESS;Constant;BOOSTABLES.Behaviour;jar-extract/game/boosting/BOOSTABLES.java;Boost-Keys;Ungenutzt — HealthPressure Ersatz?
+BOOSTING;Konstanten;BEHAVIOUR_SANITY;Constant;BOOSTABLES.Behaviour;jar-extract/game/boosting/BOOSTABLES.java;Boost-Keys;Ungenutzt — Psychologie-Vektor
+BOOSTING;Konstanten;NOBLE_AGGRESSION;Constant;BOOSTABLES.Noble;jar-extract/game/boosting/BOOSTABLES.java;Boost-Keys;Ungenutzt — KI-Steuerung
+BOOSTING;Konstanten;NOBLE_COMPETENCE;Constant;BOOSTABLES.Noble;jar-extract/game/boosting/BOOSTABLES.java;Boost-Keys;Ungenutzt — Admin-Effizienz?
+BOOSTING;Konstanten;CIVICS_GOV;Constant;BOOSTABLES.CIVICS;jar-extract/game/boosting/BOOSTABLES.java;Boost-Keys;default=5 — Mod via EconProgression.adminBoostActive
+BOOSTING;Konstanten;CIVICS_IMMIGRATION;Constant;BOOSTABLES.CIVICS;jar-extract/game/boosting/BOOSTABLES.java;Boost-Keys;default=4.5 — Mod via MeticImmigration
+BOOSTING;Konstanten;CIVICS_DEFLATION;Constant;BOOSTABLES.CIVICS;jar-extract/game/boosting/BOOSTABLES.java;Boost-Keys;default=1.0 — wirkungslos weil disableVanillaInflation
+BOOSTING;Konstanten;CIVICS_SPOILAGE;Constant;BOOSTABLES.CIVICS;jar-extract/game/boosting/BOOSTABLES.java;Boost-Keys;default=1.0 — Verderb-Beschleuniger
+POPULATION;Stats;StatsPopulation;Class;StatsPopulation;jar-extract/settlement/stats/colls/StatsPopulation.java;Settlement-Stats;POP.physical/tot/next — Mod-Grundlage
+POPULATION;Stats;StatsGovern;Class;StatsGovern;jar-extract/settlement/stats/colls/StatsGovern.java;Settlement-Stats;tourismFriend, tourismEnemy, RICHES
+POPULATION;Stats;StatsNeeds;Class;StatsNeeds;jar-extract/settlement/stats/colls/StatsNeeds.java;Settlement-Stats;SNEEDS,OTHERS,EXHASTION,INJURIES,EXPOSURE,DIRTINESS
+POPULATION;Stats;tourismFriend;Field;StatsGovern;jar-extract/settlement/stats/colls/StatsGovern.java;Settlement-Stats;STAT — Tourismus-Freund
+POPULATION;Stats;tourismEnemy;Field;StatsGovern;jar-extract/settlement/stats/colls/StatsGovern.java;Settlement-Stats;STAT — Tourismus-Feind
+POPULATION;Stats;RICHES;Field;StatsGovern;jar-extract/settlement/stats/colls/StatsGovern.java;Settlement-Stats;STAT — Reichtum pro Klasse/Rasse
+POPULATION;Stats;SNEEDS;Field;StatsNeeds;jar-extract/settlement/stats/colls/StatsNeeds.java;Settlement-Stats;LIST<StatNeedNormal> — alle Service-Bedürfnisse
+POPULATION;Stats;EXHASTION;Field;StatsNeeds;jar-extract/settlement/stats/colls/StatsNeeds.java;Settlement-Stats;STAT — Erschöpfung
+POPULATION;Stats;INJURIES;Field;StatsNeeds;jar-extract/settlement/stats/colls/StatsNeeds.java;Settlement-Stats;StatDanger — Verletzungen
+POPULATION;Stats;EXPOSURE;Field;StatsNeeds;jar-extract/settlement/stats/colls/StatsNeeds.java;Settlement-Stats;StatExposure — Kälte/Hitze-Exposition
+POPULATION;Stats;DIRTINESS;Field;StatsNeeds;jar-extract/settlement/stats/colls/StatsNeeds.java;Settlement-Stats;INT_OE<Induvidual> — Hygiene
+POPULATION;Races;RDRaces;Class;RDRaces;jar-extract/world/region/pop/RDRaces.java;Rassen-Daten;all(LIST<RDRace>),capacity(Boostable),edicts(RDEdicts),population(RData)
+POPULATION;Races;RDRace;Class;RDRace;jar-extract/world/region/pop/RDRace.java;Rassen-Daten;race(Race),population — Biomes, Targets
+POPULATION;Races;RacePopulation;Class;RacePopulation;jar-extract/init/race/RacePopulation.java;Rassen-Daten;growth=0.0001 per Rasse aus JSON
+POPULATION;Races;CatPopulation;Class;CatPopulation;jar-extract/view/sett/ui/standing/CatPopulation.java;Rassen-Daten;UI für Bevölkerungs-Kategorien
+POPULATION;Races;CatPopulationGrowth;Class;CatPopulationGrowth;jar-extract/view/sett/ui/standing/CatPopulationGrowth.java;Rassen-Daten;UI für Wachstums-Kategorien
+POPULATION;Edicts;RDEdicts;Class;RDEdicts;jar-extract/world/region/pop/RDEdicts.java;Edict-System;Edict-Daten pro Rasse/Region
+POPULATION;API;POP.physical(c,r);Method;POP;vanilla-schema.yaml;Pop-API;CITIZEN+CHILD+RIOTER+DERANGED → Mod nutzt für Food-Days
+POPULATION;API;POP.tot(c,r);Method;POP;vanilla-schema.yaml;Pop-API;physical+others — Vollzählung
+POPULATION;API;POP.next(c,r);Method;POP;vanilla-schema.yaml;Pop-API;tot+PARENT+onTheirWay — Drink-Days via physischZ.25
+BUILDING;Rooms;RDBuildings;Class;RDBuildings;jar-extract/world/region/building/RDBuildings.java;Bau-Daten;Globale Bau-Definitionen
+BUILDING;Rooms;RDBuilding;Class;RDBuilding;jar-extract/world/region/building/RDBuilding.java;Bau-Daten;Einzelnes Gebäude — Kosten, Output, Arbeiter
+BUILDING;Rooms;RDBuildingLevel;Class;RDBuildingLevel;jar-extract/world/region/building/RDBuildingLevel.java;Bau-Daten;Level-Upgrade-Daten
+BUILDING;Rooms;RDBuildingCat;Class;RDBuildingCat;jar-extract/world/region/building/RDBuildingCat.java;Bau-Daten;Gebäude-Kategorie
+BUILDING;Rooms;RDBuildPoints;Class;RDBuildPoints;jar-extract/world/region/building/RDBuildPoints.java;Bau-Daten;Bau-Punkte pro Gebäude
+BUILDING;Rooms;Creator;Class;Creator;jar-extract/world/region/building/Creator.java;Bau-Daten;Gebäude-Erzeuger
+BUILDING;Output;RDOutputs;Class;RDOutputs;jar-extract/world/region/RDOutputs.java;Output-Daten;ALL(LIST<RDOutput>),MONEY(RDOutput),RES, squeezeAmountDays
+BUILDING;Output;MONEY;Field;RDOutputs;jar-extract/world/region/RDOutputs.java;Output-Daten;RDOutput — Geld-Output
+BUILDING;Output;RES;Field;RDOutputs;jar-extract/world/region/RDOutputs.java;Output-Daten;LIST<RDResource> — Ressourcen-Outputs
+BUILDING;Config;Config.battle();Method;Config;jar-extract/init/constant/Config.java;Config;ConfigBattle — morale, training, division size, damage reduction
+UI;Goods;UIGoods;Class;UIGoods;jar-extract/view/ui/goods/UIGoods.java;Vanilla-UI;Waren-UI — Mod hat WindowEconomy
+UI;Goods;UIGoodsImport;Class;UIGoodsImport;jar-extract/view/ui/goods/UIGoodsImport.java;Vanilla-UI;Import-UI — Vanilla pricesBuy()
+UI;Goods;UIGoodsExport;Class;UIGoodsExport;jar-extract/view/ui/goods/UIGoodsExport.java;Vanilla-UI;Export-UI
+UI;Treasury;UITreasury;Class;UITreasury;jar-extract/view/ui/economy/UITreasury.java;Vanilla-UI;credits-Anzeige — Mod-Preise unsichtbar
+BYPASS;Schema;SchemaResolver;Class;SchemaResolver;solutions/bypassgate/SchemaResolver.java;Bypass-Infra;get(),setInt(),getInt() — bytecode-sicherer Reflection-Zugriff
+BYPASS;Schema;VanillaClassSchema;Class;VanillaClassSchema;solutions/bypassgate/VanillaClassSchema.java;Bypass-Infra;@Value @Builder — Schema-Repräsentation
+BYPASS;Schema;vanilla-schema.json5;File;vanilla-schema.json5;solutions/bypassgate/vanilla-schema.json5;Bypass-Infra;JSON5-Schema — alle angefassten Klassen
+BYPASS;Schema;bypassGate;Flag;VanillaClassSchema;solutions/bypassgate/vanilla-schema.json5;Bypass-Infra;true=ReflectionUtil.setAccessible, false=public API
+BYPASS;Factory;BypassGateFactory;Class;BypassGateFactory;info 1/BypassGateFactory.java;Bypass-Infra;Typ-sichere Adapter-Factory → NpcPriceAdapter, PriceInfluence
+BYPASS;Factory;NpcPriceAdapter;Class;BypassGateFactory;info 1/BypassGateFactory.java;Bypass-Infra;getSellPrice,setSellPrice,getBuyPrice,setBuyPrice,getTreasury,incTreasury
+BYPASS;Factory;PriceInfluence;Class;BypassGateFactory;info 1/BypassGateFactory.java;Bypass-Infra;syncAllNpcPrices(modPriceProvider) → schreibt Mod-Preise in ALLE NPCs
+BYPASS;Factory;adaptFactionNPC(npc);Method;BypassGateFactory;info 1/BypassGateFactory.java;Bypass-Infra;Erzeugt NpcPriceAdapter für eine FactionNPC
+BYPASS;Factory;getAllNpcs();Method;BypassGateFactory;info 1/BypassGateFactory.java;Bypass-Infra;FACTIONS.NPCs() via Reflection — alle NPC-Faktionen
+BYPASS;Factory;getWorldPrice(key);Method;BypassGateFactory;info 1/BypassGateFactory.java;Bypass-Infra;FACTIONS.PRICE().get(tradable) via RESOURCE.byKey()
+BYPASS;Factory;CLASS_FACTION_NPC;Constant;BypassGateFactory;info 1/BypassGateFactory.java;Bypass-Infra;"game.faction.npc.FactionNPC" — Schema-Konstante
+BYPASS;Factory;CLASS_NPC_RESOURCES;Constant;BypassGateFactory;info 1/BypassGateFactory.java;Bypass-Infra;"game.faction.npc.NPCResources" — Schema-Konstante
+BYPASS;Factory;CLASS_FACTION_RESOURCE;Constant;BypassGateFactory;info 1/BypassGateFactory.java;Bypass-Infra;"game.faction.npc.NPCResources$FactionResource" — Schema-Konstante
+BYPASS;Factory;CLASS_F_CREDITS;Constant;BypassGateFactory;info 1/BypassGateFactory.java;Bypass-Infra;"game.faction.FCredits" — Schema-Konstante
+FIXES;UI;SK01_CheckboxHoverFix;Class;solutions/SK01_CheckboxHoverFix.java;solutions/SK01_CheckboxHoverFix.java;UI-Fixes;Checkbox-Beschreibung in Hover-Tooltip statt Inline
+FIXES;UI;SK02_SliderLabelFix;Class;solutions/SK02_SliderAnzeige.java;solutions/SK02_SliderAnzeige.java;UI-Fixes;Label in GSliderInt integrieren
+FIXES;UI;SK03_TabColumnWidthFix;Class;solutions/SK03_TabColumnWidthFix.java;solutions/SK03_TabColumnWidthFix.java;UI-Fixes;Tabulator-Breite dynamisch berechnen
+FIXES;UI;SK04_ButtonTruncationFix;Class;solutions/SK04_ButtonTruncationFix.java;solutions/SK04_ButtonTruncationFix.java;UI-Fixes;Button-Text-Truncation via Breite/Tooltip
+FIXES;UI;SK05_GridGapFix;Class;solutions/SK05_GridGapFix.java;solutions/SK05_GridGapFix.java;UI-Fixes;GGrid-Lücken via Spalten/skip()-Logik
+FIXES;UI;SK06_ResourceNameFix;Class;solutions/SK06_ResourceNameFix.java;solutions/SK06_ResourceNameFix.java;UI-Fixes;RESOURCE.name statt .key in Labels
+FIXES;UI;SK07_ChronicFix;Class;solutions/SK07_ChronicFix.java;solutions/SK07_ChronicFix.java;UI-Fixes;LOG.ln()-Debug durch History*-Objekte ersetzen
+FIXES;UI;SK08_TextClippingFix;Class;solutions/SK08_TextClippingFix.java;solutions/SK08_TextClippingFix.java;UI-Fixes;maxWidth dynamisch auf Panel-Innenbreite
+FIXES;UI;SK09_ZeroColorFix;Class;solutions/SK09_ZeroColorFix.java;solutions/SK09_ZeroColorFix.java;UI-Fixes;0-Werte nicht grün einfärben
+FIXES;UI;SK10_EmptyTableFix;Class;solutions/SK10_EmptyTableFix.java;solutions/SK10_EmptyTableFix.java;UI-Fixes;Header nur rendern wenn Daten vorhanden
+FIXES;UI;SK11_LineSpacingFix;Class;solutions/SK11_LineSpacingFix.java;solutions/SK11_LineSpacingFix.java;UI-Fixes;margin in GuiSection.addDown() korrigieren
+TRADE;NPC;NpcFactionAdapter;Class;NpcFactionAdapter;src/vannon/syx/economy/adapter/NpcFactionAdapter.java;NPC-Adapter;ISyxNpc Implementierung — priceSell/priceBuy
+TRADE;NPC;ISyxNpc;Interface;ISyxNpc;src/vannon/syx/economy/adapter/ISyxNpc.java;NPC-Adapter;Interface — getSellPrice, setSellPrice, getBuyPrice, setBuyPrice
+TRADE;NPC;RESOURCES.ALL();Method;RESOURCES;vanilla-schema.yaml;NPC-Adapter;LIST<RESOURCE> — Iteration für NPC-Preis-Sync
+TRADE;NPC;RESOURCE.key();Method;RESOURCE;vanilla-schema.yaml;NPC-Adapter;String — Ressource-Identifikation
+TRADE;NPC;RESOURCE.tr();Method;RESOURCE;vanilla-schema.yaml;NPC-Adapter;TRADABLE — für FACTIONS.PRICE().get()
+TRADE;NPC;FACTIONS.NPCs();Method;FACTIONS;vanilla-schema.yaml;NPC-Adapter;LIST<FactionNPC> — alle NPC-Fraktionen
+TRADE;NPC;FACTIONS.player();Method;FACTIONS;vanilla-schema.yaml;NPC-Adapter;Spieler-Faktion
+DIPLOMACY;War;DipWarPlayer;Class;DipWarPlayer;vanilla-schema.yaml;Krieg-System;upI,pPow,coalitionPow,bWilling — 4 Bypass-Felder
+DIPLOMACY;War;upI;Field;DipWarPlayer;vanilla-schema.yaml;Krieg-System;int — BypassGate.intField()
+DIPLOMACY;War;pPow;Field;DipWarPlayer;vanilla-schema.yaml;Krieg-System;int — BypassGate.intField()
+DIPLOMACY;War;coalitionPow;Field;DipWarPlayer;vanilla-schema.yaml;Krieg-System;int — BypassGate.intField()
+DIPLOMACY;War;bWilling;Field;DipWarPlayer;vanilla-schema.yaml;Krieg-System;boolean — BypassGate.boolMethod()
+TRANSPORT;Logistik;TransportInstance;Class;TransportInstance;vanilla-schema.yaml;Transport;distance(float) — PathFind-Manipulation via ISyxTransport
+TRANSPORT;Logistik;distance;Field;TransportInstance;vanilla-schema.yaml;Transport;float — BypassGate.floatField()
+TRANSPORT;Logistik;ISyxTransport;Interface;ISyxTransport;src/vannon/syx/economy/adapter/ISyxTransport.java;Transport;Interface — getDistance(), setDistance()
+WAREHOUSE;Lager;StockpileInstance;Class;StockpileInstance;vanilla-schema.yaml;Lager;storingSet(boolean) — physische Lager-Sperre
+WAREHOUSE;Lager;storingSet(boolean);Method;StockpileInstance;vanilla-schema.yaml;Lager;BypassGate.voidMethod() — ein/aus
+WAREHOUSE;Lager;ISyxWarehouse;Interface;ISyxWarehouse;src/vannon/syx/economy/adapter/ISyxWarehouse.java;Lager;Interface — setStoring(), isStoring()
+AI;Plans;ISyxAI;Interface;ISyxAI;src/vannon/syx/economy/adapter/ISyxAI.java;AI-Plans;Interface — 6 Plan-Klassen erkennen
+AI;Plans;PlanOddjobber;Class;PlanOddjobber;vanilla-schema.yaml;AI-Plans;ClassResolver: existence-only
+AI;Plans;F_SPlanEatery;Class;F_SPlanEatery;vanilla-schema.yaml;AI-Plans;ClassResolver: existence-only
+AI;Plans;F_SPlanCanteen;Class;F_SPlanCanteen;vanilla-schema.yaml;AI-Plans;ClassResolver: existence-only
+AI;Plans;F_PlanEat;Class;F_PlanEat;vanilla-schema.yaml;AI-Plans;ClassResolver: existence-only
+AI;Plans;PlanTavern;Class;PlanTavern;vanilla-schema.yaml;AI-Plans;ClassResolver: existence-only
+AI;Plans;M_PlanMarket;Class;M_PlanMarket;vanilla-schema.yaml;AI-Plans;ClassResolver: existence-only
+META;Modding;MAKE_A_MOD.txt;File;MAKE_A_MOD.txt;info/MAKE_A_MOD.txt;Mod-Infra;_Info.txt Struktur, VERSION-Folder, _IgnoreVanilla.txt
+META;Modding;_Info.txt;File;_Info.txt;info/MAKE_A_MOD.txt;Mod-Infra;VERSION,NAME,DESC,AUTHOR,INFO Keys
+META;Modding;scriptGuide.odt;File;scriptGuide.odt;info/scriptGuide.odt;Mod-Infra;Scripting-Guide für Songs of Syx
+META;Modding;SongsOfSyx-sources.jar;File;SongsOfSyx-sources.jar;info/SongsOfSyx-sources.jar;Mod-Infra;6.4MB — komplette Vanilla-Sourcen (V71)

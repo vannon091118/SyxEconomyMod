@@ -1,0 +1,208 @@
+package vannon.syx.economy.core;
+
+import game.time.TIME;
+import game.time.TIMECYCLE;
+import init.religion.RELIGIONS;
+import init.religion.Religion;
+import init.type.HCLASSES;
+import init.type.HTYPES;
+import init.type.NEED;
+import init.type.NEEDS;
+import init.type.NEED_E;
+import settlement.entity.humanoid.HPoll;
+import settlement.entity.humanoid.Humanoid;
+import settlement.main.SETT;
+import settlement.entity.humanoid.ai.main.AIManager;
+import settlement.entity.humanoid.ai.main.AIPLAN;
+import settlement.entity.humanoid.ai.main.HAI;
+import settlement.room.main.RoomBlueprintImp;
+import settlement.room.main.RoomInstance;
+import settlement.room.home.chamber.ROOM_CHAMBER;
+import settlement.room.home.house.ROOM_HOME;
+import settlement.room.infra.janitor.ROOM_JANITOR;
+import settlement.room.main.RoomBlueprintIns;
+import settlement.room.service.food.canteen.ROOM_CANTEEN;
+import settlement.room.service.food.eatery.ROOM_EATERY;
+import settlement.room.service.module.RoomService;
+import settlement.stats.STATS;
+import settlement.stats.colls.StatsReligion;
+import settlement.stats.service.StatService;
+import snake2d.util.sets.LIST;
+
+public final class EngineSeams {
+
+    private static volatile boolean engineUnavailable = false;
+
+    /** Returns true if the Songs of Syx engine singletons (SETT, TIME, etc.) are
+     *  available. Returns false and swallows LinkageError-derived failures
+     *  (ExceptionInInitializerError, NoClassDefFoundError, ...) so that unit tests
+     *  without a running engine do not poison the JVM class state. */
+    public static boolean entitiesAvailable() {
+        if (engineUnavailable) {
+            return false;
+        }
+        try {
+            return SETT.ENTITIES() != null;
+        } catch (LinkageError e) {
+            engineUnavailable = true;
+            return false;
+        }
+    }
+
+    public static void overwritePlan(Humanoid humanoid, AIPLAN plan) {
+        HAI hAI = humanoid.ai();
+        if (!(hAI instanceof AIManager)) {
+            throw new IllegalStateException("Humanoid AI is not an AIManager");
+        }
+        AIManager manager = (AIManager)hAI;
+        manager.overwrite(humanoid, plan);
+    }
+
+    public static void setFirmTarget(RoomInstance firm, int target) {
+        if (firm.employees() == null) {
+            throw new IllegalArgumentException("Room has no employment module");
+        }
+        firm.employees().neededSet(target);
+    }
+
+    public static int hungerRaw(Humanoid humanoid) {
+        return NEEDS.TYPES().HUNGER.stat().stat().indu().get(humanoid.indu());
+    }
+
+    public static void hungerRawSet(Humanoid humanoid, int value) {
+        NEEDS.TYPES().HUNGER.stat().stat().indu().set(humanoid.indu(), value);
+    }
+
+    public static int eventNeedPriority(Humanoid humanoid, NEED need) {
+        if (!(need instanceof NEED_E)) {
+            throw new IllegalArgumentException("Need has no per-agent event priority: " + String.valueOf(need));
+        }
+        NEED_E eventNeed = (NEED_E)need;
+        return eventNeed.stat().getPrio(humanoid);
+    }
+
+    public static double serviceFulfilment(Humanoid humanoid, StatService service) {
+        return service.total().indu().getD(humanoid.indu());
+    }
+
+    public static ServiceCapacity serviceCapacity(RoomService service) {
+        return new ServiceCapacity(service.total(), service.available(), service.load());
+    }
+
+    public static Humanoid livingParent(Humanoid child) {
+        return STATS.REL().humanParent(child);
+    }
+
+    public static RoomInstance employedRoom(Humanoid humanoid) {
+        return (RoomInstance)STATS.WORK().EMPLOYED.get(humanoid.indu());
+    }
+
+    public static boolean isSurplusLaborer(Humanoid humanoid) {
+        return EngineSeams.isEmployableWorker(humanoid) && EngineSeams.employedRoom(humanoid) == null;
+    }
+
+    public static boolean isEmployableWorker(Humanoid humanoid) {
+        return humanoid.indu().hType().isWorks() && humanoid.indu().clas() != HCLASSES.SLAVE();
+    }
+
+    public static boolean isWorking(Humanoid humanoid) {
+        return HPoll.Handler.works((Humanoid)humanoid);
+    }
+
+    public static double workCycleSeconds() {
+        return Math.max(1.0, TIME.workSeconds());
+    }
+
+    public static double gameSecondsSinceStart() {
+        TIMECYCLE.Days days = TIME.days();
+        return (double)days.bitsSinceStart() * days.bitSeconds() + days.secondOfBit();
+    }
+
+    public static int religionIndexOf(Humanoid humanoid) {
+        StatsReligion.StatReligion stat = (StatsReligion.StatReligion)STATS.RELIGION().getter.get(humanoid.indu());
+        return stat == null ? -1 : stat.religion.index();
+    }
+
+    public static void convertTo(Humanoid humanoid, int religionIndex) {
+        LIST all = STATS.RELIGION().ALL;
+        for (int i = 0; i < all.size(); ++i) {
+            if (((StatsReligion.StatReligion)all.get((int)i)).religion.index() != religionIndex) continue;
+            STATS.RELIGION().getter.set(humanoid.indu(), (StatsReligion.StatReligion)all.get(i));
+            return;
+        }
+    }
+
+    public static int religionCount() {
+        return RELIGIONS.ALL().size();
+    }
+
+    public static CharSequence religionName(int index) {
+        LIST all = RELIGIONS.ALL();
+        return index >= 0 && index < all.size() ? ((Religion)all.get((int)index)).info.name : "?";
+    }
+
+    public static boolean isEnslaveablePleb(Humanoid humanoid) {
+        return humanoid.indu().hType() == HTYPES.SUBJECT();
+    }
+
+    public static void enslave(Humanoid humanoid) {
+        humanoid.indu().hTypeSet(humanoid, HTYPES.SLAVE(), null, null);
+    }
+
+    // Phase-4.7/T-005: null-safe Wrapper für SETT.ROOMS().HOME/CHAMBER/imps().
+    // PropertyMarketController darf SETT. nicht mehr direkt ansprechen
+    // (Architektur-Drift verhindern). Wrapper liefern null wenn SETT.ROOMS()
+    // selbst null ist — Caller handhaben die null-Path selbst.
+
+    public static ROOM_HOME settRoomsHome() {
+        return SETT.ROOMS() == null ? null : SETT.ROOMS().HOME;
+    }
+
+    public static ROOM_CHAMBER settRoomsChamber() {
+        return SETT.ROOMS() == null ? null : SETT.ROOMS().CHAMBER;
+    }
+
+    // SETT.ROOMS().imps() gibt eine LIST<RoomBlueprintImp> zurück (die Superklasse);
+    // Sub-Klassen (RoomBlueprintIns) werden erst beim Iterieren via instanceof gefiltert.
+    public static LIST<RoomBlueprintImp> settRoomsImps() {
+        return SETT.ROOMS() == null ? null : SETT.ROOMS().imps();
+    }
+
+    // SETT.ROOMS().ins() liefert die bereits sub-typisierten RoomBlueprintIns-Blueprints
+    // (im Unterschied zu .imps() das die Oberklasse liefert). Wird in FirmLedger (4×
+    // Loop über alle Blueprints pro Update) und MaintenanceMarket einmal verwendet.
+    public static LIST<RoomBlueprintIns<?>> settRoomsIns() {
+        if (engineUnavailable) {
+            return null;
+        }
+        try {
+            return SETT.ROOMS() == null ? null : SETT.ROOMS().ins();
+        } catch (LinkageError e) {
+            engineUnavailable = true;
+            return null;
+        }
+    }
+
+    // Per-Iter-Loop-Wrapper für EATERIES/CANTEENS Service-Rooms. Werden in
+    // FoodRollback (rollback-iteration) und FlowMeter (industry-sample) iteriert.
+    // Songs-of-Syx liefert hier LIST<X> aus snake2d.util.sets, nicht Array.
+    public static LIST<ROOM_EATERY> settRoomsEateries() {
+        return SETT.ROOMS() == null ? null : SETT.ROOMS().EATERIES;
+    }
+
+    public static LIST<ROOM_CANTEEN> settRoomsCanteens() {
+        return SETT.ROOMS() == null ? null : SETT.ROOMS().CANTEENS;
+    }
+
+    // Wird in MaintenanceMarket 3× als Blueprint-Bezug aufgerufen (update/payJanitors/janitorWorkers).
+    public static ROOM_JANITOR settRoomsJanitor() {
+        return SETT.ROOMS() == null ? null : SETT.ROOMS().JANITOR;
+    }
+
+    private EngineSeams() {
+    }
+
+    public record ServiceCapacity(int total, int available, double utilisation) {
+    }
+}
+

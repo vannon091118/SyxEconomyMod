@@ -1,0 +1,209 @@
+version: '1.0'
+auto_generated: true
+generated_at: '2026-07-27T20:04:08'
+generator: tools/god-class-guard/emit_yaml.py
+limits:
+  loc_warn: 600
+  loc_block: 800
+  pubM_warn: 25
+  pubM_block: 35
+  fields_warn: 18
+  fields_block: 24
+  imports_warn: 25
+  imports_block: 40
+drift:
+  loc_pct: 0.05
+  pubM_pct: 0.1
+  fields_pct: 0.1
+exempt_patterns:
+- regex: ^src/.+/ui/Window[^/]*\.java$
+  rule: Rule 6 (UI-Window sakrosankt)
+- regex: ^src/.+/adapter/seam/[^/]*\.java$
+  rule: Rule 9 (BypassGate SDK)
+- regex: ^src/.+/benchmark/[^/]*\.java$
+  rule: Benchmark-Bundle
+- regex: ^src/.+/settlement/.*\.java$
+  rule: Heilbringer-Mod-Code
+- regex: ^src/.+/integration/.*\.java$
+  rule: Vanilla-UI-Integration (high imports expected for vanilla UI touching)
+heuristic_exemptions:
+- id: constants-dump
+  rule: fields>=50 AND pubM==0
+  applies_to: fields_cap_only
+legacy_baselines:
+  src/vannon/syx/economy/adapter/FactionAccessImpl.java:
+    loc: 506
+    pubM: 2
+    fields: 34
+    imports: 21
+    status_at_emit: block
+    reason_at_emit: fields 31 > block 24
+    baseline_update: DIPLO-03 BypassGate for ROPINION.setOpinionValue (+27 LOC, +4 imports)
+  src/vannon/syx/economy/adapter/HumanoidAccessImpl.java:
+    loc: 361
+    pubM: 8
+    fields: 25
+    imports: 28
+    status_at_emit: block
+    reason_at_emit: fields 25 > block 24; imports 28 > warn 25 (coupling density)
+  src/vannon/syx/economy/adapter/RoomAccessImpl.java:
+    loc: 584
+    pubM: 2
+    fields: 33
+    imports: 28
+    status_at_emit: block
+    reason_at_emit: fields 33 > block 24; imports 28 > warn 25 (coupling density)
+  src/vannon/syx/economy/core/AffordabilityGate.java:
+    loc: 372
+    pubM: 25
+    fields: 29
+    imports: 23
+    status_at_emit: block
+    reason_at_emit: fields 29 > block 24
+  src/vannon/syx/economy/core/DiagnosticExporter.java:
+    loc: 660
+    pubM: 9
+    fields: 43
+    imports: 10
+    status_at_emit: block
+    reason_at_emit: fields 30 > block 24
+    baseline_update: DC-01 Summary-Event + DC-02 Player-Action + LOG-01 logPlayerAction overload
+  src/vannon/syx/economy/core/EconConfig.java:
+    loc: 305
+    pubM: 7
+    fields: 229
+    imports: 0
+    status_at_emit: block
+    reason_at_emit: fields 207 > block 24
+  src/vannon/syx/economy/core/EconProgression.java:
+    loc: 252
+    pubM: 10
+    fields: 36
+    imports: 14
+    status_at_emit: pass
+    reason_at_emit: fields 46 > block 24
+  src/vannon/syx/economy/core/EconomySim.java:
+    loc: 439
+    pubM: 75
+    fields: 14
+    imports: 25
+    status_at_emit: pass
+    reason_at_emit: 'Spluck-TECHD-01: 1323→439 LOC via 3-class extraction
+      (EconomySaveLoad 366 LOC, EconomyAuditEngine 273 LOC, EconomyTickOrchestrator
+      111 LOC). Fields 14 < cap 24.'
+    baseline_update: Sprint 5 Spluck-TECHD-01 EconomySim Triple-Limit-Split
+  src/vannon/syx/economy/core/EngineLevers.java:
+    loc: 237
+    pubM: 5
+    fields: 179
+    imports: 2
+    status_at_emit: block
+    reason_at_emit: fields 104 > block 24
+    baseline_update: Treasury/Population/Goods Access Toggles added (A-05, A-06, A-07) +78 fields
+  src/vannon/syx/economy/core/EngineSeams.java:
+    loc: 156
+    pubM: 18
+    fields: 21
+    imports: 28
+    status_at_emit: warn
+    reason_at_emit: fields 21 > warn 18; imports 28 > warn 25 (coupling density)
+  src/vannon/syx/economy/core/FirmLedger.java:
+    loc: 657
+    pubM: 19
+    fields: 30
+    imports: 41
+    status_at_emit: pass
+    reason_at_emit: loc 657 > warn 600; fields 30 > block 24
+    baseline_update: Sprint 7 Legacy-Drift — FirmSizing extracted (-108 LOC, -8 fields)
+  src/vannon/syx/economy/core/FlowMeter.java:
+    loc: 424
+    pubM: 23
+    fields: 23
+    imports: 29
+    status_at_emit: warn
+    reason_at_emit: fields 23 > warn 18; imports 29 > warn 25 (coupling density)
+  src/vannon/syx/economy/core/FlowPrices.java:
+    loc: 147
+    pubM: 12
+    fields: 19
+    imports: 2
+    status_at_emit: warn
+    reason_at_emit: fields 19 > warn 18
+  src/vannon/syx/economy/core/FoodTransactionPlan.java:
+    loc: 565
+    pubM: 17
+    fields: 42
+    imports: 39
+    status_at_emit: block
+    reason_at_emit: fields 42 > block 24; imports 39 > warn 25 (coupling density)
+  src/vannon/syx/economy/core/LocalPrices.java:
+    loc: 355
+    pubM: 16
+    fields: 27
+    imports: 26
+    status_at_emit: block
+    reason_at_emit: fields 27 > block 24; imports 26 > warn 25 (coupling density)
+  src/vannon/syx/economy/core/LoggingAdapter.java:
+    loc: 73
+    pubM: 3
+    fields: 25
+    imports: 1
+    status_at_emit: block
+    reason_at_emit: fields 25 > block 24
+  src/vannon/syx/economy/core/PropertyLedger.java:
+    loc: 294
+    pubM: 25
+    fields: 22
+    imports: 16
+    status_at_emit: warn
+    reason_at_emit: fields 22 > warn 18
+  src/vannon/syx/economy/core/Purchases.java:
+    loc: 266
+    pubM: 8
+    fields: 20
+    imports: 20
+    status_at_emit: warn
+    reason_at_emit: fields 20 > warn 18
+  src/vannon/syx/economy/core/StateWarehouses.java:
+    loc: 556
+    pubM: 30
+    fields: 19
+    imports: 32
+    status_at_emit: pass
+    reason_at_emit: fields 19 > warn 18
+    baseline_update: Sprint 7 Legacy-Drift — WarehouseTrade extracted (-72 LOC, -23 fields)
+  src/vannon/syx/economy/core/Taxes.java:
+    loc: 179
+    pubM: 16
+    fields: 24
+    imports: 14
+    status_at_emit: warn
+    reason_at_emit: fields 24 > warn 18
+  src/vannon/syx/economy/core/TreasuryCrisis.java:
+    loc: 529
+    pubM: 5
+    fields: 42
+    imports: 1
+    status_at_emit: block
+    reason_at_emit: fields 42 > block 24 (Grace Period + save/load added v0.13.67)
+  src/vannon/syx/economy/core/Wallets.java:
+    loc: 483
+    pubM: 31
+    fields: 62
+    imports: 15
+    status_at_emit: block
+    reason_at_emit: pubM 31 > warn 25; fields 62 > block 24
+  src/vannon/syx/economy/core/WarehouseMarket.java:
+    loc: 415
+    pubM: 37
+    fields: 23
+    imports: 18
+    status_at_emit: block
+    reason_at_emit: pubM 37 > block 35
+  src/vannon/syx/economy/ui/EconWindowBase.java:
+    loc: 278
+    pubM: 6
+    fields: 33
+    imports: 19
+    status_at_emit: block
+    reason_at_emit: fields 33 > block 24

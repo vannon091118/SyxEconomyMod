@@ -1,0 +1,9 @@
+Baseline metrics for EconomySim.java (pre-sprint):
+LOC: 1692
+Fields: 136
+Public methods: 68
+
+Target metrics post-sprint:
+LOC: ≤ 450
+Fields: ≤ 24
+Public methods: ≤ 35

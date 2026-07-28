@@ -1,0 +1,245 @@
+# =============================================================================
+# VANILLA BYTECODE-SCHEMA — SyxEconomyMod v0.13.89
+#
+# Single-Source-of-Truth für ALLE Vanilla-Klassen die der Mod per
+# BypassGate, ClassResolver oder direkter public API anfasst.
+#
+# Bei Engine-Update (V71→V72): NUR diese Datei prüfen + anpassen.
+# SchemaValidator.java liest sie, validiert Class.forName + Feld-Zugriffe,
+# und der AdapterDispatcher baut nur Adapter für validierte Klassen.
+#
+# Pro Klasse:
+#   class:     vollqualifizierter Name ($ für innere Klassen)
+#   access:    PUBLIC | PACKAGE | PRIVATE
+#   source:    Vanilla-Source-Datei
+#   adapter:   ISyx*-Interface das diese Klasse nutzt
+#   bypassGate: true wenn BypassGate für private-Feld-Zugriff nötig
+#   fields:    Map von Feldname → { type, access, getter, mutable, note }
+#   plans:     Nur bei ClassResolver-Klassen (AI-Plan-Erkennung)
+#   methods:   Public-Methoden für API-Zugriff (zur Doku)
+# =============================================================================
+
+version: "1.0"
+game: "Songs of Syx V71.44"
+mod: "SyxEconomyMod"
+schema_date: "2026-07-26"
+
+classes:
+
+  # =========================================================================
+  # GROUP 1 — BypassGate-Adapter (unsere 4 ISyx*-Implementierungen)
+  # =========================================================================
+
+  - class: "game.faction.diplomacy.DipWarPlayer"
+    access: PUBLIC
+    source: "game/faction/diplomacy/DipWarPlayer.java"
+    adapter: ISyxDiplomacy
+    bypassGate: true
+    note: "4 private Felder via VarHandle/Reflection — kritisch für Schulden-Diplomatie-Puffer"
+    fields:
+      upI:
+        type: int
+        access: PRIVATE
+        getter: null
+        mutable: true
+        note: "Update-Index — verhindert Doppel-Berechnung im selben Tick"
+      pPow:
+        type: double
+        access: PRIVATE
+        getter: null
+        mutable: true
+        note: "Spieler-Macht — kritischer Gameplay-Wert, wird zuerst geschrieben"
+      coalitionPow:
+        type: double
+        access: PRIVATE
+        getter: null
+        mutable: true
+        note: "Koalitions-Macht — sekundär zu pPow"
+      bWilling:
+        type: "snake2d.util.sets.Bitmap1D"
+        access: PRIVATE
+        getter: null
+        mutable: true
+        note: "Bitmap kriegswilliger Fraktionen — mutable Referenz"
+
+  - class: "settlement.room.infra.stockpile.StockpileInstance"
+    access: PUBLIC
+    source: "settlement/room/infra/stockpile/StockpileInstance.java"
+    adapter: ISyxWarehouse
+    bypassGate: true
+    note: "Private Methode storingSet(boolean) — physikalische Lager-Sperre"
+    methods:
+      storingSet:
+        params: ["boolean"]
+        return: void
+        access: PRIVATE
+        note: "Setzt/löst physikalische Lager-Sperre via MethodAccessor.VoidMethod"
+
+  - class: "settlement.room.infra.transport.TransportInstance"
+    access: PACKAGE
+    source: "settlement/room/infra/transport/TransportInstance.java"
+    adapter: ISyxTransport
+    bypassGate: true
+    note: "Package-private Klasse — ClassResolver nötig für Class.forName"
+    fields:
+      distance:
+        type: float
+        access: PRIVATE
+        getter: null
+        mutable: false
+        note: "Echte Transport-Distanz — read-only via FloatField.get()"
+
+  - class: "game.boosting.BOOSTABLES$CIVICS"
+    access: PUBLIC
+    source: "game/boosting/BOOSTABLES.java:373"
+    adapter: ISyxBoosting
+    bypassGate: true
+    note: "Innere Klasse — GOV-Feld via RefField<Boostable> für Industrie-Bonus"
+    fields:
+      GOV:
+        type: "game.boosting.Boostable"
+        access: PUBLIC
+        getter: null
+        mutable: false
+        note: "Source-verifiziert (BOOSTABLES.java:373, public final Boostable GOV in Civic)"
+
+  # =========================================================================
+  # GROUP 2 — ClassResolver-Plan-Klassen (ISyxAI — 6 package-private Pläne)
+  # =========================================================================
+
+  - class: "settlement.entity.humanoid.ai.work.PlanOddjobber"
+    access: PACKAGE
+    source: "settlement/entity/humanoid/ai/work/PlanOddjobber.java"
+    adapter: ISyxAI
+    bypassGate: false
+    note: "Package-private — ClassResolver + Class.isInstance() für Gelegenheitsarbeiter-Erkennung"
+    plans: [oddjobber]
+
+  - class: "settlement.entity.humanoid.ai.consume.F_SPlanEatery"
+    access: PACKAGE
+    source: "settlement/entity/humanoid/ai/consume/F_SPlanEatery.java"
+    adapter: ISyxAI
+    bypassGate: false
+    plans: [food_eatery]
+
+  - class: "settlement.entity.humanoid.ai.consume.F_SPlanCanteen"
+    access: PACKAGE
+    source: "settlement/entity/humanoid/ai/consume/F_SPlanCanteen.java"
+    adapter: ISyxAI
+    bypassGate: false
+    plans: [food_canteen]
+
+  - class: "settlement.entity.humanoid.ai.consume.F_PlanEat"
+    access: PACKAGE
+    source: "settlement/entity/humanoid/ai/consume/F_PlanEat.java"
+    adapter: ISyxAI
+    bypassGate: false
+    plans: [food_raw]
+
+  - class: "settlement.entity.humanoid.ai.consume.PlanTavern"
+    access: PACKAGE
+    source: "settlement/entity/humanoid/ai/consume/PlanTavern.java"
+    adapter: ISyxAI
+    bypassGate: false
+    plans: [tavern]
+
+  - class: "settlement.entity.humanoid.ai.consume.M_PlanMarket"
+    access: PACKAGE
+    source: "settlement/entity/humanoid/ai/consume/M_PlanMarket.java"
+    adapter: ISyxAI
+    bypassGate: false
+    plans: [market]
+
+  # =========================================================================
+  # GROUP 3 — NPC-Faktionen (NpcFactionAdapter — Preis/Resource-Kontrolle)
+  # =========================================================================
+
+  - class: "game.faction.npc.FactionNPC"
+    access: PUBLIC
+    source: "game/faction/npc/FactionNPC.java"
+    adapter: ISyxNpc
+    bypassGate: false
+    note: "Public API — FACTIONS.NPCs() + credits(), res(), trade() sind public"
+    fields:
+      credits:
+        type: "game.faction.FCredits"
+        access: PUBLIC
+        getter: "credits()"
+        mutable: false
+        note: "credits().inc() ist public API für Treasury-Manipulation"
+      res:
+        type: "game.faction.npc.NPCResources"
+        access: PUBLIC
+        getter: "res()"
+        mutable: false
+        note: "NPCResources.get(RESOURCE) → FactionResource"
+      trade:
+        type: "game.faction.npc.NPCTrade"
+        access: PUBLIC
+        getter: "trade()"
+        mutable: false
+
+  - class: "game.faction.npc.NPCResources$FactionResource"
+    access: PACKAGE
+    source: "game/faction/npc/NPCResources.java"
+    adapter: ISyxNpc
+    bypassGate: true
+    note: "KRITISCH: package-private innere Klasse + private int priceSell/priceBuy. BypassGate nötig."
+    fields:
+      priceSell:
+        type: int
+        access: PRIVATE
+        getter: "priceSellP()"
+        mutable: true
+        note: "NPC Sell-Preis — schreiben via BypassGate IntField"
+      priceBuy:
+        type: int
+        access: PRIVATE
+        getter: "priceBuyP()"
+        mutable: true
+        note: "NPC Buy-Preis — schreiben via BypassGate IntField"
+      rateTot:
+        type: double
+        access: PRIVATE
+        getter: "rateTot()"
+        mutable: false
+        note: "Read-only Handelsrate"
+
+  - class: "game.faction.FCredits"
+    access: PUBLIC
+    source: "game/faction/FCredits.java"
+    adapter: ISyxNpc
+    bypassGate: false
+    note: "credits() + inc() sind public API — kein Bypass nötig"
+    fields:
+      credits:
+        type: double
+        access: PRIVATE
+        getter: "credits()"
+        mutable: true
+        note: "Private double — aber inc(amount, CTYPE) ist public API, reicht aus"
+    methods:
+      inc:
+        params: ["double", "game.faction.FResources$RTYPE"]
+        return: void
+        access: PUBLIC
+
+  - class: "game.faction.FACTIONS"
+    access: PUBLIC
+    source: "game/faction/FACTIONS.java"
+    adapter: ISyxNpc
+    bypassGate: false
+    note: "Public Utility-Klasse — FACTIONS.NPCs(), PRICE(), player() sind static public"
+    methods:
+      NPCs:
+        params: []
+        return: "snake2d.util.sets.LIST<game.faction.npc.FactionNPC>"
+        access: PUBLIC
+      PRICE:
+        params: []
+        return: "game.faction.FPrices"
+        access: PUBLIC
+      player:
+        params: []
+        return: "game.faction.player.Player"
+        access: PUBLIC

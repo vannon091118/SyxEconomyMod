@@ -1,0 +1,484 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.vannon</groupId>        <artifactId>syx-economy-mod</artifactId>
+        <version>0.13.89</version>
+
+    <properties>
+        <maven.compiler.target>21</maven.compiler.target>
+        <maven.compiler.source>21</maven.compiler.source>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <mod.name>SyxEconomyMod</mod.name>
+        <mod.version>${project.version}</mod.version>
+        <mod.author>Vannon</mod.author>
+        <mod.description>Vollwertige Wirtschaftssimulation für Songs of Syx V71: Arbeitsmarkt, Firmen-Profitmaximierung, Marktpreise, Geldumlauf, Steuern, Staatskasse, Vermögensverteilung und Krisenmechanik.</mod.description>
+        <mod.info>SyxEconomyMod v0.13.31-alpha: Phase A-F Bypass-SDK — VarHandle/MethodHandle Auto-Select-Adapter, 5 Engine-Adapter migriert (Diplomacy/Transport/Warehouse/Boosting/AI), 4 Fallback-Adapter + 3 MH-Varianten gelöscht, per-Adapter granulare Degradation, BuildStamp-Identitäts-Anker.</mod.info>
+        <mod.homepage>https://github.com/vannon/syx-economy-mod</mod.homepage>
+        <mod.license>MIT</mod.license>
+        <mod.credits>Original mod by Vannon; localization and optimizations by the SyxEconomyMod team.</mod.credits>
+        <mod.dependencies>Requires Songs of Syx V71.44 or compatible. No other mods required.</mod.dependencies>
+        <mod.changelog>v0.13.89 - Phase A-F: BypassGate SDK (FieldAccessor/MethodAccessor/ClassResolver), 5 Adapter auf BypassGate migriert, 7 Dateien gelöscht (4 Fallback + 3 MH), EconConfig.useMethodHandleAdapters entfernt, BuildStamp-Identität, Adapter-READY-Logs; v0.13.1 - UX-Cleanup: Tooltip-Echo entfernt, Fenster-Stack-Offset+Defensiv-Audit, Deutsche Labels 140px+, Unicode→→Fix, Debug-Tab versteckt, close()-Reihenfolge fix, Farbige Balken (coloredBar) statt ASCII-Rauten, EconHud C.WIDTH()-Pos, LiveSlider-IntSupplier; v0.13.0 - Vanilla-Nativity: SPanel-Hintergrund, GCOLOR-Theme, Vanilla-Icons+Checkbox, Slider, EconHud; v0.1.3 - UX-Audit: 15 interaktive Tabs, Debug-Tab (Logger opt-in/out), SubjectJob Overlay, Block-Char-Balken fuer Ampeln, Not-Liquidation+Lohn-Slider+Steuer-Toggle, 'Was soll ich heute tun?'-Berater, Trend-Pfeile, IdentityMapRegistry LOG-Fix, TopBar entfernt, alle Toggles interaktiv; v0.1.2 - Hotfix: Phantom-Profit, globales Rate-Limiting, insolvenzsichere Surplus-Share; v0.1.1 - Balance-Krisen-Fixes: Firma-Cold-Start, Gewinnverteilung, Kopfsteuer-Armutsfreigrenze; v0.1.0 (Phase 4) - Adapter-Architektur: 5 Vanilla/Fallback-Interfaces, DiagnosticExporter, Rebalancing-Dashboard; v0.0.9 - Bauarbeiter swarming-Schutz, Starvation EventLog, O(1) ServiceCache; v0.0.8 - Audit-Fixes, Advisor Meilensteine; v0.0.7 - PovertyPressure, OddjobAutomation, WarehouseAutomation; v0.0.6 - Gini→Loyalty, Stufen-Freischaltung; v0.0.5 - Property-Markt; v0.0.4 - Scarcity→Price→Priority; v0.0.3 - roundingDrift-Fix, Housing-Miete; v0.0.2 - Chunked save/load; v0.0.1 - Berater-Tab, Erstveröffentlichung | CHANGELOG.md enthaelt die vollstaendige Historie.</mod.changelog>
+        <mod.version.history>freebuff-snapshot/thms47qf4yixn1;pre-m1-reset-2026-07-28;freebuff-snapshot/thms3pvdqucvbv;freebuff-snapshot/thms3osxzh8ujy;freebuff-snapshot/thms3o6uto1zku</mod.version.history>
+        <game.version.major>71</game.version.major>
+        <game.version.minor>44</game.version.minor>
+
+        <game.install.directory>/home/vannon/snap/steam/common/.local/share/Steam/steamapps/common/Songs of Syx</game.install.directory>
+        <game.mod.directory>${user.home}/.local/share/songsofsyx/mods</game.mod.directory>
+
+        <mod.build.output.directory>${basedir}/target/out/${mod.name}</mod.build.output.directory>
+        <mod.install.directory>${game.mod.directory}/${mod.name}</mod.install.directory>
+
+        <!--
+          Maven-Gate-Toggles:
+            -Dgate.skip=true   -> ueberspringt den ganzen pre-compile Build-Gate
+            -Dskip.bump=true   -> ueberspringt den post-install Patch-Bump (0.0.1+)
+            -Djacoco.check.skip=true -> ueberspringt den JaCoCo-LINE/BRANCH-Check
+                                        (T-COV-6, Sprint "Coverage-Kernel-Pass")
+        -->
+        <skip.bump>false</skip.bump>
+
+        <!-- T-COV-6 JaCoCo-Coverage-Gate — Sprint "Coverage-Kernel-Pass".
+             Default thresholds sind 0.0 / 0.0 = report-only (Check-Laeuft, bricht
+             nichts). Sprint 5 misst die reale Coverage mit den 7 neuen Test-Suiten
+             (target: line>=10%, branch>=5%) und zieht die Schwellen auf realistische
+             Werte an. Sprint 9 (T-COV-9, Mockito-Inject) hebt sie auf line>=70% /
+             branch>=60%. Property-Override per:
+             mvn verify install -Djacoco.line.minimum=0.10 -Djacoco.branch.minimum=0.05 -->
+        <jacoco.check.skip>false</jacoco.check.skip>
+        <jacoco.line.minimum>0.0</jacoco.line.minimum>
+        <jacoco.branch.minimum>0.0</jacoco.branch.minimum>
+
+        <!-- Sprint 6.5 — Profile: 'dev' mit Vanilla-JAR auf Klassenpfad,
+             'release' ohne (default, shaded jar ohne Vanilla-Code).
+             Aktivierung: mvn verify install -Pdev.
+             Default-Profil ist release — bleibt binary-compatibel mit V71.44. -->
+        <dev.profile>false</dev.profile>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.songsofsyx</groupId>
+            <artifactId>songsofsyx</artifactId>
+            <version>${game.version.major}.${game.version.minor}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.11.3</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- Sprint 6.0 — Mockito fuer engine-coupled Branches (Sprint 9 T-COV-9).
+             Seit Mockito 5.0 ist mockito-inline in mockito-core integriert — kein
+             separates Artifact noetig. mockito-junit-jupiter fuer @ExtendWith + @Mock. -->
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>5.14.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <version>5.14.2</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>${mod.name}</finalName>
+        <!-- Use 'src' as the root source directory for compilation -->
+        <sourceDirectory>src</sourceDirectory>
+        <!-- Tests live outside src/ so they don't get compiled as main sources -->
+        <testSourceDirectory>test/java</testSourceDirectory>
+
+        <!-- No classpath resources needed; assets are copied explicitly via maven-resources-plugin -->
+        <resources/>
+
+        <plugins>
+            <!-- Compiler: Strict Mode — Warnings als Fehler, alle Lints aktiv.
+                 Nur unsere Sources (src/vannon/) werden geprüft, nicht Vanilla-Dependencies. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <configuration>
+                    <source>21</source>
+                    <target>21</target>
+                    <encoding>UTF-8</encoding>
+                    <compilerArgs>
+                        <!-- TODO: -Werror reaktivieren sobald alle redundant-cast/rawtypes/unchecked
+                             Warnings aus Vanilla-API-Interaktionen bereinigt sind (ca. 105 Stellen).
+                             Phase: tools/lint-cleanup.sh erstellt eine Baseline, dann Datei für Datei
+                             @SuppressWarnings oder echte Typ-Fixes anwenden. -->
+                        <arg>-Xlint:all,-options</arg>
+                    </compilerArgs>
+                    <showWarnings>true</showWarnings>
+                    <showDeprecation>true</showDeprecation>
+                </configuration>
+            </plugin>
+            <!-- Pre-build gates: Stam-Doku-Sync + Code-Audit + Version-Consistency + Adapter-Signaturen.
+                 Fehlschlag = Build-Abbruch. Überspringbar mit -Dgate.skip=true -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <!-- ─── BuildStamp: unique per-compile identity anchor ────────────
+                         Generates BuildStamp.java with git hash, timestamp, dirty flag.
+                         Runs BEFORE compile so every build gets a fresh identity.
+                         Visible in-game via EconHud + window titles.
+                         
+                         Skip with -Dskip.buildstamp=true (emergency only). -->
+                    <execution>
+                        <id>generate-build-stamp</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${skip.buildstamp}</skip>
+                            <target>
+                                <exec executable="bash" failonerror="false" dir="${basedir}">
+                                    <arg value="tools/generate-build-stamp.sh"/>
+                                    <arg value="${basedir}/src/vannon/syx/economy/core"/>
+                                    <arg value="${project.version}"/>
+                                </exec>
+                            </target>
+                        </configuration>
+                    </execution>
+
+                    <!--
+                      Gate A: Stam-Doku-Sync (alleine, vor dem vollen build-gate.sh).
+                      Stellt sicher dass README/CHANGELOG/ARCHITECTURE/ROADMAP/GLOSSARY/pom.xml
+                      die SELBE Versions-Information tragen. Schlägt fehl bei Drift.
+                    -->
+                    <execution>
+                        <id>preflight-stam-doc-sync</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${gate.skip}</skip>
+                            <target>
+                                <exec executable="bash" failonerror="true" dir="${basedir}">
+                                    <arg value="tools/verify-doc-sync.sh"/>
+                                </exec>
+                            </target>
+                        </configuration>
+                    </execution>
+
+                    <!--
+                      Gate 9 (Sprint M-3): God-Class-Guard Preflight.
+                      Hard-Block (agents.md Rule 14): neue Java-Klassen > 800 LOC,
+                      > 35 PubM oder > 24 Fields werden geblockt. Grandfathered
+                      Files via tools/god-class-baselines.yml mit 5% Drift-Toleranz.
+                      Sprint M-3.1 plant Schema-Validation in load_baselines().
+                    -->
+                    <execution>
+                        <id>preflight-god-class-guard</id>
+                        <phase>validate</phase>
+                        <goals><goal>run</goal></goals>
+                        <configuration>
+                            <skip>${gate.skip}</skip>
+                            <target>
+                                <exec executable="bash" failonerror="true" dir="${basedir}">
+                                    <arg value="tools/god-class-guard.sh"/>
+                                    <arg value="--mode=hard"/>
+                                </exec>
+                            </target>
+                        </configuration>
+                    </execution>
+
+                    <!--
+                      Gate B: Voller Master-Build-Gate (Audit + Version + Adapter).
+                      Reihenfolge = Deklarationsreihenfolge der <execution>-Elemente in
+                      DIESER Phase gleich. Maven antrun fuehrt gleichphasige Executions
+                      sequentiell in XML-Ordnung aus. Phase-Reihenfolge wirkt NUR zwischen
+                      verschiedenen Phasen (validate < compile < ... < install), daher ist
+                      die validate-Phase der Synchronisationspunkt und die install-Phase wird
+                      immer NACH allen validate-Gates erreicht.
+                    -->
+                    <execution>
+                        <id>build-gate</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${gate.skip}</skip>
+                            <target>
+                                <exec executable="bash" failonerror="true" dir="${basedir}">
+                                    <arg value="tools/build-gate.sh"/>
+                                </exec>
+                            </target>
+                        </configuration>
+                    </execution>
+
+                    <!--
+                      Post-Install: Patch-Bump 0.0.1+ nach jedem 'mvn install' bzw 'mvn clean install'.
+                      Fuehrt 'tools/bump-version.sh' im Bump-Only-Modus aus (patch + BumpOnly-Flag),
+                      schreibt nur
+                      pom.xml <version> + <mod.info> + <mod.changelog> neu, kein CHANGELOG-Prepend,
+                      kein git commit.
+
+                      Skip mit -Dskip.bump=true (z.B. fuer CI-Releases wo ein separates
+                      bump-version.sh mit Full-Mode + Git-Commit gewuenscht ist).
+                    -->
+                    <execution>
+                        <id>post-install-patch-bump</id>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${skip.bump}</skip>
+                            <target>
+                                <exec executable="bash" failonerror="false" dir="${basedir}">
+                                    <arg value="tools/bump-version.sh"/>
+                                    <arg value="patch"/>
+                                    <arg value="--bump-only"/>
+                                </exec>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- Install the game jar to local maven repo automatically so it will compile -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-install-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>install-game-jar</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>install-file</goal>
+                        </goals>
+                        <configuration>
+                            <groupId>com.songsofsyx</groupId>
+                            <artifactId>songsofsyx</artifactId>
+                            <version>${game.version.major}.${game.version.minor}</version>
+                            <packaging>jar</packaging>
+                            <file>${game.install.directory}/SongsOfSyx.jar</file>
+                            <generatePom>true</generatePom>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Package a fat jar excluding com.songsofsyx -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.6.0</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <artifactSet>
+                                <excludes>
+                                    <exclude>com.songsofsyx:*</exclude>
+                                    <exclude>vannon.syx.economy.benchmark:*</exclude>
+                                </excludes>
+                            </artifactSet>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Sources jar: run 'mvn source:jar' on demand (not part of default build). -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.3.1</version>
+                <configuration>
+                    <skipSource>true</skipSource>
+                </configuration>
+            </plugin>
+
+            <!-- Run JUnit 5 tests during test phase -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.5.1</version>
+            </plugin>
+
+            <!-- JaCoCo coverage report for the kernel test suite.
+                 T-COV-6 (Sprint "Coverage-Kernel-Pass"): prepare-agent + report laufen
+                 wie bisher. NEU: jacoco-check goal in der verify-Phase prueft
+                 LINE/BRANCH-Coverage gegen ${jacoco.line.minimum} und
+                 ${jacoco.branch.minimum}. Default 0.0 = report-only (kein Break).
+                 Sprint 9 setzt die Schwellen auf line>=70%/branch>=60% (T-COV-9,
+                 Mockito-Inject fuer engine-coupled Branches). -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.14</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>jacoco-check</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${jacoco.check.skip}</skip>
+                            <rules>
+                                <!-- T-COV-6 (Sprint 4): Coverage-Threshold wird auf das
+                                     Production-Package begrenzt — test/-Code und
+                                     adapter/-Reflection-Boilerplate zaehlen NICHT
+                                     in den Threshold. Sprint 9 zieht die Schwellen
+                                     auf line>=70%/branch>=60% an. -->
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <includes>
+                                        <include>vannon.syx.economy.core.*</include>
+                                    </includes>
+                                    <limits>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>${jacoco.line.minimum}</minimum>
+                                        </limit>
+                                        <limit>
+                                            <counter>BRANCH</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>${jacoco.branch.minimum}</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Resource copying and installation -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.2.0</version>
+                <executions>
+
+                    <!-- Copy src/assets into target/out/<ModName>/V71/assets -->
+                    <execution>
+                        <id>copy-assets</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${mod.build.output.directory}/V${game.version.major}/assets</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>src/assets</directory>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+
+                    <!-- Copy the built jar to target/out/<ModName>/V71/script -->
+                    <execution>
+                        <id>copy-script-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${mod.build.output.directory}/V${game.version.major}/script</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.build.directory}</directory>
+                                    <includes>
+                                        <include>${mod.name}.jar</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+
+                    <!-- Copy the sources jar to target/out/<ModName>/V71/script/_src -->
+                    <execution>
+                        <id>copy-sources-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${mod.build.output.directory}/V${game.version.major}/script/_src</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.build.directory}</directory>
+                                    <includes>
+                                        <include>${mod.name}-sources.jar</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+
+                    <!-- Copy _Info.txt to target/out/<ModName> -->
+                    <execution>
+                        <id>copy-info-txt</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${mod.build.output.directory}</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${basedir}</directory>
+                                    <includes>
+                                        <include>_Info.txt</include>
+                                    </includes>
+                                    <filtering>true</filtering>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+
+                    <!-- Deploy built mod to the game's mod directory on mvn install -->
+                    <execution>
+                        <id>install-to-game</id>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${mod.install.directory}</outputDirectory>
+                            <overwrite>true</overwrite>
+                            <resources>
+                                <resource>
+                                    <directory>${mod.build.output.directory}</directory>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
