@@ -1,6 +1,6 @@
 # 🏛️ SyxEconomyMod
 
-> **Version:** v0.13.92 | **Songs of Syx** V71.44
+> **Version:** v0.13.94 | **Songs of Syx** V71.44
 
 **Deine Bürger haben jetzt Geldbeutel. Deine Firmen haben Bilanzen. Dein Staat hat ein echtes Budget — und kann pleitegehen.**
 
@@ -87,4 +87,4 @@ cp -r target/out/SyxEconomyMod <Mod-Pfad>
 
 ---
 
-> **Version:** v0.13.92 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-28
+> **Version:** v0.13.94 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-28

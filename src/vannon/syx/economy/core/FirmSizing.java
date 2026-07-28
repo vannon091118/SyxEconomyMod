@@ -51,7 +51,12 @@ final class FirmSizing {
             return;
         }
         int target = Math.max(minimum, state.marketTarget);
-        if (Math.abs(room.employees().employed() - target) > 1) return;
+        if (Math.abs(room.employees().employed() - target) > 1) {
+            // settle-phase early-return: auch Blueprint-Reorg-Firmen soll der Player-Hint erreichen.
+            emitPriorityHint(state, room, true);
+            return;
+        }
+        emitPriorityHint(state, room, false);
         FirmEconomyKernel.HillState before = state.hill;
         int oldBest = before == null ? target : before.bestTarget();
         FirmEconomyKernel.HillResult result = FirmEconomyKernel.hillStep(
@@ -63,8 +68,23 @@ final class FirmSizing {
         } else if (result.observedSlope() != 0.0 && target > oldBest) {
             state.marginal = FirmLedger.slopeClamp(result.observedSlope());
         }
-        state.marketTarget = result.nextTarget();
-        roomAccess.setFirmTarget(room, state.marketTarget);
+        // Sprint v0.13.99+ Escape-Cliff: Flag persistieren für furniture_debug-Audit-Trail,
+        // UND nextTarget zwingend clampen — Engine setFirmTarget darf nie blueprint-max+1 setzen.
+        state.escapeCliffTriggered = result.escapeCliff();
+        int maxEmp = room.employees().max();
+        int clampedTarget = Math.max(minimum, Math.min(maxEmp, result.nextTarget()));
+        state.marketTarget = clampedTarget;
+        roomAccess.setFirmTarget(room, clampedTarget);
+        if (result.escapeCliff()) {
+            // raw observedSlope statt state.marginal — letzteres kann stale sein
+            // (slopeClamp-bias aus vorigen ticks wenn weder target<oldBest noch target>oldBest).
+            EventLog.log("FIRM_ESCAPE_CLIFF",
+                    (room.blueprintI() != null ? room.blueprintI().key : "?")
+                            + " at blueprint-max=" + maxEmp
+                            + " marginal=" + String.format(java.util.Locale.ROOT, "%.2f", result.observedSlope())
+                            + " profit=" + String.format(java.util.Locale.ROOT, "%.2f", state.profit)
+                            + " — build additional instance");
+        }
     }
 
     static int initialMarketTarget(int employed, int maximum, int minimum) {
@@ -72,10 +92,37 @@ final class FirmSizing {
         return Math.max(0, Math.min(maximum, Math.max(employed, minimum)));
     }
 
+    /** Sprint v0.13.99 — Player-Hint bei hohem Resource-Druck + profitabler Firma.
+     *  KEIN Engine-Override (setFirmTarget würde Blueprint-max nicht erhöhen).
+     *  Wird in settle-phase (settled=true) und im Hill-Step-Hauptpfad (settled=false) genutzt. */
+    private static void emitPriorityHint(FirmLedger.FirmState state, RoomInstance room, boolean settled) {
+        if (!EconConfig.priorityVectorEnabled) return;
+        if (state.marginal < EconConfig.priorityMarginalSafetyThreshold) return;
+        if (state.outputs == null || state.outputs.length == 0) return;
+        double score = PriorityRegistry.instance().score(state.outputs);
+        if (score <= EconConfig.priorityExpansionThreshold) return;
+        String bp = room.blueprintI() != null ? room.blueprintI().key : "?";
+        EventLog.log("FIRM_PRIORITY",
+                bp + " pressure=" + String.format(java.util.Locale.ROOT, "%.2f", score)
+                + (settled ? " settled — consider building additional instance (demand > capacity)"
+                           : " marginal=" + String.format(java.util.Locale.ROOT, "%.2f", state.marginal)
+                             + " employed=" + room.employees().employed() + "/" + room.employees().max()));
+    }
+
     static boolean excludedFromMarketSizing(FirmLedger ledger, RoomInstance room) {
         return room == null
             || EconomicRoles.excludedFromMarketSizing((RoomBlueprintImp) room.blueprintI())
             || ledger.stateWarehouse(room);
+    }
+
+    /** Sprint v0.13.99 — Furniture-Debug-Audit: gesunde Firma + Score > Threshold?
+     *  Liefert TRUE nur wenn die Firma profitabel ist und das PriorityVector-Score die
+     *  Schwelle überschreitet. */
+    private static boolean isPriorityProposal(FirmLedger.FirmState s, int hardTarget, int marketTarget) {
+        return EconConfig.priorityVectorEnabled
+                && hardTarget > 0 && marketTarget > 0 && s.profit > 0.0
+                && s.outputs != null && s.outputs.length > 0
+                && PriorityRegistry.instance().score(s.outputs) > EconConfig.priorityExpansionThreshold;
     }
 
     // ── Furniture debug dump ───────────────────────────────────────
@@ -135,6 +182,9 @@ final class FirmSizing {
                         inConsumed = snap.consumedSinceLastSample(0);
                     }
                     int producedDelta = snap.producedSinceLastSample(0);
+                    // Note-Reihenfolge: kritische Stati übersteuern den Priority-Vorschlag.
+                    // Sprint v0.13.99+: ESCAPE-CLIFF vor PRIORITY-EXPAND (escape-cliff ist
+                    // spezifischer: explizit hillStep hat blueprint-max-recommendation gegeben).
                     String note;
                     if (hardTarget == 0 || marketTarget == 0) {
                         note = "TARGET-ZERO";
@@ -142,6 +192,10 @@ final class FirmSizing {
                         note = "PROFIT-NEGATIVE";
                     } else if (producedDelta == 0 && day > 5.0) {
                         note = "OUT-STUCK";
+                    } else if (s.escapeCliffTriggered) {
+                        note = "ESCAPE-CLIFF";
+                    } else if (isPriorityProposal(s, hardTarget, marketTarget)) {
+                        note = "PRIORITY-EXPAND";
                     } else {
                         note = "OK";
                     }

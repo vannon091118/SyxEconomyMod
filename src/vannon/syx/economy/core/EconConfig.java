@@ -189,6 +189,26 @@ public final class EconConfig {
     public static int firmSizingHillclimbStep = 1;
     public static double firmSizingHysteresis = 1.0;
     public static double firmSizingRefreshDays = 3600.0 / DEFAULT_TICKS_PER_DAY;
+
+    // —— PriorityVector-System (Sprint v0.13.99) ——————————————————————————
+    // Berechnet pro Tag eine Resource→DemandPressure-Map und emittiert Player-Hints
+    // für productive Fimen, deren Outputs bei hoher Nachfrage unter Druck sind.
+    //
+    //   pressure[res] = max(0.0, 1.0 - coverage)
+    //         coverage = stock / demand       (geglättet von FlowMeter.snapshot)
+    //   (demand < priorityExpansionMinDemandLed) ⇒ pressure = 0.0   // Anti-Micro-Score
+    //   Hint fires wenn score(blueprint) > priorityExpansionThreshold
+    //              && marginal >= priorityMarginalSafetyThreshold
+    //
+    // Default-Werte sind konservativ kalibriert: 0.7 Schwelle = Coverage < 30 %
+    // (Lager fast leer), MinDemand 200/Tag verhindert Early-Game-Pseudo-Engpässe.
+    public static boolean priorityVectorEnabled = true;
+    /** Druck-Schwelle für Player-Hint: pressure = 1 - coverage. 0.7 = Lager < 30% Tagesbedarf. */
+    public static double priorityExpansionThreshold = 0.7;
+    /** Sicherheitsmarge: nur Fimen mit marginal >= Schwelle bekommen Hint (verhindert Skalierung in unrentable Blueprints wie WORKSHOP_CARPENTER mit marginal=-1000). */
+    public static double priorityMarginalSafetyThreshold = 0.0;
+    /** Minimum Demand/Tag für gültigen pressure-Score (Anti-Micro-Score). */
+    public static double priorityExpansionMinDemandLed = 200.0;
     public static boolean warehouseMarketEnabled = true;
     public static boolean stateWarehousesEnabled = true;
     public static boolean warehouseAutoTuneEnabled = true;
