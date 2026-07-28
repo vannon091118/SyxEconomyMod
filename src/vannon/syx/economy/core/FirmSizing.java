@@ -28,6 +28,30 @@ final class FirmSizing {
 
     private FirmSizing() {}
 
+    /** Sancta-Workshop-Cap: Blueprints, die per Default unrentabel skaliert haben.
+     *  Wenn ein Blueprint in dieser Map ist UND bereits {@code cap} Instanzen existieren
+     *  UND die Firma keinen positiven Profit/Marginal hat, wird kein Player-Hint
+     *  emittiert (NO-EXPANSION). Verhindert Skalierung in den Ruin.
+     *  Default-Cap für gelistete Blueprints: 3. Für alle anderen: kein Cap. */
+    static final Map<String, Integer> sanctaWorkshopCap = Map.of(
+            "WORKSHOP_CARPENTER", 3,
+            "WORKSHOP_POTTER",    3,
+            "WORKSHOP_WEAVER",    3,
+            "WORKSHOP_TAILOR",    3,
+            "WORKSHOP_TANNER",    3,
+            "REFINER_BAKERY",     3,
+            "REFINER_BREWERY",    3,
+            "REFINER_SMOOTHIE",   3,
+            "WORKSHOP_MASON",     3
+    );
+
+    /** Tageszähler: wie oft emitPriorityHint oder ESCAPE-CLIFF pro Tag feuert.
+     *  DiagnosticExporter.exportDay() liest + resettet diesen Zähler pro In-Game-Tag.
+     *  volatile: DiagnosticExporter.exportDay() liest + resettet; size() inkrementiert.
+     *  Beide Main-Thread — volatile nur für den Fall dass zukünftige Refactors exportDay()
+     *  auf einen Worker verlagern. Kosten: 0. */
+    static volatile int priorityExpansionSignalsThisDay;
+
     /** Production-Stuck-Threshold in Game-Sekunden.
      *  FirmSizingRefreshDays × secondsPerDay × 0.5 — also halbe Sizing-Periode.
      *  Verhindert dass neue Firmen (Cold-Start) fälschlich als stuck erkannt werden. */
@@ -76,6 +100,7 @@ final class FirmSizing {
         state.marketTarget = clampedTarget;
         roomAccess.setFirmTarget(room, clampedTarget);
         if (result.escapeCliff()) {
+            priorityExpansionSignalsThisDay++;
             // raw observedSlope statt state.marginal — letzteres kann stale sein
             // (slopeClamp-bias aus vorigen ticks wenn weder target<oldBest noch target>oldBest).
             EventLog.log("FIRM_ESCAPE_CLIFF",
@@ -97,16 +122,46 @@ final class FirmSizing {
      *  Wird in settle-phase (settled=true) und im Hill-Step-Hauptpfad (settled=false) genutzt. */
     private static void emitPriorityHint(FirmLedger.FirmState state, RoomInstance room, boolean settled) {
         if (!EconConfig.priorityVectorEnabled) return;
+        // ── Sancta-Workshop-Cap: NO-EXPANSION wenn Cap erreicht + Firma unrentabel ──
+        if (room.blueprintI() != null) {
+            Integer cap = sanctaWorkshopCap.get(room.blueprintI().key);
+            if (cap != null) {
+                int existing = countInstances(room.blueprintI().key);
+                boolean profitable = state.profit > 0.0 && state.marginal >= EconConfig.priorityMarginalSafetyThreshold;
+                if (existing >= cap && !profitable) {
+                    EventLog.log("FIRM_NO_EXPANSION",
+                            room.blueprintI().key + " at cap=" + existing + "/" + cap
+                            + " profit=" + String.format(java.util.Locale.ROOT, "%.2f", state.profit)
+                            + " marginal=" + String.format(java.util.Locale.ROOT, "%.2f", state.marginal)
+                            + " — skipping expansion hint (unprofitable at cap)");
+                    return;
+                }
+            }
+        }
         if (state.marginal < EconConfig.priorityMarginalSafetyThreshold) return;
         if (state.outputs == null || state.outputs.length == 0) return;
         double score = PriorityRegistry.instance().score(state.outputs);
         if (score <= EconConfig.priorityExpansionThreshold) return;
         String bp = room.blueprintI() != null ? room.blueprintI().key : "?";
+        priorityExpansionSignalsThisDay++;
         EventLog.log("FIRM_PRIORITY",
                 bp + " pressure=" + String.format(java.util.Locale.ROOT, "%.2f", score)
                 + (settled ? " settled — consider building additional instance (demand > capacity)"
                            : " marginal=" + String.format(java.util.Locale.ROOT, "%.2f", state.marginal)
                              + " employed=" + room.employees().employed() + "/" + room.employees().max()));
+    }
+
+    /** Zählt existierende Instanzen eines Blueprints (nur wenn Engine verfügbar). */
+    private static int countInstances(String blueprintKey) {
+        if (EngineMirror.api() == null) return 0;
+        int count = 0;
+        for (RoomBlueprintIns<?> bp : EngineMirror.api().rooms().getRoomIns()) {
+            if (bp != null && bp.key.equals(blueprintKey)) {
+                count = bp.instancesSize();
+                break;
+            }
+        }
+        return count;
     }
 
     static boolean excludedFromMarketSizing(FirmLedger ledger, RoomInstance room) {
@@ -190,6 +245,9 @@ final class FirmSizing {
                         note = "TARGET-ZERO";
                     } else if (s.profit <= 0.0) {
                         note = "PROFIT-NEGATIVE";
+                    } else if (sanctaWorkshopCap.containsKey(bp.key)
+                            && countInstances(bp.key) >= sanctaWorkshopCap.get(bp.key)) {
+                        note = "NO-EXPANSION";
                     } else if (producedDelta == 0 && day > 5.0) {
                         note = "OUT-STUCK";
                     } else if (s.escapeCliffTriggered) {

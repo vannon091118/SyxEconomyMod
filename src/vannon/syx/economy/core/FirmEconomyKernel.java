@@ -58,6 +58,10 @@ public final class FirmEconomyKernel {
         return FirmEconomyKernel.hillStep(previous, observedTarget, observedProfit, 0, maxTarget, step, hysteresis);
     }
 
+    /** Sprint v0.13.99+ Escape-Cliff:
+     *  Wenn bestTarget == maxTarget UND marginal >= safetyThreshold UND profit > 0,
+     *  signalisiert HillResult.escapeCliff=true. Caller MUSS den tatsächlich
+     *  gesetzten target clampen (Engine-Blueprint-max verletzt nie max+1). */
     public static HillResult hillStep(HillState previous, int observedTarget, double observedProfit, int minTarget, int maxTarget, int step, double hysteresis) {
         if (maxTarget < 0) {
             throw new IllegalArgumentException("negative max target");
@@ -72,7 +76,7 @@ public final class FirmEconomyKernel {
         if (previous == null || !previous.initialized()) {
             int direction = observedProfit < 0.0 && observedTarget > minTarget ? -1 : (observedTarget < maxTarget ? 1 : -1);
             int probe = FirmEconomyKernel.neighbour(observedTarget, direction, step, minTarget, maxTarget);
-            return new HillResult(new HillState(observedTarget, observedProfit, direction, true), probe, 0.0);
+            return new HillResult(new HillState(observedTarget, observedProfit, direction, true), probe, 0.0, false);
         }
         int bestTarget = previous.bestTarget();
         double bestProfit = previous.bestProfit();
@@ -96,7 +100,21 @@ public final class FirmEconomyKernel {
             direction = -direction;
             probe = FirmEconomyKernel.neighbour(bestTarget, direction, step, minTarget, maxTarget);
         }
-        return new HillResult(new HillState(bestTarget, bestProfit, direction, true), probe, marginal);
+        // Escape-Cliff Detection: Sprint v0.13.99+ User-Auftrag wörtlich
+        // "wenn target==max UND marginal >= MARGINAL_SAFETY_THRESHOLD".
+        // recognized beide senses: observedTarget (aktuelle Test-Position) und
+        // bestTarget (previous-tick Optimum). Vermeidet false-positive bei marginal=0
+        // indem Double.isFinite(marginal) + observedProfit>0.0 erforderlich sind.
+        boolean escapeCliff = (bestTarget == maxTarget || observedTarget == maxTarget)
+                && Double.isFinite(marginal)
+                && marginal >= EconConfig.priorityMarginalSafetyThreshold
+                && observedProfit > 0.0;
+        if (escapeCliff) {
+            // Audit-Trace: probe zeigt Vorschlag jenseits blueprint-max;
+            // Caller clamped eigenverantwortlich auf max.
+            probe = maxTarget + 1;
+        }
+        return new HillResult(new HillState(bestTarget, bestProfit, direction, true), probe, marginal, escapeCliff);
     }
 
     private static int neighbour(int target, int direction, int step, int min, int max) {
@@ -124,7 +142,10 @@ public final class FirmEconomyKernel {
     public record HillState(int bestTarget, double bestProfit, int direction, boolean initialized) {
     }
 
-    public record HillResult(HillState state, int nextTarget, double observedSlope) {
+    /** Sprint v0.13.99+ Escape-Cliff: 4-tuple statt 3-tuple. escapeCliff=true wenn
+     *  Hill-Climber an blueprint-max angelangt ist und profit + marginal weiter
+     *  Expansion rechtfertigen. Caller nutzt escapeCliff als REINE Empfehlung (kein
+     *  Engine-Override über blueprint-max hinaus). */
+    public record HillResult(HillState state, int nextTarget, double observedSlope, boolean escapeCliff) {
     }
 }
-

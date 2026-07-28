@@ -124,13 +124,13 @@ legacy_baselines:
     reason_at_emit: loc 657 > warn 600; fields 31 > block 24 (+1 escapeCliffTriggered)
     baseline_update: Sprint v0.13.99+ Escape-Cliff — FirmState.escapeCliffTriggered (transient audit flag, +1 field)
   src/vannon/syx/economy/core/FirmSizing.java:
-    loc: 195
+    loc: 231
     pubM: 0
-    fields: 2
+    fields: 3
     imports: 16
     status_at_emit: pass
-    reason_at_emit: 'Sprint v0.13.99+ Escape-Cliff — re-baseline nach Erweiterung um state.escapeCliffTriggered capture (im hillStep-Branch), Engine-Clamp vor setFirmTarget + FIRM_ESCAPE_CLIFF EventLog-Hint + neue Note-Stufe ESCAPE-CLIFF in furniture_debug.csv. SLOC 188 = +13 vs Sprint v0.13.99-Pass (cap 195 * 1.05 = 204.75 → PASS).'
-    baseline_update: Sprint v0.13.99+ Escape-Cliff — state.escapeCliffTriggered + Note-Stufe + Engine-Clamp
+    reason_at_emit: 'Sprint v0.13.99+ Sancta-Workshop-Cap — re-baseline nach NO-EXPANSION Guard (sanctaWorkshopCap Map + countInstances Helper + emitPriorityHint Guard + dumpFurnitureDebug Note). +36 SLOC vs Escape-Cliff baseline, gerechtfertigt durch Skalierung-in-den-Ruin-Prävention.'
+    baseline_update: Sprint v0.13.99+ Sancta-Workshop-Cap — NO-EXPANSION Guard + countInstances + dump Note
   src/vannon/syx/economy/core/FlowMeter.java:
     loc: 424
     pubM: 23

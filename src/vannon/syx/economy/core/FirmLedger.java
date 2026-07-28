@@ -787,6 +787,10 @@ public final class FirmLedger {
          *  gesetzt. Nutzung von Game-Sekunden statt Tick-Counter verhindert
          *  dass Speed-3 vs Speed-1 unterschiedliche Ergebnisse produziert. */
         int stuckSeconds;
+        /** Sprint v0.13.99+ Escape-Cliff-Flag (transient — wird beim Save NICHT
+         *  persistiert, beim Load implizit false). Dient als Audit-Signal in
+         *  furniture_debug.csv. Wird pro Sizing-Tick neu evaluiert. */
+        boolean escapeCliffTriggered;
 
         private FirmState() {
         }
