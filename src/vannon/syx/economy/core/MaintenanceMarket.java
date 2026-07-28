@@ -63,9 +63,9 @@ public final class MaintenanceMarket implements Saveable {
         ArrayList<Candidate> candidates = new ArrayList<Candidate>();
         Set<RoomInstance> seen = Collections.newSetFromMap(new IdentityHashMap<>());
         long due = 0L;
-        IRoomAccess rooms = EngineMirror.api() != null ? EngineMirror.api().rooms() : null;
-        ROOM_JANITOR janitorBlueprint = rooms != null ? rooms.getJanitor() : EngineSeams.settRoomsJanitor();
-        LIST<RoomBlueprintIns<?>> allIns = rooms != null ? rooms.getRoomIns() : EngineSeams.settRoomsIns();
+        IRoomAccess rooms = EngineMirror.api().rooms();
+        ROOM_JANITOR janitorBlueprint = rooms.getJanitor();
+        LIST<RoomBlueprintIns<?>> allIns = rooms.getRoomIns();
         for (RoomBlueprintIns<?> blueprint : allIns) {
             if (blueprint == janitorBlueprint) continue;
             for (int i = 0; i < blueprint.instancesSize(); ++i) {
@@ -104,8 +104,8 @@ public final class MaintenanceMarket implements Saveable {
             return 0L;
         }
         int payable = (int)Math.min(Integer.MAX_VALUE, rawDue);
-        IRoomAccess janRooms = EngineMirror.api() != null ? EngineMirror.api().rooms() : null;
-        ROOM_JANITOR janitors = janRooms != null ? janRooms.getJanitor() : EngineSeams.settRoomsJanitor();
+        IRoomAccess rooms2 = EngineMirror.api().rooms();
+        ROOM_JANITOR janitors = rooms2.getJanitor();
         ArrayList<RoomInstance> active = new ArrayList<RoomInstance>();
         for (int i = 0; i < janitors.instancesSize(); ++i) {
             RoomInstance room = janitors.getInstance(i);
@@ -149,8 +149,8 @@ public final class MaintenanceMarket implements Saveable {
 
     private int janitorWorkers() {
         int workers = 0;
-        IRoomAccess janRooms = EngineMirror.api() != null ? EngineMirror.api().rooms() : null;
-        ROOM_JANITOR janitors = janRooms != null ? janRooms.getJanitor() : EngineSeams.settRoomsJanitor();
+        IRoomAccess rooms2 = EngineMirror.api().rooms();
+        ROOM_JANITOR janitors = rooms2.getJanitor();
         for (int i = 0; i < janitors.instancesSize(); ++i) {
             RoomInstance room = janitors.getInstance(i);
             if (room == null || room.employees() == null) continue;

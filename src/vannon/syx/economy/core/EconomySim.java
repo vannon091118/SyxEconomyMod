@@ -2,6 +2,7 @@ package vannon.syx.economy.core;
 
 import game.faction.FACTIONS;
 import game.faction.FCredits;
+import game.faction.npc.FactionNPC;
 import game.time.TIME;
 import init.resources.RESOURCE;
 import init.resources.RESOURCES;
@@ -148,6 +149,7 @@ public final class EconomySim {
     private final ISyxAI aiAdapter;
     private final EconIndicators econIndicators = new EconIndicators();
     private final AccessAutomation accessAutomation = new AccessAutomation();
+    private final RenderCaches renderCaches = new RenderCaches();
     // Phase 4.4 + 4.5: EconProgression + DebtDiplomacyBuffer werden mit Adaptern
     // konstruiert. Field-Init kann das nicht — also constructor-assigned nach Aufbau
     // der Adapter (gleiche Workaround-Technik wie für ConstructionHoardController).
@@ -158,10 +160,7 @@ public final class EconomySim {
     private final DebtDiplomacyBuffer debtDiplomacyBuffer;
     private int econIndicatorTickCounter = 0;
     private static final int ECON_INDICATOR_INTERVAL = 60;
-    // Livetest: Building-Change-Tracker. Vergleicht Raum-Anzahl pro Tick und
-    // logged Änderungen via DebugTracer.BUILD für Korrelation mit CSV-Diagnostik.
-    private int lastStockpileCount = -1;
-    private int lastWorkplaceCount = -1;
+    // lastStockpileCount, lastWorkplaceCount: extracted to RenderCaches (TASK-006)
     // Phase 4: stateWarehouses is built in the constructor after the warehouse
     // adapter is initialized. These two consumers are therefore constructed in
     // the constructor body, not via field initializers, so the diamond reads
@@ -180,10 +179,8 @@ public final class EconomySim {
     private final HousingMarket housingMarket = new HousingMarket();
     private final ForeignTradeLedger foreignTradeLedger = new ForeignTradeLedger();
     private static volatile EconomySim active = null;
-    private volatile Humanoid cachedRichestCitizen;
-    private volatile List<StockpileInstance> cachedStateWarehouses = Collections.emptyList();
-    private volatile List<RoomBlueprintImp> cachedWorkplaces = Collections.emptyList();
-    private volatile List<RESOURCE> cachedAllResources = Collections.emptyList();
+    // cachedRichestCitizen, cachedStateWarehouses, cachedWorkplaces, cachedAllResources:
+    // extracted to RenderCaches (TASK-006)
     private int ticks = 0;
     private final ReentryGuard updateGuard = new ReentryGuard("EconomySim.update()");
     private final SimpleHistory treasuryHistory = new SimpleHistory(60);
@@ -368,19 +365,19 @@ public final class EconomySim {
     }
 
     public Humanoid cachedRichestCitizen() {
-        return this.cachedRichestCitizen;
+        return this.renderCaches.cachedRichestCitizen();
     }
 
     public List<StockpileInstance> cachedStateWarehouses() {
-        return this.cachedStateWarehouses;
+        return this.renderCaches.cachedStateWarehouses();
     }
 
     public List<RoomBlueprintImp> cachedWorkplaces() {
-        return this.cachedWorkplaces;
+        return this.renderCaches.cachedWorkplaces();
     }
 
     public List<RESOURCE> cachedAllResources() {
-        return this.cachedAllResources;
+        return this.renderCaches.cachedAllResources();
     }
 
     public static EconomySim active() {
@@ -460,6 +457,7 @@ public final class EconomySim {
         FACTIONS.player().credits().inc((double) amount, FCredits.CTYPE.MISC);
         LOG.ln("[ECON CHEAT] minted " + amount + " D into treasury (new balance: " + treasury() + " D)");
         EventLog.log("CHEAT", "Minted " + amount + " D — new treasury: " + treasury());
+        DiagnosticExporter.logPlayerAction(this.ticks, "CHEAT_MINT", "amount=" + amount + ",treasury=" + treasury());
     }
 
     /** Cheat: force a diagnostic CSV export now (bypasses daily guard). */
@@ -468,6 +466,7 @@ public final class EconomySim {
         DiagnosticExporter.exportDay(this);
         LOG.ln("[ECON CHEAT] forced diagnostic export");
         EventLog.log("CHEAT", "Forced diagnostic export");
+        DiagnosticExporter.logPlayerAction(this.ticks, "CHEAT_EXPORT", "forced");
     }
 
     /** Cheat: log current audit delta to EventLog + stdout. */
@@ -590,10 +589,6 @@ public final class EconomySim {
         WarehouseAutomation.reset();
         GiniConsequences.reset();
         CitizenClass.reset();
-        // P4: rngLoggedOnce zuruecksetzen damit Save/Load wieder frische Logs bekommt
-        if (active != null) {
-            active.rngLoggedOnce = false;
-        }
         active = null;
     }
 
@@ -626,7 +621,7 @@ public final class EconomySim {
             this.roster.rebuild();
             this.wallets.clearPaidThisTick();
             if (this.roster.size() < 2) {
-                this.updateRenderCaches();
+                this.renderCaches.update(this.roster, this.wallets, this.stateWarehouses);
                 return;
             }
             ++this.ticks;
@@ -758,8 +753,18 @@ public final class EconomySim {
             GiniConsequences.announceIfCrossed(snap, TIME.seasons().bitsSinceStart());
         }
 
-        this.updateRenderCaches();
-        this.trackBuildingChanges();
+        // DIPLO-01: Opinion-Monitoring — Wirtschafts-Indikatoren beeinflussen NPC-Meinung.
+        // Läuft langsamer als EconIndicators (alle 300 statt 60 Ticks) da Diplomatie
+        // sich auf der Spieltag-Skala bewegt.
+        if (EconConfig.opinionEconomyLinkEnabled
+                && this.ticks % EconConfig.opinionMonitorIntervalTicks == 0
+                && EngineMirror.api() != null
+                && EngineMirror.api().factions() != null) {
+            monitorFactionOpinion();
+        }
+
+        this.renderCaches.update(this.roster, this.wallets, this.stateWarehouses);
+        this.renderCaches.track(this.ticks);
 
         // Push values into the dashboard histories once per in-game day.
         // This keeps the 60-slot charts meaningful over several game days
@@ -803,107 +808,65 @@ public final class EconomySim {
         return this.stats;
     }
 
-    private void updateRenderCaches() {
-        // richest citizen
-        Humanoid best = null;
-        int most = -1;
-        for (int i = 0; i < this.roster.size(); ++i) {
-            Humanoid h = this.roster.get(i);
-            int money = this.wallets.get(h);
-            if (money > most) {
-                most = money;
-                best = h;
-            }
-        }
-        this.cachedRichestCitizen = most > 0 ? best : null;
+    // updateRenderCaches(): extracted to RenderCaches.update() (TASK-006)
 
-        // all resources (static, but cache reference to avoid repeated engine calls)
-        LIST<RESOURCE> allResources = RESOURCES.ALL();
-        ArrayList<RESOURCE> resourcesList = new ArrayList<>(allResources.size());
-        for (RESOURCE resource : allResources) {
-            resourcesList.add(resource);
-        }
-        this.cachedAllResources = resourcesList;
+    // trackBuildingChanges(): extracted to RenderCaches.track() (TASK-006)
 
-        // state-owned warehouses (state-owned first, then private)
-        if (SETT.ROOMS() != null && SETT.ROOMS().STOCKPILE != null) {
-            int stockpiles = EconProgression.reliableStockpileCount();
-            ArrayList<StockpileInstance> ordered = new ArrayList<>(stockpiles);
-            for (int i = 0; i < stockpiles; ++i) {
-                StockpileInstance w = (StockpileInstance) SETT.ROOMS().STOCKPILE.getInstance(i);
-                if (w != null && this.stateWarehouses.isStateOwned((RoomInstance) w)) {
-                    ordered.add(w);
+    /** DIPLO-01: Überwacht Wirtschafts-Indikatoren und passt NPC-Opinion an.
+     *  Läuft alle {@code EconConfig.opinionMonitorIntervalTicks} Ticks.
+     *  <p>Verknüpfungen:
+     *  <ul>
+     *    <li>TreasuryCrisis Tier ≥ 1 → jede aktive NPC-Fraktion verliert Opinion
+     *        proportional zum Krisen-Level.</li>
+     *    <li>Gini ≥ 0.5 → leichter Opinion-Verlust (Ungleichheit schadet
+     *        diplomatischem Ansehen).</li>
+     *    <li>Deaths seit letztem Check > 0 → Opinion-Verlust (Hunger-Tote
+     *        schaden dem Ruf).</li>
+     *  </ul></p> */
+    private void monitorFactionOpinion() {
+        try {
+            LIST<FactionNPC> npcList = FACTIONS.NPCs();
+            if (npcList == null) return;
+            int crisisTier = TreasuryCrisis.activeTier();
+            double gini = this.stats.gini;
+            int deathsSince = this.deaths;
+
+            for (int i = 0; i < npcList.size(); i++) {
+                FactionNPC npc = npcList.get(i);
+                if (npc == null || !npc.isActive()) continue;
+                double delta = 0.0;
+
+                // Treasury-Krise: Je höher das Tier, desto stärker der Opinion-Verlust.
+                if (crisisTier >= 1) {
+                    delta -= 0.5 * crisisTier;
+                }
+
+                // Gini ≥ 0.5: Leichter Opinion-Verlust durch Ungleichheit.
+                if (gini >= 0.5) {
+                    delta -= (gini - 0.4) * 0.5;
+                }
+
+                // Todesfälle: Jeder Tote kostet 0.1 Opinion.
+                if (deathsSince > 0) {
+                    delta -= deathsSince * 0.1;
+                }
+
+                if (delta != 0.0) {
+                    EngineMirror.api().factions().adjustFactionOpinion(npc, delta);
                 }
             }
-            for (int i = 0; i < stockpiles; ++i) {
-                StockpileInstance w = (StockpileInstance) SETT.ROOMS().STOCKPILE.getInstance(i);
-                if (w != null && !this.stateWarehouses.isStateOwned((RoomInstance) w)) {
-                    ordered.add(w);
-                }
+
+            // Einmal pro Aktivierung loggen.
+            if (crisisTier >= 1 || gini >= 0.5 || deathsSince > 0) {
+                EventLog.logSampled("DIPLO",
+                        "Opinion-Monitor: crisis=" + crisisTier
+                        + " gini=" + String.format("%.2f", gini)
+                        + " deaths=" + deathsSince
+                        + " — Write via BypassGate (DIPLO-03, gated by royaltyOpinionWriteEnabled).");
             }
-            this.cachedStateWarehouses = Collections.unmodifiableList(ordered);
-        } else {
-            this.cachedStateWarehouses = Collections.emptyList();
+        } catch (Throwable t) {
+            // Opinion-Monitoring ist nicht kritisch für die Wirtschafts-Simulation.
         }
-
-        // workplaces with employment
-        if (SETT.ROOMS() != null) {
-            LIST<?> all = SETT.ROOMS().imps();
-            ArrayList<RoomBlueprintImp> jobs = new ArrayList<>();
-            for (int i = 0; i < all.size(); ++i) {
-                RoomBlueprintImp b = (RoomBlueprintImp) all.get(i);
-                if (b.employment() == null || !(b instanceof RoomBlueprintIns)) {
-                    continue;
-                }
-                RoomBlueprintIns<?> workplace = (RoomBlueprintIns<?>) b;
-                if (workplace.instancesSize() > 0) {
-                    jobs.add(b);
-                }
-            }
-            this.cachedWorkplaces = Collections.unmodifiableList(jobs);
-        } else {
-            this.cachedWorkplaces = Collections.emptyList();
-        }
-    }
-
-    /** Livetest: Loggt Änderungen der Raum-Anzahl (Lager, Werkstätten) via
-     *  DebugTracer.BUILD für Korrelation mit CSV-Diagnostik. Nur aktiv wenn
-     *  {@code debugTracing=true}. Throttled auf alle 60 Ticks (~12s real)
-     *  da Bau-Änderungen auf menschlicher Zeitskala passieren. */
-    private void trackBuildingChanges() {
-        if (!DebugTracer.on()) return;
-        if (this.ticks % 60 != 0) return;
-        if (SETT.ROOMS() == null) return;
-
-        // Stockpile count
-        int stockpiles = 0;
-        if (SETT.ROOMS().STOCKPILE != null) {
-            stockpiles = EconProgression.reliableStockpileCount();
-        }
-        if (this.lastStockpileCount >= 0 && stockpiles != this.lastStockpileCount) {
-            int delta = stockpiles - this.lastStockpileCount;
-            DebugTracer.trace(DebugTracer.BUILD,
-                "stockpile " + (delta > 0 ? "+" : "") + delta + " → now " + stockpiles);
-        }
-        this.lastStockpileCount = stockpiles;
-
-        // Workplace count (total instances across all blueprints)
-        int workplaces = 0;
-        if (SETT.ROOMS().imps() != null) {
-            LIST<?> all = SETT.ROOMS().imps();
-            for (int i = 0; i < all.size(); ++i) {
-                RoomBlueprintImp b = (RoomBlueprintImp) all.get(i);
-                if (b.employment() != null && b instanceof RoomBlueprintIns) {
-                    workplaces += ((RoomBlueprintIns<?>) b).instancesSize();
-                }
-            }
-        }
-        if (this.lastWorkplaceCount >= 0 && workplaces != this.lastWorkplaceCount) {
-            int delta = workplaces - this.lastWorkplaceCount;
-            DebugTracer.trace(DebugTracer.BUILD,
-                "workplaces " + (delta > 0 ? "+" : "") + delta + " → now " + workplaces);
-        }
-        this.lastWorkplaceCount = workplaces;
     }
 
     private void refreshFlowPrices() {
@@ -1625,14 +1588,12 @@ public final class EconomySim {
     }
 
     // T6 (B-009): Hunger→Demographie Tracking
-    private final java.util.concurrent.atomic.AtomicInteger emigrationRisk = new java.util.concurrent.atomic.AtomicInteger();
     private int starvationRiskCount = 0;
-    private boolean rngLoggedOnce = false; // T6-Final: rate-limited RNG-Crash-Logging
 
     /**
      * T6 (B-009): Hunger→Demographie-Konsequenz. Pro Tick wird pro Buerger der
      * Engine-Hunger-Stat (NEEDS.TYPES().HUNGER) geprueft. Wenn > hungerDeathThreshold,
-     * wird Geld-Schaden (hungerDamageRate) abgezogen und Emigrations-Risiko erhoeht.
+     * wird Geld-Schaden (hungerDamageRate) abgezogen und Hunger-Todes-Risiko erhoeht.
      * Hook zwischen foodPlanController.update() und firmLedger.update(), damit die
      * Konsequenzen die naechste Firmen-Target-Berechnung beeinflussen.
      */
@@ -1663,30 +1624,9 @@ public final class EconomySim {
             if (this.wallets.get(h) >= walletDamage) {
                 this.wallets.charge(h, walletDamage);
             }
-            // D-002: Emigration 0.0001→0.00003 (1%/Tag statt 3%/Tag pro kritischem Bürger).
-            // Diagnose: 9/Tag bei median_wealth=0 — 3× zu aggressiv.
-            // D-002 Polish: Population-Floor-Guard — keine Emigration bei < 20 Bürgern.
-            // Wallet-Schaden trifft weiterhin, aber einzelne Abwanderungen sind in
-            // Kleinstädten unverhältnismäßig destruktiv (irreversible Death-Spirale).
-            try {
-                if (hunger >= 90 && RND.rFloat() < 0.00003 && this.roster.size() >= 20) {
-                    this.emigrationRisk.incrementAndGet();
-                } else {
-                    hungerDeaths++;
-                }
-            } catch (RuntimeException e) {
-                // RNG-Crash: loggen statt Counter inflationieren
-                if (!this.rngLoggedOnce) {
-                    EventLog.log("DEMOGRAPHY", "updateDemography: RND.rFloat() failed — " + e.getClass().getSimpleName());
-                    this.rngLoggedOnce = true;
-                }
-            }
+            hungerDeaths++;
         }
         this.starvationRiskCount = hungerDeaths;
-        // Drain emigrationRisk einmal pro Spiel-Tag (EconConfig.ticksPerGameDay).
-        if (this.ticks > 0 && this.ticks % EconConfig.ticksPerGameDay == 0) {
-            this.emigrationRisk.set(0);
-        }
     }
 }
 

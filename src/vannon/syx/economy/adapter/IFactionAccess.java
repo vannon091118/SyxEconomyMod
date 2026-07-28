@@ -187,6 +187,36 @@ public interface IFactionAccess {
      */
     CharSequence getRulerName(FactionNPC npc);
 
+    // ─── Opinion / Trust (DIPLO-01) ─────────────────────────
+
+    /**
+     * Meinung einer NPC-Fraktion über den Spieler. Vanilla-Skala ca. -100 bis +100.
+     * Ruft {@code ROPINION.get(FactionNPC)} auf (public static API).
+     * @param npc die NPC-Fraktion (null → 0.0)
+     * @return Opinion-Wert oder 0.0 wenn nicht verfügbar
+     */
+    double getFactionOpinion(FactionNPC npc);
+
+    /**
+     * Vertrauen einer NPC-Fraktion in den Spieler (Trust-Wert 0.0–1.0).
+     * Ruft {@code ROPINION.trust().get(FactionNPC)} auf (public API).
+     * @param npc die NPC-Fraktion (null → 0.0)
+     * @return Trust-Wert oder 0.0 wenn nicht verfügbar
+     */
+    double getFactionTrust(FactionNPC npc);
+
+    /**
+     * Passt die Meinung einer NPC-Fraktion um einen Delta-Wert an.
+     * <p>DIPLO-01 (v0.13.67): Vanilla-Write-API ist package-private
+     * ({@code ROPINION.setOpinionValue} + {@code SuperBoostable.incD}).
+     * Write-Pfad deferred to <b>DIPLO-02</b> (BypassGate).
+     * Aktuell: <b>Logging-only</b> — der Delta-Wert wird getraced,
+     * aber nicht auf die Engine angewendet.</p>
+     * @param npc die NPC-Fraktion (null → no-op)
+     * @param delta Anpassungswert (positiv/negativ) — nur Logging
+     */
+    void adjustFactionOpinion(FactionNPC npc, double delta);
+
     // ═══ Player ═════════════════════════════════════════════
 
     /**

@@ -1,6 +1,6 @@
 # SyxEconomyMod — Entwicklung & Roadmap
 
-> **Version:** v0.13.67 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-26
+> **Version:** v0.13.70 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-26
 >
 > Stam-Doku-Synchron-Anker: `tools/verify-doc-sync.sh` (9 Checks).
 > Abgeschlossene Sprints → [`CHANGELOG.md`](CHANGELOG.md).
@@ -35,7 +35,7 @@
 | **A-04b** | ✅ Closed (v0.13.64) | **IStatsAccess + remaining** — Maintenance, Time, Religion, Weather, Tourism, Events | ~300 | A-1 |
 | **A-05** | ✅ Closed (v0.13.64) | **EngineMirror.java + AdapterDispatcher + Stam-Docs** — Zentrale Fassade, ersetzt EngineSeams graduell | ~400 | A-1 |
 | **UI-CENT** | ✅ Closed | **UI-Zentralisierung:** 122 GText → 10 FONTW_*-Konstanten in EconWindowBase | ~15 | 10 |
-| **AUDIT-1** | 📝 Notiert | **emigrationRisk = Dead Code** — AtomicInteger nie gelesen, D-002 wirkungslos | — | 10 |
+| **AUDIT-1** | ✅ Closed (v0.13.68) | **emigrationRisk = Dead Code** — AtomicInteger und zugehörige Inkrements/Nullungen aus `EconomySim.java` entfernt. | — | 10 |
 | **U-01** | ✅ Closed (v0.13.67) | **Treasury-Display-Inkonsistenz:** Quickview -19M vs Dashboard -1.9M — FONTW_KPI 128→144, GText-Overflow behoben. `AccessAutomation.java:30` | ~10 | U-1 |
 | **U-02** | ✅ Closed (v0.13.67) | **GText-Overflow Kopfsteuer:** `####-500D#` bei negativem Treasury — FONTW_SLVAL 80→96, Plus-Button x 200→216. `EconWindowBase.java:239,312` | ~8 | U-1 |
 | **U-03** | 🟠 P1 | **CitizenClass-Tabelle leer:** 37 Siedler, 0 Zeilen gerendert — Klassifikation läuft nicht | ~20 | U-1 |
@@ -58,6 +58,12 @@
 | **BA-02** | 🟡 P2 | **Extrem-Gini 0.946:** 3 Ausreißer (333K/500K/1.3M), 34 Bürger bei Median 4D. GiniConsequences greift, aber Effekt nicht spürbar. | ~10 | BA |
 | **BA-03** | ✅ Closed (v0.13.67) | **Arbeitslosigkeits-Todesspirale:** Covered by L-01 (BrokeFoodPlan con() prüft hunger.isMax()). | ~0 | L-1 |
 | **BA-04** | ✅ Closed (v0.13.67) | **Thron-Bug / Bootstrap-Lücke:** Bürger verbrauchen Startkapital bevor Wirtschaft Einkommen generiert → Thron-Essen → Pleite-Spirale. Fix: `earlySettlerDoleThreshold` (5000D) — alle Bürger essen gratis solange pop < 50. `EconConfig.java:541, GrainDole.java:74-78` | ~15 | BA |
+| **BA-05** | ✅ Closed (v0.13.68) | **effectiveCoverage() Stock-Fallback (D-004):** `FlowPrices.java` — stock-basierte Coverage bei supplyPerDay=0 und stock>0 implementiert; Cold-Start-Guard bleibt erhalten. | `FlowPrices.java:120-138` | ~15 | BA |
+| **DC-03** | 🟠 P1 | **mean_wage Feldname irreführend:** `rebalance_macro.csv` Spalte `mean_wage` zeigt 1000 ab Tag 96, aber `actual_mean_wage` bleibt 50. `mean_wage` ist kein Durchschnittslohn — es ist der `wageMax`-Config-Wert (1000). Feld umbenennen in `wage_config_max` oder CSV-Header dokumentieren. **Livetest-Beweis:** Seed 24123371076350, Tag 71→151. | `DiagnosticExporter.java:exportDay()` | ~5 | DC |
+| **DC-04** | 🟠 P1 | **FirmLedger Logging-Trigger zu streng:** `rebalance_firms.csv` komplett leer (nur Header) trotz 3 Workplaces ab Tag 55. Entweder Logging-Trigger erst wenn `profit_per_day != 0`, oder Threshold/Filter zu hoch. Prüfen: wann genau schreibt FirmLedger eine Zeile? | `FirmLedger.java`, `DiagnosticExporter.java` | ~10 | DC |
+| **DC-05** | 🟡 P2 | **_WOOD Supply-Spike-Anomalie:** `rebalance_resources.csv` zeigt _WOOD supply=45.371 und 84.698 D/Tag (unrealistisch — Vanilla-Holzfäller produziert keine 45k/Tag). Coverage bleibt trotzdem 0.4 (2.25× anchor). Vermutlich Float-Precision-Problem oder Tick-Aggregat statt Tages-Wert. Kein Breaking-Bug, aber Diagnostik-Rauschen. | `FlowMeter.java` | ~8 | DC |
+| **DC-06** | 🟡 P2 | **Duplicate Day 43 im Exporter:** `rebalance_macro.csv` Zeile 43 (Season 3) erscheint zweimal mit leicht unterschiedlichen Werten (max_wealth 1837→1843). Frame-Boundary-Problem oder Doppel-Export bei Event auf Schreibtakt-Grenze. | `DiagnosticExporter.java` | ~5 | DC |
+| **SK-07** | 🟡 P2 | **AccessAutomation Chronicle-UI-Flood:** Drei identische `[ACCESS]`-Zeilen im Chronik-Panel pro Tick — `LOG.ln()`-Aufrufe aus AccessAutomation fluten das UI-Chronik-Panel. Gleicher Bug wie B-011 (NPE→disabled), anderer Symptomkanal (UI statt Funktionalität). Fix: LOG.ln()-Aufrufe aus AccessAutomation entfernen oder via EventLog-Kanal statt UI-Chronik. | `AccessAutomation.java:LOG.ln()` | ~5 | DC |
 | **DOC-01** | 🟡 P2 | **ARCHITECTURE.md + GLOSSARY.md Brücken-Korrektur:** 4 settlement/room/*-Brücken existieren (309 LOC in `src/settlement/room/`). Wurden in v0.13.67 fälschlich gelöscht, jetzt restauriert mit korrekten LOC-Zahlen. | ~0 | DOC |
 | **DOC-02** | 🟡 P2 | **BINDUNGSMATRIX J1-J6:** StatsBehaviour → StatsMultipliers (Vanilla-Source-verifiziert). CIVICS-Count korrigieren. | ~5 | DOC |
 | **DOC-03** | 🟡 P2 | **agents.md Canary-Update:** Flachwitz-Refresh nach Rule-7-Pflicht (Session-Start, doc-Update). | ~2 | DOC |
@@ -67,11 +73,11 @@
 | **TECHD-02** | 🟡 P2 | **EconConfig 207 Felder Constants-Dump:** 55 bool + 75 int + 61 double + 16 other. 555 LOC. **Plan:** 3 Sub-Configs extrahieren: `BalanceConfig` (Preise, Löhne, Steuern), `BehaviorConfig` (Toggles, Schwellwerte), `PhaseConfig` (Progression, Stufen). AffinConfig-Nested-Class existiert bereits (leer). `EconConfig.locale` hinzugefügt (v0.13.67). | ~150 | TECHD |
 | **TEST-01** | 🟠 P1 | **Save-Migration-Integrationstest fehlt:** CHUNKED_VERSION=33, keine Headless-Test-Suite für Savegame-Migration. Tagebuch: „Migrations-Pfad im Feld unbewiesen". | ~80 | TEST |
 | **DA-01** | 🟡 P2 | **Tagebuch-Abgleich v0.13.67:** 17 Claims gegen Code verifiziert (11 bestätigt, 6 korrigiert, 0 widerlegt). Detaillierte Tabelle unten. | ~0 | DOC |
-| **DIPLO-01** | 🔴 P0 | **Opinion/Trust-Mechanik fehlt:** Vanilla `ROPINION.trust()`, `bOpinion` (1.5), `TRUST` (0) — Mod liest nur in DebtDiplomacyBuffer, schreibt NIE. `royaltyOpinionEnabled` = toter Config-Flag. Kein Opinion-Zerfall-Monitoring, keine Reaktion auf Wirtschafts-Kollaps. | ~60 | DIPLO |
-| **DIPLO-02** | 🟠 P1 | **IFactionAccess Opinion/Trust-Lücke:** Interface deklariert "Royalty — Opinion, Trust" aber implementiert nur `getKing()` + `getRulerName()`. `getFactionTrust(Faction)` + `setFactionOpinion(Faction, double)` fehlen. **Ref:** `FactionAccessImpl.java:418` (TODO TradeManager.tarif). | ~25 | DIPLO |
+| **DIPLO-01** | ✅ Closed (v0.13.67) | Opinion-Monitoring aktiv: `EconomySim.monitorFactionOpinion()` liest TreasuryCrisis/Gini/Deaths → `adjustFactionOpinion()` (Logging-only, Write deferred to DIPLO-02). `IFactionAccess.getFactionOpinion()` + `getFactionTrust()` via `ROPINION.get()` (public API). | `EconomySim.java:925`, `FactionAccessImpl.java:457-505` |
+| **DIPLO-02** | ✅ Closed (v0.13.67) | `getFactionOpinion()` + `getFactionTrust()` + `adjustFactionOpinion()` implementiert. Write-Pfad ist Logging-only da Vanilla `ROPINION.setOpinionValue()` + `SuperBoostable.incD()` package-private — BypassGate-Lösung in DIPLO-03. | `FactionAccessImpl.java:457-505` |
 | **DIPLO-03** | 🟡 P2 | **BINDUNGSMATRIX: ROPINION + bOpinion + TRUST katalogisieren** — 3 Engine-Hebel fehlen komplett in der Matrix. | ~10 | DIPLO |
 
-**Total:** 67 Tasks (60 bestehende + 7 neue: DOC-04, LOC-01, TECHD-01, TECHD-02, TEST-01, DA-01) — plus 40 Closed.
+**Total:** 73 Tasks (60 bestehende + 13 neue: BA-05, DC-03, DC-04, DC-05, DC-06, SK-07, DOC-04, LOC-01, TECHD-01, TECHD-02, TEST-01, DA-01, DIPLO-03) — plus 44 Closed.
 
 **Sprint 9 Dependency-Edges (Rule 1.7 Pre-Note):**
 
@@ -451,8 +457,8 @@ Das Tagebuch ist eine akkurate Außenperspektive auf den Code-Stand v0.13.64→v
 
 | Task | Prio | Beschreibung | LoC |
 |---|---|---|---|
-| **DIPLO-01** | 🔴 P0 | **ROPINION.trust() Write-Zugriff + Opinion-Monitoring:** `IFactionAccess.getFactionTrust(Faction)` + `setFactionOpinion(double)` implementieren. EconomySim.update() prüft Treasury/Gini/Starvation → adjustiert Opinion aller NPCs. `EconConfig.opinionEconomyLinkEnabled`. | ~60 |
-| **DIPLO-02** | 🟠 P1 | **IFactionAccess Opinion/Trust-Methoden:** `getFactionTrust(FactionNPC)` + `getFactionOpinion(FactionNPC)` + `adjustFactionOpinion(FactionNPC, delta)` deklarieren + in FactionAccessImpl via BypassGate/ROPINION implementieren. `royaltyOpinionEnabled`-Consumer aktivieren. | ~25 |
+| **DIPLO-01** | ✅ Closed (v0.13.67) | `ROPINION.trust()` Read + EconomySim Opinion-Monitoring implementiert. Write deferred to DIPLO-02. | `EconomySim.java:925`, `FactionAccessImpl.java:457-505` |
+| **DIPLO-02** | 🟡 P2 → DIPLO-03 | Write-Pfad via BypassGate: `ROPINION.setOpinionValue()` + `SuperBoostable.incD()` aufschließen. Read-Pfad (DIPLO-01) ist komplett. | `FactionAccessImpl.java:457` |
 | **DIPLO-03** | 🟡 P2 | **BINDUNGSMATRIX: ROPINION + bOpinion + TRUST katalogisieren** — 3 Engine-Hebel dokumentieren (Klasse, Zugriffspfad, Mod-Nutzung). | ~10 |
 
 **Geschätzt:** 3 Tasks, ~95 LoC

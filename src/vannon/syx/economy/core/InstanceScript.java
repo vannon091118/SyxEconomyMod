@@ -58,6 +58,9 @@ final class InstanceScript implements SCRIPT.SCRIPT_INSTANCE {
     public void save(FilePutter file) {
         DebugTracer.trace(DebugTracer.VIEW, "save " + file.path);
         LOG.ln("[ECONOMY MOD] Writing save game: " + String.valueOf(file.path));
+        // DC-01: Summary-Buffer vor dem Save flushen — agent-lesbare
+        // Change-Events statt 39.6M TRACE-Zeilen.
+        DiagnosticExporter.flush(DiagnosticExporter.sessionSeed());
         this.economy.save(file);
     }
 

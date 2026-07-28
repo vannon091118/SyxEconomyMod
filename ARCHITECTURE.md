@@ -1,6 +1,6 @@
 # SyxEconomyMod — Architektur
 
-> **Version:** v0.13.67 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-26
+> **Version:** v0.13.70 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-26
 >
 > Stam-Doku-Synchron-Anker: Die obenstehende Versions-Zeile MUSS identisch mit `pom.xml` `<version>` sein.
 > Der Sync-Gate `tools/verify-doc-sync.sh` validiert dies vor jedem `mvn compile`.
@@ -46,13 +46,13 @@ Spec-Migration: BINDUNGSMATRIX.csv ist Single-Source-of-Truth.
 
 Das Mod fügt Songs of Syx eine parallele Wirtschaftsschicht hinzu. Jeder Siedler hat ein eigenes Wallet, Firmen rechnen边际isch ab, der Staat kann Steuern erheben und Subventionen verteilen. Das Mod ersetzt keine Vanilla-Systeme, sondern arbeitet über einen **Adapter-Layer** strikt getrennt daneben.
 
-Modul-Bilanz: **150 Java-Dateien, ~29.458 LOC** (core 21.062 + adapter 5.086 + ui 2.622 + benchmark 328 + warehouse/market 51 + bridges 309)
+Modul-Bilanz: **150 Java-Dateien, ~29.866 LOC** (core 21.391 + adapter 5.164 + ui 2.623 + benchmark 328 + warehouse/market 51 + bridges 309)
 
 | Modul | Dateien | LOC | Aufgabe |
 |---|---:|---:|---|
-| `vannon/syx/economy/core/` | 112 | ~21.062 | Wirtschafts-Sim + Subsysteme (inkl. EngineLevers 103 Toggles) |
-| `vannon/syx/economy/adapter/` | 27 | ~5.086 | EngineMirror-SDK (9) + ISyx* Legacy (7) + Vanilla (5) + Bypass-SDK (5) + Dispatcher (1) |
-| `vannon/syx/economy/ui/` | 5 | ~2.622 | 4 Fenster + Base |
+| `vannon/syx/economy/core/` | 112 | ~21.391 | Wirtschafts-Sim + Subsysteme (inkl. EngineLevers 103 Toggles) |
+| `vannon/syx/economy/adapter/` | 27 | ~5.164 | EngineMirror-SDK (9) + ISyx* Legacy (7) + Vanilla (5) + Bypass-SDK (5) + Dispatcher (1) |
+| `vannon/syx/economy/ui/` | 5 | ~2.623 | 4 Fenster + Base |
 | `vannon/syx/economy/benchmark/` | 1 | ~328 | Reflection-vs-MethodHandle-Benchmark |
 | `vannon/syx/economy/warehouse/market/` | 1 | ~51 | MarketSharedState (Sprint M-1) |
 | `settlement/room/...` | 4 | ~309 | Package-Private Brücken (compile-time-safe, außerhalb mod-package) |
@@ -72,7 +72,7 @@ Modul-Bilanz: **150 Java-Dateien, ~29.458 LOC** (core 21.062 + adapter 5.086 + u
 ╚═════════════════════════════════════╤══════════════════════════╝
                                        ▼
 ╔════════════════════════════════════════════════════════════════╗
-║  SCHICHT 2: Wirtschafts-Logik (`core/`, 110 Dateien)           ║
+║  SCHICHT 2: Wirtschafts-Logik (`core/`, 113 Dateien)           ║
 ║  Orchestrator: EconomySim — 6 Engines + 1 Facade (Sprint M-1) ║
 ╚═════════════════════════════════════╤══════════════════════════╝
                                        ▼
@@ -154,7 +154,7 @@ Adapter deaktiviert nicht den Transport-Adapter. Phase B–E, v0.13.10.
 Zentrale Fassade die ALLE Vanilla-Zugriffe bündelt. Hybride Architektur:
 - **Private Zugriffe** → bestehende ISyx\* Adapter via BypassGate SDK
 - **Public Zugriffe** → direkte Compilezeit-Links (SETT, STATS, TIME, FACTIONS)
-- **Config** → `EngineLevers.java` (96 Toggles, granulare Degradation pro Zugriff)
+- **Config** → `EngineLevers.java` (103 Toggles, granulare Degradation pro Zugriff)
 - **Logging** → `LoggingAdapter.csvTrace()` in jedem Mirror-Method
 - **Version-gebunden** V71.44 — SDK-Generic kommt später
 
@@ -163,7 +163,7 @@ Zentrale Fassade die ALLE Vanilla-Zugriffe bündelt. Hybride Architektur:
 | Datei | LOC | Aufgabe |
 |---|---:|---|
 | `EngineMirror.java` | 184 | Zentrale Fassade: `api().rooms()/.factions()/.humanoids()/.stats()` |
-| `EngineLevers.java` | 288 | 97 boolean Toggles für granulare Degradation |
+| `EngineLevers.java` | 288 | 100 boolean Toggles für granulare Degradation |
 | `IRoomAccess.java` | 233 | Interface: 32 Methoden (Stockpile, Transport, Rooms, Station) |
 | `RoomAccessImpl.java` | 712 | BypassGate hybrid Implementation (inkl. Station tally via cached Methods) |
 | `IFactionAccess.java` | 206 | Interface: 28 Methoden (NPC, Diplomacy, Trade, Royalty) |
@@ -174,7 +174,7 @@ Zentrale Fassade die ALLE Vanilla-Zugriffe bündelt. Hybride Architektur:
 | `StatsAccessImpl.java` | 265 | BypassGate für BOOSTABLES-Zugriffe |
 
 ```
-EngineLevers.java (97 Config-Toggles)
+EngineLevers.java (100 Config-Toggles)
        ↓
 EngineMirror.java (Fassade: api().rooms()/.factions()/.humanoids()/.stats())
        ↓

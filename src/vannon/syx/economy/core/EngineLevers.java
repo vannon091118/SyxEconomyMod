@@ -24,7 +24,7 @@ public final class EngineLevers {
     /** Master-Switch für den gesamten EngineMirror. false = alle Zugriffe deaktiviert. */
     public static boolean engineMirrorEnabled = true;
     /** Aktiviert CSV-Logging für jeden Mirror-Zugriff via LoggingAdapter. */
-    public static boolean engineMirrorLoggingEnabled = true;
+    public static boolean engineMirrorLoggingEnabled = false; // DC-01: 99.6% debug.csv-Reduktion — nur Summary-Events
     /** Dump aller Hebel bei Startup via EventLog. */
     public static boolean engineMirrorDumpOnStartup = true;
 
@@ -143,7 +143,10 @@ public final class EngineLevers {
 
     // ─── Royalty ────────────────────────────────────────────
     public static boolean royaltyOpinionEnabled = true;
+    public static boolean royaltyOpinionReadEnabled = true;
+    public static boolean royaltyOpinionWriteEnabled = false; // DIPLO-03: opt-in, default off
     public static boolean royaltyTrustEnabled = true;
+    public static boolean royaltyTrustReadEnabled = true;
     public static boolean royaltyCourtEnabled = true;
     public static boolean royaltyKingEnabled = true;
 

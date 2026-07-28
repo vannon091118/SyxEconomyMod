@@ -167,8 +167,8 @@ public final class WindowState extends EconWindowBase {
 
             // Kopfsteuer slider (replaces static KPI)
             addSlider(content, x, y, "Kopfsteuer/Saison", () -> EconConfig.perHeadTax, 0, 500, 5,
-                new ACTION() { @Override public void exe() { EconConfig.perHeadTax = Math.min(500, EconConfig.perHeadTax + 5); } },
-                new ACTION() { @Override public void exe() { EconConfig.perHeadTax = Math.max(0, EconConfig.perHeadTax - 5); } });
+                new ACTION() { @Override public void exe() { int old = EconConfig.perHeadTax; EconConfig.perHeadTax = Math.min(500, EconConfig.perHeadTax + 5); DiagnosticExporter.logConfigChange("perHeadTax", old, EconConfig.perHeadTax); } },
+                new ACTION() { @Override public void exe() { int old = EconConfig.perHeadTax; EconConfig.perHeadTax = Math.max(0, EconConfig.perHeadTax - 5); DiagnosticExporter.logConfigChange("perHeadTax", old, EconConfig.perHeadTax); } });
             addKpi(content, x + 380, y, UI.icons().s.shield, "Freigrenze",
                 EconConfig.perHeadTaxExemptionThreshold + " D", GCOLOR.T().NORMAL);
             y += 38;
