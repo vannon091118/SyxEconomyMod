@@ -95,7 +95,8 @@ public final class DiagnosticExporter {
             // Außerhalb des Saison-Ticks = 0. Für kumulierte Werte StateWarehouses-Felder pinnen.
             "housing_rent_last_tick", "housing_rent_due_last_tick", "housing_evictions_last_tick",
             "property_sales", "property_dividends",
-            "food_basket_price", "food_days"
+            "food_basket_price", "food_days",
+            "priority_expansion_signals"
     };
 
     private static final String[] RESOURCE_HEADER = {
@@ -183,6 +184,11 @@ public final class DiagnosticExporter {
             WarehouseMarket whMarket = sim.warehouseMarket();
 
             // Makro-Werte (primitive snapshots, danach nicht mehr von anderen Threads angefasst)
+            // Read + reset daily counter BEFORE snapshot completes (Main-Thread). No race:
+            // FirmSizing.size() also runs on Main-Thread so signals are final by now.
+            int expansionSignals = FirmSizing.priorityExpansionSignalsThisDay;
+            FirmSizing.priorityExpansionSignalsThisDay = 0;
+
             macroRow = formatMacroRow(
                     day, season,
                     sim.roster().size(), sim.deaths(), sim.emigrations(), sim.inherited(), sim.heirless(),
@@ -197,7 +203,8 @@ public final class DiagnosticExporter {
                     sim.housingMarket().lastRentCollected(), sim.housingMarket().lastRentDue(),
                     sim.housingMarket().lastEvictions(),
                     sim.propertySalesCollected(), sim.propertyDividendsPaid(),
-                    LocalPrices.flowFoodBasketPrice(), LocalPrices.foodDays()
+                    LocalPrices.flowFoodBasketPrice(), LocalPrices.foodDays(),
+                    expansionSignals
             );
 
             float[] anchors = new float[RESOURCES.ALL().size()];
@@ -398,7 +405,8 @@ public final class DiagnosticExporter {
                                           long whBought, long whSold,
                                           long housingRentCollected, long housingRentDue, long housingEvictions,
                                           long propertySales, long propertyDiv,
-                                          int foodBasket, double foodDays) {
+                                          int foodBasket, double foodDays,
+                                          int priorityExpansionSignals) {
         StringBuilder s = new StringBuilder(512);
         s.append(day).append(',').append(season).append(',')
                 .append(pop).append(',').append(deaths).append(',').append(emig).append(',').append(inherited).append(',').append(heirless).append(',')
@@ -410,7 +418,8 @@ public final class DiagnosticExporter {
                 .append(wagesPaid).append(',').append(whBought).append(',').append(whSold).append(',')
                 .append(housingRentCollected).append(',').append(housingRentDue).append(',').append(housingEvictions).append(',')
                 .append(propertySales).append(',').append(propertyDiv).append(',')
-                .append(foodBasket).append(',').append(fmt(foodDays, 2));
+                .append(foodBasket).append(',').append(fmt(foodDays, 2)).append(',')
+                .append(priorityExpansionSignals);
         return s.toString();
     }
 
