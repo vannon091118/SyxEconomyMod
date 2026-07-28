@@ -147,6 +147,21 @@ final class EconomyTickOrchestrator {
             if (conflict != null) EventLog.logSampled("CONFIG", conflict);
             DiagnosticExporter.exportDay(sim);
             sim.foreignTradeLedger.dailyTick(sim.ticks);
+            // Sprint v0.13.99 — PriorityVector recompute. Day-once, im Sim-Thread.
+            // flowMeter.snapshot() ist ein teurer Klon (O(RESOURCES)) — daher NICHT
+            // doppelt pro Tick aufrufen. forceDiagnosticExport-Reentry über den
+            // DiagnosticExporter.resetExportGuard() ruft exportDay() NUR mit eigenem
+            // ExportGuard-Reset, der recompute-Hook läuft trotzdem einmal am Tag.
+            if (EconConfig.priorityVectorEnabled) {
+                try {
+                    PriorityRegistry.instance().recompute(sim.flowMeter.snapshot(), sim.ticks);
+                } catch (RuntimeException re) {
+                    // Defense-in-Depth: PriorityVector ist observability, darf nie den
+                    // Sim-Tick-Loop crashen. Loggen und weiterlaufen lassen.
+                    System.err.println("[ECON] PriorityRegistry.recompute failed: "
+                            + re.getClass().getSimpleName() + ": " + re.getMessage());
+                }
+            }
         }
     }
 

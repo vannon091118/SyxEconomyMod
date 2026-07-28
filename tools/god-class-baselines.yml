@@ -92,6 +92,14 @@ legacy_baselines:
       (EconomySaveLoad 366 LOC, EconomyAuditEngine 273 LOC, EconomyTickOrchestrator
       111 LOC). Fields 14 < cap 24.'
     baseline_update: Sprint 5 Spluck-TECHD-01 EconomySim Triple-Limit-Split
+  src/vannon/syx/economy/core/EconomyTickOrchestrator.java:
+    loc: 192
+    pubM: 0
+    fields: 2
+    imports: 7
+    status_at_emit: pass
+    reason_at_emit: 'Sprint v0.13.99 ENTSCHÄRFUNG — re-baseline auf real gemessene Metriken (SLOC 192, nicht wc-l 282). Alle Schwellen klar unterschritten. Alt: Spluck-TECHD-01 111 LOC Stammlinie, post-Sprint Wachstum auf 192 SLOC (Phase-7..11 Logik + PriorityVector recompute-Hook).'
+    baseline_update: Sprint v0.13.99 PriorityVector + Phase-7..11 Akkumulation, re-baselined auf real SLOC
   src/vannon/syx/economy/core/EngineLevers.java:
     loc: 237
     pubM: 5
@@ -115,6 +123,14 @@ legacy_baselines:
     status_at_emit: pass
     reason_at_emit: loc 657 > warn 600; fields 30 > block 24
     baseline_update: Sprint 7 Legacy-Drift — FirmSizing extracted (-108 LOC, -8 fields)
+  src/vannon/syx/economy/core/FirmSizing.java:
+    loc: 175
+    pubM: 0
+    fields: 2
+    imports: 16
+    status_at_emit: pass
+    reason_at_emit: 'Sprint v0.13.99 ENTSCHÄRFUNG + Simplify-Pass — re-baseline auf real gemessene Metriken (SLOC 175 nach Helper-Extraktion emitPriorityHint + isPriorityProposal + byte-genauem EventLog-Restaurations-Fix; fields 2 nach beiden Helper-Boolean-Returns). Alle Schwellen klar unterschritten. Drift 143 → 175 SLOC (+22%) seit Sprint-7 FirmSizing-Extraktion, gerechtfertigt durch PriorityVector Hint-Pattern + Helper-Konsolidierung.'
+    baseline_update: Sprint v0.13.99 PriorityVector — Player-Hint Pattern + Simplify-Pass (Helper-Extraktion)
   src/vannon/syx/economy/core/FlowMeter.java:
     loc: 424
     pubM: 23
