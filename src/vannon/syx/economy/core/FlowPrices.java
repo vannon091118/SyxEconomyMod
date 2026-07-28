@@ -6,6 +6,34 @@ import vannon.syx.economy.core.FlowMeter;
 public final class FlowPrices {
     private static final double COVERAGE_FLOOR = 0.005;
 
+    // ── 7-1a: Scarcity-Kaskaden-Algorithmus ──────────────────────────
+    //
+    // Zweistufiger Preisbildungs-Mechanismus:
+    //
+    // STUFE 1 — FlowPrices.scarcityMultiplier(effectiveCoverage, up, down, lo, hi)
+    //   coverage < 1.0: multiplier = max(COVERAGE_FLOOR, coverage)^(-UP)
+    //     UP=0.8 → bei coverage=0.5: 0.5^(-0.8) ≈ 1.74× Anker
+    //     UP=0.8 → bei coverage=0.1: 0.1^(-0.8) ≈ 6.31× Anker
+    //   coverage >= 1.0: multiplier = coverage^(-DOWN)
+    //     DOWN=1.375 → bei coverage=2.0: 2.0^(-1.375) ≈ 0.39× Anker
+    //   Clamp: [priceClampLo=0.001, priceClampHi=100.0]
+    //   COVERAGE_FLOOR=0.005 verhindert Infinity bei coverage→0
+    //
+    // STUFE 2 — LocalPrices.scarcity(perCapita, target)
+    //   Signal = scarcityMaxMultiple^(-tanh(ln(perCapita/target) / steepness))
+    //   scarcityMaxMultiple=1.5, scarcitySteepness=1.0
+    //   perCapita=target → signal=1.0 (kein Effekt)
+    //   perCapita<target → signal>1.0 (Knappheit)
+    //   perCapita>target → signal<1.0 (Überfluss)
+    //
+    // POST-PROCESSING (nach Stufe 1+2):
+    //   1. scarcityPriceBoost=0.3: preis *= (1 + signal × 0.3)
+    //   2. foodPriceCapMultiplier=6.0: Nahrung gecappt auf 6× Anker
+    //   3. phaseFactor (Pop<300): preis *= linear(0.5..1.0, pop/300)
+    //
+    // Referenz-Konstanten: EconConfig.java:345-391, 525-530
+    // ─────────────────────────────────────────────────────────────────
+
     /** Cold-Start / Full-Depletion Coverage. Gibt bei supply=0 UND stock=0
      *  einen moderaten Scarcity-Signal (~2× Anker bei Elasticity 0.8) statt
      *  maximalen Spike (7.1×). Trennt Cold-Start von Mid-Game-Breakdown

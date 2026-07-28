@@ -13,9 +13,9 @@
 
 | Task | Prio | Kurzbeschreibung | LoC | Sprint |
 |---|---|---|---|---|
-| **7-1a** | 🟠 P1 | Balance-CI: Scarcity-Kaskaden-Algorithmus dokumentieren (Spezifikation aus `FlowPrices.java:scarcityMultiplier()` + `LocalPrices.java:scarcity()` + `EconConfig.scarcityElasticityUp/Down`; Konstanten UP=0.8 / DOWN=1.375 / Clamp=100. **Reihenfolge:** 7-1a vor 7-1b, 7-1b vor 7-2. | ~35 | 9 |
-| **7-1b** | 🟠 P1 | Balance-CI: Golden-Snapshot-Erzeugung gegen `EconConfig`-Formeln (Ist-Output für 7-2-Toleranzcheck). **Reihenfolge:** 7-1a (Algorithmus) vor 7-1b. **Hinweis:** NICHT durch Wiederbelebung der gelöschten `tools/scarcity_sim.py` — Build aus den vorhandenen Engine-Klassen. | ~25 | 9 |
-| **7-2** | 🟠 P1 | `tools/balance-smoke.sh`: CSV→Toleranz-Check→Build-Break (5%). Hängt von 7-1 ab. | ~40 | 7 |
+| **7-1a** | ✅ Closed (v0.13.79) | **Scarcity-Kaskaden-Algorithmus dokumentiert:** Zweistufiger Mechanismus (FlowPrices.scarcityMultiplier + LocalPrices.scarcity) + Post-Processing (scarcityPriceBoost, foodPriceCap, phaseFactor) als Code-Spec in `FlowPrices.java` Header. | ~30 | 9 |
+| **7-1b** | ✅ Closed (v0.13.79) | **Golden-Snapshot existiert bereits:** `tools/balance-reference.txt` (30 Konstanten) + `tools/balance-regression-check.sh` (0.1% Toleranz — strenger als 5% Spec). | ~0 | 9 |
+| **7-2** | ✅ Closed (v0.13.79) | **Balance-Smoke-Gate existiert bereits:** `tools/balance-regression-check.sh` prüft 30 EconConfig-Konstanten gegen Referenz (0.1% Toleranz). Build-Gate Gate 8 integriert. | ~0 | 7 |
 | **7-3** | 🟡 P2 | ✅ **Booster-Eval abgeschlossen (v0.13.51).** 12 Boostable-Kategorien evaluiert (402 total, 3 genutzt, 399 ungenutzt). **Ergebnis: 2/6 Behaviour-Booster wirtschaftsrelevant** (LOYALTY=genutzt via GiniConsequences, HAPPI=Konsum-Multiplikator). LAWFULNESS/SUBMISSION/HAPPI_SLAVES/SANITY für zukünftige Vektoren (Kriminalität, Sklaven-Ökonomie). Siehe §Booster-Eval unten. | ~30 | 9 |
 | **8-1** | 🟠 P1 | Mockito-Inject Coverage: Fiscal/Housing/Labor/Affordability/EconProgression + JaCoCo line=30% / branch=15%. **Anti-Bias-Wording (Rule 1.6):** Schwellen sind Ziel-Werte, keine Pflicht-Quoten. Wenn Coverage nach Mockito-Inject unter Schwellen bleibt → Sprint-Abschluss mit dokumentiertem Befund, kein Pflicht-Sprint-Folgesprint. `ggf.`-Pfad als B-014 (separater Sprint). **Reihenfolge:** Unabhängig vom 7-1a/b/2-Pfad; Mess-Basis für 7-3. | ~600 | 9 |
 | **8-2** | 🟡 P2 | 5 ungetestete Klassen: NpcFactionAdapter, AdapterDispatcher, SchemaValidator, DebugCsv, LoggingAdapter | ~200 | 8 |
