@@ -1,5 +1,6 @@
 package vannon.syx.economy.ui;
 
+import init.constant.C;
 import init.sprite.UI.UI;
 import snake2d.SPRITE_RENDERER;
 import snake2d.util.color.COLOR;
@@ -58,6 +59,16 @@ public final class WindowOverview extends EconWindowBase {
 
     @Override
     protected int panelWidth() { return 840; }
+
+    @Override
+    protected int anchorX() {
+        return 8; // top-left fixed
+    }
+
+    @Override
+    protected int anchorY() {
+        return 48; // just below UIPanelTop
+    }
 
     @Override
     protected TabContent[] tabs() { return TABS; }

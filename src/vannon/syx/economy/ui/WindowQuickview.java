@@ -2,15 +2,18 @@ package vannon.syx.economy.ui;
 
 import init.constant.C;
 import init.sprite.UI.UI;
+import snake2d.SPRITE_RENDERER;
 import snake2d.util.color.COLOR;
 import snake2d.util.datatypes.Rec;
 import snake2d.util.gui.GuiSection;
 import snake2d.util.misc.ACTION;
+import snake2d.util.sprite.SPRITE;
 import util.colors.GCOLOR;
 import util.gui.misc.GButt;
 import util.gui.misc.GText;
 import util.gui.panel.GPanel;
 import vannon.syx.economy.core.CompactNumber;
+import vannon.syx.economy.core.EconConfig;
 import vannon.syx.economy.core.EconomySim;
 import vannon.syx.economy.core.StateWarehouses;
 import vannon.syx.economy.core.WealthStats;
@@ -122,7 +125,7 @@ public final class WindowQuickview extends EconWindowBase {
 
         GButt.ButtPanel sell = new GButt.ButtPanel("Verkaufen", 110) {
             @Override protected void render(snake2d.SPRITE_RENDERER r, float ds,
-                                              boolean isActive, boolean isSelected, boolean isHovered) {
+                                               boolean isActive, boolean isSelected, boolean isHovered) {
                 selectedSet(wh.tradeMode() == StateWarehouses.TradeMode.SELL_ONLY);
                 super.render(r, ds, isActive, isSelected, isHovered);
             }
@@ -187,5 +190,114 @@ public final class WindowQuickview extends EconWindowBase {
             });
             content.add(stBtn, x + 260, y);
         }
+    }
+
+    /** Renders the quickview content inline for Vanilla ISidePanel.
+     *  Called from InstanceScript's Panel implementation. */
+    public void renderSidePanelContent(SPRITE_RENDERER r, float ds) {
+        if (!EconConfig.windowEnabled) return;
+        EconomySim sim = this.sim;
+        if (sim == null) return;
+
+        WealthStats stats = sim.stats();
+        StateWarehouses wh = sim.stateWarehouses();
+        long treasury = sim.treasury();
+        boolean hasPop = stats.people > 0;
+
+        int x = 16;
+        int y = 8;
+
+        // Treasury
+        addKpiSidePanel(r, x, y, "Staatskasse",
+            CompactNumber.format(treasury) + " D",
+            !hasPop ? GCOLOR.T().INACTIVE : treasury >= 0 ? GCOLOR.UI().GOOD.normal : GCOLOR.UI().BAD.normal);
+        y += 34;
+
+        // Population & Gini
+        addKpiSidePanel(r, x, y, "Bevölkerung",
+            String.valueOf(stats.people), hasPop ? GCOLOR.T().NORMAL : GCOLOR.T().INACTIVE);
+        addKpiSidePanel(r, x + 170, y, "Gini",
+            hasPop ? String.format("%.3f", stats.gini) : "N/A",
+            !hasPop ? GCOLOR.T().INACTIVE : stats.gini > 0.40 ? GCOLOR.UI().BAD.normal : stats.gini > 0.35 ? GCOLOR.UI().SOSO.normal : GCOLOR.UI().GOOD.normal);
+        y += 34;
+
+        // Median & Wage
+        addKpiSidePanel(r, x, y, "Median",
+            CompactNumber.format(stats.median) + " D",
+            !hasPop ? GCOLOR.T().INACTIVE : GCOLOR.T().NORMAL);
+        addKpiSidePanel(r, x + 170, y, "Lohn/Tag",
+            CompactNumber.format((long)sim.laborMarket().meanWage()) + " D",
+            !hasPop ? GCOLOR.T().INACTIVE : sim.laborMarket().meanWage() > 0 ? GCOLOR.UI().GOOD.normal : GCOLOR.UI().BAD.normal);
+        y += 34;
+
+        // Stage
+        addKpiSidePanel(r, x, y, "Stufe",
+            sim.progression().stage.displayName, GCOLOR.T().NORMAL);
+        addKpiSidePanel(r, x + 170, y, "Unbezahlte",
+            String.valueOf(sim.firmLedger().lastWorkersUnpaid()),
+            sim.firmLedger().lastWorkersUnpaid() > 0 ? GCOLOR.UI().BAD.normal : GCOLOR.UI().GOOD.normal);
+        y += 34;
+
+        // Deaths / Emigrations
+        addKpiSidePanel(r, x, y, "Tote/Ausgewandert",
+            sim.deaths() + " / " + sim.emigrations(),
+            sim.emigrations() > 3 ? GCOLOR.UI().SOSO.normal : GCOLOR.T().NORMAL);
+        y += 34;
+
+        // Trade mode as text (non-interactive for side panel)
+        GText modeLabel = new GText(UI.FONT().M, FONTW_KPI);
+        modeLabel.set("Lager-Modus: " + wh.tradeMode().name());
+        modeLabel.lablify();
+        modeLabel.render(r, x, y, 300, 20);
+        y += 26;
+
+        // Warehouse stats
+        GText whLabel = new GText(UI.FONT().M, FONTW_HDR);
+        whLabel.set("Lager: " + wh.ownedCount() + " staatlich");
+        whLabel.color(GCOLOR.T().NORMAL);
+        whLabel.render(r, x, y, 300, 20);
+        y += 18;
+
+        GText whStats = new GText(UI.FONT().S, FONTW_HDR);
+        whStats.set("Gekauft: " + CompactNumber.format(wh.lastBought()) + "  Verkauft: " + CompactNumber.format(wh.lastSold()));
+        whStats.color(GCOLOR.T().NORMAL);
+        whStats.render(r, x, y, 320, 16);
+        y += 26;
+
+        GText fiscalLabel = new GText(UI.FONT().S, FONTW_HDR);
+        fiscalLabel.set("Steuern: " + CompactNumber.format(sim.fiscal().headTaxCollected()) + "  Markt: " + CompactNumber.format(sim.fiscal().marketReceipts()));
+        fiscalLabel.color(GCOLOR.T().NORMAL);
+        fiscalLabel.render(r, x, y, 320, 16);
+        y += 18;
+
+        GText wagesLabel = new GText(UI.FONT().S, FONTW_HDR);
+        wagesLabel.set("Loehne: " + CompactNumber.format(sim.wagesPaid()) + "  Rationen: " + CompactNumber.format(sim.fiscal().rationOut()));
+        wagesLabel.color(GCOLOR.T().NORMAL);
+        wagesLabel.render(r, x, y, 320, 16);
+    }
+
+    /** Helper for side-panel KPI rendering (simplified, no GuiSection). */
+    private void addKpiSidePanel(SPRITE_RENDERER r, int x, int y, init.sprite.UI.Icon icon, String label, String value, COLOR valueColor) {
+        icon.render(r, x, y + 2);
+        GText lbl = new GText(UI.FONT().S, FONTW_LABEL);
+        lbl.set(label);
+        lbl.color(GCOLOR.T().NORMAL);
+        lbl.render(r, x + 28, y, 120, 16);
+        GText val = new GText(UI.FONT().M, FONTW_LABEL);
+        val.set(value);
+        val.color(valueColor);
+        val.render(r, x + 28, y + 16, 120, 16);
+    }
+
+    /** Helper for side-panel KPI rendering without icon. */
+    private void addKpiSidePanel(SPRITE_RENDERER r, int x, int y, String label, String value, COLOR valueColor) {
+        GText lbl = new GText(UI.FONT().S, FONTW_LABEL);
+        lbl.set(label);
+        lbl.color(GCOLOR.T().NORMAL);
+        lbl.render(r, x, y, 120, 16);
+        GText val = new GText(UI.FONT().M, FONTW_LABEL);
+        val.set(value);
+        val.color(valueColor);
+        val.render(r, x, y + 16, 120, 16);
     }
 }

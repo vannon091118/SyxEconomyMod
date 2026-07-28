@@ -6,6 +6,7 @@ import snake2d.CORE;
 import snake2d.LOG;
 import snake2d.MButt;
 import snake2d.Renderer;
+import snake2d.SPRITE_RENDERER;
 import snake2d.util.datatypes.COORDINATE;
 import snake2d.util.file.FileGetter;
 import snake2d.util.file.FilePutter;
@@ -24,6 +25,9 @@ final class InstanceScript implements SCRIPT.SCRIPT_INSTANCE {
     private final WindowEconomy economyWin;
     private final WindowState stateWin;
     private final WindowQuickview quickviewWin;
+    private final SubjectWallet subjectWallet;
+    private final SubjectJob subjectJob;
+    private final EconHud econHud;
 
     /** Edge detection for hotkey polling (Hk.java pattern).
      *  GLFW key codes: 334 = Numpad +, 333 = Numpad -, 332 = Numpad *, 320 = Numpad 0,
@@ -46,8 +50,12 @@ final class InstanceScript implements SCRIPT.SCRIPT_INSTANCE {
         this.economyWin = new WindowEconomy(this.economy);
         this.stateWin = new WindowState(this.economy);
         this.quickviewWin = new WindowQuickview(this.economy);
+        this.subjectWallet = new SubjectWallet();
+        this.subjectJob = new SubjectJob();
+        this.econHud = new EconHud(this.economy, this.overview, this.economyWin, this.stateWin, this.quickviewWin);
         EconWindowBase.setSiblings(this.overview, this.economyWin, this.stateWin, this.quickviewWin);
-        DebugTracer.trace(DebugTracer.SCRP, "InstanceScript created (4 windows registered)");
+
+        DebugTracer.trace(DebugTracer.SCRP, "InstanceScript created (4 windows + 3 panels registered)");
     }
 
     @Override
@@ -183,16 +191,21 @@ final class InstanceScript implements SCRIPT.SCRIPT_INSTANCE {
     @Override
     public void render(Renderer renderer, float deltaSeconds) {
         DebugTracer.traceEvery(120, DebugTracer.SCRP, "render");
+        this.subjectWallet.render(renderer, deltaSeconds);
+        this.subjectJob.render(renderer, deltaSeconds);
+        this.econHud.render(renderer, deltaSeconds);
     }
 
     @Override
     public void mouseClick(MButt button) {
         DebugTracer.trace(DebugTracer.SCRP, "mouseClick btn=" + button);
+        this.econHud.pollClick(button);
     }
 
     @Override
     public void hover(COORDINATE mCoo, boolean mouseHasMoved) {
         DebugTracer.traceEvery(120, DebugTracer.SCRP, "hover x=" + mCoo.x() + " y=" + mCoo.y());
+        this.econHud.pollHover(mCoo, null);
     }
 
     @Override

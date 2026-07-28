@@ -1,8 +1,10 @@
 package vannon.syx.economy.ui;
 
+import init.constant.C;
 import init.resources.RESOURCE;
 import init.resources.RESOURCES;
 import init.sprite.UI.UI;
+import snake2d.SPRITE_RENDERER;
 import snake2d.util.gui.GuiSection;
 import util.colors.GCOLOR;
 import util.gui.misc.GText;
@@ -14,6 +16,7 @@ import vannon.syx.economy.core.EventLog;
 import vannon.syx.economy.core.FirmLedger;
 import vannon.syx.economy.core.FlowPrices;
 import snake2d.util.color.COLOR;
+import vannon.syx.economy.core.EconConfig;
 
 /**
  * Wirtschaft-Fenster: Maerkte, Preise, Betriebe.
@@ -40,6 +43,16 @@ public final class WindowEconomy extends EconWindowBase {
 
     @Override
     protected int panelWidth() { return 840; }
+
+    @Override
+    protected int anchorX() {
+        return C.WIDTH() - panelWidth() - 8; // top-right fixed
+    }
+
+    @Override
+    protected int anchorY() {
+        return 48; // just below UIPanelTop
+    }
 
     @Override
     protected TabContent[] tabs() { return TABS; }

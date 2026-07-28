@@ -42,9 +42,9 @@ public abstract class EconWindowBase {
         winQuickview = quickview;
     }
 
-    /** Counter for window stacking offset. Each open window shifts slightly right+down. */
-    private static int openCount = 0;
-    private static final int STACK_OFFSET = 24;
+    /** Fixed anchor position per window type — no more diagonal drift. */
+    // Each subclass implements anchorX()/anchorY() for its fixed corner.
+    // This replaces the old STACK_OFFSET/openCount diagonal stacking.
 
     private InterGuisection inter;
     private int activeTab = 0;
@@ -97,8 +97,6 @@ public abstract class EconWindowBase {
             root.add(panel, 0, 0);
             root.add(content, panel.inner().x1(), panel.inner().y1());
 
-            auditStack();
-            incrementStack();
             position(root);
             inter.activate(root);
         }
@@ -109,7 +107,6 @@ public abstract class EconWindowBase {
         if (inter != null) {
             InterGuisection old = inter;
             inter = null;
-            decrementStack();
             old.close();
         }
     }
@@ -127,33 +124,22 @@ public abstract class EconWindowBase {
         }
     }
 
-    /** Override to position the root section; default centers on screen with
-     *  stacking offset — each successive open window shifts right+down by 24px. */
+    /** Override to position the root section at a fixed anchor per window type.
+     *  Default centers on screen (legacy behavior); subclasses should override
+     *  with anchorX()/anchorY() for consistent positions across sessions. */
     protected void position(GuiSection root) {
         Rec b = (Rec) root.body();
-        b.centerIn(0, C.WIDTH(), 0, C.HEIGHT());
-        b.moveX1Y1(STACK_OFFSET * openCount, STACK_OFFSET * openCount);
+        b.moveX1Y1(anchorX(), anchorY());
     }
 
-    /** Called by toggle() when opening — increments the shared window counter. */
-    private void incrementStack() {
-        // Don't double-count if already shown (tab switching re-opens)
-        if (!isShown()) openCount++;
+    /** X anchor for this window type. Override to fix position. */
+    protected int anchorX() {
+        return (C.WIDTH() - panelWidth()) / 2;
     }
 
-    /** Called by close() — decrements the shared window counter. */
-    private void decrementStack() {
-        if (openCount > 0) openCount--;
-    }
-
-    /** Defensive: zaehlt tatsaechlich offene Fenster und korrigiert openCount.
-     *  Faengt Faeble ab, wo Vanilla-UI-Manager Fenster schliesst ohne close(). */
-    private static void auditStack() {
-        int actual = 0;
-        if (winOverview != null && winOverview.isShown()) actual++;
-        if (winEconomy != null && winEconomy.isShown()) actual++;
-        if (winState != null && winState.isShown()) actual++;
-        openCount = actual;
+    /** Y anchor for this window type. Override to fix position. */
+    protected int anchorY() {
+        return (C.HEIGHT() - panelHeight()) / 2;
     }
 
     /** Window title shown in the GPanel header. */

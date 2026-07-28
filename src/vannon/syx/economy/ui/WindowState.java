@@ -1,6 +1,8 @@
 package vannon.syx.economy.ui;
 
+import init.constant.C;
 import init.sprite.UI.UI;
+import snake2d.SPRITE_RENDERER;
 import snake2d.util.gui.GuiSection;
 import snake2d.util.misc.ACTION;
 import util.colors.GCOLOR;
@@ -37,6 +39,16 @@ public final class WindowState extends EconWindowBase {
     @Override protected CharSequence title() { return "Staat"; }
     @Override protected TabContent[] tabs() {
         return TABS;
+    }
+
+    @Override
+    protected int anchorX() {
+        return 8; // bottom-left fixed
+    }
+
+    @Override
+    protected int anchorY() {
+        return C.HEIGHT() - panelHeight() - 8;
     }
 
     // ─── Tab 1: Warehouses ───────────────────────────────────────────
