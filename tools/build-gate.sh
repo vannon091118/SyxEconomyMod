@@ -54,12 +54,33 @@ gate_skip() {
 }
 
 echo -e "${CYAN}╔════════════════════════════════════════════════════════╗${NC}"
-echo -e "${CYAN}║  SyxEconomyMod — Build Gate v0.13.61 (M-3: 9 Gates) ║${NC}"
+echo -e "${CYAN}║  SyxEconomyMod — Build Gate v0.13.61 (M-3: 10 Gates) ║${NC}"
 echo -e "${CYAN}╚════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
+# ── Gate 0: Stam-Version Snapshot (anti-Phantom-Bump) ─────────────
+# Fail-fast VOR Gate 1 (Stam-Doku-Sync). Vergleicht pom.xml <version>
+# gegen den zuletzt gespeicherten Snapshot in
+# .git/hooks/.stam-version-snapshot. Wenn ungleich UND Snapshot
+# existiert: Phantom-Bump seit Rule-3-Capture → fail-fast mit
+# Remediation-Hinweis auf agents.md Rule 3.
+# Bypass: SKIP_SNAPSHOT=1 (Notfall-Toggle; Audit-Trail nicht verfügbar
+# dann).
+echo -e "${CYAN}[0/9] Stam-Version Snapshot (anti-Phantom-Bump Pre-Flight)${NC}"
+if [ "${SKIP_SNAPSHOT:-0}" = "1" ]; then
+    gate_skip "Snapshot-Check uebersprungen (SKIP_SNAPSHOT=1) — Audit-Trail disabled"
+else
+    if bash tools/snapshot-stam-version.sh check 2>/dev/null; then
+        gate_pass "pom.xml == snapshot — kein Phantom-Bump seit Rule-3-Capture"
+    else
+        SNAP_EXIT=$?
+        gate_fail "PHANTOM-BUMP seit letztem Rule-3-Capture — agents.md Rule 3 Step 1-5 + bash tools/snapshot-stam-version.sh capture"
+    fi
+fi
+echo ""
+
 # ── Gate 1: Stam-Doku-Sync (NEU) ────────────────────────────────────────
-echo -e "${CYAN}[1/8] Stam-Doku-Sync (7 Dokumente ↔ pom.xml)${NC}"
+echo -e "${CYAN}[1/9] Stam-Doku-Sync (7 Dokumente ↔ pom.xml)${NC}"
 if [ "${SKIP_SYNC:-0}" = "1" ]; then
     gate_skip "Sync-Gate uebersprungen (SKIP_SYNC=1)"
 else
@@ -72,7 +93,7 @@ fi
 echo ""
 
 # ── Gate 2: Code Audit ──────────────────────────────────────────────────
-echo -e "${CYAN}[2/8] Code Audit (silent failure detection)${NC}"
+echo -e "${CYAN}[2/9] Code Audit (silent failure detection)${NC}"
 
 AUDIT_ARGS=""
 if [ "$STRICT" = true ]; then
@@ -92,7 +113,7 @@ fi
 echo ""
 
 # ── Gate 3: Version Consistency ────────────────────────────────────────
-echo -e "${CYAN}[3/8] Version ↔ Changelog Consistency${NC}"
+echo -e "${CYAN}[3/9] Version ↔ Changelog Consistency${NC}"
 
 if bash tools/verify-version-consistency.sh 2>/dev/null; then
     gate_pass "pom.xml = changelog"
@@ -102,7 +123,7 @@ fi
 echo ""
 
 # ── Gate 4: Adapter Signature Verification ─────────────────────────────
-echo -e "${CYAN}[4/8] Adapter ↔ Engine-Signaturen${NC}"
+echo -e "${CYAN}[4/9] Adapter ↔ Engine-Signaturen${NC}"
 
 ADAPTER_JAR="${ADAPTER_JAR:-}"
 ADAPTER_SRC="src/vannon/syx/economy/adapter/"
@@ -168,7 +189,7 @@ fi
 echo ""
 
 # ── Gate 5: Bytecode-Injection Audit (Sprint 6.2) ────────────────────
-echo -e "${CYAN}[5/8] Bytecode-Injection Audit (Reflection-Patterns)${NC}"
+echo -e "${CYAN}[5/9] Bytecode-Injection Audit (Reflection-Patterns)${NC}"
 if bash tools/audit-bytecode.sh ${AUDIT_ARGS:-} 2>/dev/null; then
     gate_pass "Keine ungesicherten Bytecode-Injection-Pfade"
 else
@@ -182,7 +203,7 @@ fi
 echo ""
 
 # ── Gate 6: Sim-Logik Audit (Sprint 6.3) ───────────────────────────────
-echo -e "${CYAN}[6/8] Ingame-Sim-Logik Audit (Boundary-Conditions)${NC}"
+echo -e "${CYAN}[6/9] Ingame-Sim-Logik Audit (Boundary-Conditions)${NC}"
 if bash tools/audit-sim-logic.sh ${AUDIT_ARGS:-} 2>/dev/null; then
     gate_pass "Keine Boundary-Condition-Verletzungen in Sim-Klassen"
 else
@@ -196,7 +217,7 @@ fi
 echo ""
 
 # ── Gate 7: Schema-Validierung (Sprint 7) ──────────────────────────────
-echo -e "${CYAN}[7/8] Vanilla-Schema ↔ Adapter-Dateien${NC}"
+echo -e "${CYAN}[7/9] Vanilla-Schema ↔ Adapter-Dateien${NC}"
 if [ -f "tools/vanilla-schema.yaml" ]; then
     # Prüfe ob jede Klasse im YAML eine entsprechende Adapter-Datei hat
     SCHEMA_CLASS=$(grep -c 'class:' tools/vanilla-schema.yaml 2>/dev/null || echo 0)

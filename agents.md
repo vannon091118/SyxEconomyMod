@@ -74,17 +74,21 @@ stam-document IN THE SAME COMMIT:
 - Any claimed file count or LOC in `ARCHITECTURE.md` /
   `ROADMAP.md` / `GLOSSARY.md`
 
-The 5 stam-documents are:
+The 7 stam-documents are (pom.xml is the truth-of-record; sed
+propagates FROM it, never TO it — see Rule 3 Table for the
+synchronization map):
 
 - `README.md` (root)
 - `CHANGELOG.md` (root)
 - `ARCHITECTURE.md` (root)
 - `ROADMAP.md` (root)
 - `GLOSSARY.md` (root)
+- `tools/vanilla-schema.yaml` (tools/)
+- `pom.xml` (root; truth-of-record — not a sed target)
 
-If `pom.xml <version>` changed, propagate to all 5 stam-doc
-anchors by hand using `sed` — there is no auto-tool for this,
-by design (see Rule 3 for the reason).
+If `pom.xml <version>` changed, propagate to the 6 sed-target
+anchors (#1–#6 above) by hand using `sed` — there is no auto-tool
+for this, by design (see Rule 3 for the exact sequence).
 
 Every `mvn verify install` will FAIL if any of those anchors
 disagree with `pom.xml <version>`.
@@ -95,34 +99,93 @@ disagree with `pom.xml <version>`.
 
 `tools/bump-version.sh patch --bump-only` updates ONLY `pom.xml`
 (`<version>`, `<mod.info>`, `<mod.changelog>` first entry).
-It does NOT auto-propagate to the 5 stam-documents. This is
+It does NOT auto-propagate to the **7 stam-documents**. This is
 **intentional friction** — the next `mvn verify install` will
 FAIL with a documented drift list, and you see exactly which
 files need the version stamp manually updated.
 
-Resolving the drift — execute these 5 commands in order:
+The 7 stam-documents are the files `tools/verify-doc-sync.sh`
+greps for `<version>`-anchors:
+
+| # | Datei                            | Sync-Marker                                              |
+|---|----------------------------------|----------------------------------------------------------|
+| 1 | `README.md`                      | `**Version:** vX.Y.Z` (oder Block-Quote `>`-Variante)    |
+| 2 | `CHANGELOG.md`                   | Erstes `## vX.Y.Z` Heading + `> **Version:** vX.Y.Z` Kopf |
+| 3 | `ARCHITECTURE.md`                | `> **Version:** vX.Y.Z` im Block-Quote-Header            |
+| 4 | `ROADMAP.md`                     | `> **Version:** vX.Y.Z` im Block-Quote-Header            |
+| 5 | `GLOSSARY.md`                    | `> **Version:** vX.Y.Z` im Block-Quote-Header            |
+| 6 | `tools/vanilla-schema.yaml`      | Datei-Header `# VANILLA BYTECODE-SCHEMA — SyxEconomyMod vX.Y.Z` |
+| 7 | `pom.xml`                        | `<version>X.Y.Z</version>` (Truth of Record)             |
+
+(`_Info.txt` ist Maven-Template mit `${mod.version}` und wird beim
+nächsten `mvn package` regeneriert — gate-relevant aber kein Stam-Doc
+im engeren Sinne, daher nicht Teil der sed-Sequenz.)
+
+### Pre-Flight — read pom.xml fresh, not from memory
+
+Maven lifecycle order: `validate → … → install`. The Stam-Doku-Sync
+gate is bound to `validate`; the post-install-patch-bump antrun-task
+fires at `install`. They **never fire in the same `mvn` invocation**
+— either the gate halts the build first (validate fails, install
+phase never runs, pom.xml stays put), or validate + verify already
+passed and the bump fires at `install`.
+
+So pom.xml is only bumped on **successful** build paths. But several
+of those happen without obvious warning:
+
+- `mvn verify install -DskipTests` (the success path documented in
+  Rule 1) — bump fires once at install phase.
+- A second `mvn install` after the first one already bumped — bump
+  fires again.
+- `tools/build-gate.sh` (the pre-commit hook) only runs shell-utils
+  and never calls `mvn install` directly — but if a Gate-2/Gate-3
+  helper internally invokes `mvn` for consistency checks, a phantom
+  bump can sneak in.
+- Hook-internal `mvn` calls during `git commit` + `git push` cycles
+  in one session.
+
+Don't try to predict the resulting version from prior state. ALWAYS
+read it fresh before your first sed:
+
+```bash
+NEW_V=$(grep -m1 '<version>' pom.xml | sed 's/.*<version>\([0-9.]*\).*/\1/')
+echo "NEW_V=$NEW_V   (truth from pom.xml, not from your head)"
+```
+
+A recall like „der Bump muss .74→.75 sein" can be off by one or more.
+Better to spend 100ms on a grep than chase a drift cycle for 10
+minutes.
+
+### Resolving the drift — execute these 5 commands in order:
 
 ```bash
 # 1. mvn clean install triggers the post-install patch bump:
-#    pom.xml 0.13.2 → 0.13.3. Stam-docs still 0.13.2. Drift on purpose.
+#    pom.xml 0.13.N → 0.13.(N+1). Stam-docs still 0.13.N. Drift on purpose.
 mvn clean install -DskipTests
 
 # 2. Confirm the drift is exactly what you expected:
 bash tools/verify-doc-sync.sh
-# → shows FAIL with per-file drift list
+# → shows FAIL with per-file drift list (truth = NEW_V)
 
-# 3. Propagate the new pom-version into the 5 stam-docs by hand
+# 3. Propagate the new pom-version into the 7 stam-docs by hand
 #    so the change is auditable in git diff (NOT auto-applied):
 NEW_V=$(grep -m1 '<version>' pom.xml | sed 's/.*<version>\([0-9.]*\).*/\1/')
 sed -i "s|> \*\*Version:\*\* v[0-9.]\+|> **Version:** v${NEW_V}|g" README.md ARCHITECTURE.md ROADMAP.md GLOSSARY.md CHANGELOG.md
 sed -i "0,/^## v[0-9.]\+/{s|^## v[0-9.]\+|## v${NEW_V}|}" CHANGELOG.md
+sed -i "s|SyxEconomyMod v[0-9.]\+|SyxEconomyMod v${NEW_V}|" tools/vanilla-schema.yaml
+# NOTE: tools/vanilla-schema.yaml ist die 7. Datei. Sie trägt ihre
+# Version in einem YAML-Kommentar-Header (`# … SyxEconomyMod vX.Y.Z`),
+# NICHT in einem `schema_version:` key. verify-doc-sync.sh grept
+# nach `SyxEconomyMod v` und extrahiert die Version. Die ältere
+# 5-Doc-Sed-Sequenz hat diese Zeile stillschweigend übersprungen
+# (siehe commit c523659 für den Post-Mortem).
 
 # 4. Verify the drift is gone:
 bash tools/verify-doc-sync.sh
 # → shows PASS
 
 # 5. Atomic commit — the drift resolution is a single visible commit:
-git diff                          # human review of the 5 anchor changes
+git diff                          # human review of the 7 anchor changes
 git add -p                        # selective review per file
 git commit -m "bump v${NEW_V}"    # atomic commit
 ```
@@ -131,6 +194,12 @@ DO NOT add `tools/sync-doc-anchors.sh` or any wrapper script for
 step 3. Making the change visible in plain `sed` + `git diff` is
 the point — auto-applied anchor changes mask the drift instead
 of surfacing it.
+
+DO NOT skip step 3's `tools/vanilla-schema.yaml`-Edit. Pre-M-3
+Sessions wurden ohne diese Zeile verschickt; der daraus folgende
+Drift wurde in mindestens einem Multi-Cycle-Chase gejagt (siehe
+commit c523659 „post-install-bump caught the headline" für die
+Post-Mortem der Self-Healing-Konsequenz).
 
 ---
 
@@ -565,3 +634,101 @@ Drift-UEberschreitung ist BLOCKER. Sprint-CI bricht ab. Drift-VERBESSERUNG (Refa
 
 **Hard-Block bei Sprint-Drift:**
 Sobald Sprint M-x eine Tier-1-Datei modifiziert, schrumpft die Baseline. Wachstum ueber die neue Baseline +5% ist BLOCKER. Verhindert Feature-Creep nach abgeschlossenem Refactor.
+
+---## Rule 15 — No clinit-Touchable Engine Singletons (verbindlich ab v0.13.76)
+
+Songs-of-Syx-Modding scannt JAR-Klassen via `script.ScriptLoad` VOR Sim-Bootstrap.
+Eine `static final`-Feld-Initialisierung die eine Engine-Singleton-Chain
+(`STATS.s.*`, `NEEDS.TYPES()`, `RESOURCES.ALL()`, `RACES.i`, `HTYPE`,
+`CRIME`, `CAUSE_ARRIVE`, `TIME.secondsPerDay` etc.) derefenziert, läuft
+in `ExceptionInInitializerError` weil die Sim noch nicht initialisiert ist.
+
+**Symptom:** Beim deployed JAR-Load: `Caused by: NullPointerException:
+Cannot read field 'needs' because 'settlement.stats.STATS.s' is null`.
+
+**Reference:** `src/vannon/syx/economy/core/BrokeFoodPlan.java` Zeile
+27 (alt) hat genau das getan und das JAR blockiert (siehe Sprint-Body
+v0.13.76 §P0 Hotfix für den vollen Stacktrace).
+
+**Verbindliche Regel:** Folgende Patterns sind **verboten** in `core/`,
+`adapter/`, `ui/`, `benchmark/` und `settlement/`:
+
+```java
+// VERBOTEN — Touchable in clinit:
+private static final X = ENGINE_SINGLETON.something();
+private static final X = NEEDS.TYPES().HUNGER.stat().stat().indu();
+private static final X = STATS.NEEDS().hunger();
+private static final X = TIME.secondsPerDay();
+
+// VERBOTEN — Constructor-Kette mit final fields im clinit-Scope:
+public final class Foo {
+    private final X = staticInit(); // illegal wenn staticInit() Engine touched
+}
+```
+
+**Erlaubt:**
+
+```java
+// Bill-Pugh Holder-Pattern (bevorzugt):
+private static final class Holder {
+    static final INT_O.INT_OE<Induvidual> HUNGER =
+        (INT_O.INT_OE<Induvidual>)(Object) NEEDS.TYPES().HUNGER.stat().stat().indu();
+}
+private static INT_O.INT_OE<Induvidual> hunger() { return Holder.HUNGER; }
+
+// Instance-Field in MainScript.initBeforeGameCreated() / initBeforeGameInited()
+// (Engine hat sich dann bereits initialisiert).
+
+// Lazy Getter + Null-Check mit Logging + degradierter Fallback:
+// (NUR wenn Holder-Pattern nicht greift, z.B. weil JIT-Inline kritisch).
+private static volatile X cached;
+private static X getX() {
+    X local = cached;
+    if (local != null) return local;
+    synchronized (X.class) {
+        if (cached != null) return cached;
+        cached = Engine.resolveX();
+        return cached;
+    }
+}
+```
+
+**Sancta-Exceptionen (Init-Hooks) — Rule 15 gilt NICHT für:**
+
+- **`MainScript.initBeforeGameCreated()` + `initBeforeGameInited()`** —
+  Engine-Lifecycle-Nach-Bootstrap. `STATS.s` und alle anderen Engine-
+  Singletons sind vivifiziert. Direkter Touchable in `static final`-
+  Fields erlaubt (z. B. `HTYPE`, `RACES`, `CRIME`, `CAUSE_ARRIVE`).
+- **`InstanceScript.java` Save/Preflight-Hooks** — gleicher Lifecycle-
+  Carve-out wie MainScript. Verwendet `initBeforeGame*`-Aufrufer mit
+  Bootstrap-Nach-Reihenfolge. `static final`-Engine-Touchables zulässig,
+  aber mit `RuntimeException`-Defensive umhüllen falls die exakte
+  Reihenfolge jemals refactored wird.
+- **`adapter/`-Klassen die per `EconomySim`-Konstruktor** initialisiert
+  werden — der Constructor läuft nach Sim-Bootstrap. `final`-Fields mit
+  Engine-Werten zulässig.
+- **Test-Code in `test/...`** — NUR Mockito/Reflection-Stub-Init erlaubt.
+  KEIN `static final`-Field-Touchable auf Production-Engine-Klassen
+  (kein `private static final X = mock(STATS.class);` o. ä.) — sonst
+  reproduziert der Test-Side denselben Cold-Boot-Crash.
+
+**WICHTIG:** Auch in den erlaubten Zonen MUSS `static final`-Init
+gegen `RuntimeException` aus dem Engine-Touch abgesichert werden falls
+die Reihenfolge nicht 100% garantiert ist. Holder-Pattern ist immer
+sicherer als direkter Touchable.
+
+**Audit-Check:** Im Sprint-Review MUSS
+`grep -rnE '^\s*(private|public|protected)\s+static\s+final\s+[^=]+=' src/vannon/syx/economy/`
+laufen und alle Treffer mit Engine-Singletons (`NEEDS\.`, `STATS\.`,
+`RES\.`, `RESOURCES\.`, `PRICE\.`, `RACES\.`, `HTYPES\.`, `CRIME\.`,
+`CAUSE_LEAVES\.`, `AISUB\.`, `TIME\.secondsPerDay`) sind auf Holder-Pattern
+zu refactoren. **Ausnahme:** Treffer in `MainScript.java` und Adapter-
+Konstruktor-Bereich sind als erlaubt zu markieren, nicht zu refactoren.
+
+Der Gate ist als Soft-Block dokumentiert — Sprint-CI printed Warnungen,
+neue Touchables werden per Code-Review beanstandet.
+
+**Why:** Der Crash blockiert das komplette JAR-Deployment. Im Dev-mvn
+ist er unsichtbar weil TestEnv die STATS-Init vor der JAR-Scan-Schleife
+schiebt. Im Standalone-deploy bricht der Cold-Boot-Pfad direkt am
+Spielladen.

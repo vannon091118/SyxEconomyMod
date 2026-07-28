@@ -1,6 +1,6 @@
 # SyxEconomyMod — Entwicklung & Roadmap
 
-> **Version:** v0.13.76 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-26
+> **Version:** v0.13.78 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-26
 >
 > Stam-Doku-Synchron-Anker: `tools/verify-doc-sync.sh` (9 Checks).
 > Abgeschlossene Sprints → [`CHANGELOG.md`](CHANGELOG.md).
@@ -49,6 +49,7 @@
 | **B-012** | 🟠 P1 | **EconProgression 3850 Tage Subsistenz:** checkAdvance() blockiert durch Taverne/Labor die nicht gebaut sind. Progression erwartet Gebäude die der Spieler nicht priorisiert. | ~20 | B-FIX |
 | **B-013** | 🟡 P2 | **Advisor-Preis-Disconnect:** Berater empfiehlt Export bei Stone 75.3x/Wood 73.7x — Preisdaten nicht mit Advisor-Empfehlungen verknüpft | ~25 | B-FIX |
 | **L-01** | ✅ Closed (v0.13.67) | **BrokeFoodPlan-Escape:** `con()` prüft jetzt `hunger.isMax()` vor desperate-Aktivierung. Hunger < MAX → normale AI-Pipeline (Oddjob). `BrokeFoodPlan.java:38-42` | ~20 | L-1 |
+| **L-04** | ✅ Closed (v0.13.78) | **BrokeFoodPlan clinit-Crash (DCL v2.4):** `script.ScriptLoad` erzwingt `<clinit>` via `Class.forName(initialize=true)` VOR Sim-Bootstrap. Bill-Pugh `HungerHolder` war nutzlos (innere Klasse selbst im JAR → gleicher Scan). Fix: DCL auf `volatile hungerCache` in Outer-Class (kein nested Holder), `NEEDS.TYPES()==null` Pre-Check LEBT IM LOCK (TOCTOU defense-in-depth), `LinkageError`-only Catch, Caller-Null-Degrade. `agents.md` Rule 15 (verbindlich ab v0.13.76). Runtime-verifiziert: Mod-Start ohne `ExceptionInInitializerError`. `BrokeFoodPlan.java` | ~30 | L-1 |
 | **L-02** | 🟠 P1 | **SubjectFatigue + FatiguePressure:** Fatigue pro Tick, STAMINA-Booster-Registrierung (Vanilla: `BOOSTABLES.PHYSICS().STAMINA` existiert), forcedRest bei Schwellenwert. StatsMultipliers.OVERTIME/DAY_OFF existieren. | ~100 | L-1 |
 | **L-03** | 🟡 P2 | **WealthRest:** Reiche Bürger (>2× Median) arbeiten nur noch Teilzeit via reduzierter Fatigue-Schwelle. `EconConfig.wealthRestEnabled` + `wealthRestThreshold`. | ~40 | L-1 |
 | **LOG-01** | 🟠 P1 | **ACTION-Logging:** Alle clickActionSet-Calls in 4 UI-Fenstern mit EventLog verknüpfen (old→new Transition). 25 Action-Stellen, derzeit 0 geloggt. | ~35 | LOG-1 |
