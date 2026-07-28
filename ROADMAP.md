@@ -1,6 +1,6 @@
 # SyxEconomyMod — Entwicklung & Roadmap
 
-> **Version:** v0.13.70 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-26
+> **Version:** v0.13.76 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-26
 >
 > Stam-Doku-Synchron-Anker: `tools/verify-doc-sync.sh` (9 Checks).
 > Abgeschlossene Sprints → [`CHANGELOG.md`](CHANGELOG.md).
@@ -69,7 +69,9 @@
 | **DOC-03** | 🟡 P2 | **agents.md Canary-Update:** Flachwitz-Refresh nach Rule-7-Pflicht (Session-Start, doc-Update). | ~2 | DOC |
 | **DOC-04** | 🟡 P2 | **settlement/room/ Bridges existieren:** 4 Dateien (309 LOC) in `src/settlement/room/` — ARCHITECTURE+GLOSSARY hatten sie fälschlich gelöscht. Korrigiert in v0.13.67. | ~0 | DOC |
 | **LOC-01** | 🟠 P1 | **358 hartcodierte Strings, 0 Lokalisierung:** `EconTexts.java` (358 Konstanten) + 369 UI-String-Literale — alles deutsch, kein Übersetzungssystem. **Code:** `EconTexts.java:1-358`, 5 UI-Dateien (`WindowEconomy.java`, `WindowOverview.java`, `WindowState.java`, `WindowQuickview.java`, `EconHud.java`). **Plan:** `LocaleStrings.java` (74 LOC, erstellt v0.13.67) + `EconConfig.locale` (neu). Schrittweise Migration über `LocaleStrings.t("key", EconTexts.¤¤fallback)`. English-Fallback via `LocaleStrings.en` Map. | ~200 | LOC |
-| **TECHD-01** | 🟡 P2 | **EconomySim 1692 LOC — Modularisierung:** God-Class-Guard-Baseline ist 1382, Realität 1692 (+310 Drift). 74 pub-Methoden, 129 Felder, 73 Imports. **Plan (3 Extraktionen):** (a) `EconomySaveLoad.java` (~400 LOC) — saveChunked/loadChunked + 21 Chunk-Tags + StateBundle-Pattern. Ref: `EconomySim.java:1147-1350`. (b) `EconomyTickOrchestrator.java` (~250 LOC) — update()-Phasen 7-10 (Wages→Taxes→Fiscal→Ledger). Ref: `EconomySim.java:700-950`. (c) `EconomyAuditEngine.java` (~150 LOC) — Phase 11 (AuditKernel + MoneySupply-Check). Ref: `EconomySim.java:950-1050`. **Ziel:** EconomySim auf ~900 LOC, unter God-Class-Guard-Schwelle (800). | ~800 | TECHD |
+| **TECHD-01** | 🟡 P2 | **EconomySim 1692 LOC — Modularisierung:** God-Class-Guard-Baseline ist 1382, Realität 1692 (+310 Drift). 74 pub-Methoden, 129 Felder, 73 Imports. **Plan (3 Extraktionen):** (a) `EconomySaveLoad.java` (~400 LOC) — saveChunked/loadChunked + 21 Chunk-Tags + StateBundle-Pattern. Ref: `EconomySim.java:1147-1350`. (b) `EconomyTickOrchestrator.java` (~250 LOC) — update()-Phasen 7-10 (Wages→Taxes→Fiscal→Ledger). Ref: `EconomySim.java:700-950`. (c) `EconomyAuditEngine.java` (~150 LOC) — Phase 11 (AuditKernel + MoneySupply-Check). Ref: `EconomySim.java:950-1050`. **Ziel:** EconomySim auf ~900 LOC, unter God-Class-Guard-Schwelle (800). **RES-005 Pitch:** Atomare Implementation in [`docs/HANDOFF_RES005.md`](docs/HANDOFF_RES005.md) §Sprint Spluck-TECHD-01 (14 Tasks, 1 atomic Commit). | ~800 | TECHD |
+| **TASK-008** | 🟠 P1 (Active) | **EconomySim-SaveLoad-Extraktion:** Implement Extraction 1 aus TECHD-01. Extrahiere `saveChunked()` + `loadChunked()` + 21 Chunk-Tags + PropertyMarket/Corvee/StateWages-Sub-Chunks → `core/save/EconomySaveLoad.java` (~450 LOC). Interface `IEconomySaveLoad` mit `save(FilePutter)` / `load(FileGetter)` / `resetOnLoad()` / `chunkTags()`. **Goal (Intermediate):** EconomySim nach TASK-008 auf ~880 LOC. **Goal (Sprint-Final):** EconomySim nach Spluck-TECHD-01 auf ≤ 450 LOC (unter 800-Schwelle, vgl. HANDOFF Block 5 DoD-4). **Schließungskriterium:** `mvn verify install -DskipTests` EXIT 0 + 1 Save-Roundtrip-Test grün + `mvn test` EXIT 0 (402 Tests). **Spec:** [`docs/HANDOFF_RES005.md`](docs/HANDOFF_RES005.md) Block 4 Task 2+3, Block 5 DoD-Punkte 1-10. | ~450 | Spluck-TECHD-01 |
+| **TASK-009** | 🟠 P1 (Active) | **EconomySim-TickOrchestrator-Extraktion:** Implement Extraction 2 aus TECHD-01. Extrahiere `update()`-Hauptphasen (Wages→Taxes→Fiscal→Ledger→Labor→Service→Audit) → `core/save/EconomyTickOrchestrator.java` (~280 LOC). Interface `IEconomyTick` mit `tick(double ds)` / `phaseTriggers()` / `reentryGuard()` / `dayBoundary()`. Re-Entry-Guard bleibt im Orchestrator (war vorher in EconomySim). **Goal (Intermediate):** EconomySim nach TASK-008+TASK-009 auf ~560 LOC. **Goal (Sprint-Final):** EconomySim nach Spluck-TECHD-01 auf ≤ 450 LOC. **Schließungskriterium:** `mvn test` 402 Tests grün (Verhaltens-Neutralität) + Re-Entry-E2E-Test grün. **Spec:** [`docs/HANDOFF_RES005.md`](docs/HANDOFF_RES005.md) Block 4 Task 4+5. | ~280 | Spluck-TECHD-01 |
 | **TECHD-02** | 🟡 P2 | **EconConfig 207 Felder Constants-Dump:** 55 bool + 75 int + 61 double + 16 other. 555 LOC. **Plan:** 3 Sub-Configs extrahieren: `BalanceConfig` (Preise, Löhne, Steuern), `BehaviorConfig` (Toggles, Schwellwerte), `PhaseConfig` (Progression, Stufen). AffinConfig-Nested-Class existiert bereits (leer). `EconConfig.locale` hinzugefügt (v0.13.67). | ~150 | TECHD |
 | **TEST-01** | 🟠 P1 | **Save-Migration-Integrationstest fehlt:** CHUNKED_VERSION=33, keine Headless-Test-Suite für Savegame-Migration. Tagebuch: „Migrations-Pfad im Feld unbewiesen". | ~80 | TEST |
 | **DA-01** | 🟡 P2 | **Tagebuch-Abgleich v0.13.67:** 17 Claims gegen Code verifiziert (11 bestätigt, 6 korrigiert, 0 widerlegt). Detaillierte Tabelle unten. | ~0 | DOC |
@@ -77,7 +79,7 @@
 | **DIPLO-02** | ✅ Closed (v0.13.67) | `getFactionOpinion()` + `getFactionTrust()` + `adjustFactionOpinion()` implementiert. Write-Pfad ist Logging-only da Vanilla `ROPINION.setOpinionValue()` + `SuperBoostable.incD()` package-private — BypassGate-Lösung in DIPLO-03. | `FactionAccessImpl.java:457-505` |
 | **DIPLO-03** | 🟡 P2 | **BINDUNGSMATRIX: ROPINION + bOpinion + TRUST katalogisieren** — 3 Engine-Hebel fehlen komplett in der Matrix. | ~10 | DIPLO |
 
-**Total:** 73 Tasks (60 bestehende + 13 neue: BA-05, DC-03, DC-04, DC-05, DC-06, SK-07, DOC-04, LOC-01, TECHD-01, TECHD-02, TEST-01, DA-01, DIPLO-03) — plus 44 Closed.
+**Total:** 75 Tasks (60 bestehende + 13 aus Sprint-DA-01-Decke: BA-05, DC-03/04/05/06, SK-07, DOC-04, LOC-01, TECHD-01/02, TEST-01, DA-01, DIPLO-03 + 2 RES-005-Neu: TASK-008, TASK-009) — plus 44 Closed.
 
 **Sprint 9 Dependency-Edges (Rule 1.7 Pre-Note):**
 
@@ -500,6 +502,53 @@ EconomySim nicht.
 - EconomySim nach Extraktion: **~900 LOC** (unter God-Class-Guard-Schwelle 800? Fast.)
 - God-Class-Guard-Baseline updaten: 1692→900
 - Kein Verhalten ändern — nur Datei-Split
+
+---
+
+## Sprint Spluck-TECHD-01 — EconomySim Triple-Limit-Split (RES-005 Pitch, v0.13.74)
+
+**Quelle:** RES-005 Audit-Pitch [`docs/HANDOFF_RES005.md`](docs/HANDOFF_RES005.md)
+**Status:** Pitch-Phase (vor Sprint-Start, Tasks 8+9 als `Active` vorbereitet)
+**Branch:** `feature/spluck-techd-01-economysim-split` (von main @ v0.13.74)
+
+**Problem:** `EconomySim.java` ist die einzige Triple-Limit-God-Class (LOC +522 / Fields +100 / PubM +42 über Schwellwert). Reflection-Reste in `WindowState.java` (4 Hits) und `NpcFactionAdapter.java`/`RoomAccessImpl.java` (7 Hits) verletzen Rule 9.
+
+**Lösung (atomic-task pitch):** 8 neue Dateien in `core/save/` Subpaket + Reflection-Migration auf BypassGate SDK.
+
+| Task | Datei | LOC-Soll | Status | Sprint |
+|---|---|---:|---|---|
+| **TASK-008** | `EconomySaveLoad.java` (Extr. 1) | ~450 | 🟠 P1 (Active) | Spluck-TECHD-01 |
+| **TASK-009** | `EconomyTickOrchestrator.java` (Extr. 2) | ~280 | 🟠 P1 (Active) | Spluck-TECHD-01 |
+| Spluck-T-1 | `EconomyAuditEngine.java` (Extr. 3) | ~150 | 🟡 P2 | Spluck-TECHD-01 |
+| Spluck-T-2 | `EconomyTelemetry.java` (StateBundle) | ~120 | 🟡 P2 | Spluck-TECHD-01 |
+| Spluck-T-3 | `IEconomySaveLoad.java` (Interface) | ~50 | 🟡 P2 | Spluck-TECHD-01 |
+| Spluck-T-4 | `IEconomyTick.java` (Interface) | ~40 | 🟡 P2 | Spluck-TECHD-01 |
+| Spluck-T-5 | `IEconomyAuditEngine.java` (Interface) | ~40 | 🟡 P2 | Spluck-TECHD-01 |
+| Spluck-T-6 | `IEconomyTelemetry.java` (Interface) | ~30 | 🟡 P2 | Spluck-TECHD-01 |
+| Spluck-T-7 | EconomySim-Restrumpf (Facade/Delegation) | ≤ 450 | 🟠 P1 | Spluck-TECHD-01 |
+| Spluck-T-8 | EconConfig-Magic-Number-Regrouping | ~50 | 🟡 P2 | Spluck-TECHD-01 |
+| Spluck-T-9 | WindowState.java Reflection→ISyxBoosting | Δ−4 | 🟠 P1 | Spluck-TECHD-01 |
+| Spluck-T-10 | NpcFactionAdapter/RoomAccessImpl Reflection→BypassGate | Δ−7 | 🟠 P1 | Spluck-TECHD-01 |
+| Spluck-T-11 | EngineLevers.java unused-import entfernen | Δ−1 | 🟡 P2 | Spluck-TECHD-01 |
+| Spluck-T-12 | Validierungs-Gate + Atomic-Commit + ROADMAP-Close | — | 🔴 P0 | Spluck-TECHD-01 |
+| **Total** | **8 neue Dateien + 5 Edits** | **~1.485** | **1 atomic Commit** | |
+
+**Definition of Done:** Siehe [`docs/HANDOFF_RES005.md`](docs/HANDOFF_RES005.md) Block 5 (10 Kriterien, inkl. `EconomySim.java` ≤ 800 LOC + keine Reflection außerhalb `adapter/seam/` + ROADMAP-TASK-008/009 → `Closed (<SHA>)`).
+
+**Dependency-Chain:**
+```
+Spluck-T-3 (IEconomySaveLoad) ──→ TASK-008 (EconomySaveLoad)
+Spluck-T-4 (IEconomyTick)      ──→ TASK-009 (EconomyTickOrchestrator)
+Spluck-T-5 (IEconomyAudit)     ──→ Spluck-T-1 (EconomyAuditEngine)
+Spluck-T-6 (IEconomyTelemetry) ──→ Spluck-T-2 (EconomyTelemetry)
+TASK-008 + TASK-009 + Spluck-T-1..2 ──→ Spluck-T-7 (Restrumpf-Anpassung)
+Spluck-T-9..11 (Reflection-Cleanup vor Refactor)
+Spluck-T-7 + Spluck-T-9..11 ──→ Spluck-T-12 (Validierungs-Gate)
+```
+
+**Sprint-Boundary:** 14 Tasks, ~1485 LOC Δ, 1 atomic Commit. Kein Push ohne User-Approval (Rule 11/12).
+
+**Task-Naming-Konvention Spluck-TECHD-01:** `TASK-008` und `TASK-009` sind external atomare Pitch-Marker (vom User literal benannt, Block-sichtbar). `Spluck-T-1..12` sind die internen Sub-Tasks der 14-Task-Liste aus HANDOFF_RES005.md Block 4. Beide Systeme coexistieren; z.B. `TASK-008` und `Spluck-T-3 (EconomySaveLoad extrahieren)` beziehen sich auf dieselbe Code-Datei `core/save/EconomySaveLoad.java`. **Mapping Tabelle im HANDOFF Block 4 nachschlagen.**
 
 ---
 
