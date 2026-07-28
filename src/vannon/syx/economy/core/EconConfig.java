@@ -544,7 +544,7 @@ public final class EconConfig {
      *  sanften Early-Game-Einstieg. */
     public static boolean earlySettlerBuffEnabled = true;
     public static int earlySettlerPopThreshold = 50;
-    public static int earlySettlerWalletBonus = 300; // +300 D auf SUBSISTENZ=200 → effektiv 500 D
+    public static int earlySettlerWalletBonus = 500; // BA-01: 300→500 — mehr Startkapital gegen Treasury-Drain
 
     /** BA-04 (v0.13.67): Bootstrap GrainDole-Schwellwert.
      *  Solange {@code population < earlySettlerPopThreshold}, gilt dieser
@@ -552,7 +552,7 @@ public final class EconConfig {
      *  Bürger in der Bootstrap-Phase gratis Essen — der Thron-Bug
      *  (Startkapital→leer→Thron-Essen→Pleite-Spirale) wird durchbrochen.
      *  5000 D = hoher Pseudo-Unendlich-Wert → alle Bürger essen gratis. */
-    public static int earlySettlerDoleThreshold = 5000;
+    public static int earlySettlerDoleThreshold = 10000; // BA-01: 5000→10000 — mehr Bürger bekommen gratis Korn
 
     // T8: Live-Population, gesetzt von EconomySim.update(). FlowPrices liest das.
     public static int population = 0;

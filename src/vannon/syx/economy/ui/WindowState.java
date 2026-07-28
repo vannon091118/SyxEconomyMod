@@ -14,6 +14,9 @@ import vannon.syx.economy.core.EconConfig;
 import vannon.syx.economy.core.EconomySim;
 import vannon.syx.economy.core.EventLog;
 import vannon.syx.economy.core.StateWarehouses;
+import vannon.syx.economy.core.CitizenClass;
+import vannon.syx.economy.core.Wallets;
+import vannon.syx.economy.core.WealthStats;
 import snake2d.util.color.COLOR;
 
 public final class WindowState extends EconWindowBase {
@@ -63,7 +66,7 @@ public final class WindowState extends EconWindowBase {
                 }
             };
             normal.clickActionSet(new ACTION() {
-                @Override public void exe() { wh.setTradeMode(StateWarehouses.TradeMode.NORMAL); }
+                @Override public void exe() { DiagnosticExporter.logPlayerAction("state.trade_mode", "NORMAL"); wh.setTradeMode(StateWarehouses.TradeMode.NORMAL); }
             });
             content.add(normal, x, y);
 
@@ -75,7 +78,7 @@ public final class WindowState extends EconWindowBase {
                 }
             };
             buy.clickActionSet(new ACTION() {
-                @Override public void exe() { wh.setTradeMode(StateWarehouses.TradeMode.BUY_ONLY); }
+                @Override public void exe() { DiagnosticExporter.logPlayerAction("state.trade_mode", "BUY_ONLY"); wh.setTradeMode(StateWarehouses.TradeMode.BUY_ONLY); }
             });
             content.add(buy, x + 160, y);
 
@@ -87,14 +90,14 @@ public final class WindowState extends EconWindowBase {
                 }
             };
             sell.clickActionSet(new ACTION() {
-                @Override public void exe() { wh.setTradeMode(StateWarehouses.TradeMode.SELL_ONLY); }
+                @Override public void exe() { DiagnosticExporter.logPlayerAction("state.trade_mode", "SELL_ONLY"); wh.setTradeMode(StateWarehouses.TradeMode.SELL_ONLY); }
             });
             content.add(sell, x + 320, y);
             y += 40;
 
             GButt.ButtPanel std = new GButt.ButtPanel("Standardisieren (80%/110%)", 220);
             std.clickActionSet(new ACTION() {
-                @Override public void exe() { wh.standardizeAllPrices(sim.flowPrices()); }
+                @Override public void exe() { DiagnosticExporter.logPlayerAction("state.standardize_prices", "80%/110%"); wh.standardizeAllPrices(sim.flowPrices()); }
             });
             content.add(std, x, y);
 
@@ -109,7 +112,7 @@ public final class WindowState extends EconWindowBase {
                 ? "Liquidation laeuft — Klick: beenden (Normal-Modus)"
                 : "Alle Staatslager sofort zu Geld machen (setzt Modus auf Normal)");
             liquidate.clickActionSet(new ACTION() {
-                @Override public void exe() { wh.setAllLiquidating(!wh.allLiquidating()); }
+                @Override public void exe() { DiagnosticExporter.logPlayerAction("state.liquidate", wh.allLiquidating() ? "stop" : "start"); wh.setAllLiquidating(!wh.allLiquidating()); }
             });
             content.add(liquidate, x + 240, y);
             y += 40;
@@ -351,6 +354,75 @@ public final class WindowState extends EconWindowBase {
             totalText.set("Gesamte Sammlungen heute: " + CompactNumber.format(total) + " D");
             totalText.color(total > 0 ? GCOLOR.UI().GOOD.normal : GCOLOR.T().INACTIVE);
             content.add(totalText, x, y);
+            y += 40;
+
+            // U-03: CitizenClass Verteilung
+            if (EconConfig.citizenClassesEnabled) {
+                GText classHeader = new GText(UI.FONT().M, FONTW_HDR);
+                classHeader.set("--- Bürgerklassen ---");
+                classHeader.lablify();
+                content.add(classHeader, x, y);
+                y += 24;
+
+                Wallets wallets = sim.wallets();
+                WealthStats stats = sim.stats();
+                int totalPop = sim.roster().size();
+                int classified = wallets.classifiedCount();
+
+                addKpi(content, x, y, UI.icons().s.human, "Klassifiziert",
+                    classified + " / " + totalPop, GCOLOR.T().NORMAL);
+                y += 28;
+
+                if (classified == 0 && totalPop > 0) {
+                    GText pending = new GText(UI.FONT().S, FONTW_BODY);
+                    pending.set("Wird berechnet...");
+                    pending.color(GCOLOR.T().INACTIVE);
+                    content.add(pending, x, y);
+                } else {
+
+                // Header row
+                GText hdrClass = new GText(UI.FONT().S, FONTW_LABEL);
+                hdrClass.set("Klasse");
+                hdrClass.lablify();
+                content.add(hdrClass, x, y);
+                GText hdrCount = new GText(UI.FONT().S, FONTW_CNT);
+                hdrCount.set("Anzahl");
+                hdrCount.lablify();
+                content.add(hdrCount, x + 160, y);
+                GText hdrHome = new GText(UI.FONT().S, FONTW_CNT);
+                hdrHome.set("Haus×");
+                hdrHome.lablify();
+                content.add(hdrHome, x + 240, y);
+                GText hdrFirm = new GText(UI.FONT().S, FONTW_CNT);
+                hdrFirm.set("Firma×");
+                hdrFirm.lablify();
+                content.add(hdrFirm, x + 310, y);
+                y += 18;
+
+                for (CitizenClass cc : CitizenClass.values()) {
+                    if (cc == CitizenClass.UNCLASSIFIED) continue;
+                    int count = wallets.countByClass(cc);
+                    GText nameText = new GText(UI.FONT().S, FONTW_LABEL);
+                    nameText.set(cc.displayName);
+                    nameText.color(count > 0 ? GCOLOR.T().NORMAL : GCOLOR.T().INACTIVE);
+                    content.add(nameText, x, y);
+
+                    GText countText = new GText(UI.FONT().S, FONTW_CNT);
+                    countText.set(String.valueOf(count));
+                    countText.color(count > 0 ? GCOLOR.UI().GOOD.normal : GCOLOR.T().INACTIVE);
+                    content.add(countText, x + 160, y);
+
+                    GText homeText = new GText(UI.FONT().S, FONTW_CNT);
+                    homeText.set(String.format("%.1f", cc.homeBuyMultiplier));
+                    content.add(homeText, x + 240, y);
+
+                    GText firmText = new GText(UI.FONT().S, FONTW_CNT);
+                    firmText.set(cc.firmBuyThresholdMultiplier >= 999 ? "∞" : String.format("%.1f", cc.firmBuyThresholdMultiplier));
+                    content.add(firmText, x + 310, y);
+                    y += 16;
+                }
+                } // else (classified > 0)
+            }
         }
     }
 
@@ -419,6 +491,7 @@ public final class WindowState extends EconWindowBase {
             GButt.ButtPanel exportBtn = new GButt.ButtPanel("Export jetzt", 120);
             exportBtn.clickActionSet(new ACTION() {
                 @Override public void exe() {
+                    DiagnosticExporter.logPlayerAction("state.export_csv", "forced");
                     sim.forceDiagnosticExport();
                     cheatStatus = "CSV exportiert";
                 }
@@ -429,6 +502,7 @@ public final class WindowState extends EconWindowBase {
             GButt.ButtPanel traceBtn = new GButt.ButtPanel("Trace dump", 120);
             traceBtn.clickActionSet(new ACTION() {
                 @Override public void exe() {
+                    DiagnosticExporter.logPlayerAction("state.trace_dump", "ring_buffer");
                     DebugTracer.dump();
                     cheatStatus = "Trace gedumpt (siehe Log)";
                 }
@@ -439,6 +513,7 @@ public final class WindowState extends EconWindowBase {
             GButt.ButtPanel boosterBtn = new GButt.ButtPanel("Boosters", 90);
             boosterBtn.clickActionSet(new ACTION() {
                 @Override public void exe() {
+                    DiagnosticExporter.logPlayerAction("state.boosters_dump", "reflect");
                     try {
                         String info = null;
                         for (String cn : new String[]{"BOOSTING", "BOOSTABLES"}) {
@@ -503,6 +578,7 @@ public final class WindowState extends EconWindowBase {
             GButt.ButtPanel testBtn = new GButt.ButtPanel("Alle testen", 120);
             testBtn.clickActionSet(new ACTION() {
                 @Override public void exe() {
+                    DiagnosticExporter.logPlayerAction("state.self_test", "all_adapters");
                     selfTestResults = sim.debugSelfTest();
                     cheatStatus = "Self-Test abgeschlossen";
                 }
@@ -535,6 +611,7 @@ public final class WindowState extends EconWindowBase {
             GButt.ButtPanel mintBtn = new GButt.ButtPanel("+100.000 D", 110);
             mintBtn.clickActionSet(new ACTION() {
                 @Override public void exe() {
+                    DiagnosticExporter.logPlayerAction("state.cheat_mint", "+100000");
                     sim.mintTreasury(100_000L);
                     cheatStatus = "+100.000 D (Kasse: " + CompactNumber.format(sim.treasury()) + " D)";
                 }
@@ -545,6 +622,7 @@ public final class WindowState extends EconWindowBase {
             GButt.ButtPanel auditBtn = new GButt.ButtPanel("Audit", 80);
             auditBtn.clickActionSet(new ACTION() {
                 @Override public void exe() {
+                    DiagnosticExporter.logPlayerAction("state.audit", "delta_check");
                     sim.logAuditDelta();
                     cheatStatus = "Audit: delta=" + sim.auditDelta();
                 }
@@ -636,6 +714,7 @@ public final class WindowState extends EconWindowBase {
         cb.clickActionSet(new ACTION() {
             @Override public void exe() {
                 boolean next = !cb.selectedIs();
+                DiagnosticExporter.logPlayerAction("state.toggle", label);
                 setter.accept(next);
                 cb.selectedSet(next);
             }

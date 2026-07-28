@@ -919,7 +919,9 @@ public final class FirmLedger {
             if (room == null || !room.exists() || room.employees() == null) continue;
             FirmState state = entry.getValue();
             if (EconomicRoles.excludedFromMarketAccounting((RoomBlueprintImp) room.blueprintI())) continue;
-            if (!state.physicalSeen) continue;
+            // DC-04: Include firms that are tracked by any channel, not just
+            // physically sampled. Prevents empty CSV when FlowMeter hasn't run yet.
+            if (!state.physicalSeen && !state.cashTracked && !state.marketTracked) continue;
             result.add(new FirmFinancialSnapshot(
                     room.blueprintI().key,
                     room.employees().employed(),

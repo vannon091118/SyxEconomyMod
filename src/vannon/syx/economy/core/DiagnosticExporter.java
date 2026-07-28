@@ -86,7 +86,7 @@ public final class DiagnosticExporter {
             "game_day", "season", "population", "deaths", "emigrations", "inherited", "heirless",
             "gini", "median_wealth", "mean_wealth", "max_wealth",
             "treasury", "total_money", "seed_money", "audit_delta",
-            "mean_wage", "actual_mean_wage", "wage_share", "unpaid_ratio",
+            "wage_config_max", "actual_mean_wage", "wage_share", "unpaid_ratio",
             "head_tax", "market_receipts", "ration_out", "wages_paid", "warehouse_bought", "warehouse_sold",
             // Housing-Spalten sind *_last_tick, weil HousingMarket.update() saisonal abrechnet.
             // Außerhalb des Saison-Ticks = 0. Für kumulierte Werte StateWarehouses-Felder pinnen.
@@ -509,6 +509,12 @@ public final class DiagnosticExporter {
         EventLog.log("PLAYER", "[" + tick + "] " + action + ": " + detail);
     }
 
+    /** Convenience-Overload: nutzt LoggingAdapter.currentTick() statt explizitem tick-Parameter.
+     *  Ideal für UI-Lambdas die keinen Zugriff auf EconomySim.ticks() haben. */
+    public static void logPlayerAction(String action, String detail) {
+        logPlayerAction(LoggingAdapter.currentTick(), action, detail);
+    }
+
     /** Loggt eine EconConfig-Änderung (von UI-Slidern ausgelöst). */
     public static void logConfigChange(String configKey, int oldVal, int newVal) {
         long tick = LoggingAdapter.currentTick();
@@ -572,7 +578,7 @@ public final class DiagnosticExporter {
         recordIfChanged(day, "ECONOMY", "GINI_SPIKE", "gini",
                 stats.gini, GINI_THRESHOLD,
                 "{treasury:" + sim.treasury()
-                        + ",mean_wage:" + fmt(sim.laborMarket().meanWage(), 1)
+                        + ",wage_config_max:" + fmt(sim.laborMarket().meanWage(), 1)
                         + ",food_basket:" + LocalPrices.flowFoodBasketPrice() + "}");
 
         // Treasury-Crisis

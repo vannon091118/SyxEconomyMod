@@ -164,16 +164,18 @@ public final class EconProgression implements Saveable {
         boolean advance = false;
         switch (stage) {
             case SUBSISTENZ:
-                advance = snap.people >= 50
+                // B-012: 50→30 — 37 Siedler kamen nie über 50, Progression
+                // blieb bei 3850 Tagen stecken. 30 erlaubt früheres Vorankommen.
+                advance = snap.people >= 30
                     && msFirstStockpile
                     && LocalPrices.foodDays() > 0 && LocalPrices.foodDays() >= 3.0
                     && stageDays >= 30;
                 break;
             case HANDEL:
-                advance = snap.people >= 100
+                // B-012: 100→75 — Tavernen-/Markt-Erfordernis bleibt, aber
+                // kleinere Siedlungen können jetzt HANDEL erreichen.
+                advance = snap.people >= 75
                     && msFirstExport
-                    // v1.7.0-Bugfix: actualMeanWage ist der echte Bürgerlohn,
-                    // nicht die Firmen-Grenzgewinn-Metrik (meanPositiveMarginal).
                     && snap.actualMeanWage > 50
                     && (msFirstTavern || msFirstMarket);
                 break;

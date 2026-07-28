@@ -536,6 +536,16 @@ public final class Wallets {
         return count;
     }
 
+    /** U-03: Anzahl der Bürger in einer bestimmten Klasse. */
+    public int countByClass(CitizenClass cc) {
+        byte target = cc.toByte();
+        int count = 0;
+        for (int i = 0; i < this.ownedCount; ++i) {
+            if (this.citizenClass[this.ownedSlots[i]] == target) count++;
+        }
+        return count;
+    }
+
     private static final class PendingDeparture {
         final int estate;
         final int relRef;
