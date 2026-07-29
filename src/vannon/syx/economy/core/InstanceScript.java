@@ -31,13 +31,21 @@ final class InstanceScript implements SCRIPT.SCRIPT_INSTANCE {
 
     /** Edge detection for hotkey polling (Hk.java pattern).
      *  GLFW key codes: 334 = Numpad +, 333 = Numpad -, 332 = Numpad *, 320 = Numpad 0,
-     *  331 = Numpad /, 256 = ESC. */
+     *  331 = Numpad /, 256 = ESC.
+     *  Letter-key fallback (Res-UI-HOTKEYS): 69=E, 79=O, 83=S, 81=Q, 47=/,
+     *  damit Spieler ohne Numpad (Laptops, Compact-Tastaturen) die Mod-Fenster
+     *  ebenfalls finden — die meisten haben keinen dedizierten Numpad-Block. */
     private boolean overviewWasDown;
     private boolean economyWasDown;
     private boolean stateWasDown;
     private boolean quickviewWasDown;
     private boolean dumpWasDown;
     private boolean escWasDown;
+    // Letter-key edge states (Res-UI-HOTKEYS parallel)
+    private boolean oWasDown;
+    private boolean eWasDown;
+    private boolean sWasDown;
+    private boolean qWasDown;
 
     /** View-change detection: compare VIEW.current() against last known class name. */
     private String lastViewClassName = "(startup)";
@@ -101,6 +109,9 @@ final class InstanceScript implements SCRIPT.SCRIPT_INSTANCE {
      *  Numpad - (333) → Economy window.
      *  Numpad * (332) → State window.
      *  Numpad 0 (320) → Quickview window.
+     *  Letter-key fallback (Res-UI-HOTKEYS): E/O/S/Q — gleiches Verhalten,
+     *                                            damit Laptop-Spieler ohne
+     *                                            Numpad die Fenster ebenfalls öffnen können.
      *  ESC (256) → close all economy windows.
      *  Clean switching: pressing a hotkey hides all other windows first. */
     private void pollHotkeys() {
@@ -110,28 +121,37 @@ final class InstanceScript implements SCRIPT.SCRIPT_INSTANCE {
         boolean num0 = CORE.getInput().getKeyboard().isPressed(320); // Numpad 0
         boolean esc  = CORE.getInput().getKeyboard().isPressed(256); // ESC
 
-        if (add && !this.overviewWasDown) {
+        // Letter-key fallback (Res-UI-HOTKEYS): ASCII-Codes funktionieren auf jeder
+        // Standard-Tastatur, Numpad nicht.
+        boolean eKey = CORE.getInput().getKeyboard().isPressed(69);  // E
+        boolean oKey = CORE.getInput().getKeyboard().isPressed(79);  // O
+        boolean sKey = CORE.getInput().getKeyboard().isPressed(83);  // S
+        boolean qKey = CORE.getInput().getKeyboard().isPressed(81);  // Q
+
+        // Merge numpad + letter: rising-edge für jede Aktion getrennt erfasst,
+        // sodass (Numpad+ ODER O) übersicht öffnet; das erste auslösende gewinnt.
+        if ((add || oKey) && !this.overviewWasDown && !this.oWasDown) {
             if (overview.isShown()) {
                 overview.close();
             } else {
                 closeOthers(overview);
                 overview.toggle();
             }
-        } else if (sub && !this.economyWasDown) {
+        } else if ((sub || eKey) && !this.economyWasDown && !this.eWasDown) {
             if (economyWin.isShown()) {
                 economyWin.close();
             } else {
                 closeOthers(economyWin);
                 economyWin.toggle();
             }
-        } else if (mul && !this.stateWasDown) {
+        } else if ((mul || sKey) && !this.stateWasDown && !this.sWasDown) {
             if (stateWin.isShown()) {
                 stateWin.close();
             } else {
                 closeOthers(stateWin);
                 stateWin.toggle();
             }
-        } else if (num0 && !this.quickviewWasDown) {
+        } else if ((num0 || qKey) && !this.quickviewWasDown && !this.qWasDown) {
             if (quickviewWin.isShown()) {
                 quickviewWin.close();
             } else {
@@ -147,6 +167,12 @@ final class InstanceScript implements SCRIPT.SCRIPT_INSTANCE {
         this.stateWasDown      = mul;
         this.quickviewWasDown  = num0;
         this.escWasDown        = esc;
+        // Letter-edge separat halten — sonst kollidieren Numpad+/O überlagert
+        // den rising-edge und der Brief-Tasten-Bereich wird redundant.
+        this.oWasDown = oKey;
+        this.eWasDown = eKey;
+        this.sWasDown = sKey;
+        this.qWasDown = qKey;
     }
 
     /** Numpad / (331) or regular / (47) → dump DebugTracer buffer to EventLog + file + stdout. */

@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """
 SyxEconomyMod — Rebalancing Diagnostic Dashboard
-================================================
-Liest die CSV-Exporte von DiagnosticExporter ein und erzeugt vier
-Analyse-Plots zur Rebalancing-Validierung.
+================================================    Liest die CSV-Exporte von DiagnosticExporter ein und erzeugt sechs
+    Analyse-Plots zur Rebalancing-Validierung.
 
 Benötigt: pandas, matplotlib, numpy
 Install:  pip install pandas matplotlib numpy
@@ -34,6 +33,7 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 import numpy as np
 import pandas as pd
+from numpy.polynomial import polynomial as NPoly
 
 # ── Agg-Backend für Headless/Server (Jupyter überschreibt das selbst) ─────────
 if "IPython" not in sys.modules:
@@ -307,14 +307,20 @@ def plot_macro_trends(
     ax_treasury.grid(True, alpha=0.3)
 
     # ── D: Wages ────────────────────────────────────────────────────────
-    ax_wages.plot(
-        x, df_macro["mean_wage"], color=MACRO_COLORS["mean_wage"],
-        linewidth=1.3, label="Mean Wage (theoretisch)"
-    )
+    if "mean_wage" in df_macro.columns:
+        ax_wages.plot(
+            x, df_macro["mean_wage"], color=MACRO_COLORS["mean_wage"],
+            linewidth=1.3, label="Mean Wage (theoretisch)"
+        )
     if "actual_mean_wage" in df_macro.columns:
         ax_wages.plot(
             x, df_macro["actual_mean_wage"], color="#17becf",
             linewidth=1.1, alpha=0.8, linestyle="--", label="Actual Mean Wage"
+        )
+    if "wage_config_max" in df_macro.columns and "mean_wage" not in df_macro.columns:
+        ax_wages.plot(
+            x, df_macro["wage_config_max"], color="#9467bd",
+            linewidth=1.0, alpha=0.7, linestyle=":", label="Wage Cap (config)"
         )
     ax_wages.set_ylabel("Wage")
     ax_wages.set_title("D — Wages (Mean)")
@@ -729,6 +735,236 @@ def plot_firm_profitability(
 
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+#  PLOT 6: EXPANSION SIGNALS vs MACRO INDICATORS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def plot_expansion_signals_correlation(
+    df_macro: pd.DataFrame,
+    df_firms: pd.DataFrame | None,
+    has_macro_col: bool = False,
+    has_firms_col: bool = False,
+    figsize: tuple = (16, 12),
+) -> plt.Figure:
+    """Zeigt Korrelation zwischen Expansion-Druck (PriorityRegistry-Hints) und
+    Wirtschaftslage (Treasury, Gini).
+
+    Subplots:
+      A — Signals + Treasury (Dual-Achse): Korreliert Expansion-Druck mit Staatskasse?
+      B — Signals + Gini (Dual-Achse): Korreliert Expansion-Druck mit Ungleichheit?
+      C — Per-Blueprint Heatmap: Welche Blueprints produzieren die meisten Hints?
+      D — Scatter: Signals vs Treasury-Änderung am Folgetag (Lead/Lag-Analyse)
+    """
+    fig, axes = plt.subplots(2, 2, figsize=figsize)
+    (ax_st, ax_sg), (ax_heat, ax_scatter) = axes
+
+    x = df_macro["game_day"]
+
+    # ── Fallback wenn Macro-Spalte fehlt ────────────────────────────────
+    if not has_macro_col:
+        for ax in axes.flat:
+            ax.text(
+                0.5, 0.5,
+                "Spalte 'priority_expansion_signals'\nfehlt in der Macro-CSV.\n"
+                "Neuer Spiel-Lauf mit aktivierter Diagnostik nötig.",
+                ha="center", va="center", transform=ax.transAxes,
+                fontsize=10, color="gray", style="italic",
+            )
+        fig.suptitle("Expansion Signals Analysis — Daten fehlen", fontsize=13, fontweight="bold")
+        fig.tight_layout()
+        return fig
+
+    signals = df_macro["priority_expansion_signals"]
+
+    # ── A: Signals + Treasury (Dual-Achse) ─────────────────────────────
+    color_signals = "#e74c3c"
+    ax_st.fill_between(x, signals, alpha=0.25, color=color_signals, zorder=1)
+    ax_st.plot(x, signals, color=color_signals, linewidth=1.3, label="Expansion Signals", zorder=2)
+    ax_st.set_ylabel("Signals / Tag", color=color_signals, fontsize=9)
+    ax_st.tick_params(axis="y", labelcolor=color_signals)
+    ax_st.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:,.0f}"))
+
+    ax_st2 = ax_st.twinx()
+    color_t = MACRO_COLORS["treasury"]
+    ax_st2.plot(x, df_macro["treasury"], color=color_t, linewidth=1.5, alpha=0.85, label="Treasury")
+    ax_st2.set_ylabel("Treasury", color=color_t, fontsize=9)
+    ax_st2.tick_params(axis="y", labelcolor=color_t)
+    ax_st2.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:,.0f}"))
+
+    ax_st.set_title("A — Expansion Signals vs Treasury", fontsize=10)
+    ax_st.grid(True, alpha=0.2)
+    lines_a, labels_a = ax_st.get_legend_handles_labels()
+    lines_b, labels_b = ax_st2.get_legend_handles_labels()
+    ax_st.legend(lines_a + lines_b, labels_a + labels_b, loc="upper left", fontsize=7, framealpha=0.7)
+
+    # ── B: Signals + Gini (Dual-Achse) ────────────────────────────────
+    ax_sg.fill_between(x, signals, alpha=0.25, color=color_signals, zorder=1)
+    ax_sg.plot(x, signals, color=color_signals, linewidth=1.3, label="Expansion Signals", zorder=2)
+    ax_sg.set_ylabel("Signals / Tag", color=color_signals, fontsize=9)
+    ax_sg.tick_params(axis="y", labelcolor=color_signals)
+
+    ax_sg2 = ax_sg.twinx()
+    color_g = MACRO_COLORS["gini"]
+    ax_sg2.plot(x, df_macro["gini"], color=color_g, linewidth=1.5, alpha=0.85, label="Gini")
+    ax_sg2.set_ylabel("Gini", color=color_g, fontsize=9)
+    ax_sg2.tick_params(axis="y", labelcolor=color_g)
+    ax_sg2.set_ylim(0, 1)
+
+    ax_sg.set_title("B — Expansion Signals vs Gini", fontsize=10)
+    ax_sg.grid(True, alpha=0.2)
+    lines_c, labels_c = ax_sg.get_legend_handles_labels()
+    lines_d, labels_d = ax_sg2.get_legend_handles_labels()
+    ax_sg.legend(lines_c + lines_d, labels_c + labels_d, loc="upper left", fontsize=7, framealpha=0.7)
+
+    # ── C: Per-Blueprint Heatmap (Firms-CSV) ──────────────────────────
+    if has_firms_col and df_firms is not None and len(df_firms) > 0:
+        # Top-15 Blueprints nach gesamten Signals auswählen
+        bp_signal_totals = (
+            df_firms.groupby("blueprint")["expansion_signals"]
+            .sum()
+            .sort_values(ascending=False)
+            .head(15)
+        )
+        top_bps = bp_signal_totals.index.tolist()
+
+        df_plot = df_firms[df_firms["blueprint"].isin(top_bps)].copy()
+
+        pivot = df_plot.pivot_table(
+            index="blueprint",
+            columns="game_day",
+            values="expansion_signals",
+            aggfunc="sum",
+        )
+
+        if pivot.shape[1] > 0:
+            # Log-Scale für bessere Unterscheidung (0 ist am häufigsten)
+            pivot_log = np.log1p(pivot)
+            im = ax_heat.imshow(
+                pivot_log.values,
+                aspect="auto",
+                cmap="YlOrRd",
+                interpolation="nearest",
+            )
+            ax_heat.set_yticks(range(len(pivot.index)))
+            ax_heat.set_yticklabels(pivot.index, fontsize=6)
+            cols = pivot.columns
+            step = max(1, len(cols) // 12)
+            tick_pos = list(range(0, len(cols), step))
+            ax_heat.set_xticks(tick_pos)
+            ax_heat.set_xticklabels(
+                [str(cols[i]) for i in tick_pos], rotation=45, ha="right", fontsize=6
+            )
+            cbar = plt.colorbar(im, ax=ax_heat, shrink=0.82, pad=0.02)
+            cbar.set_label("log(1 + signals)", fontsize=7)
+            cbar.ax.tick_params(labelsize=6)
+            ax_heat.set_title(
+                "C — Per-Blueprint Expansion Signals (Top 15)\n"
+                f"rot = viele Hints (wer hat Druck?)",
+                fontsize=9,
+            )
+            ax_heat.set_xlabel("Game Day", fontsize=8)
+            ax_heat.set_ylabel("Blueprint", fontsize=8)
+        else:
+            ax_heat.text(0.5, 0.5, "Keine Signal-Daten in Firms-CSV",
+                         ha="center", va="center", transform=ax_heat.transAxes)
+            ax_heat.set_title("C — Per-Blueprint Expansion Signals", fontsize=9)
+    else:
+        ax_heat.text(
+            0.5, 0.5,
+            "expansion_signals-Spalte fehlt\nin rebalance_firms CSV.",
+            ha="center", va="center", transform=ax_heat.transAxes,
+            fontsize=10, color="gray", style="italic",
+        )
+        ax_heat.set_title("C — Per-Blueprint Expansion Signals", fontsize=9)
+    # ── D: Scatter — Signals vs Treasury-Änderung (Lead/Lag) ──────────
+    # Idee: Korrelieren Signals HOHEM Druck mit Treasury-DROP am Folgetag?
+    # Oder: bei hohem Druck steigt Treasury (wegen Expansion → mehr Output)?
+    df_scatter = df_macro[["game_day", "priority_expansion_signals", "treasury"]].copy()
+    df_scatter["treasury_delta_next"] = df_scatter["treasury"].diff().shift(-1)
+
+    valid = df_scatter.dropna(subset=["treasury_delta_next"])
+    if len(valid) > 5:
+        # Farbcodierung nach Gini (falls vorhanden)
+        if "gini" in df_macro.columns:
+            colors_scatter = df_macro.loc[valid.index, "gini"]
+            cmap_scatter = plt.cm.RdYlGn_r
+            norm_scatter = plt.Normalize(vmin=0.2, vmax=0.8)
+            label_cbar = "Gini"
+        else:
+            colors_scatter = color_signals
+            cmap_scatter = None
+            norm_scatter = None
+            label_cbar = ""
+
+        sc = ax_scatter.scatter(
+            valid["priority_expansion_signals"],
+            valid["treasury_delta_next"],
+            c=colors_scatter,
+            cmap=cmap_scatter,
+            norm=norm_scatter,
+            alpha=0.5,
+            s=18,
+            edgecolors="none",
+        )
+        if cmap_scatter is not None:
+            cbar_sc = plt.colorbar(sc, ax=ax_scatter, shrink=0.8, pad=0.02)
+            cbar_sc.set_label(label_cbar, fontsize=7)
+            cbar_sc.ax.tick_params(labelsize=6)
+
+        # Trendlinie
+        try:
+            coeffs = NPoly.polyfit(
+                valid["priority_expansion_signals"].values,
+                valid["treasury_delta_next"].values,
+                deg=1,
+            )
+            x_trend = np.linspace(
+                valid["priority_expansion_signals"].min(),
+                valid["priority_expansion_signals"].max(), 50,
+            )
+            y_trend = NPoly.polyval(x_trend, coeffs)
+            ax_scatter.plot(
+                x_trend, y_trend, color="black", linewidth=1.2, alpha=0.5,
+                linestyle="--", label=f"Trend: y={coeffs[1]:+.1f}x+{coeffs[0]:+.0f}",
+            )
+            ax_scatter.legend(fontsize=7, loc="best", framealpha=0.7)
+        except Exception as e:
+            ax_scatter.text(0.5, 0.5, f"Trendlinie fehlgeschlagen: {e}",
+                           ha="center", va="center", transform=ax_scatter.transAxes,
+                           fontsize=7, color="gray")
+
+        ax_scatter.axhline(0, color="gray", linewidth=0.5, alpha=0.5)
+        ax_scatter.set_xlabel("Expansion Signals (pro Tag)", fontsize=9)
+        ax_scatter.set_ylabel("Treasury Δ am Folgetag", fontsize=9)
+        ax_scatter.set_title(
+            "D — Signals → Treasury-Änderung (Lead+1)\n"
+            "Rot=hoher Gini; steigt Treasury mit Signals?",
+            fontsize=9,
+        )
+        ax_scatter.yaxis.set_major_formatter(
+            mticker.FuncFormatter(lambda v, _: f"{v:,.0f}")
+        )
+        ax_scatter.grid(True, alpha=0.2)
+    else:
+        ax_scatter.text(
+            0.5, 0.5, "Zu wenig Daten für Scatter",
+            ha="center", va="center", transform=ax_scatter.transAxes,
+        )
+
+    # ── X-Achse für oberen Subplot-Row ────────────────────────────────
+    ax_st.set_xlabel("Game Day", fontsize=8)
+    ax_sg.set_xlabel("Game Day", fontsize=8)
+
+    fig.suptitle(
+        "Expansion Signals Analysis — PriorityRegistry-Druck vs Wirtschaftslage",
+        fontsize=13,
+        fontweight="bold",
+        y=1.01,
+    )
+    fig.tight_layout()
+    return fig
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="SyxEconomyMod Rebalancing Diagnostic Dashboard"
@@ -774,7 +1010,7 @@ def main():
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # ── Plot 1: Scarcity Heatmap ────────────────────────────────────────
-    print("[1/4] Resource Scarcity Heatmap …")
+    print("[1/6] Resource Scarcity Heatmap …")
     fig1, ax1 = plt.subplots(figsize=(16, 9))
     plot_scarcity_heatmap(df_res, ax=ax1, max_resources=args.max_resources)
     fig1.tight_layout()
@@ -784,7 +1020,7 @@ def main():
     print(f"      → {path1}")
 
     # ── Plot 2: Macro Trends ────────────────────────────────────────────
-    print("[2/4] Macro Trend Stacked …")
+    print("[2/6] Macro Trend Stacked …")
     fig2 = plot_macro_trends(df_macro)
     path2 = out_dir / "02_macro_trends.png"
     fig2.savefig(path2)
@@ -792,7 +1028,7 @@ def main():
     print(f"      → {path2}")
 
     # ── Plot 3: Price Drift ─────────────────────────────────────────────
-    print("[3/4] Anchor vs Market Price Drift …")
+    print("[3/6] Anchor vs Market Price Drift …")
     fig3 = plot_price_drift(df_res, top_n=9)
     path3 = out_dir / "03_price_drift.png"
     fig3.savefig(path3)
@@ -800,7 +1036,7 @@ def main():
     print(f"      → {path3}")
 
     # ── Plot 4: Gini vs Treasury ────────────────────────────────────────
-    print("[4/5] Gini vs Treasury …")
+    print("[4/6] Gini vs Treasury …")
     fig4 = plot_gini_treasury(df_macro)
     path4 = out_dir / "04_gini_vs_treasury.png"
     fig4.savefig(path4)
@@ -810,7 +1046,7 @@ def main():
     # ── Plot 5: Firm Profitability ─────────────────────────────────────
     df_firms = load_firms_data(args.dir)
     if df_firms is not None:
-        print("[5/5] Firm Profitability …")
+        print("[5/6] Firm Profitability …")
         print(f"Firms:   {len(df_firms)} Zeilen, {df_firms['blueprint'].nunique()} Blueprints")
         fig5 = plot_firm_profitability(df_firms)
         path5 = out_dir / "05_firm_profitability.png"
@@ -818,7 +1054,24 @@ def main():
         plt.close(fig5)
         print(f"      → {path5}")
     else:
-        print("[5/5] Firm Profitability … übersprungen (keine CSV)")
+        print("[5/6] Firm Profitability … übersprungen (keine CSV)")
+
+    # ── Plot 6: Expansion Signals vs Macro ────────────────────────────
+    has_macro_signals = "priority_expansion_signals" in df_macro.columns
+    has_firms_signals = df_firms is not None and "expansion_signals" in df_firms.columns
+
+    if has_macro_signals or has_firms_signals:
+        print("[6/6] Expansion Signals Analysis …")
+        fig6 = plot_expansion_signals_correlation(
+            df_macro, df_firms,
+            has_macro_col=has_macro_signals, has_firms_col=has_firms_signals,
+        )
+        path6 = out_dir / "06_expansion_signals.png"
+        fig6.savefig(path6)
+        plt.close(fig6)
+        print(f"      → {path6}")
+    else:
+        print("[6/6] Expansion Signals Analysis … übersprungen (Spalten fehlen — neuer Spiel-Lauf nötig)")
 
     print(f"\nFertig — {len(list(out_dir.glob('*.png')))} Plots in {out_dir.resolve()}/")
 

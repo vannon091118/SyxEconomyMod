@@ -146,6 +146,11 @@ def _match_exempt_pattern(path: str, patterns: list) -> Optional[str]:
 
 
 # ── Drift-Check (Punkt 3) ──────────────────────────────────────────────
+# Floor-Werte: verhindern false-positive BLOCKs wenn baseline.metric=0.
+# Ohne Floor ergibt 0 * (1+pct) = 0 Cap → jeder nicht-null Wert wird BLOCKED.
+_DRIFT_FLOOR = {'fields': 2, 'pubM': 1}
+
+
 def _check_drift(metrics: dict, legacy: dict, drift_cfg: dict) -> dict:
     reasons = []
     status = 'pass'
@@ -156,7 +161,7 @@ def _check_drift(metrics: dict, legacy: dict, drift_cfg: dict) -> dict:
             continue
         base = legacy[key]
         curr = metrics.get(key, 0)
-        cap = base * (1.0 + drift_cfg.get(pct_key, 0.10))
+        cap = max(base * (1.0 + drift_cfg.get(pct_key, 0.10)), _DRIFT_FLOOR.get(key, 0))
         drift_details[key] = {'baseline': base, 'current': curr, 'cap': round(cap, 1)}
         if curr > cap:
             pct_over = ((curr - cap) / cap) * 100 if cap > 0 else 0

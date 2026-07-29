@@ -92,6 +92,7 @@ public final class EconomySim {
     final ConstructionHoardController constructionHoardController;
     final WarehouseMarket warehouseMarket;
     final Escrow escrow = new Escrow(this.wallets);
+    final CrimeTheftConsumer theftConsumer = new CrimeTheftConsumer(this.wallets);
     final AffordabilityGate affordabilityGate = new AffordabilityGate(this.escrow, this.flowPrices, this.grainDole);
     final FoodPlanController foodPlanController;
     final PurchasePlanController purchasePlanController;

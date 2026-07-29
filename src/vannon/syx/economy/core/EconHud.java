@@ -42,9 +42,9 @@ public final class EconHud {
         }
         if (economy == null) return;
 
-        // Render HUD panel at fixed position top-right
+        // Render HUD panel at fixed position top-right (but below minimap)
         int x = C.WIDTH() - 210;
-        int y = 40;
+        int y = 152; // below minimap (~148px)
 
         String[] texts = {
             "Finanzen: " + (economy.treasury() >= 0 ? "OK" : "ROT"),

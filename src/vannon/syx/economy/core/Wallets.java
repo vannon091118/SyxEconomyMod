@@ -422,6 +422,15 @@ public final class Wallets {
         return sum;
     }
 
+    /** Summe der Estates von ausgewanderten Bürgern deren Slot noch nicht gesweept wurde. */
+    public long pendingEstates() {
+        long sum = 0L;
+        for (int i = 0; i < this.pendingDepartures.size(); ++i) {
+            sum += (long)this.pendingDepartures.get(i).estate;
+        }
+        return sum;
+    }
+
     public void reset() {
         Arrays.fill(this.owner, -1);
         Arrays.fill(this.money, 0);

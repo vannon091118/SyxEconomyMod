@@ -95,6 +95,9 @@ final class EconomyTickOrchestrator {
         sim.encounterCarry -= (double) n;
         if (n > 0) {
             source.encounters(sim.roster, n, sim.exchange);
+            if (EconConfig.crimeTheftEnabled) {
+                source.encounters(sim.roster, n, sim.theftConsumer);
+            }
         }
         if (EconConfig.checkConservation) {
             long after = EconomyAuditEngine.totalLiving(sim);

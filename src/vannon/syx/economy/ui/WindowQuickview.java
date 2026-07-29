@@ -38,7 +38,7 @@ public final class WindowQuickview extends EconWindowBase {
     @Override
     protected void position(GuiSection root) {
         Rec b = (Rec) root.body();
-        b.moveX1Y1(C.WIDTH() - 380 - 360, 80);
+        b.moveX1Y1(C.WIDTH() - 380 - 360, 152); // below minimap
     }
 
     @Override

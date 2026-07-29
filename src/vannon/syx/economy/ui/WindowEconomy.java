@@ -46,12 +46,16 @@ public final class WindowEconomy extends EconWindowBase {
 
     @Override
     protected int anchorX() {
-        return C.WIDTH() - panelWidth() - 8; // top-right fixed
+        return C.WIDTH() - panelWidth() - 8; // top-right justified horizontal
     }
 
     @Override
     protected int anchorY() {
-        return 48; // just below UIPanelTop
+        // RES-UI-MINIMAP: anschliessend an typische Songs-of-Syx-Minimap-Zone
+        // 252x252 oben rechts. anchorX ist WIDTH-848 (rechtsbuendig), aber
+        // der Y-Anker muss unter die Minimap rutschen, sonst verdeckt die
+        // Wirtschaft-Tafel die Minimap (U-IM-01).
+        return 296; // 252 Minimap + 28 Puffer + 16 Sicherheitsabstand zu UIPanelTop
     }
 
     @Override
@@ -496,11 +500,26 @@ public final class WindowEconomy extends EconWindowBase {
             y += 20;
 
             long circulating = sim.wallets().circulating();
-            long discrepancy = treasury + circulating;
+            long pendingEst = sim.wallets().pendingEstates();
+            long totalCreated = sim.seedSupply() + sim.imported() - sim.exported();
+            long totalNow = treasury + circulating + pendingEst;
+            long discrepancy = totalCreated - totalNow;
+
+            addKpi(content, x, y, "Geldmenge erstellt", CompactNumber.format(totalCreated) + " D", GCOLOR.T().NORMAL);
+            addKpi(content, x + 380, y, "Geldmenge heute", CompactNumber.format(totalNow) + " D", GCOLOR.T().NORMAL);
+            y += 30;
+
             GText sanity = new GText(UI.FONT().M, FONTW_BODY);
-            sanity.set("Kasse + Umlauf = " + CompactNumber.format(discrepancy) + " D");
-            sanity.color(Math.abs(discrepancy) < 1000 ? GCOLOR.UI().GOOD.normal : GCOLOR.UI().SOSO.normal);
+            sanity.set("Diskrepanz (erstellt − heute) = " + CompactNumber.format(discrepancy) + " D");
+            sanity.color(Math.abs(discrepancy) < 1000 ? GCOLOR.UI().GOOD.normal : GCOLOR.UI().BAD.normal);
             content.add(sanity, x, y);
+            y += 16;
+
+            GText detail = new GText(UI.FONT().S, FONTW_BODY);
+            detail.set("Kasse " + CompactNumber.format(treasury) + " + Umlauf " + CompactNumber.format(circulating)
+                + " + Pendings " + CompactNumber.format(pendingEst) + " = " + CompactNumber.format(totalNow));
+            detail.color(GCOLOR.T().INACTIVE);
+            content.add(detail, x, y);
             y += 24;
 
             // Event-Chronik

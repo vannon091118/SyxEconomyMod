@@ -96,7 +96,17 @@ public final class DiagnosticExporter {
             "housing_rent_last_tick", "housing_rent_due_last_tick", "housing_evictions_last_tick",
             "property_sales", "property_dividends",
             "food_basket_price", "food_days",
-            "priority_expansion_signals"
+            "priority_expansion_signals",
+            "thefts_today", "stolen_today", "theft_reports_sent",
+            // Sprint v0.13.102+: Adaptive-Crime-Faktoren + Arena-Straf-Counter.
+            // moneyFactor / guardFactor sind die Multiplikatoren, die zum
+            // End-of-Day auf die Basis-Chance angewendet wurden. arena_sentences_today
+            // zaehlt Per-Class-Policy-Switches auf PUNISHMENT.ARENA.
+            "theft_money_factor", "theft_guard_factor", "arena_sentences_today",
+            // RES-035 — Allocation-Path-Hook Aggregates (read+zero via
+            // FirmLedger.drainAllocationCounters() am Tagesende).
+            "alloc_target_init", "alloc_divergence", "alloc_payroll_dist",
+            "alloc_priority_write", "alloc_player_override", "alloc_hill_step"
     };
 
     private static final String[] RESOURCE_HEADER = {
@@ -110,9 +120,14 @@ public final class DiagnosticExporter {
 
     private static final String[] FIRM_HEADER = {
             "game_day", "season", "blueprint", "employees", "employed_target",
+            // RES-035: max_capacity + hard_target eingefügt. Damit ist in einer
+            // Zeile sichtbar: employed=6 von max=45, employed_target=45, hardTarget=6
+            // → Engine-Cap verhindert Skalierung über hard_target. Smoking-Gun.
+            "max_capacity", "hard_target",
             "profit_per_day", "marginal_per_worker", "income_carry",
             "total_output_value_per_day", "total_input_value_per_day",
-            "last_income_due", "last_income_paid", "workers_unpaid", "stuck_seconds"
+            "last_income_due", "last_income_paid", "workers_unpaid", "stuck_seconds",
+            "expansion_signals"
     };
 
     /** Single-thread Executor — hält Reihenfolge ein und entkoppelt Disk-IO vom Tick. */
@@ -172,88 +187,62 @@ public final class DiagnosticExporter {
         // Snapshot-Phasen ab hier: ALLES in try/catch — ein mid-engine Refresh-Crash
         // darf den Tick-Loop NIE stoppen. Bei Fehler: Tag verwerfen, nächster Tag
         // versucht es erneut (volatile lastExportedDay ist bereits gesetzt).
-        String macroRow;
+        EconDaySnapshot snap = null;
         StringBuilder resourceRows;
         StringBuilder firmsRows;
         try {
-            // Snapshot alles auf dem Main-Thread — FlowMeter.snapshot() klont bereits
-            FlowMeter.Snapshot flow = sim.flowMeter().snapshot();
-            // latest() returnt null wenn noch kein Snapshot existiert → einfach akzeptieren.
-            EconSnapshot snap = sim.econIndicators().latest();
-            WealthStats stats = sim.stats();
-            WarehouseMarket whMarket = sim.warehouseMarket();
-
-            // Makro-Werte (primitive snapshots, danach nicht mehr von anderen Threads angefasst)
-            // Read + reset daily counter BEFORE snapshot completes (Main-Thread). No race:
-            // FirmSizing.size() also runs on Main-Thread so signals are final by now.
-            int expansionSignals = FirmSizing.priorityExpansionSignalsThisDay;
-            FirmSizing.priorityExpansionSignalsThisDay = 0;
-
-            macroRow = formatMacroRow(
-                    day, season,
-                    sim.roster().size(), sim.deaths(), sim.emigrations(), sim.inherited(), sim.heirless(),
-                    stats.gini, stats.median, stats.mean, stats.max,
-                    sim.treasury(), sim.wallets().circulating(), sim.seedSupply(), sim.auditDelta(),
-                    sim.laborMarket().meanWage(), actualMeanWage(snap), wageShare(snap), unpaidRatio(snap),
-                    sim.fiscal().headTaxCollected(), sim.fiscal().marketReceipts(),
-                    sim.fiscal().rationOut(), sim.wagesPaid(),
-                    whMarket.lastBought(), whMarket.lastSold(),
-                    // HousingRent: per-Tick-Snapshot — season-tick zeigt reale Werte, sonst 0.
-                    // Zusammen mit lastRentDue() zeigt das CSV Soll/Ist-Gap (Miet-Schulden-Krise).
-                    sim.housingMarket().lastRentCollected(), sim.housingMarket().lastRentDue(),
-                    sim.housingMarket().lastEvictions(),
-                    sim.propertySalesCollected(), sim.propertyDividendsPaid(),
-                    LocalPrices.flowFoodBasketPrice(), LocalPrices.foodDays(),
-                    expansionSignals
-            );
-
-            float[] anchors = new float[RESOURCES.ALL().size()];
-            for (int i = 0; i < anchors.length; ++i) {
-                RESOURCE r = (RESOURCE) RESOURCES.ALL().get(i);
-                anchors[i] = (float) sim.flowPrices().anchor(i);
-            }
+            // ── ATOMIC CAPTURE — Res-011 ──────────────────────────────
+            // Vorher: 25+ separate sim.*()-Calls verteilt ueber die Funktion.
+            // Jetzt: ein einziger Block in EconDaySnapshot.capture() mach alle
+            // Live-Reads + Counter-Drains zusammen. Nach Rueckgabe KEINE
+            // weiteren Live-Reads mehr — alles aus snap.*() abgeleitet.
+            snap = EconDaySnapshot.capture(sim);
+            // Destructure favouriert ~no fields here; consumers use snap.*().
 
             resourceRows = new StringBuilder(1024);
-            int resourceCount = flow.size();
+            int resourceCount = snap.flowSnapshot().size();
+            float[] anchors = snap.anchors();
+            int resourcesAllSize = RESOURCES.ALL().size();
             for (int i = 0; i < resourceCount; ++i) {
-                if (i >= flow.size()) break;
+                if (i >= snap.flowSnapshot().size()) break;
                 float anchor = i < anchors.length ? anchors[i] : 0f;
-                int market = sim.flowPrices().priceRoundedUp(i);
-                double coverage = sim.flowPrices().coverage(i);
-                double supply = flow.supplyPerDay(i);
-                double demand = flow.demandPerDay(i);
-                double stock = flow.stock(i);
+                // Res-011: marketPrice und coverage kommen aus dem atomaren Snapshot
+                // (kein Live-Read mehr in dieser Schleife).
+                int market = i < snap.marketPrices().length ? snap.marketPrices()[i] : 0;
+                double coverage = i < snap.coverages().length ? snap.coverages()[i] : 0.0;
+                double supply = snap.flowSnapshot().supplyPerDay(i);
+                double demand = snap.flowSnapshot().demandPerDay(i);
+                double stock = snap.flowSnapshot().stock(i);
                 // Sentinel -1.0 wenn kein Bedarf. Pandas: values >= 0 filtern.
                 double daysOfSupply = demand <= 0.0 ? -1.0 : stock / demand;
                 int starving = (demand > 0.0 && daysOfSupply < 3.0) ? 1 : 0;
-                String resourceName = i < RESOURCES.ALL().size()
+                String resourceName = i < resourcesAllSize
                         ? ((RESOURCE) RESOURCES.ALL().get(i)).key
                         : ("idx_" + i);
-                resourceRows.append(formatResourceRow(day, season, resourceName,
+                resourceRows.append(formatResourceRow(snap.day(), snap.season(), resourceName,
                         anchor, market, coverage, supply, demand, stock, daysOfSupply, starving));
 
                 // DC-01: Summary-Change-Detection pro Resource
-                detectResourceChanges(day, resourceName, anchor, market, coverage,
+                detectResourceChanges(snap.day(), resourceName, anchor, market, coverage,
                         supply, demand, stock, daysOfSupply, starving);
             }
 
-            // ── Firmen-Daten ──────────────────────────────────────────
+            // ── Firmen-Daten aus gecachtem snap.signalsByBlueprint()
             firmsRows = new StringBuilder(1024);
             FirmLedger ledger = sim.firmLedger();
             if (ledger != null) {
                 for (FirmLedger.FirmFinancialSnapshot firm : ledger.firmFinancialSnapshots()) {
-                    firmsRows.append(formatFirmRow(day, season, firm));
+                    int firmSignals = snap.signalsByBlueprint().getOrDefault(firm.blueprint(), 0);
+                    firmsRows.append(formatFirmRow(snap.day(), snap.season(), firm, firmSignals));
                 }
             }
 
-            // ── Hard-Threshold Rebalance-Alerts ────────────────────────
-            // Loggen [REBALANCE] in EventLog wenn kritische Schwellen
-            // überschritten werden. Nur bei Erstüberschreitung oder
-            // signifikanter Verschlechterung (>10%) — kein Spam.
-            checkRebalanceAlerts(stats.gini, sim.auditDelta(), day);
-
-            // DC-01: Macro-Summary-Change-Detection
-            detectMacroChanges(day, sim, stats);
+            // Hard-Threshold Rebalance-Alerts + Macro-Summary-Change-Detection
+            // lesen Werte aus dem Snapshot — keine live sim.*()-Calls hier.
+            // detectMacroChanges(sim-Arg) braucht sim nur für Progression().stage;
+            // WealthStats kommt aus snap.stats(). Kein Re-Read von stats.*()-Feldern mehr.
+            checkRebalanceAlerts(snap.gini(), snap.auditDelta(), snap.day());
+            detectMacroChanges(snap.day(), sim, snap.stats());
         } catch (RuntimeException t) {
             System.err.println("[ECON] DiagnosticExport snapshot failed for day " + day
                     + ": " + t.getClass().getSimpleName() + ": " + t.getMessage());
@@ -270,7 +259,9 @@ public final class DiagnosticExporter {
         }
 
         // Hintergrund-Thread übernimmt Disk-IO. Kein Capture von "this" oder Live-Objekten.
-        final String macroRowFinal = macroRow;
+        // Res-011: macroRow wird JETZT aus dem atomaren Snapshot gebaut —
+        // formatMacroRow(snap) liest ausschließlich snap.*()-Felder, KEIN live sim.*()-Call.
+        final String macroRowFinal = formatMacroRow(snap);
         final StringBuilder resourceRowsFinal = resourceRows;
         final StringBuilder firmsRowsFinal = firmsRows;
         final String ioRowsFinal = ioRows;
@@ -282,8 +273,8 @@ public final class DiagnosticExporter {
                 LoggingAdapter.Subsystem.ECON,
                 LoggingAdapter.Severity.INFO,
                 "diag_export",
-                String.valueOf(day),
-                "macro=" + (macroRow != null && !macroRow.isEmpty() ? "1" : "0")
+                String.valueOf(snap.day()),
+                "macro=" + (!macroRowFinal.isEmpty() ? "1" : "0")
                         + " resources=" + resourceRows.length()
                         + " firms=" + firmsRows.length());
     }
@@ -397,29 +388,179 @@ public final class DiagnosticExporter {
         return sb.toString();
     }
 
-    private static String formatMacroRow(long day, int season, int pop, int deaths, int emig, int inherited, int heirless,
-                                          double gini, int median, double mean, int max,
-                                          long treasury, long totalMoney, long seedMoney, long auditDelta,
-                                          double meanWage, double actualWage, double wageShare, double unpaidRatio,
-                                          long headTax, long marketRecpts, long rationOut, long wagesPaid,
-                                          long whBought, long whSold,
-                                          long housingRentCollected, long housingRentDue, long housingEvictions,
-                                          long propertySales, long propertyDiv,
-                                          int foodBasket, double foodDays,
-                                          int priorityExpansionSignals) {
+    // ═══════════════════════════════════════════════════════
+    // Res-011 — Atomic EconDaySnapshot.
+    //
+    // Vor diesem Record hatte exportDay() 25+ separate sim.*()-Aufrufe über die
+    // Funktion verteilt (treasury, deaths, fiscal.headTaxCollected,
+    // wallets.circulating …). Die CSV-Zeile war damit eine Kette von Live-Werten,
+    // die zusammen nie existiert haben — Treasury konnte sich zwischen dem ersten
+    // und letzten Read ändern, die Reihe war inkohärent.
+    //
+    // Lösung: ein einziger Record, dessen Felder ALLE an einer einzigen Stelle
+    // gefüllt werden. Nach {@link #capture} darf die CSV-Zeile AUSSCHLIESSLICH
+    // {@code snap.*()-Felder lesen — keine weiteren Live-Reads.
+    //
+    // Drain-Semantik: die drei Counter-Drains (priorityExpansionSignals,
+    // CrimeTheftConsumer.drainCounters, FirmLedger.drainAllocationCounters) sind
+    // Teil von {@code capture()} — read+zero in derselben Transaktion.
+    // ═══════════════════════════════════════════════════════
+    /** Atomarer Tages-Snapshot. Feldreihenfolge = formatMacroRow(snap)-Argumentfolge.
+     *
+     *  <p>Res-011: Vor diesem Record hatte exportDay() 25+ separate sim.*()-Calls.
+     *  Diese Klasse sammelt ALLE Werte an einer Stelle. Nach {@link #capture} darf
+     *  der CSV-Format-Code AUSSCHLIESSLICH {@code snap.*()} lesen — keine Live-Reads.</p>
+     *
+     *  <p>Bewusst NICHT umbenannt zu {@code EconSnapshot}, weil es im Codebase schon
+     *  {@link EconSnapshot} (in EconIndicators) als Resource-Preise-Trend-Snapshot
+     *  gibt — semantisch unterschiedlich, würde Verwirrung stiften.</p>
+     */
+    private static record EconDaySnapshot(
+            long day, int season,
+            int pop, int deaths, int emigrations, int inherited, int heirless,
+            double gini, int median, double mean, int max,
+            long treasury, long totalMoney, long seedMoney, long auditDelta,
+            double meanWage, double actualMeanWage, double wageShare, double unpaidRatio,
+            long headTax, long marketRecpts, long rationOut, long wagesPaid,
+            long whBought, long whSold,
+            long housingRentCollected, long housingRentDue, long housingEvictions,
+            long propertySales, long propertyDividends,
+            int foodBasketPrice, double foodDays,
+            int priorityExpansionSignals,
+            int theftsToday, long stolenToday, int theftReports,
+            // Sprint v0.13.102+: Adaptive Crime — Money+Guard-Faktor als CSV-Spalten,
+            // Arena-Straf-Counter. Faktoren werden am End-of-Day berechnet und
+            // spiegeln den aggregierten Zustand (gleiche Formel wie CrimeTheftConsumer.pair).
+            double theftMoneyFactor, double theftGuardFactor, int arenaSentences,
+            long[] allocCounters,                       // 6: targetInit[0], divergence[1], payroll[2], priority[3], player[4], hill[5]
+            Map<String, Integer> signalsByBlueprint,   // Per-Blueprint-Expansion-Hints
+            FlowMeter.Snapshot flowSnapshot,           // gecachte Resource-Versorgungs-Snapshot
+            float[] anchors,                            // Anchor-Preise pro Resource (RESOURCES.ALL().size())
+            int[] marketPrices,                         // Lokale Marktpreise pro Resource (sim.flowPrices().priceRoundedUp)
+            double[] coverages,                          // Coverage pro Resource (sim.flowPrices().coverage)
+            WealthStats stats                           // Vermögens-Verteilung, wird vom Caller mitgepinnt
+    ) {
+        /**
+         * Capture-Block: alle Live-Reads + Counter-Drains in EINEM Aufruf.
+         * Reihenfolge der Drains ist relevant — sie müssen VOR allen Live-Reads passieren
+         * damit der Wert im Record = Wert zum Drain-Zeitpunkt ist.
+         */
+        static EconDaySnapshot capture(EconomySim sim) {
+            // ── Daily Counters (read+zero) ───────────────────────────────
+            int expSignals = FirmSizing.priorityExpansionSignalsThisDay;
+            FirmSizing.priorityExpansionSignalsThisDay = 0;
+            Map<String, Integer> sigsByBp =
+                    new HashMap<>(FirmSizing.priorityExpansionSignalsByBlueprint);
+            FirmSizing.priorityExpansionSignalsByBlueprint.clear();
+            FirmSizing.escapeCliffLoggedToday.clear();
+
+            int[] thefts = CrimeTheftConsumer.drainCounters();
+            long[] allocCounters = FirmLedger.drainAllocationCounters();
+
+            // ── Adaptive-Crime-Faktoren (Sprint v0.13.102+) ─────────────────
+            // moneyFactor = 1.0 + (1 − coverage) × strength, coverage = totalMoney / (pop × refWealth).
+            // guardFactor = 1.0 + (1 − guardRatio) × strength. Diagnostics-Snapshot
+            // braucht End-of-Day-Werte für die CSV-Spalten — nicht die per-pair-Werte.
+            // Greift auf dieselben EconConfig-Flags zu wie CrimeTheftConsumer.pair().
+            // ── Adaptive-Crime-Faktoren (Sprint v0.13.102+) ─────────────────
+            // Delegation an CrimeTheftConsumer.computeMoneyFactor + computeGuardFactor —
+            // DRY mit pair(). Diagnostics-Snapshot braucht End-of-Day-Werte.
+            double totalMoney = sim.wallets() != null ? sim.wallets().circulating() : 0L;
+            double moneyFactor = CrimeTheftConsumer.computeMoneyFactor(totalMoney, sim.roster().size());
+
+            double guardRatioLive = 0.0;
+            boolean guardsAvailable = false;
+            try {
+                int totalPop = settlement.stats.STATS.POP().pop((init.race.Race) null, null);
+                int guardCount = settlement.stats.STATS.POP().pop(
+                        (init.race.Race) null, init.type.HTYPES.GUARD());
+                if (totalPop > 0) {
+                    guardRatioLive = (double) guardCount / totalPop;
+                    guardsAvailable = true;
+                }
+            } catch (Throwable t) { /* Engine not ready */ }
+            double guardFactor = CrimeTheftConsumer.computeGuardFactor(guardRatioLive, guardsAvailable);
+
+            // ── Live-Reads: alle Sim-Werte in einem Block ─────────────────
+            WealthStats stats = sim.stats();
+            WarehouseMarket wh = sim.warehouseMarket();
+            EconSnapshot recent =
+                    sim.econIndicators() != null ? sim.econIndicators().latest() : null;
+            long day = sim.ticks() / (long) TIME.secondsPerDay();
+
+            // Anchor- + Markt- + Coverage-Preise vorab cachen
+            // (verhindert erneute sim.flowPrices()-Calls in der Resource-Zeilen-Schleife).
+            // Res-011 Issue 3: damit ist die gesamte CSV-Zeile aus dem Snapshot
+            // ableitbar — KEINE Live-Reads mehr außerhalb von capture().
+            int resourcesAllSize = RESOURCES.ALL().size();
+            float[] anchors = new float[resourcesAllSize];
+            int[] marketPrices = new int[resourcesAllSize];
+            double[] coverages = new double[resourcesAllSize];
+            for (int i = 0; i < resourcesAllSize; ++i) {
+                RESOURCE r = (RESOURCE) RESOURCES.ALL().get(i);
+                anchors[i] = (float) sim.flowPrices().anchor(i);
+                marketPrices[i] = sim.flowPrices().priceRoundedUp(i);
+                coverages[i] = sim.flowPrices().coverage(i);
+            }
+
+            return new EconDaySnapshot(
+                    day, (int) (day % 4L),
+                    sim.roster().size(), sim.deaths(), sim.emigrations(),
+                    sim.inherited(), sim.heirless(),
+                    stats.gini, stats.median, stats.mean, stats.max,
+                    sim.treasury(), sim.wallets().circulating(),
+                    sim.seedSupply(), sim.auditDelta(),
+                    sim.laborMarket().meanWage(),
+                    recent != null ? recent.actualMeanWage : 0.0,
+                    recent != null ? recent.wageShare : 0.0,
+                    recent != null ? recent.unpaidRatio : 0.0,
+                    sim.fiscal().headTaxCollected(), sim.fiscal().marketReceipts(),
+                    sim.fiscal().rationOut(), sim.wagesPaid(),
+                    wh.lastBought(), wh.lastSold(),
+                    sim.housingMarket().lastRentCollected(),
+                    sim.housingMarket().lastRentDue(),
+                    sim.housingMarket().lastEvictions(),
+                    sim.propertySalesCollected(), sim.propertyDividendsPaid(),
+                    LocalPrices.flowFoodBasketPrice(), LocalPrices.foodDays(),
+                    expSignals,
+                    thefts[0], thefts[2], thefts[1],
+                    moneyFactor, guardFactor, thefts[3],
+                    allocCounters, sigsByBp,
+                    sim.flowMeter().snapshot(),
+                    anchors, marketPrices, coverages,
+                    stats
+            );
+        }
+    }
+
+    /** Snapshot-basierte formatMacroRow-Overload. KEINE Live-Reads — alle Werte
+     *  aus dem atomic snapshot. Field-Reihenfolge identisch mit MACRO_HEADER. */
+    private static String formatMacroRow(EconDaySnapshot snap) {
         StringBuilder s = new StringBuilder(512);
-        s.append(day).append(',').append(season).append(',')
-                .append(pop).append(',').append(deaths).append(',').append(emig).append(',').append(inherited).append(',').append(heirless).append(',')
-                .append(fmt(gini, 4)).append(',').append(median).append(',').append(fmt(mean, 2)).append(',').append(max).append(',')
-                .append(treasury).append(',').append(totalMoney).append(',').append(seedMoney).append(',').append(auditDelta).append(',')
-                .append(fmt(meanWage, 2)).append(',').append(fmt(actualWage, 2)).append(',')
-                .append(fmt(wageShare, 4)).append(',').append(fmt(unpaidRatio, 4)).append(',')
-                .append(headTax).append(',').append(marketRecpts).append(',').append(rationOut).append(',')
-                .append(wagesPaid).append(',').append(whBought).append(',').append(whSold).append(',')
-                .append(housingRentCollected).append(',').append(housingRentDue).append(',').append(housingEvictions).append(',')
-                .append(propertySales).append(',').append(propertyDiv).append(',')
-                .append(foodBasket).append(',').append(fmt(foodDays, 2)).append(',')
-                .append(priorityExpansionSignals);
+        s.append(snap.day()).append(',').append(snap.season()).append(',')
+                .append(snap.pop()).append(',').append(snap.deaths()).append(',').append(snap.emigrations())
+                .append(',').append(snap.inherited()).append(',').append(snap.heirless()).append(',')
+                .append(fmt(snap.gini(), 4)).append(',').append(snap.median())
+                .append(',').append(fmt(snap.mean(), 2)).append(',').append(snap.max()).append(',')
+                .append(snap.treasury()).append(',').append(snap.totalMoney())
+                .append(',').append(snap.seedMoney()).append(',').append(snap.auditDelta()).append(',')
+                .append(fmt(snap.meanWage(), 2)).append(',').append(fmt(snap.actualMeanWage(), 2)).append(',')
+                .append(fmt(snap.wageShare(), 4)).append(',').append(fmt(snap.unpaidRatio(), 4)).append(',')
+                .append(snap.headTax()).append(',').append(snap.marketRecpts()).append(',').append(snap.rationOut()).append(',')
+                .append(snap.wagesPaid()).append(',').append(snap.whBought()).append(',').append(snap.whSold()).append(',')
+                .append(snap.housingRentCollected()).append(',').append(snap.housingRentDue())
+                .append(',').append(snap.housingEvictions()).append(',')
+                .append(snap.propertySales()).append(',').append(snap.propertyDividends()).append(',')
+                .append(snap.foodBasketPrice()).append(',').append(fmt(snap.foodDays(), 2)).append(',')
+                .append(snap.priorityExpansionSignals()).append(',')
+                .append(snap.theftsToday()).append(',').append(snap.stolenToday())
+                .append(',').append(snap.theftReports()).append(',')
+                .append(fmt(snap.theftMoneyFactor(), 3)).append(',').append(fmt(snap.theftGuardFactor(), 3))
+                .append(',').append(snap.arenaSentences()).append(',')
+                .append(snap.allocCounters()[0]).append(',').append(snap.allocCounters()[1])
+                .append(',').append(snap.allocCounters()[2])
+                .append(',').append(snap.allocCounters()[3]).append(',').append(snap.allocCounters()[4])
+                .append(',').append(snap.allocCounters()[5]);
         return s.toString();
     }
 
@@ -437,12 +578,17 @@ public final class DiagnosticExporter {
         return s.toString();
     }
 
-    private static String formatFirmRow(long day, int season, FirmLedger.FirmFinancialSnapshot firm) {
+    private static String formatFirmRow(long day, int season, FirmLedger.FirmFinancialSnapshot firm, int expansionSignals) {
         StringBuilder s = new StringBuilder(200);
         s.append(day).append(',').append(season).append(',')
                 .append(csvEsc(firm.blueprint())).append(',')
                 .append(firm.employees()).append(',')
                 .append(firm.employedTarget()).append(',')
+                // RES-035: max_capacity + hard_target eingefügt. Smoking-Gun-Lesart:
+                // employees=6, employed_target=45, max_capacity=45, hard_target=6
+                // → Engine-Cap unter unserem Wunsch-Target. Genau der Allokations-Bug.
+                .append(firm.maxCapacity()).append(',')
+                .append(firm.hardTarget()).append(',')
                 .append(fmt(firm.profitPerDay(), 2)).append(',')
                 .append(fmt(firm.marginalPerWorker(), 4)).append(',')
                 .append(fmt(firm.incomeCarry(), 2)).append(',')
@@ -451,7 +597,8 @@ public final class DiagnosticExporter {
                 .append(firm.lastIncomeDue()).append(',')
                 .append(firm.lastIncomePaid()).append(',')
                 .append(firm.workersUnpaid()).append(',')
-                .append(firm.stuckSeconds()).append('\n');
+                .append(firm.stuckSeconds()).append(',')
+                .append(expansionSignals).append('\n');
         return s.toString();
     }
 
