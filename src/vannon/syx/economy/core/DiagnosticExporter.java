@@ -98,6 +98,11 @@ public final class DiagnosticExporter {
             "food_basket_price", "food_days",
             "priority_expansion_signals",
             "thefts_today", "stolen_today", "theft_reports_sent",
+            // Sprint v0.13.102+: Adaptive-Crime-Faktoren + Arena-Straf-Counter.
+            // moneyFactor / guardFactor sind die Multiplikatoren, die zum
+            // End-of-Day auf die Basis-Chance angewendet wurden. arena_sentences_today
+            // zaehlt Per-Class-Policy-Switches auf PUNISHMENT.ARENA.
+            "theft_money_factor", "theft_guard_factor", "arena_sentences_today",
             // RES-035 — Allocation-Path-Hook Aggregates (read+zero via
             // FirmLedger.drainAllocationCounters() am Tagesende).
             "alloc_target_init", "alloc_divergence", "alloc_payroll_dist",
@@ -423,6 +428,10 @@ public final class DiagnosticExporter {
             int foodBasketPrice, double foodDays,
             int priorityExpansionSignals,
             int theftsToday, long stolenToday, int theftReports,
+            // Sprint v0.13.102+: Adaptive Crime — Money+Guard-Faktor als CSV-Spalten,
+            // Arena-Straf-Counter. Faktoren werden am End-of-Day berechnet und
+            // spiegeln den aggregierten Zustand (gleiche Formel wie CrimeTheftConsumer.pair).
+            double theftMoneyFactor, double theftGuardFactor, int arenaSentences,
             long[] allocCounters,                       // 6: targetInit[0], divergence[1], payroll[2], priority[3], player[4], hill[5]
             Map<String, Integer> signalsByBlueprint,   // Per-Blueprint-Expansion-Hints
             FlowMeter.Snapshot flowSnapshot,           // gecachte Resource-Versorgungs-Snapshot
@@ -447,6 +456,30 @@ public final class DiagnosticExporter {
 
             int[] thefts = CrimeTheftConsumer.drainCounters();
             long[] allocCounters = FirmLedger.drainAllocationCounters();
+
+            // ── Adaptive-Crime-Faktoren (Sprint v0.13.102+) ─────────────────
+            // moneyFactor = 1.0 + (1 − coverage) × strength, coverage = totalMoney / (pop × refWealth).
+            // guardFactor = 1.0 + (1 − guardRatio) × strength. Diagnostics-Snapshot
+            // braucht End-of-Day-Werte für die CSV-Spalten — nicht die per-pair-Werte.
+            // Greift auf dieselben EconConfig-Flags zu wie CrimeTheftConsumer.pair().
+            // ── Adaptive-Crime-Faktoren (Sprint v0.13.102+) ─────────────────
+            // Delegation an CrimeTheftConsumer.computeMoneyFactor + computeGuardFactor —
+            // DRY mit pair(). Diagnostics-Snapshot braucht End-of-Day-Werte.
+            double totalMoney = sim.wallets() != null ? sim.wallets().circulating() : 0L;
+            double moneyFactor = CrimeTheftConsumer.computeMoneyFactor(totalMoney, sim.roster().size());
+
+            double guardRatioLive = 0.0;
+            boolean guardsAvailable = false;
+            try {
+                int totalPop = settlement.stats.STATS.POP().pop((init.race.Race) null, null);
+                int guardCount = settlement.stats.STATS.POP().pop(
+                        (init.race.Race) null, init.type.HTYPES.GUARD());
+                if (totalPop > 0) {
+                    guardRatioLive = (double) guardCount / totalPop;
+                    guardsAvailable = true;
+                }
+            } catch (Throwable t) { /* Engine not ready */ }
+            double guardFactor = CrimeTheftConsumer.computeGuardFactor(guardRatioLive, guardsAvailable);
 
             // ── Live-Reads: alle Sim-Werte in einem Block ─────────────────
             WealthStats stats = sim.stats();
@@ -491,6 +524,7 @@ public final class DiagnosticExporter {
                     LocalPrices.flowFoodBasketPrice(), LocalPrices.foodDays(),
                     expSignals,
                     thefts[0], thefts[2], thefts[1],
+                    moneyFactor, guardFactor, thefts[3],
                     allocCounters, sigsByBp,
                     sim.flowMeter().snapshot(),
                     anchors, marketPrices, coverages,
@@ -521,6 +555,8 @@ public final class DiagnosticExporter {
                 .append(snap.priorityExpansionSignals()).append(',')
                 .append(snap.theftsToday()).append(',').append(snap.stolenToday())
                 .append(',').append(snap.theftReports()).append(',')
+                .append(fmt(snap.theftMoneyFactor(), 3)).append(',').append(fmt(snap.theftGuardFactor(), 3))
+                .append(',').append(snap.arenaSentences()).append(',')
                 .append(snap.allocCounters()[0]).append(',').append(snap.allocCounters()[1])
                 .append(',').append(snap.allocCounters()[2])
                 .append(',').append(snap.allocCounters()[3]).append(',').append(snap.allocCounters()[4])

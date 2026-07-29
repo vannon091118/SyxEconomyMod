@@ -626,6 +626,25 @@ public final class EconConfig {
      *  die gesamte Filterung an vanilla. Bei 0.5 wäre die effektive Rate 25%. */
     public static double crimeTheftReportChance = 1.0;
 
+    // ── Adaptive Crime Faktoren (Sprint v0.13.102+) ──────────────────────
+    /** Stärke des Geld-Faktors (Armut treibt Kriminalität). 0.0 = deaktiviert.
+     *  moneyFactor = 1.0 + (1.0 - coverage) × strength, coverage = totalMoney / (pop × referenceWealth). */
+    public static double crimeTheftMoneyFactorStrength = 2.0;
+    /** Referenz-Vermögen pro Bürger für 100% Coverage (neutraler Faktor). 500 D = Sub-Wohlstand. */
+    public static int crimeTheftReferenceWealth = 500;
+    /** Stärke des Guard-Faktors (Weniger Miliz = mehr Krim). 0.0 = deaktiviert.
+     *  guardFactor = 1.0 + (1.0 - guardRatio) × strength. Bei 0% Guards verdreifacht sich die Chance. */
+    public static double crimeTheftGuardFactorStrength = 2.0;
+
+    // ── Arena-Abschreckung (Sprint v0.13.102+) ─────────────────────────
+    /** Aktiviert die Zwangs-Zuweisung zur Arena für Wiederholungstäter.
+     *  Per-class/race-policy via STATS.LAW().punishmentSet() — setzt policy auf
+     *  PUNISHMENT.ARENA sodass vanilla's PrisonerAI den Delinquenten in die nächste
+     *  verfügbare Arena routet (ExecuteArena + reserveDeath). */
+    public static boolean crimeTheftArenaEnabled = true;
+    /** Anzahl der Diebstähle, bevor der Bürger zwingend in die Arena geschickt wird. */
+    public static int crimeTheftArenaThreshold = 3;
+
     // T6 (B-009): Hunger→Demographie Hook. hungerDeathThreshold: Engine-Hunger-Stat
     // (0=saettigend, 100=verhungernd) ab dem Wert geld-schaden + emigration-risk
     // ausgeloest wird. hungerDamageRate: D/tick Geld-Schaden bei Ueberschreitung.
