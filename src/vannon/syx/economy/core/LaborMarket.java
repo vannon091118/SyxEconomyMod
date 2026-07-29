@@ -25,6 +25,17 @@ public final class LaborMarket implements Saveable {
     private double meanWage = 0.0;
     private ScarcitySignal scarcitySignal = null;
 
+    // ════════════════════════════════════════════════════════════════════
+    // RES-035 — Allocation-Path Log-Hooks (LaborMarket-Anteil).
+    // Hook 4 (Priority-Write): Engine-Priority tatsächlich neu gesetzt.
+    // Hook 5 (Player-Override): Spieler hat manuell die Priority geändert,
+    //                             Baseline wird neu eingefroren.
+    // Single-Thread (Main-Thread) ⇒ volatile reicht. Drainer:
+    // FirmLedger.drainAllocationCounters() liest+resettet am Tagesende.
+    // ════════════════════════════════════════════════════════════════════
+    static volatile long allocPriorityWrite;
+    static volatile long allocPlayerOverride;
+
     public double meanWage() {
         return this.meanWage;
     }
@@ -118,6 +129,9 @@ public final class LaborMarket implements Saveable {
                 boolean playerIntervened = ours == null || ours != current;
                 if (playerIntervened) {
                     this.baseline.put(b.key, current);
+                    // RES-035 Hook 5 — Spieler hat seit letztem Tick manuell
+                    // an der Priority gedreht; Baseline wird neu eingefroren.
+                    allocPlayerOverride++;
                 }
                 int base = this.baseline.getOrDefault(b.key, current);
                 double marginal = ledger.marginalSurplus(b);
@@ -143,6 +157,10 @@ public final class LaborMarket implements Saveable {
                 }
                 if (priority != current) {
                     e.priority.set(priority);
+                    // RES-035 Hook 4 — Engine-Priority tatsächlich geändert.
+                    // Friction-Threshold ("priority==current Re-Set") wurde
+                    // bereits oben angewandt; hier zählt nur echte Writes.
+                    allocPriorityWrite++;
                 }
                 this.written.put(b.key, e.priority.get());
             }

@@ -6,9 +6,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import init.resources.RESOURCE;
 import settlement.room.main.RoomBlueprintImp;
 import settlement.room.main.RoomBlueprintIns;
@@ -52,6 +55,26 @@ final class FirmSizing {
      *  auf einen Worker verlagern. Kosten: 0. */
     static volatile int priorityExpansionSignalsThisDay;
 
+    /** Per-Blueprint-Signals: blueprintKey → Anzahl 'would-expand'-Vorschläge pro Tag.
+     *  DiagnosticExporter.exportDay() liest + resettet diese Map pro In-Game-Tag.
+     *  Ermöglicht Pandas-Heatmap: df.pivot('game_day','blueprint','expansion_signals'). */
+    static final Map<String, Integer> priorityExpansionSignalsByBlueprint = new HashMap<>();
+
+    /** Dedup-Set: welche Blueprints heute bereits FIRM_ESCAPE_CLIFF geloggt haben.
+     *  DiagnosticExporter.exportDay() resettet pro Tag. Verhindert Spam wenn
+     *  10 Carpenter-Firmen gleichzeitig am Max sind — nur die erste loggt. */
+    static final Set<String> escapeCliffLoggedToday = new HashSet<>();
+
+    // ════════════════════════════════════════════════════════════════════
+    // RES-035 — Allocation-Path Log-Hook (FirmSizing-Anteil).
+    // Hook 6 (Hill-Step): size() wird aufgerufen. Auch der shouldIdle-Früh-
+    //                      return zählt — wichtige Beweisspur dafür dass
+    //                      der Hill-Climber überhaupt die Firma inspiziert.
+    // Single-Thread (Main-Thread) ⇒ volatile reicht. Drainer:
+    // FirmLedger.drainAllocationCounters() liest+resettet am Tagesende.
+    // ════════════════════════════════════════════════════════════════════
+    static volatile long allocHillStep;
+
     /** Production-Stuck-Threshold in Game-Sekunden.
      *  FirmSizingRefreshDays × secondsPerDay × 0.5 — also halbe Sizing-Periode.
      *  Verhindert dass neue Firmen (Cold-Start) fälschlich als stuck erkannt werden. */
@@ -64,6 +87,8 @@ final class FirmSizing {
     static void size(FirmLedger ledger, RoomInstance room, FirmLedger.FirmState state) {
         if (EngineMirror.api() == null) return;
         IRoomAccess roomAccess = EngineMirror.api().rooms();
+        // RES-035 Hook 6 — Hill-Climber inspiziert diese Firma.
+        allocHillStep++;
         int minimum = Math.min(room.employees().max(), Math.max(0, EconConfig.minimumWorkersPerWorkplace));
         if (FirmEconomyKernel.shouldIdle(state.profit, EconConfig.firmSizingHysteresis)) {
             // Production-Stuck-Override: bei anhaltender Ressourcen-Senke
@@ -101,14 +126,19 @@ final class FirmSizing {
         roomAccess.setFirmTarget(room, clampedTarget);
         if (result.escapeCliff()) {
             priorityExpansionSignalsThisDay++;
+            String bpKey = room.blueprintI() != null ? room.blueprintI().key : "?";
+            priorityExpansionSignalsByBlueprint.merge(bpKey, 1, Integer::sum);
+            // Dedup: nur einmal pro Blueprint pro Tag loggen (10 Carpenter am Max = 1 Log, nicht 10).
             // raw observedSlope statt state.marginal — letzteres kann stale sein
             // (slopeClamp-bias aus vorigen ticks wenn weder target<oldBest noch target>oldBest).
-            EventLog.log("FIRM_ESCAPE_CLIFF",
+            if (escapeCliffLoggedToday.add(bpKey)) {
+                EventLog.log("FIRM_ESCAPE_CLIFF",
                     (room.blueprintI() != null ? room.blueprintI().key : "?")
                             + " at blueprint-max=" + maxEmp
                             + " marginal=" + String.format(java.util.Locale.ROOT, "%.2f", result.observedSlope())
                             + " profit=" + String.format(java.util.Locale.ROOT, "%.2f", state.profit)
                             + " — build additional instance");
+            }
         }
     }
 
@@ -144,6 +174,7 @@ final class FirmSizing {
         if (score <= EconConfig.priorityExpansionThreshold) return;
         String bp = room.blueprintI() != null ? room.blueprintI().key : "?";
         priorityExpansionSignalsThisDay++;
+        priorityExpansionSignalsByBlueprint.merge(bp, 1, Integer::sum);
         EventLog.log("FIRM_PRIORITY",
                 bp + " pressure=" + String.format(java.util.Locale.ROOT, "%.2f", score)
                 + (settled ? " settled — consider building additional instance (demand > capacity)"
@@ -240,6 +271,9 @@ final class FirmSizing {
                     // Note-Reihenfolge: kritische Stati übersteuern den Priority-Vorschlag.
                     // Sprint v0.13.99+: ESCAPE-CLIFF vor PRIORITY-EXPAND (escape-cliff ist
                     // spezifischer: explizit hillStep hat blueprint-max-recommendation gegeben).
+                    // RES-035 Hook-2-Trace: |employed − marketTarget| > 1 wird als DIVERGE-Tag
+                    // orthogonal angehängt (kann mit anderen Notes koexistieren). Das ist die
+                    // Smoking-Gun-Spur für den 6-vs-45-employees-Bug im furniture_debug CSV.
                     String note;
                     if (hardTarget == 0 || marketTarget == 0) {
                         note = "TARGET-ZERO";
@@ -256,6 +290,12 @@ final class FirmSizing {
                         note = "PRIORITY-EXPAND";
                     } else {
                         note = "OK";
+                    }
+                    if (Math.abs(employed - marketTarget) > 1
+                            && Math.abs(employed - hardTarget) > 1) {
+                        note = note + "|DIVERGE(e=" + employed
+                                + ",mT=" + marketTarget
+                                + ",hT=" + hardTarget + ")";
                     }
                     w.write(String.format(Locale.ROOT,
                             "%d;%.3f;%s;%d;%d;%d;%d;%s;%.2f;%.2f;%.2f;%d;%s;%.4f;%d;%d;%s;%.4f;%d;%d;%d;%s%n",

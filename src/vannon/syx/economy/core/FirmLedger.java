@@ -59,6 +59,24 @@ public final class FirmLedger {
      */
     final HashMap<Long, FirmState> firms = new HashMap<>();
     private static final int SAVE_VERSION_FIRMS = 3;  // v2: +HillState (D-003), v3: +stuckTicks (Production-Stuck)
+
+    // ════════════════════════════════════════════════════════════════════
+    // RES-035 — Allocation-Path Log-Hooks
+    //
+    // Allokations-Pfad hatte NULL diagnostisches Logging: kein Beweis ob
+    // employed tatsächlich marketTarget erreicht, ob Hard-Target die Ober-
+    // grenze durchsetzt, ob Payroll jeden Tick läuft. Diese 3 Counter be-
+    // weisen die Hook-Punkte 1 (Target-Init), 2 (Divergence) und 3 (Payroll).
+    // Drainer: drainAllocationCounters() — aufgerufen von DiagnosticExporter
+    // am Ende des In-Game-Tages. Single-Thread ⇒ volatile reicht.
+    // ════════════════════════════════════════════════════════════════════
+    /** Hook 1: marketTarget erstmals gesetzt (Cold-Init der Firma). */
+    static volatile long allocTargetInit;
+    /** Hook 2: |employed − marketTarget| > 1 — die Smoking-Gun-Divergenz
+     *  (employed=6, max=45 ist genau dieser Fall). */
+    static volatile long allocDivergence;
+    /** Hook 3: payroll-Distribution pro ausgezahltem Worker (payable > 0). */
+    static volatile long allocPayrollDist;
     private final Map<String, BlueprintState> blueprints = new HashMap<String, BlueprintState>();
     private final Map<String, Double> serviceRevenue = new HashMap<String, Double>();
     private final Map<String, Double> stateWageMarginal = new HashMap<String, Double>();
@@ -232,6 +250,8 @@ public final class FirmLedger {
                 if (!state.targetInitialized) {
                     state.marketTarget = FirmLedger.initialMarketTarget(room.employees().employed(), room.employees().max(), EconConfig.minimumWorkersPerWorkplace);
                     state.targetInitialized = true;
+                    // RES-035 Hook 1 — first-time target init logged.
+                    allocTargetInit++;
                 }
                 if (room.employees().hardTarget() == state.marketTarget) continue;
                 roomAccess.setFirmTarget(room, state.marketTarget);
@@ -392,6 +412,12 @@ public final class FirmLedger {
             if (!(state.profit > 0.0)) continue;
             RoomInstance room = FirmLedger.roomFor(entry.getKey());
             if (room == null) continue;
+            // RES-035 Hook 2 — Divergenz-Erkennung: Smoking-Gun-Bedingung für den
+            // 6-vs-45-employees-Bug. Zählt Firmen deren employed vom marketTarget
+            // um >1 abweicht UND profit>0 (andernfalls zählt shouldIdle bereits).
+            if (state.targetInitialized && Math.abs(room.employees().employed() - state.marketTarget) > 1) {
+                allocDivergence++;
+            }
             ArrayList<Humanoid> workers = FirmLedger.freeWorkers(roster, room);
             int workerCount = Math.max(1, workers.size());
             double excessProfit = state.profit - EconConfig.guildSurplusMinProfitPerWorker * (double) workerCount;
@@ -426,6 +452,8 @@ public final class FirmLedger {
                 wallets.markPaidThisTick(worker.indu());
                 l += (long)shares[i];
                 ++this.lastWorkersPaid;
+                // RES-035 Hook 3 — payroll hat tatsächlich Geld ausgeschüttet.
+                allocPayrollDist++;
             }
         }
         if (l > 0L) {
@@ -819,6 +847,8 @@ public final class FirmLedger {
             String blueprint,
             int employees,
             int employedTarget,
+            int maxCapacity,
+            int hardTarget,
             double profitPerDay,
             double marginalPerWorker,
             double incomeCarry,
@@ -850,6 +880,8 @@ public final class FirmLedger {
                     room.blueprintI().key,
                     room.employees().employed(),
                     state.targetInitialized ? state.marketTarget : 0,
+                    room.employees().max(),
+                    room.employees().hardTarget(),
                     state.profit,
                     state.marginal,
                     state.incomeCarry,
@@ -865,5 +897,29 @@ public final class FirmLedger {
     }
 
     public record UpdateResult(long paid) {
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    // RES-035 — Drainer für Allocation-Path Counter.
+    //
+    // DiagnosticExporter.exportDay() ruft dies einmal pro In-Game-Tag auf.
+    // Aggregiert Counts aus FirmLedger (3) + LaborMarket (2) + FirmSizing (1)
+    // in ein 6-element long-Array → identische Indizierung wie die
+    // MACRO_HEADER-Spalten (Ziel: alloc_target_init, alloc_divergence,
+    // alloc_payroll_dist, alloc_priority_write, alloc_player_override,
+    // alloc_hill_step).
+    //
+    // Reset-Strategie: each field read-then-zero. Single-Thread ⇒ keine
+    // atomics nötig (Reihenfolge ist fix: read, copy, zero).
+    // ════════════════════════════════════════════════════════════════════
+    public static long[] drainAllocationCounters() {
+        long[] counts = new long[6];
+        counts[0] = allocTargetInit;         allocTargetInit = 0L;
+        counts[1] = allocDivergence;          allocDivergence = 0L;
+        counts[2] = allocPayrollDist;         allocPayrollDist = 0L;
+        counts[3] = LaborMarket.allocPriorityWrite;    LaborMarket.allocPriorityWrite = 0L;
+        counts[4] = LaborMarket.allocPlayerOverride;   LaborMarket.allocPlayerOverride = 0L;
+        counts[5] = FirmSizing.allocHillStep;          FirmSizing.allocHillStep = 0L;
+        return counts;
     }
 }
