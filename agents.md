@@ -635,6 +635,49 @@ Drift-UEberschreitung ist BLOCKER. Sprint-CI bricht ab. Drift-VERBESSERUNG (Refa
 **Hard-Block bei Sprint-Drift:**
 Sobald Sprint M-x eine Tier-1-Datei modifiziert, schrumpft die Baseline. Wachstum ueber die neue Baseline +5% ist BLOCKER. Verhindert Feature-Creep nach abgeschlossenem Refactor.
 
+**Re-baseline-Pflicht bei Sprint-modifizierten Legacy-Files (verbindlich ab v0.13.102):**
+Wenn ein Sprint eine Datei modifiziert, die einen Eintrag in
+`tools/god-class-baselines.yml` hat, MUESSEN die Baseline-Metriken
+in der SELBEN Sprint-Commit auf die aktuell gemessenen Werte
+aktualisiert werden. Ohne Re-baseline
+schlägt der naechste Sprint auf die alten Werte an und produziert
+entweder false-positive BLOCKs (Drift-Verletzung) oder false-negative
+PASSs (Drift nicht erkannt weil Baseline veraltet).
+
+**Ablauf (3 Schritte, Teil des Sprint-PRÜFEN-Phasen-Abschlusses):**
+
+1. **Messung nach allen Code-Aenderungen:**
+   ```bash
+   python3 tools/god-class-guard/parse_metrics.py src/pfad/Datei.java
+   ```
+2. **baselines.yml aktualisieren:**
+   - `loc:` = gemessener SLOC (brutto, ohne Leerzeilen/Comments)
+   - `pubM:` = gemessene public Methods
+   - `fields:` = gemessene Fields
+   - `imports:` = gemessene Imports
+   - `reason_at_emit:` = Sprint-ID + Kurzbeschreibung WAS geaendert wurde
+   - `baseline_update:` = Sprint-ID + Kurzbeschreibung WARUM
+3. **Gate-Verifikation:**
+   ```bash
+   bash tools/god-class-guard.sh --mode=hard
+   ```
+   → 0 BLOCKS, sonst Sprint nicht committen.
+
+**Drift-Policy nach Re-baseline:** Die neuen Metriken werden zur
+neuen Basis. Drift-Toleranzen gelten ab jetzt:
+- `LOC`: +5% ueber neuer Baseline
+- `PubM` / `Fields`: +10% ueber neuer Baseline
+
+**Floor-Schutz (parse_yaml.py):** `_DRIFT_FLOOR = {'fields': 2, 'pubM': 1}`
+verhindert false-positive BLOCKs wenn baseline.metric=0 war und der
+naechste Sprint 1-2 Fields/PubMs hinzufuegt. Der Floor ersetzt NICHT
+die Re-baseline-Pflicht — er ist nur ein Sicherheitsnetz fuer den
+Fall, dass die Pflicht einmal vergessen wird.
+
+**Anti-Pattern:** Baseline im Ad-hoc-Text im baselines.yml-Kommentar
+aktualisieren, aber die Metrik-Felder (loc/pubM/fields) unveraendert
+lassen. Die Guard liest die Metrik-Felder, nicht die Kommentare.
+
 ---## Rule 15 — No clinit-Touchable Engine Singletons (verbindlich ab v0.13.76)
 
 Songs-of-Syx-Modding scannt JAR-Klassen via `script.ScriptLoad` VOR Sim-Bootstrap.

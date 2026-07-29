@@ -61,17 +61,17 @@ legacy_baselines:
     status_at_emit: block
     reason_at_emit: fields 29 > block 24
   src/vannon/syx/economy/core/DiagnosticExporter.java:
-    loc: 660
-    pubM: 9
-    fields: 43
-    imports: 10
+    loc: 568
+    pubM: 7
+    fields: 48
+    imports: 16
     status_at_emit: block
     reason_at_emit: fields 30 > block 24
-    baseline_update: DC-01 Summary-Event + DC-02 Player-Action + LOG-01 logPlayerAction overload
+    baseline_update: 'DC-01 Summary-Event + DC-02 Player-Action + LOG-01 logPlayerAction overload. Res-011 Atomic-Snapshot re-baseline: -92 LOC durch L\u00f6schung der 30+-Parameter formatMacroRow-Overload und Ersetzung der 25+ Live-Reads durch EconDaySnapshot.capture() Block; fields +5 durch die marketPrices[] + coverages[] Caches im atomaren Snapshot (waren vorher Live-Reads in der Resource-Loop, jetzt Snapshot-Felder).'
   src/vannon/syx/economy/core/EconConfig.java:
-    loc: 305
+    loc: 328
     pubM: 7
-    fields: 229
+    fields: 238
     imports: 0
     status_at_emit: block
     reason_at_emit: fields 207 > block 24
@@ -116,21 +116,21 @@ legacy_baselines:
     status_at_emit: warn
     reason_at_emit: fields 21 > warn 18; imports 28 > warn 25 (coupling density)
   src/vannon/syx/economy/core/FirmLedger.java:
-    loc: 657
-    pubM: 19
-    fields: 31
+    loc: 702
+    pubM: 20
+    fields: 30
     imports: 41
     status_at_emit: pass
-    reason_at_emit: loc 657 > warn 600; fields 31 > block 24 (+1 escapeCliffTriggered)
+    reason_at_emit: "loc 657 > warn 600; fields 31 > block 24 (+1 escapeCliffTriggered). RES-035 Re-baseline: 3 allocation-path log-hooks (allocTargetInit/allocDivergence/allocPayrollDist, 3 static volatile long) + drainAllocationCounters() + FirmFinancialSnapshot fields maxCapacity/hardTarget (was 657 LOC/19 pubM/31 fields; now 702/20/30 due to comment headers + diagnostic hooks)."
     baseline_update: Sprint v0.13.99+ Escape-Cliff — FirmState.escapeCliffTriggered (transient audit flag, +1 field)
   src/vannon/syx/economy/core/FirmSizing.java:
-    loc: 231
+    loc: 249
     pubM: 0
     fields: 3
-    imports: 16
+    imports: 19
     status_at_emit: pass
-    reason_at_emit: 'Sprint v0.13.99+ Sancta-Workshop-Cap — re-baseline nach NO-EXPANSION Guard (sanctaWorkshopCap Map + countInstances Helper + emitPriorityHint Guard + dumpFurnitureDebug Note). +36 SLOC vs Escape-Cliff baseline, gerechtfertigt durch Skalierung-in-den-Ruin-Prävention.'
-    baseline_update: Sprint v0.13.99+ Sancta-Workshop-Cap — NO-EXPANSION Guard + countInstances + dump Note
+    reason_at_emit: "Sprint v0.13.99+ Per-Blueprint expansion signals — re-baseline nach priorityExpansionSignalsByBlueprint HashMap + merge() calls in emitPriorityHint + escape-cliff. +5 SLOC vs Sancta-Workshop-Cap baseline. RES-035 Re-baseline: +13 LOC fuer allocHillStep-Counter + DIVERGE(e=,mT=,hT=) Trace-Tag in furniture_debug note column."
+    baseline_update: Sprint v0.13.99+ Per-Blueprint expansion signals — HashMap + merge() + DiagnosticExporter integration
   src/vannon/syx/economy/core/FlowMeter.java:
     loc: 424
     pubM: 23
@@ -203,9 +203,9 @@ legacy_baselines:
     status_at_emit: block
     reason_at_emit: fields 42 > block 24 (Grace Period + save/load added v0.13.67)
   src/vannon/syx/economy/core/Wallets.java:
-    loc: 483
-    pubM: 31
-    fields: 62
+    loc: 518
+    pubM: 32
+    fields: 65
     imports: 15
     status_at_emit: block
     reason_at_emit: pubM 31 > warn 25; fields 62 > block 24

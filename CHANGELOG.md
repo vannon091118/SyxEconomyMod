@@ -1,6 +1,6 @@
 # SyxEconomyMod — Changelog
 
-> **Version:** v0.13.94 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-28
+> **Version:** v0.13.101 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-28
 >
 > Stam-Doku-Synchron-Anker: Die obenstehende Versions-Zeile MUSS identisch mit `pom.xml` `<version>` sein.
 > Der Sync-Gate `tools/verify-doc-sync.sh` scheitert wenn dieser Anker driftet.
@@ -23,6 +23,7 @@
 | Sprint | Theme | Commit(s) | Datum |
 |---|---|---|---|
 | **10** | Diagnostik-Fixes D-001–D-006 + UI-Zentralisierung + Dead-Code-Audit | `381a9c1`, `90064c3` | 2026-07-26 |
+| **11** | PriorityVector-System (Player-Hint bei statischen Worker-Limits) | (pending) | 2026-07-28 |
 | **9** | Sprint 9 Test-Coverage (7-1a EconConfig, 7-1b FlowPrices, 8-1 Mockito) + UI-Bugfixes | `31fb485`, `e261ca5` | 2026-07-26 |
 | **8** | Global-Audit — dead code removal, stale doc refs, .gitignore hygiene | `2ac5191` | 2026-07-26 |
 | **7** | Adapter-Dispatcher + Schema-SSoT (7 Tasks subsummiert) | `4efa7c4` | 2026-07-26 |
@@ -39,7 +40,7 @@
 
 ---
 
-## v0.13.94 — 2026-07-28
+## v0.13.101 — 2026-07-28
 
 ### 🏛️ EconomyMod v0.13.89 — Native Vanilla UI Extensions + Advisor Consolidation
 

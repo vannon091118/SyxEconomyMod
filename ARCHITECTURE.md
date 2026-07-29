@@ -1,6 +1,6 @@
 # SyxEconomyMod — Architektur
 
-> **Version:** v0.13.94 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-28
+> **Version:** v0.13.101 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-28
 >
 > Stam-Doku-Synchron-Anker: Die obenstehende Versions-Zeile MUSS identisch mit `pom.xml` `<version>` sein.
 > Der Sync-Gate `tools/verify-doc-sync.sh` validiert dies vor jedem `mvn compile`.
@@ -82,8 +82,6 @@ Modul-Bilanz: **163 Java-Dateien, ~31.152 LOC** (core 22.539 + adapter 5.164 + u
 ```
 
 ### IO-Analysis-Subsystem (Sprint IO-1, v0.13.79)
-
-Empirische Input-Output-Analyse der Industrieverflechtungen:
 
 ```
 IOGraph (Recipe Graph, ~110 LOC)
