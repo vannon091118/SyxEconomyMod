@@ -206,7 +206,11 @@ public final class EconConfig {
     /** Druck-Schwelle für Player-Hint: pressure = 1 - coverage. 0.7 = Lager < 30% Tagesbedarf. */
     public static double priorityExpansionThreshold = 0.7;
     /** Sicherheitsmarge: nur Fimen mit marginal >= Schwelle bekommen Hint (verhindert Skalierung in unrentable Blueprints wie WORKSHOP_CARPENTER mit marginal=-1000). */
-    public static double priorityMarginalSafetyThreshold = 0.0;
+    /** Sicherheitsmarge: nur Firmen mit marginal >= Schwelle bekommen Hint.
+     *  Gilt für BEIDE Pfade: emitPriorityHint (PRIORITY-EXPAND) UND FirmEconomyKernel.hillStep
+     *  (ESCAPE-CLIFF). Default 1.0 = Firma muss mindestens 1 D/Arbeiter/Tag erwirtschaften
+     *  bevor Expansion empfohlen wird. 0.0 = jeder profit>0-Firma bekommt Hint (Spam). */
+    public static double priorityMarginalSafetyThreshold = 1.0;
     /** Minimum Demand/Tag für gültigen pressure-Score (Anti-Micro-Score). */
     public static double priorityExpansionMinDemandLed = 200.0;
     public static boolean warehouseMarketEnabled = true;
@@ -603,6 +607,24 @@ public final class EconConfig {
         PROXIMITY;
 
     }
+
+    // ── Crime / Theft System ──────────────────────────────────────────
+    /** Master-Schalter für das Diebstahl-System. */
+    public static boolean crimeTheftEnabled = false;
+    /** Basis-Chance pro Encounter-Paar dass ein Diebstahl versucht wird (0.0–1.0). */
+    public static double crimeTheftChanceBase = 0.002;
+    /** Maximale Diebstahl-Summe als Anteil am Opfer-Vermögen (basispunkte, 10000 = 100%). */
+    public static int crimeTheftMaxFractionBp = 1500;
+    /** Mindest-Vermögen des Opfers bevor ein Diebstahl möglich ist. */
+    public static int crimeTheftVictimMinMoney = 50;
+    /** Maximales Täter-Vermögen: Bürger über diesem Vermögen stehlen nicht. */
+    public static int crimeThiefMaxMoney = 200;
+    /** Guard-Abschreckung: Reduktion der Diebstahl-Chance pro Guard pro Bürger. */
+    public static double crimeTheftGuardDeterrence = 0.5;
+    /** Report-Wahrscheinlichkeit an Guards (0.0–1.0). Vanilla's reportCriminal()
+     *  hat bereits eine interne 50%-Filterung (RND.rBoolean()). Default 1.0 delegiert
+     *  die gesamte Filterung an vanilla. Bei 0.5 wäre die effektive Rate 25%. */
+    public static double crimeTheftReportChance = 1.0;
 
     // T6 (B-009): Hunger→Demographie Hook. hungerDeathThreshold: Engine-Hunger-Stat
     // (0=saettigend, 100=verhungernd) ab dem Wert geld-schaden + emigration-risk
