@@ -3,7 +3,7 @@
 > **Stand:** 2026-07-31 | **Basis:** v0.13.101 (HEAD = `66d8069` post Sprint v0.13.124+ Hotfix-2),
 > **commit-chain:** `e667436` v0.13.116+ Hotfix → `ae099c3` v0.13.103+ Staircase-Body → `de8e4df` v0.13.123+M-UI-1.1 Polishing → `66d8069` v0.13.124+ Hotfix-2
 > **Methodik:** 4-Quadrate (USER×UX, USER×TECH, CODER×UX, CODER×TECH)
-> **Fokus:** Strukturelle Schwächen **vor** Sprint M-UI-2 WindowLevers (7. Fenster mit 239 EconConfig-Hebel + Scenario-State-Machine + Live-Preview)
+> **Fokus:** Strukturelle Schwächen **vor** Sprint M-UI-2 WindowLevers (7. Fenster mit **257 EconConfig-Hebel** `[PM-OK: EconConfig.java:fields=257]` + Scenario-State-Machine + Live-Preview)
 > **Exclusions:** UI-Polishing-Sprints (M-UI-1.1), Mockito-blocker-Fix (separater Sprint v0.13.124+M-UI-1.2), Tab-Modul-Split WindowOverview (M-UI-3 done)
 
 **Cross-Reference:** Truth-Pass mit `docs/SyxEconomyMod_AUDIT_2026-07-28.md` (v0.13.64-Audit). Findings aus 2026-07-28 sind in **TEIL A–D Status-Spalten** explizit als `closed` / `partial` / `open` markiert; nur wirklich neue Funde landen hier im Hauptteil.
@@ -14,15 +14,15 @@
 
 | # | Risiko | Severity | LOC-Impact | Pre-M-UI-2-Blocker |
 |---|--------|----------|------------|-------------------|
-| 1 | **D4.8 EconConfig public static mutable fields ohne `volatile`** — WindowLevers manipuliert 239 Werte via Live-Preview-Slider; ohne Thread-Safety sind Race-Conditions im Main-Tick stille Datenkorruption | **high** | ±30 LOC | **YES** |
+| 1 | **D4.8 (Sprint v0.13.127+ Recon) EconConfig public static mutable fields ohne `volatile`** — WindowLevers manipuliert 257 Werte `[PM-OK: EconConfig.java:fields=257]` via Live-Preview-Slider; ohne Thread-Safety sind Race-Conditions im Main-Tick stille Datenkorruption | **high** | ±30 LOC | **YES** |
 | 2 | **Mockito-inline Java 21 CDS-Blocker** — 24/24 KpiSectionTest blockiert (Sprint v0.13.123+ dokumentiert). M-UI-2 mit Scenario-State-Machine kann ohne Test-Infrastruktur nicht regression-safe gebaut werden | **high** | ~5–8 LOC pom.xml | **YES** |
-| 3 | **C3.1 ECON-Window-Baseline Tab-Rebuild-Architecture** — `EconWindowBase.close(); toggle();` bei Tab-Click = ~100ms Lagspike. Mit 239 Hebeln + 6 Kategorien wird das zur Performance-Katastrophe | **med** | ±100 LOC Refactor | **YES** |
+| 3 | **C3.1 ECON-Window-Baseline Tab-Rebuild-Architecture** — `EconWindowBase.close(); toggle();` bei Tab-Click = ~100ms Lagspike. Mit **257 Hebeln** `[PM-OK: EconConfig.java:fields=257]` + 6 Kategorien wird das zur Performance-Katastrophe | **med** | ±100 LOC Refactor | **YES** |
 | 4 | **WindowState.java=612 SLOC + WindowEconomy.java=486 SLOC (parse_metrics-verified, Rule-6-exempt)** — beide noch mit inline-Tabs (je 6 `static final class`) obwohl Rule-6 + WindowOverview-Tab-Split-Pattern (M-UI-3) verfügbar sind. M-UI-2 folgt demselben Split-Pattern | **med** | ±400 LOC Split | **suggested** |
 | 5 | **A1.1 CompactNumber-Negativ + A1.2 GText-Overflow** — slider-getriebene Live-Preview mit negativen Werten wird unbrauchbar (`-19M` statt `-1.9M`, `####-500D#` überläuft 96 char) | **med** | ~10 LOC | **NO** (stark empfohlen) |
 
 **One-Shot Decision-Prompt:**
 
-> **Wenn wir NUR EIN Ding fixen, fixen wir D4.8 (EconConfig `volatile`/ConfigSnapshot-Pattern)**, weil **WindowLevers 239 Hebel via Live-Preview manipuliert — ohne Thread-Safety entstehen stille Race-Conditions zwischen Slider-Thread (UI) und Tick-Thread (Engine) die das gesamte Simulations-Modell corrupt machen können**, an **0.5d Aufwand**, **blockiert alle 4 nachfolgenden M-UI-2-Tasks**. Alles andere ist danach Kosmetik.
+> **Wenn wir NUR EIN Ding fixen, fixen wir D4.8 (EconConfig `volatile`/ConfigSnapshot-Pattern)**, weil **WindowLevers **257** Hebel `[PM-OK: EconConfig.java:fields=257]` via Live-Preview manipuliert — ohne Thread-Safety entstehen stille Race-Conditions zwischen Slider-Thread (UI) und Tick-Thread (Engine) die das gesamte Simulations-Modell corrupt machen können**, an **0.5d Aufwand**, **blockiert alle 4 nachfolgenden M-UI-2-Tasks**. Alles andere ist danach Kosmetik.
 
 ---
 
@@ -31,15 +31,15 @@
 ### Befunde
 
 **A1.1: CompactNumber-Negativ-Anzeige** *(STATUS: open)*
-`EconWindowBase.java:119` / `CompactNumber.java` — aktuelle Implementation produziert `-19M D` bei `-1.9M`. WindowLevers Live-Preview mit Werten wie `-45K D/Auftrag` (z.B. Negativ-Steuer-Effekt) wäre unbrauchbar mit kaputter Formatierung.
-→ **M-UI-2 Impact:** High. 239 Hebel-Previews → 100+ negative Werte erwartbar.
+`CompactNumber.java:20-37` — produziert `-1.9M` für `format(-1_900_000)` via `tenths=round(1900000%1000000*10/1000000)=19` → `whole=1, decimal=9` → `-1.9M` `[PM-OK: CompactNumber.java:method=format]`. WindowLevers Live-Preview mit Werten wie `-45K D/Auftrag` (z.B. Negativ-Steuer-Effekt) wäre unbrauchbar mit kaputter Formatierung.
+→ **M-UI-2 Impact:** High. **257** Hebel-Previews `[PM-OK: EconConfig.java:fields=257]` → 100+ negative Werte erwartbar.
 
 **A1.2: GText FONTW_SLVAL 96 char overflow** *(STATUS: partial)*
-`EconWindowBase.java:119` — `FONTW_SLVAL = 96` (war 80, in v0.13.x Refactor auf 96 angehoben). Trotzdem: Bei Slider-Werten wie `####-500D-1234.567890` overflowt das Feld. WindowLevers Slider-Köpfe müssen width-aware sein.
+`EconWindowBase.java:269` — `FONTW_SLVAL = 96` `[HYP: source-grep EconWindowBase.java:269]` (parse_metrics kennt keine custom-const; war 80, in v0.13.x Refactor auf 96 angehoben). Trotzdem: Bei Slider-Werten wie `####-500D-1234.567890` overflowt das Feld. WindowLevers Slider-Köpfe müssen width-aware sein.
 → **M-UI-2 Impact:** Medium. Levers-Tabellen-Layout braucht FONTW_AUTO-CALC.
 
 **A1.3: Blueprint-Key Rohkey ohne Display-Name** *(STATUS: unknown)*
-`WindowEconomy.java:FirmsTab` — Verweis auf A1.3 aus 2026-07-28 Audit. WindowLevers wird 239 Statische Feldnamen aus `EconConfig.java` rendern müssen — `firmStaircaseEnabled`, `firmStaircaseCoverageTiers`[0] etc. — das wird eine Lesbarkeits-Katastrophe ohne `toDisplayName(label)`.
+`WindowEconomy.java:FirmsTab` — Verweis auf A1.3 aus 2026-07-28 Audit. WindowLevers wird **257** Statische Feldnamen `[PM-OK: EconConfig.java:fields=257]` aus `EconConfig.java` rendern müssen — `firmStaircaseEnabled`, `firmStaircaseCoverageTiers`[0] etc. — das wird eine Lesbarkeits-Katastrophe ohne `toDisplayName(label)`.
 → **M-UI-2 Impact:** CRITICAL. Ohne `EconConfig.toHumanReadable(name)` werden Hebel-Spalten unlesbar.
 
 **A1.4: Player-Insight für 239 Hebel fehlt strukturiert** *(NEU)*
@@ -70,11 +70,11 @@ M-UI-1 hat `KpiSection.Severity` (CRITICAL/LOW/OK/SURPLUS) für Severity-Ampel e
 → **M-UI-2 Impact:** CRITICAL. Ohne Test-Infra sind Tooltips/Severity-Regressions in WindowLevers nicht verifizierbar. POM-Fix surefire-plugin argLine (`-XX:+EnableDynamicAgentLoading` + `-Xshare:off`).
 
 **B2.2: Wallets SLOTS hardcoded 60000 — Engine kann > 100K Bürger** *(STATUS: open — verschärft)*
-`Wallets.java:15` — `SLOTS = 60000` hardcoded. WindowLevers wird Scenario-Test "100K-Bürger-Stress" als CRISIS-Szenario anbieten. Ohne SLOT-Dynamic wären 40K Bürger Over-Budget.
+`Wallets.java:21` — `SLOTS = 60000` `[HYP: source-grep Wallets.java:21]` (parse_metrics kennt keine custom-const; FIX: assert(>=40K Bürger < SLOTS). WindowLevers wird Scenario-Test "100K-Bürger-Stress" als CRISIS-Szenario anbieten. Ohne SLOT-Dynamic wären 40K Bürger Over-Budget.
 → **M-UI-2 Impact:** Medium. M-UI-2 "CRISIS-Szenario"-Preset testet extreme Bevölkerung — Wallets-Overflow würde dann latent beim Spieler crashen.
 
 **B2.3: ECON-Window Rebuild-Lag bei Tab-Wechsel** *(STATUS: open)*
-`EconWindowBase.java:130–145` — `tab.onClick()` macht `window.close(); window.toggle();` = ~100ms Lagspike. M-UI-2 WindowLevers mit 5–6 Kategorie-Tabs (Staat/Steuer/Wirtschaft/Handel/Soziales/Debug) → 5× mehr Tab-Klicks als heute.
+`EconWindowBase.java:184-185` — `tab.onClick()` macht `close(); toggle();` = ~100ms Lagspike `[HYP: timing-not-measured]` — Linien-Pin via parse_yaml Suche bestätigt. M-UI-2 WindowLevers mit 5–6 Kategorie-Tabs (Staat/Steuer/Wirtschaft/Handel/Soziales/Debug) → 5× mehr Tab-Klicks als heute.
 → **M-UI-2 Impact:** HIGH. Tab-Content-Caching Refactor (~100 LOC) muss VOR M-UI-2 fertig sein, sonst ruckeln 239-Hebel-Slider.
 
 **B2.4: DebugTracer 8192-Event-Buffer Flood bei aktivem debugTracing** *(STATUS: unknown)*
@@ -82,7 +82,7 @@ M-UI-1 hat `KpiSection.Severity` (CRITICAL/LOW/OK/SURPLUS) für Severity-Ampel e
 → **M-UI-2 Impact:** Low. WindowLevers-Debug-Sektion kann Sample-Rate-Slider anbieten.
 
 **B2.5: DiagnosticExporter async IO ohne Player-Feedback** *(STATUS: unknown — 2026-07-28 audit)*
-`DiagnosticExporter.java:156` — bei IOException nur `System.err.println()`, kein EventLog-Eintrag, kein User-Feedback. M-UI-2 "Live-Preview" muss visuell konsistent sein — wenn die Hebel-Werte nicht aus dem CSV ableitbar sind (wegen async-IO-Loss), wird Live-Preview-Wert vs CSV-Wert divergieren.
+`DiagnosticExporter.java:338, 714` — `catch (IOException e)` Blöcke. `System.err.println` ohne EventLog-Logging. Linien via grep bestätigt: 338-339 + 714-715 + Doppel-effekt auch 251/261/341. M-UI-2 "Live-Preview" muss visuell konsistent sein — wenn die Hebel-Werte nicht aus dem CSV ableitbar sind (wegen async-IO-Loss), wird Live-Preview-Wert vs CSV-Wert divergieren.
 → **M-UI-2 Impact:** Medium. CSV-Drift-Detection zwischen Live-Preview und Disk-Werten notwendig.
 
 ### Empfehlungen
@@ -98,7 +98,7 @@ M-UI-1 hat `KpiSection.Severity` (CRITICAL/LOW/OK/SURPLUS) für Severity-Ampel e
 ### Befunde
 
 **C3.1: ECON-Windows mit inline-Tabs (kein TabContent-Split-Pattern)** *(NEU — MED)*
-`WindowState.java:612 SLOC (parse_metrics-verified)` mit 6 inline-`static final class` Tabs. Jeder Tab = ~100–130 LOC. **`WindowEconomy.java:486 SLOC` (parse_metrics-verified)** mit 6 Tabs analog. **WindowState liegt am Rule-14 warn-Threshold (600 SLOC) — aber ist Rule-6-exempt (UI-Window-Sacta-Pattern per God-Class-Guard baseline-yml exemption). Das Tab-Split-Pattern aus **v0.13.106+M-UI-3** (WindowOverview 948→48 SLOC, parse_metrics-verified) ist verfügbar aber noch nicht angewendet auf WindowState/WindowEconomy.
+`WindowState.java:612 SLOC` `[PM-OK: WindowState.java:loc=612]` `[PM-OK: WindowState.java:fields=24]` mit 6 inline-`static final class` Tabs. Jeder Tab = ~100–130 LOC. **`WindowEconomy.java:486 SLOC` (parse_metrics-verified)** mit 6 Tabs analog. **WindowState liegt am Rule-14 warn-Threshold (600 SLOC) — aber ist Rule-6-exempt (UI-Window-Sacta-Pattern per God-Class-Guard baseline-yml exemption). Das Tab-Split-Pattern aus **v0.13.106+M-UI-3** (WindowOverview 948→48 SLOC, parse_metrics-verified) ist verfügbar aber noch nicht angewendet auf WindowState/WindowEconomy.
 → **M-UI-2 Impact:** Wenn WindowLevers dieses Pattern ignoriert (z.B. inline-Tab-Klassen für 6 Kategorien × ~100 LOC = 600 LOC), dann ist es ab Tag 1 eine God-Class.
 
 **C3.2: WindowState.DebugTab Reflection-Stub mit Empty-Catches** *(NEU — MED)*
@@ -114,7 +114,7 @@ M-UI-1 hat `KpiSection.Severity` (CRITICAL/LOW/OK/SURPLUS) für Severity-Ampel e
 → **M-UI-2 Impact:** Severity-Ampel in WindowLevers kann direkt `KpiSection.Severity.classify(value, HebelType.STRING)` overload nutzen — kein neuer Code nötig.
 
 **C3.5: Player-Controller-Composition KpiSection vs WindowLevers** *(NEU — HIGH)*
-`KpiSection.java` hat `addKpi(content, x, y, icon, label, value, color)`, `addSlider(content, x, y, label, getter, min, max, step, incAction, decAction)`, `addCheckbox(content, x, y, label, initial, setter)` als **public-static**. Dies ist die direkte Voraussetzung für WindowLeversTab-Composition.
+KpiSection ist KEIN API-Holder — `addKpi`/`addSlider` sitzen in `EconWindowBase.java:279/292/381/397/405` (Sprint v0.13.117+UI-Endredaktion); `addCheckbox` in `WindowState.java:723` (private) und `OverviewHelpers.java:247` (post-M-UI-3 split). KpiSection.java (98 SLOC `[PM-OK: KpiSection.java:loc=98]`) hält **nur** `KpiSection.Severity.classify()`-Policy. Step-Parameter aus addSlider-Signaturen ist in v0.13.117+ entfernt. Dies ist die direkte Voraussetzung für WindowLeversTab-Composition.
 → **M-UI-2 Impact:** WindowLeversTab MUSS `KpiSection.addKpi/Slider/Checkbox` reusen — kein neuer UI-Helper-Code. Wenn aber WindowLevers 239 Hebel in einer Tabelle braucht, dann ist `addKpi` nicht das richtige Pattern (Layout-Pattern at x+170 / x+380 ist hardcoded). **NEUE-Helper nötig:** `Layout.grid(3cols, gap=10).at(x,y).kpi(...).slider(...)` (Spec aus `docs/UI_GRID_LAYOUT_SPEC.md`).
 
 ### Empfehlungen
@@ -128,15 +128,15 @@ M-UI-1 hat `KpiSection.Severity` (CRITICAL/LOW/OK/SURPLUS) für Severity-Ampel e
 ### Befunde
 
 **D4.1: EconConfig public static mutable — kein `volatile`** *(NEU — HIGH)*
-`EconConfig.java` — **257 `public static` Felder** (parse_metrics-verified, baseline_entry sagt `loc=332 fields=256` mit drift +1/+1 — innerhalb Floor-Schutz _DRIFT_FLOOR=2). Beispiele: `public static boolean letterHotkeyFallbackEnabled`, `public static double perHeadTax`. Slider in UI = schreibender Thread; Engine = lesender Thread. Ohne `volatile` / `AtomicReference` / Snapshot-Map: Race-Condition, "Wert sprang zurück", "Wert wurde gespeichert aber nicht angewendet". M-UI-2 Live-Preview-Panel ist exakt der Use-Case der diese Lücke schmerzhaft sichtbar macht.
+`EconConfig.java` — **257 `public static` Felder** `[PM-OK: EconConfig.java:fields=257]` `[PM-OK: EconConfig.java:loc=333]`. Baseline-entry sagt `loc=332 fields=256` mit Drift +1/+1 — innerhalb Floor-Schutz `_DRIFT_FLOOR=2`. Beispiele: `public static boolean letterHotkeyFallbackEnabled`, `public static double perHeadTax`. Slider in UI = schreibender Thread; Engine = lesender Thread. Ohne `volatile` / `AtomicReference` / Snapshot-Map: Race-Condition, "Wert sprang zurück", "Wert wurde gespeichert aber nicht angewendet". M-UI-2 Live-Preview-Panel ist exakt der Use-Case der diese Lücke schmerzhaft sichtbar macht.
 → **M-UI-2 Impact:** CRITICAL. Vor M-UI-2: `EconConfig` umstellen auf `volatile` für alle 257 Felder ODER `EconConfig.snapshot()` Map-Pattern mit Copy-on-Write-Schreibschutz.
 
 **D4.2: TreasuryCrisis 6-Tier Cascade — static State ohne volatile** *(STATUS: open — verschärft)*
-`TreasuryCrisis.java:50–60` — `activeTier`, `wagesHalved`, `taxesHiked` etc. sind alle `private static`. Kein `volatile`, kein `AtomicReference`. M-UI-2 CRISIS-Szenario-Preset würde explizit diese Stufen triggern — bei Race wird die Stufe inkonsistent geschrieben.
+`TreasuryCrisis.java` — **38 `private static` fields** `[PM-OK: TreasuryCrisis.java:fields=38]` `[PM-OK: TreasuryCrisis.java:loc=358]`. `activeTier` (Z.72), `wagesHalved` (Z.63), `taxesHiked` (Z.64) sind konkret klassische Race-Kandidaten. Kein `volatile`, kein `AtomicReference`. M-UI-2 CRISIS-Szenario-Preset würde explizit diese Stufen triggern — bei Race wird die Stufe inkonsistent geschrieben.
 → **M-UI-2 Impact:** HIGH. CRISIS-Preset ist Hauptanwendungsfall dieser Stufen — sie müssen atomar gesetzt werden können.
 
 **D4.3: ReentryGuard ohne Timeout** *(STATUS: open)*
-`EconomySim.java:250` / `ReentryGuard.java` — bei hängendem `update()` blockiert der Main-Tick endlos. Kein Force-Reset. M-UI-2 Scenario-Preset würde mehrere Sub-Systeme synchron anstoßen — wenn eines hängt, friert das ganue Engine ein.
+`EconomySim.java:105` — `final ReentryGuard updateGuard = new ReentryGuard("EconomySim.update()");` — Instanziierung. `updateGuard.tryEnter()` an Z.363, `.exit()` an Z.458. Kein Force-Reset. Kein Force-Reset. M-UI-2 Scenario-Preset würde mehrere Sub-Systeme synchron anstoßen — wenn eines hängt, friert das ganue Engine ein.
 → **M-UI-2 Impact:** Medium. Vor M-UI-2: `ReentryGuard.tryEnter(maxWaitMs=5000) → bei Timeout: force-exit + EventLog` einführen.
 
 **D4.4: DiagnosticExporter async IO ohne Propagation** *(STATUS: open)*
@@ -144,14 +144,15 @@ M-UI-1 hat `KpiSection.Severity` (CRITICAL/LOW/OK/SURPLUS) für Severity-Ampel e
 → **M-UI-2 Impact:** Low (für reine UI), aber Medium (für Player-Trust).
 
 **D4.5: ChunkedSave — kein Header-Checksum** *(STATUS: open — PRIOR audit D4.7)*
-`ChunkedSave.java` — Save-Format V8 ohne Checksum. Bei korruptem Save → lautlose Datenkorruption. M-UI-2 Scenario-Preset wird in Save-State persistiert; Save-Corruption ist dann "Snapshot-State + Scenario-Preset verloren".
+`EconomySaveLoad.java:17` — `public static final int CHUNKED_VERSION = 33` `[HYP: source-grep EconomySaveLoad.java:17]` (parse_metrics kennt keine custom-const; Save-Format **V33** [nicht V8]). Save-Format **V33** [nicht V8] ohne Checksum. Bei korruptem Save → lautlose Datenkorruption. M-UI-2 Scenario-Preset wird in Save-State persistiert; Save-Corruption ist dann "Snapshot-State + Scenario-Preset verloren".
 
-**D4.6: 9× `catch (Throwable)` + 11× empty-catches in benchmark/WindowState** *(NEU — LOW)*
+**D4.6: 9× `catch (Throwable)` + 11× empty-catches in benchmark/WindowState** *(STATUS: open — Build-Blocker via Phase-4.7-Shield)* —
+Die-Audit-Klassifikation als **LOW** ist veraltet; reale Auswirkung ist **Build-Blocker** weil `tools/phase47-shield.sh` (Pre-Commit-Hook) jeden Commit mit `catch (Throwable)`-Count > 0 oder `IdentityHashMap`-Count > 9 blockiert. Aktueller Stand: 9× `catch(Throwable)` + 11× `new IdentityHashMap` (Limits: 0 bzw. 9). Sprint v0.13.128+ Plant Phase-4.7-Sweep als Pre-Constraint.
 `AdapterReflectionBenchmark.java:247-294` (Benchmark-only — Sancta-Sancta per Rule 14). `WindowState.java:604/612/613` mit `catch (NoSuchMethodException ignored) {}`. **Adapter-Production-Code:** `VanillaDiplomacyAdapter.java:60/90`, `GoodsAccessImpl.java:59` mit `catch (Throwable t)` — haben aber Logging im Body.
 → **M-UI-2 Impact:** Low. Kein direkter Effekt auf M-UI-2 Implementation.
 
-**D4.7: Wallets IdentityHashMap<Object, X> mit Engine-Objekten als Key** *(STATUS: open — PRIOR audit D4.2)*
-`FlowMeter.java:19` — `IdentityHashMap<RoomInstance, FirmState> firms`. Nach Save/Load → neue RoomInstance-Referenzen → firms komplett neu gebaut. OK (Reset), aber GC-Druck bei großen Savegames. M-UI-2 mit Live-Preview über Thronsaal-Savegames macht dieses Thema Player-sichtbar.
+**D4.7: Wallets IdentityHashMap mit Engine-Objekten als Key** *(STATUS: open — PRIOR audit D4.2)*
+`FlowMeter.java:34` — `IdentityHashMap<RoomInstance, FirmState> firms`. Nach Save/Load → neue RoomInstance-Referenzen → firms komplett neu gebaut. OK (Reset), aber GC-Druck bei großen Savegames. M-UI-2 mit Live-Preview über Thronsaal-Savegames macht dieses Thema Player-sichtbar.
 
 ### Empfehlungen
 

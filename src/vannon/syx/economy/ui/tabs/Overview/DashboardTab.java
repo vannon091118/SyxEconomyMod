@@ -126,7 +126,7 @@ public final class DashboardTab implements EconWindowBase.TabContent {
         y += 38;
 
         // Row 2: Warehouse Mode buttons & Emergency Liquidation
-        GButt.ButtPanel normalMode = new GButt.ButtPanel("Handel: Normal", 120) {
+        GButt.ButtPanel normalMode = new GButt.ButtPanel("Handel: Normal", 130) {
             @Override protected void render(SPRITE_RENDERER r, float ds, boolean isActive, boolean isSelected, boolean isHovered) {
                 selectedSet(wh.tradeMode() == StateWarehouses.TradeMode.NORMAL);
                 super.render(r, ds, isActive, isSelected, isHovered);
@@ -135,32 +135,32 @@ public final class DashboardTab implements EconWindowBase.TabContent {
         normalMode.clickActionSet(() -> { DiagnosticExporter.logPlayerAction("overview.trade_mode", "NORMAL"); wh.setTradeMode(StateWarehouses.TradeMode.NORMAL); });
         content.add(normalMode, x, y);
 
-        GButt.ButtPanel buyMode = new GButt.ButtPanel("Nur Kaufen", 100) {
+        GButt.ButtPanel buyMode = new GButt.ButtPanel("Nur Kaufen", 110) {
             @Override protected void render(SPRITE_RENDERER r, float ds, boolean isActive, boolean isSelected, boolean isHovered) {
                 selectedSet(wh.tradeMode() == StateWarehouses.TradeMode.BUY_ONLY);
                 super.render(r, ds, isActive, isSelected, isHovered);
             }
         };
         buyMode.clickActionSet(() -> { DiagnosticExporter.logPlayerAction("overview.trade_mode", "BUY_ONLY"); wh.setTradeMode(StateWarehouses.TradeMode.BUY_ONLY); });
-        content.add(buyMode, x + 125, y);
+        content.add(buyMode, x + 135, y);
 
-        GButt.ButtPanel sellMode = new GButt.ButtPanel("Nur Verkaufen", 100) {
+        GButt.ButtPanel sellMode = new GButt.ButtPanel("Nur Verkaufen", 115) {
             @Override protected void render(SPRITE_RENDERER r, float ds, boolean isActive, boolean isSelected, boolean isHovered) {
                 selectedSet(wh.tradeMode() == StateWarehouses.TradeMode.SELL_ONLY);
                 super.render(r, ds, isActive, isSelected, isHovered);
             }
         };
         sellMode.clickActionSet(() -> { DiagnosticExporter.logPlayerAction("overview.trade_mode", "SELL_ONLY"); wh.setTradeMode(StateWarehouses.TradeMode.SELL_ONLY); });
-        content.add(sellMode, x + 230, y);
+        content.add(sellMode, x + 250, y);
 
-        GButt.ButtPanel liquidateBtn = new GButt.ButtPanel("Not-Liquidation", 120) {
+        GButt.ButtPanel liquidateBtn = new GButt.ButtPanel("Not-Liquidation", 130) {
             @Override protected void render(SPRITE_RENDERER r, float ds, boolean isActive, boolean isSelected, boolean isHovered) {
                 selectedSet(wh.allLiquidating());
                 super.render(r, ds, isActive, isSelected, isHovered);
             }
         };
         liquidateBtn.clickActionSet(() -> { DiagnosticExporter.logPlayerAction("overview.liquidate", "toggle"); wh.setAllLiquidating(!wh.allLiquidating()); });
-        content.add(liquidateBtn, x + 380, y);
+        content.add(liquidateBtn, x + 370, y);
         y += 32;
 
         // ─── INTERAKTIVES TUTORIAL POPUP (ONBOARDING) ───
@@ -209,27 +209,27 @@ public final class DashboardTab implements EconWindowBase.TabContent {
             y += 16;
 
             int maxBars = Math.min(ind.count(), 20);
-            long maxVal = 1;
+            long maxVal = 0;
+            long minVal = 0;
             for (int i = 0; i < maxBars; i++) {
                 EconSnapshot s = ind.get(i);
                 if (s != null && s.treasuryCurrent > maxVal) maxVal = s.treasuryCurrent;
+                if (s != null && s.treasuryCurrent < minVal) minVal = s.treasuryCurrent;
             }
+            long range = Math.max(1, maxVal - minVal);
 
             int barSpacing = 14;
             int barW = 10;
             int maxH = 14;
             for (int i = 0; i < maxBars; i++) {
                 EconSnapshot s = ind.get(i);
-                int level = 0;
-                if (s != null && maxVal > 0) {
-                    level = Math.max(0, Math.min(5, (int) ((s.treasuryCurrent * 5) / maxVal)));
-                }
-                int barH = maxH * level / 5;
-                COLOR barColor;
-                if (level >= 5)       barColor = GCOLOR.UI().GOOD.normal;
-                else if (level >= 3)  barColor = GCOLOR.UI().SOSO.normal;
-                else if (level >= 1)  barColor = GCOLOR.UI().BAD.normal;
-                else                  { y += barSpacing; continue; }
+                if (s == null) continue;
+                long val = s.treasuryCurrent;
+                int level = (int) ((val - minVal) * 5 / range);
+                int barH = Math.max(1, maxH * Math.abs(level) / 5);
+                COLOR barColor = val >= 0
+                    ? (level >= 4 ? GCOLOR.UI().GOOD.normal : level >= 2 ? GCOLOR.UI().SOSO.normal : GCOLOR.UI().BAD.normal)
+                    : GCOLOR.UI().BAD.normal;
 
                 content.add(OverviewHelpers.coloredBar(barColor, barW, barH), x + i * barSpacing, y + maxH - barH);
             }

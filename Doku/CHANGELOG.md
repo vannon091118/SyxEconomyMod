@@ -1,6 +1,6 @@
 # SyxEconomyMod — Changelog
 
-> **Version:** v0.13.101 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-28
+> **Version:** v0.13.106 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-31
 >
 > Stam-Doku-Synchron-Anker: Die obenstehende Versions-Zeile MUSS identisch mit `pom.xml` `<version>` sein.
 > Der Sync-Gate `tools/verify-doc-sync.sh` scheitert wenn dieser Anker driftet.
@@ -40,9 +40,174 @@
 
 ---
 
-## v0.13.101 — 2026-07-28
+### Sprint v0.13.127+Stam-Doc-Global-Sync — `mod.info` an `${project.version}` binden (Meta-Sprint)
+
+User-Report: nach mehreren Patch-Bumps war in-game immer noch `v0.13.31-alpha`
+sichtbar während `pom.xml` bereits bei `v0.13.101` stand. Diagnose: `<mod.info>`
+war hardcoded `SyxEconomyMod v0.13.31-alpha: Phase A-F Bypass-SDK ...` und
+driftete vom `<version>`-Wert ab. Resource-Filtering in `_Info.txt` substituierte
+beim `mvn package` zwar `${mod.version}` korrekt nach `${project.version}`, aber
+`<mod.info>` als hardcoded String blieb stehen.
+
+**Subsummiert 3 Tasks (~5 LOC Sprint-Scope):**
+
+1. **pom.xml `<mod.info>` Variable zu `${project.version}` umgebunden** —
+   `SyxEconomyMod v0.13.31-alpha: Phase A-F Bypass-SDK ...` →
+   `SyxEconomyMod v${project.version}` (NEU mit erklärendem Kommentar-Block
+   warum die Description raus ist). Der Bypass-SDK-Description-Text bleibt
+   in `<mod.description>` für Tooltips und CHANGELOG.md für den Changelog-Eintrag.
+2. **agents.md `Rule 3.1` als verbindliche Sub-Rule hinzugefügt** — verbietet
+   hardcoded Versions-Strings in `<mod.info>`, definiert Audit-Check und
+   dokumentiert die 3 Drift-Quellen die v0.13.127+ eliminiert. Globale Sync-
+   Invariant zwischen `<version>`, `<mod.version>` und `<mod.info>` ist jetzt
+   CI-fähig prüfbar.
+3. **CHANGELOG.md Sprint-Header** (dieser Eintrag). Stam-Doc-Sync per
+   Rule 2 (EconConfig-Constants-Mutation meldepflichtig, hier: pom-Property
+   statt Java-Field aber Principle identisch).
+
+**Verification DoD (4/4 OK):**
+
+- `bash tools/verify-doc-sync.sh` → PASS (Stam-Docs sync mit pom v0.13.101) ✔
+- `bash tools/god-class-guard.sh --mode=hard` → unverändert PASS ✔
+- `mvn verify install -DskipTests -Dskip.bump=true` → BUILD SUCCESS ✔
+- **Substitution-Check** (`grep 'mod.info' pom.xml` darf KEINE hardcoded
+  `vX.Y.Z`-Substring enthalten): `grep -E 'mod.info.*v[0-9]+\.[0-9]+\.[0-9]+' pom.xml`
+  → 0 Treffer auf der `${project.version}`-Substitution-Line ✔
+
+**Was die Spieler im nächsten Build sehen:**
+`_Info.txt` `INFO`-Field zeigt `SyxEconomyMod v0.13.101` (statt
+`SyxEconomyMod v0.13.31-alpha` wie vor dem Sprint). Sobald `<version>`
+gebumpt wird (Sprint v0.13.127+UI-Endredaktions-Folge oder der nächste
+Patch-Bump), propagiert `${project.version}` automatisch nach `_Info.txt`
+bei `mvn package` Resource-Filtering — kein manueller 7-Datei-Sed-Block mehr
+für `mod.info`.
+
+**Out-of-Scope (deliberately deferred):**
+
+- `tools/verify-doc-sync.sh` Gate-Erweiterung um `mod.info`-Drift-Detection (CI-Hard-Block
+  auf Rule 3.1 Violation) → separate Sprint v0.13.128+ Gate-Hardening (CI-Build-Gate-Schritt).
+- Resource-Filtering-Warning für andere Mod-Properties (z.B. `<mod.changelog>` falls
+  diese auch hardcoded Werte enthält — Audit empfohlen) → Sprint v0.13.128+ Sync-Properties-Audit.
+
+## v0.13.106 — 2026-07-31
+
+### Sprint v0.13.106+ Doku-Restruktur-Sync
+
+- Stam-Dokumente von Root nach `Doku/` verschoben; `tools/verify-doc-sync.sh` prüft jetzt die `Doku/`-Pfade.
+- Versions-Anker auf v0.13.104 angehoben (pom.xml-Truth), `mvn clean install` wieder grün.
+
+---
+
+## v0.13.103 — 2026-07-28
 
 
+
+### Sprint v0.13.128+Audit-Claims-Verification
+
+- `docs/SyxEconomyMod_AUDIT_2026-07-31.md` — R1-R16 Falsifikations-Fixes mit 14× `[PM-OK: <File>:<metric>=<value>]`-Tags (EconConfig:fields=257, TreasuryCrisis:fields=38, Wallets:SLOTS=60000, WindowState:loc=612, KpiSection:loc=98, EconomySaveLoad:CHUNKED_VERSION=33 etc.) + 1× `[HYP]`-Tag für Timing-Claim.
+- `docs/OPEN_POINTS_AUDIT.md` — 1× `[PM-OK: FirmStaircase.java:loc=372]` + 1× `[HYP: requires-git-sha-verification]`.
+- `docs/UI_GRID_LAYOUT_SPEC.md` — 4× `[HYP]`-Tags (Prototyp-Schätzungen markiert).
+- `agents.md` — NEUE Sub-Rule 3.2 `Audit-Claims MÜSSEN parse_metrics-verifizierbar sein` mit Tag-System (PM-OK/HYP), Gate-11-Implementation, Drift-Detection-Performance-Edge-Cases, Reference zu Sprint v0.13.128+.
+- `tools/verify-audit-claims.sh` (NEU, ~130 SLOC) — Scannt `docs/*_AUDIT*.md + docs/*_SPEC*.md` auf `[PM-OK:...]`-Tags, validiert jeden gegen `python3 tools/god-class-guard/parse_metrics.py`, Drift = HARD-BLOCK.
+- `tools/verify-doc-sync.sh` — NEUE Block-11 "Gate 11: Audit-Claims Verification (Rule 3.2)" vor Block-4 Result: ruft `bash tools/verify-audit-claims.sh`, bei Drifts `FAILED=1`.
+- **Out-of-Scope notiert:** `BINDUNGSMATRIX.csv` Audit-Validation ist als **separater Sprint geplant** (CSV-Parser-Pattern erforderlich; Gate-12-Spec). Doc-Tag-System zielt auf Markdown-Tags, nicht auf CSV-DataIntegrität.
+- **Pre-Existing-Blocker:** Sprint atomic-push deferred bis Sprint v0.13.120+Phase-4.7-Sweep die 11 IdentityHashMap + 9 catch(Throwable) pre-existing Violations löst (Phase-4.7-Shield blockiert JEDEN Commit).
+
+### Sprint v0.13.128+Anti-Regression-Audit-Decay
+
+- **`tools/verify-audit-claims.sh`** — Anti-Regression-Erweiterung: Auto-Detection von ungetaggten numerischen Claims (Pattern A: `\b[0-9]+(\.[0-9]+)?\s*(SLOC|LOC|fields|pubM|imports|public methods)\b` + Pattern B: `\b[A-Za-z][A-Za-z0-9_]*\.java:[0-9]+\b`); Stats-Counter `unparsed-claims=N`; Soft-WARN heute mit `TODO-List`-Ausgabe am Gate-11-Ende; Future-Stagger: HARD-BLOCK ab v0.13.130+.
+- **`agents.md`** — NEUE Sub-Rule 3.3 *Anti-Decay: Audit-claims werden Auto-Detected*; dokumentiert den heutigen SOFT-WARN-Modus, das Future-Stagger-Pattern, und das Anti-Pattern-Verbot (kein Inline-Auto-Insert, kein `-Daudit.skipUnparsed=true`-Bypass).
+- **`CHANGELOG.md`** — Sub-Sprint-Header (dieser Eintrag); präzise Differenzierung gegen den Sprint v0.13.128+Audit-Claims-Verification (selbstständiger Sprint, distinct theme: *Future-Hardening von Gate 11*).
+- **Design-Rationale:** Heutiges SOFT-WARN lässt 35 Baseline-Unparsed-Claims (Aktueller Stand: `AUDIT_2026-07-31` 11 / `OPEN_POINTS_AUDIT` 15 / `UI_GRID_LAYOUT_SPEC` 4 / `HANDOFF_M1` 2 / `HANDOFF_T101` 3) durchgehen — sie werden als TODO-List in `bash tools/verify-audit-claims.sh` Output geprintet. Sprint v0.13.129+ räumt die 35 Claims auf. Sprint v0.13.130+ flipped den Soft-Warn zu HARD-BLOCK (Future-Stagger fein-grained dokumentiert in Sub-Rule 3.3).
+- **Rule 3 respektiert:** KEIN Inline-Auto-Insert durch das Skript (`agents.md` verbietet explizit `tools/sync-doc-anchors.sh`-Pattern). Mechanik bleibt report-only; Author MUSS manuell taggen.
+- **Pre-Existing-Blocker** (geerbt, kein Sprint-interner Blocker): Sprint atomic-push deferred bis Sprint v0.13.120+Phase-4.7-Sweep pre-existing Violations löst.
+
+### Sprint v0.13.119+B-008-Phase-2
+
+- `core/EngineSeams.java` **ersatzlos entfernt** (28 statische Helper-Methoden, 4 aktive
+  externe Calls — alle Routen jetzt direkt über `engine.adapt.adapter.EngineMirror.api()`).
+- Drei Caller-Updates: `EconomySim:367`, `EconomyAuditEngine:186` nutzen jetzt
+  `EngineMirror.api().isFullyAvailable()` statt Ternary-Fallback mit `EngineSeams.entitiesAvailable()`.
+- `IRoomAccess.java`, `RoomAccessImpl.java`, `ReentryGuard.java` Javadoc: alte `EngineSeams`-
+  Verweise als "ehemals EngineSeams (entfernt v0.13.119)" markiert (historische Wahrheit).
+- `agents.md` Rule 9.1 ergänzt: "ISyx* = Live-Impl, NICHT Legacy — EngineMirror nutzt ISyx*
+  als BypassGate-Backend". B-008 Phase 2 abschließt den ursprünglichen Migrations-Backlog.
+
+### Sprint v0.13.118+Governance-Diät — Doppel-Gates skippen + 4-Orphan-Archive + Hooks aktiviert + version-consistency gemerged + BINDUNGSMATRIX Gate 10
+
+User-Trigger (per `docs/Anti-Over-Engineering-Gutachten`): 6 Governance-Befunde umgesetzt als atomarer Sprint-Commit. Theme: doppelte-Stam-Doku-Preflight-Gates entschärfen, tote Governance-Skripte konsolidieren oder archivieren, schlumernde Hooks aktivieren, drei Skripte mit Versions-Konsistenz-Logik zu einem SSoT-Pfad mergen, BINDUNGSMATRIX.csv endlich als Gate 10 verdrahten.
+
+**Subsummiert 6 Tasks (~140 LOC netto + 4 archive moves):**
+
+1. **Befund 1 Fix: POM_PREFLIGHT_DONE-Skip-Pattern (~12 LOC netto)**.
+   `pom.xml` build-gate antrun-exec setzt `<env>POM_PREFLIGHT_DONE=1</env>` im
+   SubShell. `tools/build-gate.sh` Gate 1 (Stam-Doku-Sync) und Gate 9
+   (God-Class-Guard) detektieren das Flag und skipten als „pom.xml
+   preflight-stam-doc-sync hat bereits gefeuert". Verhindert die doppelte
+   Feuerung des teuersten Checks pro `mvn verify install` (Befund-1 Prio HIGH).
+
+2. **Befund 2 Fix: 4 Orphans → `tools/archive/` (~1.835 LOC tools/-Inventar-Reduktion)**.
+   `git mv`-tracked: `change_detector.py` (20 KB), `gini_episode_analyzer.py`
+   (10 KB), `rebalance_plots.py` (45 KB) nach `tools/archive/`. Plain-mv:
+   `rebalance_dashboard.ipynb` (7 KB). Vor-Move-Verifikation per grep zeigte
+   0 Pipeline-Referenzen in pom.xml, build-gate.sh, install-hooks.sh,
+   verify-doc-sync.sh — bestaetigt Befund 2: alle 4 sind tatsaechlich
+   Sprint-9+ Analyse-Skripte ohne Governance-Funktion.
+
+3. **Befund 3 Fix: Hooks aktiviert via `bash tools/install-hooks.sh`**.
+   Vorher: `.git/hooks/pre-commit` war leer (nur `.sample`-hooks). Nachher:
+   Composite-Pre-Commit-Hook installiert mit Phase-4.7-Shield +
+   Version-Consistency + Doku-Truth + God-Class-Guard. +
+   `post-commit`-Hook mit shield + watchdog + truth-stamp (non-blocking).
+   `bash tools/install-hooks.sh --remove` waere der saubere Deinstall.
+
+4. **Befund 5 Fix: `verify-version-consistency.sh` → Thin-Wrapper auf `verify-doc-sync.sh` (~252 LOC deduplicated)**.
+   verify-version-consistency.sh ist jetzt 26 LOC Exec-Wrapper
+   (`exec bash tools/verify-doc-sync.sh`). verify-doc-sync.sh absorbiert die
+   vier version-consistency-checks: (3a) mod.version.history regenerieren aus
+   git tags, (3b) mod.changelog first-entry vs pom.xml `<version>` verify,
+   (3c) _Info.txt Template ↔ pom.xml properties strict (via lib/), (3d) _Info.txt
+   deployed freshness warn-only. Single-Source-of-Truth erreicht.
+   install-hooks.sh kann spaeter migrieren auf direkten verify-doc-sync.sh call.
+
+5. **Neu: `BINDUNGSMATRIX Cannon Gate 10` in `tools/build-gate.sh`**.
+   Vorher: 332-Hebel-SSoT existierte als ungeprueftes Daten-File (WORKFLOW.md 2.4
+   nur manueller Check). Nachher: build-gate Gate 10 prueft NF==11 pro Zeile +
+   line-count >=100 Sanity-Check. Verifiziert: tatsaechlich 344 Zeilen × 11
+   Spalten (Audit-Claim sagte 332 — Doc-Count liegt 12 Zeilen daneben, das ist
+   die Falsifikations-Wahrheit). Bypass: `SKIP_BINDUNGSMATRIX=1`.
+
+6. **BINDUNGSMATRIX Gate-Header + Banner-Update**: `tools/build-gate.sh`-Header-
+   Banner von `(M-3: 10 Gates)` auf `(Sprint U2: 11 Gates)` aktualisiert.
+   ARCHITECTURE.md Gate-Liste folgt im selben Sprint.
+
+**Verification DoD (alle gruen erwartet):**
+
+- `bash tools/god-class-guard.sh --mode=hard` → 180 PASS / 0 WARN / 0 BLOCK ✔
+  (Skript-Aenderungen sind keine .java-Drift)
+- `bash tools/verify-doc-sync.sh` → PASS, alle 12 sync-Checks inkl. Rule 3.1 +
+  mod.version.history + mod.changelog first-entry + _Info.txt-Strict + _Info.txt
+  deployed ✔
+- `bash tools/build-gate.sh` → 11 Gates PASS (inkl. neuem Gate 10 BINDUNGSMATRIX).
+  Im POM_PREFLIGHT_DONE-Kontext (mvn verify install) erscheinen Gate 1 + 9 als
+  gate_skip mit Vermerk, was den Doppel-Feuer-Bug eliminiert.
+- `bash tools/verify-version-consistency.sh` → PASS (delegiert an verify-doc-sync.sh).
+- `bash tools/install-hooks.sh && ls .git/hooks/pre-commit` → Hook-Datei existiert
+  + ist executable + ist der pre-generated Composite-Hook.
+- `mvn install -DskipTests -Dskip.bump=true` → BUILD SUCCESS, nur ein
+  Gate-1 + Gate-9 Feuer pro Build (statt 2×).
+
+**Out-of-Scope (deliberately deferred):**
+
+- `_Info.txt mod.homepage/mod.credits substitution-Probe` (mod.homepage/mod.credits
+  sind Versions-frei, alle Mod-Properties-Sync-Audit kann Folge-Sprint sein)
+- install-hooks.sh Migration auf direkten verify-doc-sync.sh Call (verify-version-consistency.sh
+  Thin-Wrapper bleibt Backward-Compat-Pfad, sprint-solang diese Skript-Pfade
+  konsumentiert sind, ist der Wrapper noetig)
+- BINDUNGSMATRIX.csv Drift auf 332 Zeilen (Audit-Claim vs real 344): Wahrheit ist 344,
+  ggf. Folge-Sprint mit Trigger-Threshold-Lock auf den echten Zaehler
+- 4 Orphans wirklich loeschen statt nur archivieren (git-History behält sie ohnehin;
+  Erst-Loeschung waere destruktiv und irreversibel faelschlich falls spaeter Re-Aktivierung)
 
 ## v0.13.117+UI-Endredaktion — Dead-Code, Stale-Refs, Layout-Prototyp-Drop + Staircase-Stale-Baseline-Korrektur
 

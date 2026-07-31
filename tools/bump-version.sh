@@ -48,7 +48,12 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 POM="pom.xml"
-CHANGELOG="CHANGELOG.md"
+# Stam-Doku lebt seit der Doku-Restruktur unter Doku/ (Root-Fallback fuer Alt-Branches).
+if [ -f "Doku/CHANGELOG.md" ]; then
+    CHANGELOG="Doku/CHANGELOG.md"
+else
+    CHANGELOG="CHANGELOG.md"
+fi
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -241,13 +246,27 @@ else
     echo "  - <version>${NEW_VERSION}</version> gesetzt"
 fi
 
-# 1b. <mod.info> aktualisieren (SyxEconomyMod v0.1.0 -> v0.2.0)
-#     SINGLE replace (kein /g), um unbeabsichtigte Treffer zu vermeiden
+# 1b. <mod.info> aktualisieren (Sprint v0.13.127+ Rule 3.1: Substitution-Pattern)
+#     Seit Sprint v0.13.127+ bindet <mod.info> an ${project.version} (Maven Resource-Filtering),
+#     kein literal-string-Patch mehr noetig. Maven `mvn package` substituieriert automatisch.
+#     Detection: wenn <mod.info> = "SyxEconomyMod v${project.version}" -> no-op
+#     Legacy-Fallback: wenn mod.info hardcoded Version hat (z.B. "v0.13.31-alpha"), bleibt der
+#     sed-Patch aktiv -- verhindert silent drift auf alten Installations.
 if [[ $DRY_RUN -eq 1 ]]; then
-    echo "  Wuerde aendern: <mod.info>... v${CURRENT_VERSION} ... -> ... v${NEW_VERSION} ..."
+    if grep -qE '<mod\.info>[^<]*\$\{project\.version\}' "$POM" 2>/dev/null; then
+        echo "  WARN: <mod.info> binds to \${project.version} (Rule 3.1) -- Maven filtert auto, KEIN Patch noetig"
+        echo "  Wuerde ueberspringen: <mod.info> Substitution-Pattern erkannt"
+    else
+        echo "  Wuerde aendern: <mod.info>... v${CURRENT_VERSION} ... -> ... v${NEW_VERSION} ..."
+    fi
 else
-    sed -i "s|SyxEconomyMod v${CURRENT_VERSION}|SyxEconomyMod v${NEW_VERSION}|" "$POM"
-    echo "  - <mod.info>... v${NEW_VERSION} ... aktualisiert"
+    if grep -qE '<mod\.info>[^<]*\$\{project\.version\}' "$POM" 2>/dev/null; then
+        echo "  - <mod.info> binds to \${project.version} (Rule 3.1) -- Maven filtert auto, uebersprungen"
+    else
+        # Legacy hardcoded literal (z.B. <mod.info>SyxEconomyMod v0.13.31-alpha:...</mod.info>)
+        sed -i "s|SyxEconomyMod v${CURRENT_VERSION}|SyxEconomyMod v${NEW_VERSION}|" "$POM"
+        echo "  - <mod.info>... v${NEW_VERSION} ... aktualisiert (legacy literal-mode)"
+    fi
 fi
 
 # 1c. <mod.changelog> erster Eintrag: v0.1.0 -> v0.2.0

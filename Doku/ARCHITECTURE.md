@@ -1,6 +1,6 @@
 # SyxEconomyMod — Architektur
 
-> **Version:** v0.13.101 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-28
+> **Version:** v0.13.106 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-31
 >
 > Stam-Doku-Synchron-Anker: Die obenstehende Versions-Zeile MUSS identisch mit `pom.xml` `<version>` sein.
 > Der Sync-Gate `tools/verify-doc-sync.sh` validiert dies vor jedem `mvn compile`.
@@ -212,9 +212,15 @@ Vanilla Engine V71.44 (2.443 Java-Files)
 ~88 Vanilla-Zugriffe total (30 Room + 28 Faction + 18 Humanoid + 12 Stats).
 Bestehende ISyx\* Adapter bleiben als Legacy — EngineMirror ersetzt langfristig.
 
-**B-008 Migration (Phase 1 abgeschlossen, v0.13.64):** 25 von 55 EngineSeams-Aufrufen
-in 6 Core-Dateien auf EngineMirror migriert (Fallback-Pattern:
-`EngineMirror.api() != null ? ... : EngineSeams.*`). 30 verbleibende warten auf Phase 2.
+**B-008 Migration (Phase 1+2 abgeschlossen, v0.13.64 + v0.13.119):** Sprint v0.13.119+B-008-Phase-2
+entfernt `core/EngineSeams.java` ersatzlos (28 statische Helper-Methoden, 4 externe Fallback-Calls).
+3 Caller-Updates (`EconomySim.update()`, `EconomyAuditEngine.updateDemography()`) routen jetzt
+direkt über `EngineMirror.api().isFullyAvailable()`. EngineMirror-Sub-Interfaces (IRoomAccess,
+IHumanoidAccess, IStatsAccess, IPopulationAccess, IFactionAccess, ITreasuryAccess, IGoodsAccess)
+decken alle 28 EngineSeams-Methoden 1:1 ab. **Achtung**: ISyx*-Legacy-Dateien bleiben
+**unverändert** — sie sind die **LIVE-Implementierung** des EngineMirror (`AdapterDispatcher`
+konstruiert `RoomAccessImpl(bundle.warehouse, bundle.transport)` etc.). ISyx*-Entfernung wäre
+Architektur-killend und ist **nicht** Teil von B-008 Phase 2.
 
 Siehe `ROADMAP.md` §Sprint A-1 + B-008 für vollständige Task-Liste + Definition of Done.
 
@@ -402,9 +408,9 @@ Mit Hysterese: `climbStepsDown`/`climbStepsUp` verhindern Flackern an Tier-Grenz
 | Drift-Freiheit | `tools/verify-doc-sync.sh` PASS |
 
 
-## Quality-Gates (9 Gates — Master-Build-Gate Orchestrator)
+## Quality-Gates (11 Gates — Master-Build-Gate Orchestrator, Sprint U2 v0.13.118+)
 
-`tools/build-gate.sh` orchestriert 9 Gates in der Maven-`validate`-Phase:
+`tools/build-gate.sh` orchestriert 11 Gates in der Maven-`validate`-Phase:
 
 | # | Gate | Skript | Skip-Toggle | Hart-Block? |
 |---|---|---|---|---|

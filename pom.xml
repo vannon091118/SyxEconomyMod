@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.vannon</groupId>        <artifactId>syx-economy-mod</artifactId>
-        <version>0.13.101</version>
+        <version>0.13.106</version>
 
     <properties>
         <maven.compiler.target>21</maven.compiler.target>
@@ -16,12 +16,19 @@
         <mod.version>${project.version}</mod.version>
         <mod.author>Vannon</mod.author>
         <mod.description>Vollwertige Wirtschaftssimulation für Songs of Syx V71: Arbeitsmarkt, Firmen-Profitmaximierung, Marktpreise, Geldumlauf, Steuern, Staatskasse, Vermögensverteilung und Krisenmechanik.</mod.description>
-        <mod.info>SyxEconomyMod v0.13.31-alpha: Phase A-F Bypass-SDK — VarHandle/MethodHandle Auto-Select-Adapter, 5 Engine-Adapter migriert (Diplomacy/Transport/Warehouse/Boosting/AI), 4 Fallback-Adapter + 3 MH-Varianten gelöscht, per-Adapter granulare Degradation, BuildStamp-Identitäts-Anker.</mod.info>
+        <!-- Sprint v0.13.127+Stam-Doc-Global-Sync: mod.info global an project.version binden.
+             Vorher war der Wert hardcoded v0.13.31-alpha → driftete auf 0.13.101 = in-game Info-Feld
+             zeigte v0.13.31-alpha während VERSION 0.13.101. Jetzt v${project.version}: die
+             `${project.version}`-Substitution wird bei mvn package durchgeführt (Resource-Filtering),
+             ${mod.info} in _Info.txt zeigt IMMER die aktuelle projekt-version. Detail-Description
+             (Phase A-F Bypass-SDK ...) bleibt in <mod.description> bzw. CHANGELOG.md.
+             Rule 3.1 Sub-Rule: globale Sync-Invariant zwischen pom <version>, <mod.version> und <mod.info>. -->
+        <mod.info>SyxEconomyMod v${project.version}</mod.info>
         <mod.homepage>https://github.com/vannon/syx-economy-mod</mod.homepage>
         <mod.license>MIT</mod.license>
         <mod.credits>Original mod by Vannon; localization and optimizations by the SyxEconomyMod team.</mod.credits>
         <mod.dependencies>Requires Songs of Syx V71.44 or compatible. No other mods required.</mod.dependencies>
-        <mod.changelog>v0.13.101 - Phase A-F: BypassGate SDK (FieldAccessor/MethodAccessor/ClassResolver), 5 Adapter auf BypassGate migriert, 7 Dateien gelöscht (4 Fallback + 3 MH), EconConfig.useMethodHandleAdapters entfernt, BuildStamp-Identität, Adapter-READY-Logs; v0.13.1 - UX-Cleanup: Tooltip-Echo entfernt, Fenster-Stack-Offset+Defensiv-Audit, Deutsche Labels 140px+, Unicode→→Fix, Debug-Tab versteckt, close()-Reihenfolge fix, Farbige Balken (coloredBar) statt ASCII-Rauten, EconHud C.WIDTH()-Pos, LiveSlider-IntSupplier; v0.13.0 - Vanilla-Nativity: SPanel-Hintergrund, GCOLOR-Theme, Vanilla-Icons+Checkbox, Slider, EconHud; v0.1.3 - UX-Audit: 15 interaktive Tabs, Debug-Tab (Logger opt-in/out), SubjectJob Overlay, Block-Char-Balken fuer Ampeln, Not-Liquidation+Lohn-Slider+Steuer-Toggle, 'Was soll ich heute tun?'-Berater, Trend-Pfeile, IdentityMapRegistry LOG-Fix, TopBar entfernt, alle Toggles interaktiv; v0.1.2 - Hotfix: Phantom-Profit, globales Rate-Limiting, insolvenzsichere Surplus-Share; v0.1.1 - Balance-Krisen-Fixes: Firma-Cold-Start, Gewinnverteilung, Kopfsteuer-Armutsfreigrenze; v0.1.0 (Phase 4) - Adapter-Architektur: 5 Vanilla/Fallback-Interfaces, DiagnosticExporter, Rebalancing-Dashboard; v0.0.9 - Bauarbeiter swarming-Schutz, Starvation EventLog, O(1) ServiceCache; v0.0.8 - Audit-Fixes, Advisor Meilensteine; v0.0.7 - PovertyPressure, OddjobAutomation, WarehouseAutomation; v0.0.6 - Gini→Loyalty, Stufen-Freischaltung; v0.0.5 - Property-Markt; v0.0.4 - Scarcity→Price→Priority; v0.0.3 - roundingDrift-Fix, Housing-Miete; v0.0.2 - Chunked save/load; v0.0.1 - Berater-Tab, Erstveröffentlichung | CHANGELOG.md enthaelt die vollstaendige Historie.</mod.changelog>
+        <mod.changelog>v0.13.106 - Phase A-F: BypassGate SDK (FieldAccessor/MethodAccessor/ClassResolver), 5 Adapter auf BypassGate migriert, 7 Dateien gelöscht (4 Fallback + 3 MH), EconConfig.useMethodHandleAdapters entfernt, BuildStamp-Identität, Adapter-READY-Logs; v0.13.1 - UX-Cleanup: Tooltip-Echo entfernt, Fenster-Stack-Offset+Defensiv-Audit, Deutsche Labels 140px+, Unicode→→Fix, Debug-Tab versteckt, close()-Reihenfolge fix, Farbige Balken (coloredBar) statt ASCII-Rauten, EconHud C.WIDTH()-Pos, LiveSlider-IntSupplier; v0.13.0 - Vanilla-Nativity: SPanel-Hintergrund, GCOLOR-Theme, Vanilla-Icons+Checkbox, Slider, EconHud; v0.1.3 - UX-Audit: 15 interaktive Tabs, Debug-Tab (Logger opt-in/out), SubjectJob Overlay, Block-Char-Balken fuer Ampeln, Not-Liquidation+Lohn-Slider+Steuer-Toggle, 'Was soll ich heute tun?'-Berater, Trend-Pfeile, IdentityMapRegistry LOG-Fix, TopBar entfernt, alle Toggles interaktiv; v0.1.2 - Hotfix: Phantom-Profit, globales Rate-Limiting, insolvenzsichere Surplus-Share; v0.1.1 - Balance-Krisen-Fixes: Firma-Cold-Start, Gewinnverteilung, Kopfsteuer-Armutsfreigrenze; v0.1.0 (Phase 4) - Adapter-Architektur: 5 Vanilla/Fallback-Interfaces, DiagnosticExporter, Rebalancing-Dashboard; v0.0.9 - Bauarbeiter swarming-Schutz, Starvation EventLog, O(1) ServiceCache; v0.0.8 - Audit-Fixes, Advisor Meilensteine; v0.0.7 - PovertyPressure, OddjobAutomation, WarehouseAutomation; v0.0.6 - Gini→Loyalty, Stufen-Freischaltung; v0.0.5 - Property-Markt; v0.0.4 - Scarcity→Price→Priority; v0.0.3 - roundingDrift-Fix, Housing-Miete; v0.0.2 - Chunked save/load; v0.0.1 - Berater-Tab, Erstveröffentlichung | CHANGELOG.md enthaelt die vollstaendige Historie.</mod.changelog>
         <mod.version.history>pre-m1-reset-2026-07-28</mod.version.history>
         <game.version.major>71</game.version.major>
         <game.version.minor>44</game.version.minor>
@@ -74,17 +81,40 @@
         </dependency>
         <!-- Sprint 6.0 — Mockito fuer engine-coupled Branches (Sprint 9 T-COV-9).
              Seit Mockito 5.0 ist mockito-inline in mockito-core integriert — kein
-             separates Artifact noetig. mockito-junit-jupiter fuer @ExtendWith + @Mock. -->
+             separates Artifact noetig. mockito-junit-jupiter fuer @ExtendWith + @Mock.
+             Sprint v0.13.106+Doku-Restruktur: Upgrade 5.14.2 -> 5.17.0 — Java-25-
+             Classfile-Instrumentierung fuer finale Klassen (KpiSectionTest @Mock
+             FlowPrices) funktionierte mit 5.14.2 nicht mehr ("Could not modify all
+             classes"). mockito-core 5.17.0 zieht transitiv weiterhin byte-buddy
+             1.15.11 → deshalb zusaetzlich der explizite ByteBuddy-Pin unten. -->
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>5.14.2</version>
+            <version>5.17.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-junit-jupiter</artifactId>
-            <version>5.14.2</version>
+            <version>5.17.0</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- Sprint v0.13.106+Doku-Restruktur: ByteBuddy-Pin auf 1.18.3 (Java-25-tauglich).
+             mockito-core 5.17.0 deklariert transitiv weiterhin byte-buddy 1.15.11, das
+             Java 25 (Classfile 69) offiziell nur bis 24 (68) unterstuetzt → Inline-Mockmaker
+             scheitert beim Mocken finaler Klassen (KpiSectionTest @Mock FlowPrices) mit
+             "Java 25 (69) is not supported by the current version of Byte Buddy".
+             Expliziter Pin ueberschreibt die transitive Version. -->
+        <dependency>
+            <groupId>net.bytebuddy</groupId>
+            <artifactId>byte-buddy</artifactId>
+            <version>1.18.3</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.bytebuddy</groupId>
+            <artifactId>byte-buddy-agent</artifactId>
+            <version>1.18.3</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -215,6 +245,10 @@
                             <target>
                                 <exec executable="bash" failonerror="true" dir="${basedir}">
                                     <arg value="tools/build-gate.sh"/>
+                                <!-- Sprint v0.13.118+Governance-Diät: POM_PREFLIGHT_DONE markiert den SubShell-Kontext,
+                                     damit build-gate.sh Gate 1 (verify-doc-sync) + Gate 9 (god-class-guard) ueberspringt
+                                     (siehe pom.xml preflight-stam-doc-sync + preflight-god-class-guard). -->
+                                <env key="POM_PREFLIGHT_DONE" value="1"/>
                                 </exec>
                             </target>
                         </configuration>

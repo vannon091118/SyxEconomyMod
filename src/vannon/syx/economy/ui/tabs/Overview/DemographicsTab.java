@@ -110,7 +110,7 @@ public final class DemographicsTab implements EconWindowBase.TabContent {
 
         if (stats.people > 0 && stats.tallest > 0) {
             String[] bands = {"Unterschicht", "Untere Mitte", "Obere Mitte", "Wohlhabend"};
-            for (int b = 0; b < 4 && y < 440; b++) {
+            for (int b = 0; b < 4 && y < 520; b++) {
                 int bFrom = b * 4;
                 int bTo = Math.min((b + 1) * 4, WealthStats.BUCKETS);
                 int bandCount = 0;

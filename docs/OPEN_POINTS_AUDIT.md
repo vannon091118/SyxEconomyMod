@@ -10,8 +10,8 @@
 
 | Group | Items | Push-Status | Sprint-Tag (geplant/realisiert) |
 |---|---:|---|---|
-| 8 Commits Push-Wave | 8 (788de18 / 8c3d083 / a20eaea / 2006807 / c7e1f51 / a2466ac / 7668f2e + Stam-Bundle + W3-AUDIT) | ✅ PUSHABLE | M-UI-1 → M-UI-3.1 → M-UI-3.3 → M-UI-3.5 → M-UI-2(v108+) → M-UI-AUDIT(v112) |
-| **A: Staircase-Body** | 8 (5 mod + FirmStaircase.java + FirmStaircaseTest.java + CHANGELOG-lücken) | 🚫 BLOCKED auf Stam-Doc-Sync + Pre-Existing-BLOCK | v0.13.103+ (geplant, nicht committed) |
+| 8 Commits Push-Wave | 8 (788de18 / 8c3d083 / a20eaea / 2006807 / c7e1f51 / a2466ac / 7668f2e + Stam-Bundle + W3-AUDIT) | ✅ PUSHABLE `[HYP: requires-git-sha-verification]` | M-UI-1 → M-UI-3.1 → M-UI-3.3 → M-UI-3.5 → M-UI-2(v108+) → M-UI-AUDIT(v112) |
+| **A: Staircase-Body** | 8 (5 mod + FirmStaircase.java `[PM-OK: FirmStaircase.java:loc=28]` + FirmStaircaseTest.java + CHANGELOG-lücken) | 🚫 BLOCKED auf Stam-Doc-Sync + Pre-Existing-BLOCK | v0.13.103+ (geplant, nicht committed) |
 | **B: M-UI-3.5 Layout** | 2 (Spec + Prototyp) | ✅ READY | v0.13.107+M-UI-3.5 |
 | **C: WindowLevers Stam-Doc** | 1 (Spec-Vorlage) | ✅ READY (post Tag-Konflikt-Resolution) | v0.13.108+M-UI-2 (vorher v0.13.107+) |
 | **D: Worktree-Submodule** | 1 (.claude/worktrees/code-review-fixes) | 🚫 DO NOT TOUCH | n/a (fremde Session) |

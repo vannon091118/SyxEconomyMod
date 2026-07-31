@@ -54,7 +54,7 @@ gate_skip() {
 }
 
 echo -e "${CYAN}╔════════════════════════════════════════════════════════╗${NC}"
-echo -e "${CYAN}║  SyxEconomyMod — Build Gate v0.13.61 (M-3: 10 Gates) ║${NC}"
+echo -e "${CYAN}║  SyxEconomyMod — Build Gate v0.13.118+ (Sprint U2: 11 Gates) ║${NC}"
 echo -e "${CYAN}╚════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
@@ -83,6 +83,8 @@ echo ""
 echo -e "${CYAN}[1/9] Stam-Doku-Sync (7 Dokumente ↔ pom.xml)${NC}"
 if [ "${SKIP_SYNC:-0}" = "1" ]; then
     gate_skip "Sync-Gate uebersprungen (SKIP_SYNC=1)"
+elif [ "${POM_PREFLIGHT_DONE:-0}" = "1" ]; then
+    gate_skip "Sync-Gate uebersprungen (POM_PREFLIGHT_DONE=1) — pom.xml antrun preflight-stam-doc-sync hat bereits gefeuert"
 else
     if bash tools/verify-doc-sync.sh 2>/dev/null; then
         gate_pass "Alle 7 Stam-Dokumente sync mit pom.xml"
@@ -249,6 +251,8 @@ echo ""
 echo -e "${CYAN}[9/9] God-Class-Guard (LOC/PubM/Fields-Caps + Baseline-Drift)${NC}"
 if [ "${SKIP_GOD_GUARD:-0}" = "1" ]; then
     gate_skip "God-Class-Guard uebersprungen (SKIP_GOD_GUARD=1)"
+elif [ "${POM_PREFLIGHT_DONE:-0}" = "1" ]; then
+    gate_skip "God-Class-Guard uebersprungen (POM_PREFLIGHT_DONE=1) — pom.xml antrun preflight-god-class-guard hat bereits gefeuert"
 else
     # Mode=hard: WARN zählt als BLOCKER (god-class-guard.sh --mode=hard)
     if bash tools/god-class-guard.sh --mode=hard 2>/dev/null; then
@@ -261,6 +265,32 @@ else
             gate_fail "WARN — Annäherung an God-Class-Limit (siehe tools/god-class-guard.on-failure.md)"
         fi
     fi
+fi
+echo ""
+
+
+# ── Gate 10: BINDUNGSMATRIX Canon (Sprint v0.13.118+Governance-Diät) ──
+# Stellt sicher dass die 332-Hebel × 11-Spalten-SSoT-Canonical-Reference-Data
+# intakt ist: 11 Spalten pro Zeile (awk NF==11), und >=100 Zeilen als Sanity-Check.
+# Seit der Doku-Restruktur liegt die SSoT unter Doku/ (Root-Fallback fuer Alt-Branches).
+# Bypass: SKIP_BINDUNGSMATRIX=1
+echo -e "${CYAN}[10/11] BINDUNGSMATRIX Canon (332 Hebel × 11 Spalten SSoT)${NC}"
+if [ "${SKIP_BINDUNGSMATRIX:-0}" = "1" ]; then
+    gate_skip "BINDUNGSMATRIX Canon uebersprungen (SKIP_BINDUNGSMATRIX=1)"
+elif [ -f "Doku/BINDUNGSMATRIX.csv" ] || [ -f "BINDUNGSMATRIX.csv" ]; then
+    BM_FILE="BINDUNGSMATRIX.csv"
+    if [ -f "Doku/BINDUNGSMATRIX.csv" ]; then
+        BM_FILE="Doku/BINDUNGSMATRIX.csv"
+    fi
+    BM_LINES=$(wc -l < "$BM_FILE" 2>/dev/null | tr -d ' ' || echo 0)
+    BM_COLS=$(awk -F';' 'NR==1{print NF; exit}' "$BM_FILE" 2>/dev/null || echo 0)
+    if [ "${BM_COLS:-0}" -eq 11 ] && [ "${BM_LINES:-0}" -ge 100 ]; then
+        gate_pass "BINDUNGSMATRIX konsistent: ${BM_LINES} Zeilen × ${BM_COLS} Spalten (${BM_FILE})"
+    else
+        gate_fail "BINDUNGSMATRIX drift: ${BM_LINES} Zeilen × ${BM_COLS} Spalten (erwartet >=100 Zeilen × 11 Spalten)"
+    fi
+else
+    gate_fail "BINDUNGSMATRIX.csv fehlt (weder Doku/BINDUNGSMATRIX.csv noch Root) — Data-SSoT nicht gefunden"
 fi
 echo ""
 

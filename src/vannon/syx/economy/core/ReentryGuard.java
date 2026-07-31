@@ -4,7 +4,9 @@ import java.util.function.Consumer;
 
 /**
  * Verhindert Re-Entry in kritische Update-Sektionen (Tick-Loops, Save/Load-Hooks,
- * EngineSeams-Bridges die von Vanilla zweimal angesprochen werden können).
+ * Engine-Mirror-Bridges die von Vanilla zweimal angesprochen werden können;
+ * pre-v0.13.119 war dies `EngineSeams`-Klasse, die via statische Methoden
+ * direkt mit der Engine sprach — seither über `EngineMirror.api().<sub>().<method>()`).
  *
  * <p>Anwendungs-Pattern (try-with-style, manuell):
  * <pre>{@code

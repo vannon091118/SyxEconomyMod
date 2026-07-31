@@ -266,7 +266,7 @@ public abstract class EconWindowBase {
     /** Resource names, blueprint keys. Default: 100. */
     public static final int FONTW_NAME   = 100;
     /** LiveSlider value. Default: 80. */
-    public static final int FONTW_SLVAL  = 96;  // U-02: 80→96 — "####-500D#" Overflow bei negativen Werten (Kopfsteuer)
+    public static final int FONTW_SLVAL  = 112;  // U-02: 80→96→112 — "####-500D#" Overflow bei negativen Werten (Kopfsteuer, Forensic-Fix F4)
     /** LiveSlider bar. Default: 120. */
     public static final int FONTW_SLBAR  = 120;
     /** Wage columns, medium metrics. Default: 56. */

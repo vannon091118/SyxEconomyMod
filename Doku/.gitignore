@@ -1,0 +1,50 @@
+# ── Maven / Build ─────────────────────────────────────────────────
+target/
+*.jar
+*.class
+*.war
+
+# ── Auto-generated sources (regenerated at every build) ───────────
+src/vannon/syx/economy/core/BuildStamp.java
+
+# ── IDE ───────────────────────────────────────────────────────────
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+.factorypath
+
+# ── Freebuff Desktop ──────────────────────────────────────────────
+.freebuff/
+
+# ── OS ────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.desktop.db*
+
+# ── Binary artifacts ──────────────────────────────────────────────
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.zip
+*.7z
+*.tar.gz
+
+# ── Live-notes test artifacts (regenerated weekly) ────────────────
+docs/live-notes/consolidation-*.md
+docs/live-notes/processed/
+
+# ── Python cache ──────────────────────────────────────────────────
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# ── Diagnostic exports (runtime, not source) ──────────────────────
+diagnostics/
+economy_events.log
+
+# ── Auto-Memory-Save-Hook (ephemere Session-Handover, post-commit regeneriert) ──
+docs/*_SESSION_HANDOVER.md
