@@ -105,13 +105,16 @@ final class InstanceScript implements SCRIPT.SCRIPT_INSTANCE {
     }
 
     /** Hotkey polling with edge detection (Hk.java pattern from ListMenus mod).
+     *  NUM-ONLY by Design (Sprint v0.13.116+ Hotfix):
      *  Numpad + (334) → Overview/Advisor window.
      *  Numpad - (333) → Economy window.
      *  Numpad * (332) → State window.
      *  Numpad 0 (320) → Quickview window.
-     *  Letter-key fallback (Res-UI-HOTKEYS): E/O/S/Q — gleiches Verhalten,
-     *                                            damit Laptop-Spieler ohne
-     *                                            Numpad die Fenster ebenfalls öffnen können.
+     *  Letter-key fallback gated by EconConfig.letterHotkeyFallbackEnabled.
+     *    Default FALSE — wir haben NumPad gewaehlt UM Vanilla-Hotkey-Kollisionen zu
+     *    vermeiden. E ist in songs-of-syx fuer Edge-Building/Interact reserviert
+     *    und kollidiert sonst mit unserem Window-Open. Toggle ON nur fuer Laptop-
+     *    Spieler ohne NumPad, mit Kollisionsrisiko.
      *  ESC (256) → close all economy windows.
      *  Clean switching: pressing a hotkey hides all other windows first. */
     private void pollHotkeys() {
@@ -121,12 +124,14 @@ final class InstanceScript implements SCRIPT.SCRIPT_INSTANCE {
         boolean num0 = CORE.getInput().getKeyboard().isPressed(320); // Numpad 0
         boolean esc  = CORE.getInput().getKeyboard().isPressed(256); // ESC
 
-        // Letter-key fallback (Res-UI-HOTKEYS): ASCII-Codes funktionieren auf jeder
-        // Standard-Tastatur, Numpad nicht.
-        boolean eKey = CORE.getInput().getKeyboard().isPressed(69);  // E
-        boolean oKey = CORE.getInput().getKeyboard().isPressed(79);  // O
-        boolean sKey = CORE.getInput().getKeyboard().isPressed(83);  // S
-        boolean qKey = CORE.getInput().getKeyboard().isPressed(81);  // Q
+        // Sprint v0.13.116+ Hotfix — Letter-key fallback gated by config (default OFF).
+        // ASCII-Codes funktionieren auf jeder Standard-Tastatur; NumPad nicht.
+        // Bei OFF (Default) sind Letter-Keys = no-op, NumPad-only ist die Policy.
+        boolean letters = EconConfig.letterHotkeyFallbackEnabled;
+        boolean eKey = letters && CORE.getInput().getKeyboard().isPressed(69);  // E
+        boolean oKey = letters && CORE.getInput().getKeyboard().isPressed(79);  // O
+        boolean sKey = letters && CORE.getInput().getKeyboard().isPressed(83);  // S
+        boolean qKey = letters && CORE.getInput().getKeyboard().isPressed(81);  // Q
 
         // Merge numpad + letter: rising-edge für jede Aktion getrennt erfasst,
         // sodass (Numpad+ ODER O) übersicht öffnet; das erste auslösende gewinnt.

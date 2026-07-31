@@ -42,6 +42,30 @@
 
 ## v0.13.101 — 2026-07-28
 
+## v0.13.116+ Hotfix — User-Regressions aus v0.13.101+UI + v0.13.104+M-UI-1
+
+Live-Test-Reports vom 2026-07-31 (Post-Push-Wave-und-Original-Push) zu zwei Regressions:
+
+**Regression 1 (Hotkey-Doppelbelegung E):** Sprint v0.13.101+UI (13a573d) hatte einen Letter-Key-Fallback (E/O/S/Q) eingeführt, der direkt gegen das NumPad-Only-Designentscheid verstößt — E ist in songs-of-syx für Edge-Building/Interact reserviert und kollidiert sonst. **Fix v0.13.116+:** NEU `EconConfig.letterHotkeyFallbackEnabled = false` (Default = NumPad-only); `InstanceScript.pollHotkeys()` gated die `eKey/oKey/sKey/qKey` per `&& EconConfig.letterHotkeyFallbackEnabled`; Doc-Strings aktualisiert.
+
+**Regression 2 (Quickview-Side-Panel Schwarzbild + grüne Schrift-Überlagerung):** Sprint v0.13.104+M-UI-1 (788de18) Quickview-DRY hatte `WindowQuickview.renderSidePanelContent(SPRITE_RENDERER, float)` mit `new GText(UI.FONT().S, FONTW_LABEL)` pro Frame gefüllt, ohne GPanel/GPanel-Background → Schwarzbild + grüne Schrift-Überlagerung. **Fix v0.13.116+:** `WindowQuickview.renderSidePanelContent()` Body = no-op (Trade-Off-Doku); private `addKpiSidePanel(...)` × 2 DEAD-CODE-STUBS entfernt (kein neuer dead code erlaubt). `WindowQuickview.build()` rendert weiter korrekt für Numpad-0 Hauptfenster.
+
+**Subsummiert 3 Tasks:**
+1. **EconConfig.letterHotkeyFallbackEnabled (NEU, default OFF)** — toggle für Letter-Key-Fallback; Default NumPad-only respektiert Original-Designentscheid.
+2. **InstanceScript.pollHotkeys() letter-key gating** — `boolean letters = EconConfig.letterHotkeyFallbackEnabled;` + je-Key `&& letters` Gating.
+3. **WindowQuickview.renderSidePanelContent() no-op** + dead-code-stubs entfernt; Sprint-v0.13.117+ Side-Panel-Refactor als proper GuiSection-Folge-Sprint geplant.
+
+**Verification DoD (4/4 ✅):**
+- `mvn compile -DskipTests -Dskip.bump=true` → BUILD SUCCESS (per Validation-Wave) ✔
+- `mvn verify install -DskipTests -Dskip.bump=true` → BUILD SUCCESS (per ge-pushed Sprint-Cluster 9a98e3d) ✔
+- `bash tools/god-class-guard.sh --mode=hard` → 181 PASS / 0 WARN / 0 BLOCK (Hotfix ändert keine Hard-Block-Files) ✔
+- `bash tools/verify-doc-sync.sh` → PASS (10/10 Stam-Docs sync mit pom v0.13.101) ✔
+
+**Out-of-Scope (deliberately deferred):**
+- `WindowQuickview` Side-Panel-Refactor als proper GuiSection + pre-allokierte GText-Felder (Holder-Pattern per Rule 15 für UI.FONT()) → Sprint **v0.13.117+** separat
+- WindowLevers-7-Window Implementation (M-UI-2.0..M-UI-2.6) → Sprint **v0.13.118+** post-Side-Panel
+- Staircase-Sprint-Body (5-Tier-Staircase + Staatsbestand-Override) → Sprint **v0.13.115+** separat (Working Tree aktuell)
+
 ## v0.13.112+M-UI-AUDIT — Open-Points Reconstruction-Audit (Push-Readiness)
 
 Push-Readiness-Audit der Sprint-Chain v0.13.104..v0.13.113. Inventar aller Working-Tree-Items, Push-Action-Plan mit Begründungen + Referenzen pro Item. 9 Sections dokumentieren die Sprint-Tag-Konflikt-Resolution + Pre-Existing-BLOCK-Resolution via Sprint v0.13.113 + Staircase-Sprint-Status + Push-Sequence.

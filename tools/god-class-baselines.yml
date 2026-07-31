@@ -441,3 +441,12 @@ legacy_baselines:
     reason_at_emit: "pre-existing baseline (Sprint v0.13.113+M-UI-3.3 grandfather). See docs/OPEN_POINTS_AUDIT.md Section 4. Base-Klasse fuer 5 Window*-Files, Sancta-sub-rule-exempt"
     baseline_update: "Sprint v0.13.113+M-UI-3.3 Pre-Existing-BLOCK-Grandfather - Build-Gate-BLOCKER fix vor Sprint v0.13.107-112 Push-Wave."
 
+
+  src/vannon/syx/economy/ui/WindowQuickview.java:
+    loc: 168
+    pubM: 7
+    fields: 3
+    imports: 17
+    status_at_emit: pass
+    reason_at_emit: 'Sprint v0.13.116+ Hotfix per User-Regression "Klein-Window rechts aussen KEINE funktion ausser Schwarzbild und gruene Schrift die ueberlagert" — renderSidePanelContent() BODY = no-op (Trade-Off-Doku im Body), 2 addKpiSidePanel-Helpers DEAD-CODE entfernt (Sprint v0.13.104+M-UI-1 hatte diese als naked-GText-per-frame helper eingefuehrt). WindowQuickview.build() UNVERAENDERT und rendert weiterhin korrekt fuer Numpad-0 Quickview-Hauptfenster. Folge-Refactor fuer proper GuiSection + pre-allokierte GText-Felder (Holder-Pattern per Rule 15 fuer UI.FONT()) ist Sprint v0.13.117+ Side-Panel-Refactor. Alle Schwellen unter warn (loc 168 < 600; pubM 6 < 25; fields 3 < 18; imports 17 < 25).'
+    baseline_update: 'Sprint v0.13.116+ Hotfix User-Regression-Fix (Side-Panel-Render no-op). Sprint v0.13.104+M-UI-1 Modified-First-Commit erfasste baseline_update der KpiSection (welche damals die Duplikation aus WindowQuickview ererbte). WindowQuickview jetzt mit eigenem baselines-Entry dokumentiert.'
