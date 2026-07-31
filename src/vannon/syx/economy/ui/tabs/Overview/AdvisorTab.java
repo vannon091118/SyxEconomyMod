@@ -185,23 +185,86 @@ public final class AdvisorTab implements EconWindowBase.TabContent {
         content.add(nextText, x, y);
         y += 24;
 
-        // === WAS SOLL ICH TUN? ===
+        // === WAS SOLL ICH TUN? === Sprint v0.13.105+/M-UI-2 — Triplet-Render
         GText adviceHdr = new GText(UI.FONT().M, EconWindowBase.FONTW_HDR);
         adviceHdr.set("--- Was soll ich heute tun? ---");
         adviceHdr.lablify();
         content.add(adviceHdr, x, y);
         y += 20;
 
-        String advice = OverviewHelpers.buildAdvice(sim, stats, ind, treasury);
-        // U-06: Use smaller font for long advice texts to avoid clipping.
-        GText adviceText;
-        if (advice.length() > 80) {
-            adviceText = new GText(UI.FONT().S, EconWindowBase.FONTW_BODY);
-        } else {
-            adviceText = new GText(UI.FONT().M, EconWindowBase.FONTW_BODY);
+        // Causality-Triplet: {Wahrscheinlichkeit p, Empfehlung A, Alternativen [B, C] mit Trade-off-Tabelle}.
+        AdvisorEngine.Advice advice = AdvisorEngine.buildAdvice(sim, stats, ind, treasury);
+
+        // ─── Empfehlung A (prominent) ───
+        String recText = advice.recommendation() + "  (" + advice.probability() + "% Konfidenz)";
+        GText recLine = advice.recommendation().length() > 80
+            ? new GText(UI.FONT().S, EconWindowBase.FONTW_BODY)
+            : new GText(UI.FONT().M, EconWindowBase.FONTW_BODY);
+        recLine.set(recText);
+        recLine.color(GCOLOR.UI().SOSO.normal);
+        content.add(recLine, x, y);
+        y += 22;
+
+        // ─── Alternativen-Tabelle (Top-3 mit 4 Trade-off-Spalten) ───
+        if (advice.alternatives() != null && !advice.alternatives().isEmpty()) {
+            GText altHdr = new GText(UI.FONT().S, EconWindowBase.FONTW_HDR);
+            altHdr.set("Alternativen (mit Trade-off):");
+            altHdr.lablify();
+            content.add(altHdr, x, y);
+            y += 18;
+
+            // Column-Header
+            EconWindowBase.addColHeader(content, x,        y, "Massnahme", 200);
+            EconWindowBase.addColHeader(content, x + 210,  y, "Cash",       60);
+            EconWindowBase.addColHeader(content, x + 280,  y, "Loyalty",    55);
+            EconWindowBase.addColHeader(content, x + 345,  y, "Produkt.",   55);
+            EconWindowBase.addColHeader(content, x + 410,  y, "Risiko",     50);
+            y += 16;
+
+            for (AdvisorEngine.Alternative alt : advice.alternatives()) {
+                GText actT = new GText(UI.FONT().S, EconWindowBase.FONTW_KPI);
+                actT.set(alt.action());
+                actT.color(GCOLOR.T().NORMAL);
+                content.add(actT, x, y);
+
+                GText cashT = new GText(UI.FONT().S, EconWindowBase.FONTW_LABEL);
+                cashT.set(alt.formatCash());
+                cashT.color(alt.cashDeltaPerDay() > 0
+                    ? GCOLOR.UI().GOOD.normal
+                    : alt.cashDeltaPerDay() < 0
+                        ? GCOLOR.UI().BAD.normal
+                        : GCOLOR.T().NORMAL);
+                content.add(cashT, x + 210, y);
+
+                GText loyT = new GText(UI.FONT().S, EconWindowBase.FONTW_CNT);
+                loyT.set(alt.formatLoyalty());
+                loyT.color(alt.loyaltyDelta() > 0
+                    ? GCOLOR.UI().GOOD.normal
+                    : alt.loyaltyDelta() < 0
+                        ? GCOLOR.UI().BAD.normal
+                        : GCOLOR.T().NORMAL);
+                content.add(loyT, x + 280, y);
+
+                GText prodT = new GText(UI.FONT().S, EconWindowBase.FONTW_CNT);
+                prodT.set(alt.formatProduction());
+                prodT.color(alt.productionDelta() > 0
+                    ? GCOLOR.UI().GOOD.normal
+                    : alt.productionDelta() < 0
+                        ? GCOLOR.UI().BAD.normal
+                        : GCOLOR.T().NORMAL);
+                content.add(prodT, x + 345, y);
+
+                GText riskT = new GText(UI.FONT().S, EconWindowBase.FONTW_CNT);
+                riskT.set(alt.formatRisk());
+                riskT.color(alt.riskScore() > 50
+                    ? GCOLOR.UI().BAD.normal
+                    : alt.riskScore() > 25
+                        ? GCOLOR.UI().SOSO.normal
+                        : GCOLOR.UI().GOOD.normal);
+                content.add(riskT, x + 410, y);
+
+                y += 14;
+            }
         }
-        adviceText.set(advice);
-        adviceText.color(GCOLOR.UI().SOSO.normal);
-        content.add(adviceText, x, y);
     }
 }

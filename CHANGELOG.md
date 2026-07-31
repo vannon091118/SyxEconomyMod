@@ -42,6 +42,35 @@
 
 ## v0.13.101 — 2026-07-28
 
+## v0.13.105+/M-UI-2 — Advisor Causality-Layer (Triplet + Trade-off-Tabelle)
+
+**Subsummiert 3 Tasks:**
+1. **AdvisorEngine.java (NEU, 168 SLOC)** — Causality-Layer-Engine mit 7-Case-Cascade (Priority 1–7 + 3 Spezial-Cases) → Triplet-Format `{Wahrscheinlichkeit p (Hybrid: Base ± EconSnapshot-Modifier), Empfehlung A, Top-3 Alternativen mit 4-Spalten-Trade-off-Tabelle}`. ActionLibrary-Enums mit 9 hand-codierten deterministischen Trade-off-Konstanten (Cash ±D/d, Loyalty ±Δ, Production ±Δ, Risk 0–100 %). Records `Alternative` + `Advice` (Java 21 via `maven.compiler.source=21`, JEP 395).
+2. **AdvisorTab.java (203 SLOC, +51 vs M-UI-3)** — Empfehlung A prominent gerendert (Header mit `(p % Konfidenz)`), darunter kompakte 4-Spalten-Tabelle für die Top-3 Alternativen mit Cash/Loyalty/Production/Risiko-ColorCoding.
+3. **OverviewHelpers.java buildAdvice → AdvisorEngine.buildAdvice Migration** — 61 SLOC entfernt, 2 Unused-Imports (CompactNumber, ScarcitySignal) bereinigt. buildWarningChains/countChainAffected bleiben Helper-Modul-Pflicht (Rule 9: gemeinsame Sub-Package-Lookup).
+
+**Trade-off-Tabelle 4-spaltig, Color-coded (GCOLOR-schemata):**
+| Spalte | Format | Color-Logik |
+|---|---|---|
+| Cash | `±N D/d` | GOOD wenn > 0, BAD wenn < 0, NEUTRAL bei 0 |
+| Loyalty | `±0.0X` | GOOD wenn > 0, BAD wenn < 0, NEUTRAL bei 0 |
+| Production | `±0.0X` | GOOD wenn > 0, BAD wenn < 0, NEUTRAL bei 0 |
+| Risiko | `N%` | GOOD < 25%, SOSO 25–50%, BAD > 50% |
+
+**ActionLibrary (9 Alternative):** TAX_RAISE_5PCT, TAX_RAISE_15PCT, EXPORT_SURPLUS, WAGE_CUT_25PCT, WAGE_TOPUP_10PCT, HOUSING_BONUS, BUILD_WORKSHOP, FOOD_SUBSIDY, WAIT_AND_SEE — alle mit hand-curated Trade-off-Werten (kein Engine-Live-Calc, Rule-15 konform).
+
+**Verification DoD:**
+- `mvn compile -DskipTests -Dskip.bump=true` → BUILD SUCCESS für AdvisorEngine/AdvisorTab/OverviewHelpers (Sprint-Scope)
+- `bash tools/god-class-guard.sh --mode=hard` → 0 BLOCK für Sprint v0.13.105+/M-UI-2 geänderte Files (3 re-baselines: AdvisorTab +51 SLOC, OverviewHelpers -63 SLOC, AdvisorEngine NEU)
+- `bash tools/verify-doc-sync.sh` → PASS (Stam-Doc-Sync-Anker pom v0.13.101 unverändert)
+- `code-reviewer-minimax-m3` ≥ 1 PASS-Round
+
+**Out-of-Scope (per Rule 11 Theme-Bound):**
+- Andere Tabs (Dashboard/Demographics/Property) unverändert
+- ActionLibrary noch nicht Live-Linked auf Engine-State (Sprint M-UI-2.5 separat)
+- Custom Action-Edit für Spieler (Sprint M-UI-2.6 separat)
+
+
 ### Sprint v0.13.104+M-UI-1 — UI-Stabilität + Severity-Heatmap + Quickview-DRY (2026-07-30)
 
 **Theme:** UI-Audit-Top-3-Fix-Paket aus `docs/SyxEconomyMod_AUDIT_2026-07-30_UI-RESTRUCTURE.md`

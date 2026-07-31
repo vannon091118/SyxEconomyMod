@@ -46,13 +46,13 @@ Spec-Migration: BINDUNGSMATRIX.csv ist Single-Source-of-Truth.
 
 Das Mod fügt Songs of Syx eine parallele Wirtschaftsschicht hinzu. Jeder Siedler hat ein eigenes Wallet, Firmen rechnen边际isch ab, der Staat kann Steuern erheben und Subventionen verteilen. Das Mod ersetzt keine Vanilla-Systeme, sondern arbeitet über einen **Adapter-Layer** strikt getrennt daneben.
 
-Modul-Bilanz: **163 Java-Dateien, ~31.152 LOC** (core 22.539 + adapter 5.164 + ui 2.623 + benchmark 328 + warehouse/market 51 + bridges 309 + io 220)
+Modul-Bilanz: **164 Java-Dateien, ~31.220 LOC** (core 22.539 + adapter 5.164 + ui 2.668 + benchmark 328 + warehouse/market 51 + bridges 309 + io 220)
 
 | Modul | Dateien | LOC | Aufgabe |
 |---|---:|---:|---|
 | `vannon/syx/economy/core/` | 126 | ~22.539 | Wirtschafts-Sim + Subsysteme (inkl. EngineLevers 103 Toggles, io/ 2 Dateien) |
 | `vannon/syx/economy/adapter/` | 27 | ~5.164 | EngineMirror-SDK (9) + ISyx* Legacy (7) + Vanilla (5) + Bypass-SDK (5) + Dispatcher (1) |
-| `vannon/syx/economy/ui/` | 11 | ~3.500 | 4 Fenster + Base + KpiSection (M-UI-1) + 5 Overview-Module (M-UI-3) |
+| `vannon/syx/economy/ui/` | 12 | ~3.668 | 4 Fenster + Base + KpiSection (M-UI-1) + 5 Overview-Module + AdvisorEngine (M-UI-2) |
 | `vannon/syx/economy/benchmark/` | 1 | ~328 | Reflection-vs-MethodHandle-Benchmark |
 | `vannon/syx/economy/warehouse/market/` | 1 | ~51 | MarketSharedState (Sprint M-1) |
 | `settlement/room/...` | 4 | ~309 | Package-Private Brücken (compile-time-safe, außerhalb mod-package) |

@@ -10,13 +10,11 @@ import snake2d.util.misc.ACTION;
 import util.colors.GCOLOR;
 import util.gui.misc.GButt;
 import util.gui.misc.GText;
-import vannon.syx.economy.core.CompactNumber;
 import vannon.syx.economy.core.DiagnosticExporter;
 import vannon.syx.economy.core.EconIndicators;
 import vannon.syx.economy.core.EconProgression;
 import vannon.syx.economy.core.EconSnapshot;
 import vannon.syx.economy.core.EconomySim;
-import vannon.syx.economy.core.ScarcitySignal;
 import vannon.syx.economy.core.WealthStats;
 
 /**
@@ -28,7 +26,7 @@ import vannon.syx.economy.core.WealthStats;
  * <ul>
  *   <li>Health-Ampel: addTrafficLight, addTrendArrow, addMilestoneIcon</li>
  *   <li>Status-Text: allClear, buildStatusText</li>
- *   <li>Advisor-Logic: buildAdvice, nextStageReqs, buildWarningChains,
+ *   <li>Advisor-Logic: nextStageReqs, buildWarningChains,
  *       countChainAffected, CHAIN_IMPACT_THRESHOLD</li>
  *   <li>Visuals: coloredBar, countLines</li>
  *   <li>Property-Toggle: addCheckbox</li>
@@ -178,91 +176,6 @@ public final class OverviewHelpers {
             default:
                 return "Maximale Stufe erreicht!";
         }
-    }
-
-    /** Priority-based advisor: scans current state and returns the single most
-     *  important action the player should take. */
-    public static String buildAdvice(EconomySim sim, WealthStats stats, EconIndicators ind, long treasury) {
-        if (stats.people == 0) {
-            return "Baue Haeuser und ziehe Siedler an, um die Wirtschaft zu starten.";
-        }
-
-        // B-013: Check scarcity state for price-aware advice
-        // ScarcitySignal returns 0.0 (abundant) to 1.0 (extreme shortage).
-        ScarcitySignal signal = sim.scarcitySignal();
-        boolean severeScarcity = signal != null && signal.maxScarcity() > 0.7;
-
-        // Priority 1: Unpaid workers → wages too low or treasury empty
-        int unpaid = sim.firmLedger().lastWorkersUnpaid();
-        if (unpaid > 0 && treasury <= 0) {
-            if (severeScarcity) {
-                return "Kasse leer bei Knappheit! Steuern erhöhen und Produktionsgebäude bauen — Export ist zu teuer.";
-            }
-            return "Kasse leer! Exportiere Ressourcen oder erhöhe Steuern, um " + unpaid + " unbezahlte Arbeiter zu bezahlen.";
-        }
-        if (unpaid > stats.people / 4) {
-            if (severeScarcity) {
-                return "Krise: " + unpaid + " Arbeiter unbezahlt! Produktionsgebäude bauen statt Export — Ressourcen sind knapp (" + String.format("%.0f", signal.maxScarcity() * 100) + "% Knappheit).";
-            }
-            return "Krise: " + unpaid + " Arbeiter unbezahlt! Sofort Export starten oder Lohn senken (Staat → Lager).";
-        }
-
-        // Priority 2: Evictions
-        long evictions = sim.housingMarket().lastEvictions();
-        if (evictions > 3) {
-            return evictions + " Zwangsraeumungen! Mieteinnahmen: " + CompactNumber.format(sim.housingMarket().lastRentCollected()) + " D. Mehr Wohnungen bauen oder Mietzuschuss erhoehen.";
-        }
-
-        // Priority 3: Treasury crisis
-        if (treasury < -10000) {
-            return "Schuldenkrise! Staat muss dringend sparen: Steuern aktivieren, Loehne senken, Ressourcen exportieren.";
-        }
-        if (treasury < 0) {
-            return "Kasse im Minus. Export starten (Lager → Nur verkaufen) oder Steuern erhoehen.";
-        }
-
-        // Priority 4: Empty state warehouses
-        int whCount = sim.stateWarehouses().ownedCount();
-        if (whCount == 0) {
-            return "Keine Staatslager gebaut. Lagerhaus als Staat uebernehmen (Rechtsklick -> Staatlich).";
-        }
-
-        // Priority 5: Furnishing crisis
-        if (ind.isFurnishingCrisis()) {
-            return "Einrichtungskrise! Holzproduktion erhoehen oder Holz am Markt zukaufen.";
-        }
-
-        // Priority 5b: Chain bottleneck (IO-Analysis, Leontief-aware)
-        if (signal != null && sim.ioMatrix() != null && sim.ioMatrix().isValid()) {
-            int worstChain = 0;
-            String worstResource = "";
-            for (int i = 0; i < sim.ioMatrix().size() && i < RESOURCES.ALL().size(); ++i) {
-                if (sim.flowPrices().coverage(i) >= 0.5) continue;
-                int affected = countChainAffected(sim, i);
-                if (affected > worstChain) {
-                    worstChain = affected;
-                    RESOURCE res = (RESOURCE) RESOURCES.ALL().get(i);
-                    worstResource = res.name.toString();
-                }
-            }
-            if (worstChain >= 3) {
-                return "Ketten-Engpass: " + worstResource + "-Mangel wirkt sich über " + worstChain
-                        + " Ressourcen in der Kette aus! Produktion hochfahren oder am Markt zukaufen.";
-            }
-        }
-
-        // Priority 6: Emigration
-        if (ind.isEmigrationSpike()) {
-            return "Abwanderung! Loehne und Wohnqualitaet verbessern, um Buerger zu halten.";
-        }
-
-        // Priority 7: No production
-        if (sim.firmLedger().firmFinancialSnapshots().isEmpty()) {
-            return "Keine produzierenden Betriebe. Baue Werkstaetten (Holzfaeller, Baecker, Schneider).";
-        }
-
-        // OK
-        return "Alles im Lot. Weiter Bevoelkerung und Produktion ausbauen.";
     }
 
     /** Builds causal warning chains from current indicator state.

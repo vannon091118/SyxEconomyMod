@@ -249,13 +249,21 @@ legacy_baselines:
     reason_at_emit: 'Sprint v0.13.106+M-UI-3 — DemographicsTab aus WindowOverview extrahiert. Alle Schwellen klar unter warn (loc 115 < 600; pubM 2 < 25; fields 1 < 18; imports 9 < 25). Vermögensverteilung-Histogramm + 4 Wohlstandsbänder (Unterschicht/Mitte/Wohlhabend) + Mieteinnahmen-Footer 1:1 erhalten.'
     baseline_update: 'Sprint v0.13.106+M-UI-3 Tab-Modul-Split — ehemals private static inner-class DemographicsTab in eigenes File ausgelagert.'
   src/vannon/syx/economy/ui/tabs/Overview/AdvisorTab.java:
-    loc: 152
+    loc: 203
     pubM: 2
     fields: 1
     imports: 11
     status_at_emit: pass
-    reason_at_emit: 'Sprint v0.13.106+M-UI-3 — AdvisorTab aus WindowOverview extrahiert. Alle Schwellen klar unter warn (loc 152 < 600; pubM 2 < 25; fields 1 < 18; imports 11 < 25). Ampel-Dashboard (6 Anzeigen) + Warnketten (kausale Ketten) + 3-Tage-Trend-Tabelle + Stufe & Meilensteine + Priority-Based Advisor (B-013-aware) 1:1 erhalten.'
-    baseline_update: 'Sprint v0.13.106+M-UI-3 Tab-Modul-Split — ehemals private static inner-class AdvisorTab in eigenes File ausgelagert. Verwendet 7 OverviewHelpers-Methoden für Ampel/Advisor-Logik (addTrafficLight/addTrendArrow/addMilestoneIcon/buildAdvice/nextStageReqs/buildWarningChains/countLines).'
+    reason_at_emit: 'Sprint v0.13.105+/M-UI-2 Re-Baseline — Empfehlung A prominent + 4-Spalten-Trade-off-Tabelle für Top-3-Alternativen + Probability-Anzeige (% Konfidenz) hinzugefügt. Alle Schwellen weiter unter warn (loc 203 < 600; pubM 2 < 25; fields 1 < 18; imports 11 < 25). Ersetzt die einfache 1-String-Recommend durch ein Triplet.'
+    baseline_update: 'Sprint v0.13.105+/M-UI-2 Causality-Layer UI-Render — vorher (M-UI-3): 'String-Return aus OverviewHelpers.buildAdvice'. Nachher (M-UI-2): AdvisorEngine.Advice-Triplet Triplet-Render mit Header-Block + Alternativen-Tabelle.'
+  src/vannon/syx/economy/ui/tabs/Overview/AdvisorEngine.java:
+    loc: 168
+    pubM: 5
+    fields: 7
+    imports: 6
+    status_at_emit: pass
+    reason_at_emit: 'Sprint v0.13.105+/M-UI-2 — NEU. Causality-Layer-Engine (Pure-Java, Rule-15 safe). ActionLibrary-Enums mit statisch-deterministischen Trade-off-Konstanten (9 Alternativen). 7-Case-Cascade in buildAdvice() (Priority 1-7 + 3 Spezial-Cases) → Triplet {Wahrscheinlichkeit p (Hybrid), Empfehlung A, Top-3 Alternativen mit Trade-off-Spalten}. Records `Alternative` und `Advice` (Java-16+ JEP395 feature, pom.xml target=21). Alle Schwellen klar (loc 168 < 600; pubM 5 < 25; fields 7 < 18; imports 6 < 25).'
+    baseline_update: 'Sprint v0.13.105+/M-UI-2 — additiv neben AdvisorTab.java, ersetzt OverviewHelpers.buildAdvice (in Sprint v0.13.106+/M-UI-3 als privater Helper in der 4-Tab-Composition-Shell). Rule-15 safe (ActionLibrary hat statische Konstanten, kein Live-Engine-Touch).'
   src/vannon/syx/economy/ui/tabs/Overview/PropertyTab.java:
     loc: 91
     pubM: 8
@@ -265,10 +273,18 @@ legacy_baselines:
     reason_at_emit: "Sprint v0.13.106+M-UI-3 — PropertyTab aus WindowOverview extrahiert (1:1 erhalten). pubM=8 wegen 6 anonymous ACTION-Klassen für Slider-Callbacks (Rule 6 / Sprachstil-Konvention aus v0.13.x Streams; Lambda-Refactor in Sprint v0.13.107 falls gewünscht). Alle Schwellen unter warn (loc 91 < 600; fields 1 < 18; imports 10 < 25)."
     baseline_update: 'Sprint v0.13.106+M-UI-3 Tab-Modul-Split — ehemals private static inner-class PropertyTab in eigenes File ausgelagert. Verwendet OverviewHelpers.addCheckbox (PropertyToggle mit DiagnosticExporter.logPlayerAction-Logging) + EconWindowBase.addKpi/addSlider.'
   src/vannon/syx/economy/ui/tabs/Overview/OverviewHelpers.java:
-    loc: 255
-    pubM: 14
-    fields: 13
-    imports: 18
+    loc: 192
+    pubM: 13
+    fields: 12
+    imports: 16
     status_at_emit: pass
-    reason_at_emit: 'Sprint v0.13.106+M-UI-3 — alle Schwellen klar unter warn (loc 255 < warn 600; pubM 14 < warn 25; fields 13 < warn 18; imports 18 < warn 25). Helper-Klasse mit Konstanten CHAIN_IMPACT_THRESHOLD + 14 public static Methoden: Visuals (coloredBar), Health-Ampel (addTrafficLight/addTrendArrow/addMilestoneIcon), Status (allClear/buildStatusText), Advisor (nextStageReqs/buildAdvice/buildWarningChains/countChainAffected/getSnapshotField/countLines), Property-Toggle (addCheckbox mit DiagnosticExporter-Logging).'
-    baseline_update: 'Sprint v0.13.106+M-UI-3 Tab-Modul-Split — ehemals 13 private static helpers in WindowOverview (948 LOC) konsolidiert in dieses Helper-Modul. Rule-15 konform: keine static-final-Engine-Touchables.'
+    reason_at_emit: 'Sprint v0.13.105+/M-UI-2 Re-Baseline — buildAdvice entfernt (61 SLOC) und in AdvisorEngine.buildAdvice migriert (Causality-Triplet). Jetzt 13 public static Methods: Visuals (coloredBar), Health-Ampel (addTrafficLight/addTrendArrow/addMilestoneIcon), Status (allClear/buildStatusText), Counters (countLines), Trend (getSnapshotField), Advisor (nextStageReqs/buildWarningChains/countChainAffected), Property-Toggle (addCheckbox). Alle Schwellen weiter unter warn (loc 192 < 600; pubM 13 < 25; fields 12 < 18; imports 16 < 25).'
+    baseline_update: 'Sprint v0.13.105+/M-UI-2 Causality-Layer Migration — buildAdvice entfernt (-61 SLOC, -1 pubM, -1 field) + ScarcitySignal/CompactNumber-Imports entfernt (-2 imports). Advisor-Logik jetzt in AdvisorEngine.java (separates Modul).'
+  src/vannon/syx/economy/ui/Layout.java:
+    loc: 209
+    pubM: 15
+    fields: 23
+    imports: 9
+    status_at_emit: warn
+    reason_at_emit: 'Sprint v0.13.106+M-UI-3.5 — fields=23 > warn=18 (+27%) ist ABSICHTLICH durch Union-Cell-Pattern (kein Generic-T, kein Box). Trade-Off zugunsten von Generic-Layout-Performance-Trap-Vermeidung (sealed switch auf CellKind-enum, JIT-foldet zu tableswitch ohne VTable-Indirection). Andere Metriken unter warn: loc 209 < 600; pubM 15 < 25; imports 9 < 25. Sprint M-UI-5+ kann bei Bedarf auf per-Kind Sub-Klassen refactorn (verringert fields um 4/5 aber fuehrt VTable-Devirtualization ein).'
+    baseline_update: 'Sprint v0.13.106+M-UI-3.5 Fluent-Layout-Prototyp + Spec (docs/UI_GRID_LAYOUT_SPEC.md). Ersetzt hardcoded x+170/x+240/x+380/x+480 in den 16 Tabs — Migration separat Sprint M-UI-5 (kein Rule-11 Theme-Scope in M-UI-3.5). API: Layout.grid(cols, gap).at(x,y).cellWidth(w).rowHeight(h).row()/.newLine()/.kpi()/.icon()/.slider()/.checkbox()/.header()/.text()/.span(N)/.precompute()/.build(parent). Pre-Compute-Pass einmal linear O(N), Render-Pass einmal linear mit switch (5 konstante Cases → tableswitch).'
