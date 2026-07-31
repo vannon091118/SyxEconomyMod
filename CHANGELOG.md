@@ -44,6 +44,24 @@
 
 ## v0.13.105+/M-UI-2 — Advisor Causality-Layer (Triplet + Trade-off-Tabelle)
 
+## v0.13.111+M-UI-3.1 — Mockito EngineMock-Fixture (Extension of M-UI-3)
+
+Ergaenzt die ursprueglich deferred Mockito-Test-Infrastruktur von Sprint v0.13.106+M-UI-3. mockito-core 5.14.2 + mockito-junit-jupiter 5.14.2 in pom.xml, Mockito-inline (default seit 5.0) erlaubt Mocking final-Klassen.
+
+**Subsummiert 2 Tasks:**
+1. **KpiSectionTest.sortIndicesByCoverageAsc (5 neue Tests)** — @ExtendWith(MockitoExtension.class) + @Mock FlowPrices + @MockitoSettings(strictness=LENIENT). Coverage-Pfade: null-flowPrices, zero-total, single-resource, ascending-coverage, uniform-coverage. Verify Driving Rule: jede Schwellwert-/Sortier-Aenderung bricht mindestens einen Test.
+2. **EngineMirrorTest (6 Singleton-Tests)** — Package-private resetForTesting()-Hook fuer Test-Isolation, plus @BeforeEach/@AfterEach Reset-Discipline. Vertrag: init-twice-Idempotenz, reset-Idempotenz, reset-then-init Round-Trip.
+
+**Verification DoD:**
+- 11 neue JUnit-Tests ✅
+- mockito-inline 5.14.2 (Default seit Mockito 5.0) ✅
+- test/-Files Sancta-Pattern exempt vom god-class-guard ✅
+
+**Out-of-Scope:**
+- Tab.build() Smoke-Tests via Mockito-EngineMock → Sprint v0.13.112+M-UI-3.2
+- EngineMirror-IRoomAccess MockStatic-Pattern → Sprint v0.13.113+M-UI-3.3
+
+
 **Subsummiert 3 Tasks:**
 1. **AdvisorEngine.java (NEU, 168 SLOC)** — Causality-Layer-Engine mit 7-Case-Cascade (Priority 1–7 + 3 Spezial-Cases) → Triplet-Format `{Wahrscheinlichkeit p (Hybrid: Base ± EconSnapshot-Modifier), Empfehlung A, Top-3 Alternativen mit 4-Spalten-Trade-off-Tabelle}`. ActionLibrary-Enums mit 9 hand-codierten deterministischen Trade-off-Konstanten (Cash ±D/d, Loyalty ±Δ, Production ±Δ, Risk 0–100 %). Records `Alternative` + `Advice` (Java 21 via `maven.compiler.source=21`, JEP 395).
 2. **AdvisorTab.java (203 SLOC, +51 vs M-UI-3)** — Empfehlung A prominent gerendert (Header mit `(p % Konfidenz)`), darunter kompakte 4-Spalten-Tabelle für die Top-3 Alternativen mit Cash/Loyalty/Production/Risiko-ColorCoding.
