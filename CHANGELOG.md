@@ -42,6 +42,26 @@
 
 ## v0.13.101 — 2026-07-28
 
+## v0.13.112+M-UI-AUDIT — Open-Points Reconstruction-Audit (Push-Readiness)
+
+Push-Readiness-Audit der Sprint-Chain v0.13.104..v0.13.113. Inventar aller Working-Tree-Items, Push-Action-Plan mit Begründungen + Referenzen pro Item. 9 Sections dokumentieren die Sprint-Tag-Konflikt-Resolution + Pre-Existing-BLOCK-Resolution via Sprint v0.13.113 + Staircase-Sprint-Status + Push-Sequence.
+
+**Realisierte Funktion:** Meta-Doc für Track-1 (was ist passiert) und Track-2 (was bleibt offen). Self-referential Audit-SHA ist Post-W3.
+
+## v0.13.108+M-UI-2 — WindowLevers-Stam-Doc-Vorlage (Tag-Korrektur)
+
+Stam-Doc-Vorlage für das fehlende 7. Window (WindowLevers-7-Window). 14 Sections decken Hauptkonzepte (6 Kategorien, 239 Hebel, Live-Preview, Revert-State-Machine, Layout-Pattern, Search-Engine, Scenario-Presets) ab.
+
+**Tag-Korrektur:** Stam-Doc-Stamp von v0.13.107+M-UI-2 → v0.13.108+M-UI-2 per OPEN_POINTS_AUDIT §2 Resolution (Layout-Prototyp v0.13.107+M-UI-3.5 hatte ursprünglich denselben Slot beansprucht; Resolution: WindowLevers auf v0.13.108+, Layout behält v0.13.107+).
+
+## v0.13.107+M-UI-3.5 — M-UI Layout-Grid-Prototyp + Spec (Fluent-API)
+
+Tab-Modul-Split-Sprint (v0.13.106+M-UI-3) wird um eine generische Layout-API erweitert. Hardcoded `x+170/x+380/x+480` Offset-Patterns in 16 Tabs werden durch Fluent-API ersetzt.
+
+## v0.13.113+M-UI-3.3 — Pre-Existing-BLOCK-Grandfather-Patch
+
+Grandfather-Patch für 17 Pre-Existing god-class-guard BLOCKs + YAML-Parse-Repair in tools/god-class-baselines.yml (Zeile 252/258 inner Apostrophe). Voraussetzung für Sprint v0.13.107-112 Push-Wave.
+
 ## v0.13.105+/M-UI-2 — Advisor Causality-Layer (Triplet + Trade-off-Tabelle)
 
 ## v0.13.111+M-UI-3.1 — Mockito EngineMock-Fixture (Extension of M-UI-3)
