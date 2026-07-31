@@ -151,7 +151,7 @@ public final class WindowState extends EconWindowBase {
             content.add(wageHeader, x, y);
             y += 24;
 
-            addSlider(content, x, y, "Lohn/Arbeiter", wh::wage, 0, EconConfig.wageMax, EconConfig.wageStep,
+            addSlider(content, x, y, "Lohn/Arbeiter", wh::wage, 0, EconConfig.wageMax,
                 new ACTION() { @Override public void exe() { wh.setWage(wh.wage() + EconConfig.wageStep); } },
                 new ACTION() { @Override public void exe() { wh.setWage(Math.max(0, wh.wage() - EconConfig.wageStep)); } });
 
@@ -181,7 +181,7 @@ public final class WindowState extends EconWindowBase {
             y += 28;
 
             // Kopfsteuer slider (replaces static KPI)
-            addSlider(content, x, y, "Kopfsteuer/Saison", () -> EconConfig.perHeadTax, 0, 500, 5,
+            addSlider(content, x, y, "Kopfsteuer/Saison", () -> EconConfig.perHeadTax, 0, 500,
                 new ACTION() { @Override public void exe() { int old = EconConfig.perHeadTax; EconConfig.perHeadTax = Math.min(500, EconConfig.perHeadTax + 5); DiagnosticExporter.logConfigChange("perHeadTax", old, EconConfig.perHeadTax); } },
                 new ACTION() { @Override public void exe() { int old = EconConfig.perHeadTax; EconConfig.perHeadTax = Math.max(0, EconConfig.perHeadTax - 5); DiagnosticExporter.logConfigChange("perHeadTax", old, EconConfig.perHeadTax); } });
             addKpi(content, x + 380, y, UI.icons().s.shield, "Freigrenze",
@@ -274,7 +274,7 @@ public final class WindowState extends EconWindowBase {
             y += 22;
 
             // Corvée-Draft slider
-            addSlider(content, x, y, "Aushebung %", () -> EconConfig.corveeDraftPercent, 0, 100, 5,
+            addSlider(content, x, y, "Aushebung %", () -> EconConfig.corveeDraftPercent, 0, 100,
                 new ACTION() { @Override public void exe() { EconConfig.corveeDraftPercent = Math.min(100, EconConfig.corveeDraftPercent + 5); } },
                 new ACTION() { @Override public void exe() { EconConfig.corveeDraftPercent = Math.max(0, EconConfig.corveeDraftPercent - 5); } }, "%");
             addKpi(content, x + 380, y, UI.icons().s.human, "Max Personen",

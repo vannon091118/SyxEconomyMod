@@ -192,39 +192,10 @@ public final class WindowQuickview extends EconWindowBase {
         }
     }
 
-    /** Sprint v0.13.116+ Hotfix — Vanilla ISidePanel rendering path.
-     *  Called per-frame from InstanceScript's Panel implementation.
-     *  Trade-Off BODY TEMPORARILY DISABLED — siehe Regression-Diagnose im Body.
-     *  WindowQuickview.build() rendert weiterhin korrekt (Numpad-0 oeffnet Hauptfenster).
-     *  Folge-Refactor fuer proper GuiSection + pre-allokierte GText-Felder in Sprint v0.13.117+. */
-    public void renderSidePanelContent(SPRITE_RENDERER r, float ds) {
-        if (!EconConfig.windowEnabled) return;
-        // Sprint v0.13.116+ Hotfix — Side-Panel-Render no-op.
-        //
-        // Diagnose der User-Regression "Klein-Window rechts aussen KEINE funktion
-        // ausser Schwarzbild und gruene Schrift die ueberlagert — WOZU SOLL DAS SEIN?":
-        //   (a) addKpiSidePanel erzeugte pro Frame `new GText(UI.FONT().S, FONTW_LABEL)`
-        //       → GText-Leak + GCOLOR.T().NORMAL default faerbt Schrift gruen.
-        //   (b) Kein GPanel/GPanel-Background drawn → Schwarzbild sickert durch,
-        //       weil das Side-Panel-Slot-Body ohne expliziten Background gerendert wird.
-        //   (c) Kein GuiSection-Container → Render-Order unbestimmt, Schrift-Frame
-        //       stapelt sich pro Tick → gruene Schrift-Ueberlagerung auf Schwarzbild.
-        //
-        // Fix v0.13.116+: Side-Panel-Slot reserviert fuer Folge-Sprint
-        // (WindowQuickview Side-Panel-Sprint v0.13.117+) der eine proper GuiSection
-        // + vorab allokierte GText-Objekte (Holder-Pattern per Rule 15 fuer UI.FONT())
-        // + GPanel-Background baut. Aktuell: WindowQuickview.build() rendert weiterhin
-        // korrekt (Numpad-0 oeffnet Hauptfenster mit allen KPIs); nur die
-        // Side-Panel-Darstellung ist disabled.
-        //
-        // Trade-Off: Spieler sieht im Side-Slot nichts statt visuellem Chaos.
-        // Bewusst akzeptabel — UI-Stabilitaet > Feature-Optik.
-    }
-
-    // Sprint v0.13.116+ Hotfix — Side-Panel-Helpers (addKpiSidePanel × 2) ENTFERNT.
-    // Vorher: dead-code no-op stubs (private, encapsulated, niemals aufgerufen
-    // seit renderSidePanelContent() = no-op). Per agents.md "no new dead code"
-    // sind private dead-code-stubs kein pattern — entfernt.
-    // Folge-Sprint WindowQuickview-Side-Panel v0.13.117+ baut proper GuiSection-
-    // Variante mit public-API-Helper fuer SidePanel-Rendering.
+    // Sprint v0.13.117+ UI-Endredaktion — renderSidePanelContent ENTFERNT (0 Caller, no-op).
+    // Sprint v0.13.116+ Hotfix hatte Body disabled wegen Regression "Schwarzbild+grüne Schrift",
+    // die privaten addKpiSidePanel-Helper waren bereits in e667436 entfernt. Sprint v0.13.117+
+    // schliesst das Thema komplett: public no-op API ohne Aufrufer ist dead code per agents.md.
+    // Folge-Sprint fuer proper Side-Panel-Rebuild (neu mit Layout-Migration v0.13.117+ falls noetig)
+    // bleibt Sprint v0.13.126+ WindowQuickview Side-Panel proper Rebuild.
 }

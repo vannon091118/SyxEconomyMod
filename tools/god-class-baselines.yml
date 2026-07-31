@@ -212,7 +212,7 @@ legacy_baselines:
     imports: 21
     status_at_emit: block
     reason_at_emit: fields 32 > block 24
-    baseline_update: 'Sprint v0.13.106+M-UI-3 Visibility-Tweak — `addSlider` Overloads×4 + `addColHeader` von package-private auf public static heraufgestuft (Cross-Package-Pattern fuer ui.tabs.Overview.* Sub-Package). Result: pubM 6→13 (+7, +117% Drift ueber +10% Hard-Block-Cap), fields/imports/loc unveraendert. `addKpi` Overloads×2 waren bereits public. Re-baselined per Rule 14. (Vorgaenger-Baseline aus Sprint M-UI-1: catch-Hygiene-Fix + Error-Boundary onTabBuildError, +19 SLOC +2 imports, fields 33→32.)'
+    baseline_update: 'Sprint v0.13.106+M-UI-3 Visibility-Tweak — `addSlider` Overloads×4 + `addColHeader` von package-private auf public static heraufgestuft (Cross-Package-Pattern fuer ui.tabs.Overview.* Sub-Package). Result: pubM 6→13 (+7, +117% Drift ueber +10% Hard-Block-Cap), fields/imports/loc unveraendert. `addKpi` Overloads×2 waren bereits public. Re-baselined per Rule 14. (Vorgaenger-Baseline aus Sprint M-UI-1: catch-Hygiene-Fix + Error-Boundary onTabBuildError, +19 SLOC +2 imports, fields 33→32.) Sprint v0.13.117+UI-Endredaktion — getSim() public-Method entfernt (-1 pubM, -1 field bei loc-drift -1 SLOC net), addSlider `int step` Parameter aus 4 Overloads entfernt (-4 LOC additive delta).'
   src/vannon/syx/economy/ui/KpiSection.java:
     loc: 98
     pubM: 12
@@ -220,7 +220,7 @@ legacy_baselines:
     imports: 4
     status_at_emit: pass
     reason_at_emit: 'All thresholds clear by large margin (loc 98 < warn 600; pubM 12 < warn 25; fields 5 < warn 18; imports 4 < warn 25).'
-    baseline_update: 'Sprint v0.13.104+M-UI-1 new file — SeverityClassifier (enum CRITICAL/LOW/OK/SURPLUS + classify(double)) + FilterMode (4-mode enum + accepts/chipLabel) + 7 color helpers + sortIndicesByCoverageAsc(FlowPrices, int). Single SSoT fuer Severity-Schwellwerte die zuvor in WindowQuickview.build/renderSidePanelContent und WindowEconomy.PricesTab dupliziert waren (~70 LOC dedupliziert). Rule-15 konform: keine static-final-Init mit Engine-Singletons. Sprint v0.13.123+M-UI-1.1 Polishing Severity.classify Pathological-Values-Policy — fields 4→5 (RangeGuard-Konstante `OUT_OF_STOCK_THRESHOLD=0.3` ergaenzt fuer expliziten Konstanzeinsatz; fields-Drift +25% ueber fields-Cap aber Floor-Schutz _DRIFT_FLOOR=2 deckt +1-Field-Drift ab und Rule-14 Pflicht-Re-Baseline direkt im selben Sprint-Commit erfuellt).'
+    baseline_update: 'Sprint v0.13.104+M-UI-1 new file — SeverityClassifier (enum CRITICAL/LOW/OK/SURPLUS + classify(double)) + FilterMode (4-mode enum + accepts/chipLabel) + 7 color helpers + sortIndicesByCoverageAsc(FlowPrices, int). Single SSoT fuer Severity-Schwellwerte die zuvor in WindowQuickview.build/renderSidePanelContent und WindowEconomy.PricesTab dupliziert waren (~70 LOC dedupliziert). Rule-15 konform: keine static-final-Init mit Engine-Singletons. Sprint v0.13.123+M-UI-1.1 Polishing Severity.classify Pathological-Values-Policy — fields 4→5 (RangeGuard-Konstante `OUT_OF_STOCK_THRESHOLD=0.3` ergaenzt fuer expliziten Konstanzeinsatz; fields-Drift +25% ueber fields-Cap aber Floor-Schutz _DRIFT_FLOOR=2 deckt +1-Field-Drift ab und Rule-14 Pflicht-Re-Baseline direkt im selben Sprint-Commit erfuellt). Sprint v0.13.117+UI-Endredaktion — Javadoc-Reference auf no-op `renderSidePanelContent()` (jetzt komplett entfernt) stale-ref gefixt.'
   src/vannon/syx/economy/ui/tabs/Overview/DashboardTab.java:
     loc: 186
     pubM: 2
@@ -267,24 +267,8 @@ legacy_baselines:
     fields: 12
     imports: 16
     status_at_emit: pass
-    reason_at_emit: 'Sprint v0.13.105+/M-UI-2 Re-Baseline — buildAdvice entfernt (61 SLOC) und in AdvisorEngine.buildAdvice migriert (Causality-Triplet). Jetzt 13 public static Methods: Visuals (coloredBar), Health-Ampel (addTrafficLight/addTrendArrow/addMilestoneIcon), Status (allClear/buildStatusText), Counters (countLines), Trend (getSnapshotField), Advisor (nextStageReqs/buildWarningChains/countChainAffected), Property-Toggle (addCheckbox). Alle Schwellen weiter unter warn (loc 192 < 600; pubM 13 < 25; fields 12 < 18; imports 16 < 25).'
-    baseline_update: 'Sprint v0.13.105+/M-UI-2 Causality-Layer Migration — buildAdvice entfernt (-61 SLOC, -1 pubM, -1 field) + ScarcitySignal/CompactNumber-Imports entfernt (-2 imports). Advisor-Logik jetzt in AdvisorEngine.java (separates Modul).'
-  src/vannon/syx/economy/ui/Layout.java:
-    loc: 209
-    pubM: 15
-    fields: 23
-    imports: 9
-    status_at_emit: warn
-    reason_at_emit: 'Sprint v0.13.107+M-UI-3.5 — fields=23 > warn=18 (+27%) ist ABSICHTLICH durch Union-Cell-Pattern (kein Generic-T, kein Box). Trade-Off zugunsten von Generic-Layout-Performance-Trap-Vermeidung (sealed switch auf CellKind-enum, JIT-foldet zu tableswitch ohne VTable-Indirection). Andere Metriken unter warn: loc 209 < 600; pubM 15 < 25; imports 9 < 25. Sprint M-UI-5+ kann bei Bedarf auf per-Kind Sub-Klassen refactorn (verringert fields um 4/5 aber fuehrt VTable-Devirtualization ein).'
-    baseline_update: 'Sprint v0.13.107+M-UI-3.5 Fluent-Layout-Prototyp + Spec (docs/UI_GRID_LAYOUT_SPEC.md). Ersetzt hardcoded x+170/x+240/x+380/x+480 in den 16 Tabs — Migration separat Sprint M-UI-5 (kein Rule-11 Theme-Scope in M-UI-3.5). API: Layout.grid(cols, gap).at(x,y).cellWidth(w).rowHeight(h).row()/.newLine()/.kpi()/.icon()/.slider()/.checkbox()/.header()/.text()/.span(N)/.precompute()/.build(parent). Pre-Compute-Pass einmal linear O(N), Render-Pass einmal linear mit switch (5 konstante Cases → tableswitch).'
-  src/vannon/syx/economy/adapter/FactionAccessImpl.java:
-    loc: 506
-    pubM: 2
-    fields: 34
-    imports: 21
-    status_at_emit: pass
-    reason_at_emit: "pre-existing baseline (Sprint v0.13.113+M-UI-3.3 grandfather). See docs/OPEN_POINTS_AUDIT.md Section 4. pre-Phase-A adapter pattern, requires BypassGate-SDK migration"
-    baseline_update: "Sprint v0.13.113+M-UI-3.3 Pre-Existing-BLOCK-Grandfather - Build-Gate-BLOCKER fix vor Sprint v0.13.107-112 Push-Wave."
+    reason_at_emit: 'Sprint v0.13.117+UI-Endredaktion Pflicht-Re-Baseline per Rule 14 — Sprint v0.13.106+M-UI-3 Tab-Modul-Split hatte OverviewHelpers aus private inner-class auf standalone-File hochgezogen mit 13 pubM. Aktuelle Werte loc=192, pubM=13, fields=12, imports=16 konsistent und unter warn (alle < Hard-Block). Stray pubM:2 + 5-orphan-Lines (BypassGate-Phase-Vorlage) entfernt.'
+    baseline_update: 'Sprint v0.13.117+UI-Endredaktion Re-Baseline-Korrektur — Sprint v0.13.106+M-UI-3 (Tab-Modul-Split) hatte Pflicht-Re-Baseline per Rule 14 verletzt (drift pubM 2→13 +550% ueber +10% Hard-Block-Cap). Sprint v0.13.117+ korrigiert baseline.yml-Struktur + aktuelle parse_metrics-Werte als neue SSoT.'
 
   src/vannon/syx/economy/adapter/HumanoidAccessImpl.java:
     loc: 361
@@ -432,13 +416,13 @@ legacy_baselines:
 
 
   src/vannon/syx/economy/ui/WindowQuickview.java:
-    loc: 168
-    pubM: 7
-    fields: 3
+    loc: 161
+    pubM: 6
+    fields: 2
     imports: 17
     status_at_emit: pass
-    reason_at_emit: 'Sprint v0.13.116+ Hotfix per User-Regression "Klein-Window rechts aussen KEINE funktion ausser Schwarzbild und gruene Schrift die ueberlagert" — renderSidePanelContent() BODY = no-op (Trade-Off-Doku im Body), 2 addKpiSidePanel-Helpers DEAD-CODE entfernt (Sprint v0.13.104+M-UI-1 hatte diese als naked-GText-per-frame helper eingefuehrt). WindowQuickview.build() UNVERAENDERT und rendert weiterhin korrekt fuer Numpad-0 Quickview-Hauptfenster. Folge-Refactor fuer proper GuiSection + pre-allokierte GText-Felder (Holder-Pattern per Rule 15 fuer UI.FONT()) ist Sprint v0.13.117+ Side-Panel-Refactor. Alle Schwellen unter warn (loc 168 < 600; pubM 6 < 25; fields 3 < 18; imports 17 < 25).'
-    baseline_update: 'Sprint v0.13.116+ Hotfix User-Regression-Fix (Side-Panel-Render no-op). Sprint v0.13.104+M-UI-1 Modified-First-Commit erfasste baseline_update der KpiSection (welche damals die Duplikation aus WindowQuickview ererbte). WindowQuickview jetzt mit eigenem baselines-Entry dokumentiert.'
+    reason_at_emit: 'Sprint v0.13.117+UI-Endredaktion Pflicht-Re-Baseline per Rule 14 — renderSidePanelContent() Public-Method komplett entfernt (war no-op seit v0.13.116+ Hotfix, jetzt komplett entsorgt per agents.md "no new dead code"). aktuelle Werte loc=161, pubM=6, fields=2, imports=17. Alle Schwellen unter warn.'
+    baseline_update: 'Sprint v0.13.117+UI-Endredaktion — renderSidePanelContent() entfernt (-7 SLOC, -1 pubM, -1 field). Sprint v0.13.116+ Hotfix hatte 2 addKpiSidePanel-Helpers bereits entfernt, Sprint v0.13.117+ schliesst das Thema komplett.'
 
   src/vannon/syx/economy/core/FirmLedger.java:
     loc: 709

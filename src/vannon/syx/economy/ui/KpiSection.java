@@ -8,7 +8,7 @@ import java.util.Arrays;
 /**
  * Sprint v0.13.104+M-UI-1 — Shared KPI display helpers. SeverityClassifier +
  * Color-Helper für 16 Tabs, dedupliziert Color-Decisions die ursprünglich
- * in WindowQuickview.build()/renderSidePanelContent() und WindowEconomy.PricesTab
+ * in WindowQuickview.build() und WindowEconomy.PricesTab
  * 1:1 dupliziert waren.
  *
  * <p>DRY-Refactor: ~70 LOC Duplikation entfernt, Single Source-of-Truth für

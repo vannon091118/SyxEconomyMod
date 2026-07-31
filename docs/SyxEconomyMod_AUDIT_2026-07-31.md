@@ -17,7 +17,7 @@
 | 1 | **D4.8 EconConfig public static mutable fields ohne `volatile`** — WindowLevers manipuliert 239 Werte via Live-Preview-Slider; ohne Thread-Safety sind Race-Conditions im Main-Tick stille Datenkorruption | **high** | ±30 LOC | **YES** |
 | 2 | **Mockito-inline Java 21 CDS-Blocker** — 24/24 KpiSectionTest blockiert (Sprint v0.13.123+ dokumentiert). M-UI-2 mit Scenario-State-Machine kann ohne Test-Infrastruktur nicht regression-safe gebaut werden | **high** | ~5–8 LOC pom.xml | **YES** |
 | 3 | **C3.1 ECON-Window-Baseline Tab-Rebuild-Architecture** — `EconWindowBase.close(); toggle();` bei Tab-Click = ~100ms Lagspike. Mit 239 Hebeln + 6 Kategorien wird das zur Performance-Katastrophe | **med** | ±100 LOC Refactor | **YES** |
-| 4 | **WindowState.java=635 LOC + WindowEconomy.java=531 LOC** — beide noch mit inline-Tabs obwohl Rule-6 + WindowOverview-Tab-Split-Pattern (M-UI-3) verfügbar sind. M-UI-2 folgt demselben Split-Pattern | **med** | ±400 LOC Split | **suggested** |
+| 4 | **WindowState.java=612 SLOC + WindowEconomy.java=486 SLOC (parse_metrics-verified, Rule-6-exempt)** — beide noch mit inline-Tabs (je 6 `static final class`) obwohl Rule-6 + WindowOverview-Tab-Split-Pattern (M-UI-3) verfügbar sind. M-UI-2 folgt demselben Split-Pattern | **med** | ±400 LOC Split | **suggested** |
 | 5 | **A1.1 CompactNumber-Negativ + A1.2 GText-Overflow** — slider-getriebene Live-Preview mit negativen Werten wird unbrauchbar (`-19M` statt `-1.9M`, `####-500D#` überläuft 96 char) | **med** | ~10 LOC | **NO** (stark empfohlen) |
 
 **One-Shot Decision-Prompt:**
@@ -47,7 +47,7 @@ M-UI-1 hat `KpiSection.Severity` (CRITICAL/LOW/OK/SURPLUS) für Severity-Ampel e
 → **Empfehlung:** Re-Use `KpiSection.Severity.classify(double, LebelType)` Overload als WindowLevers-interner Indikator.
 
 **A1.5: Phenom-Sprint v0.13.106+M-UI-3 WindowOverview.Split Erfolg** *(STATUS: closed)*
-`WindowOverview.java:67 LOC` (war 948 LOC, -92%). 4 Tab-Klassen via TabContent-Composition. Player sieht weiterhin 4 Tabs mit identischem Verhalten, aber Coder hat nun eine Composition-Shell.
+`WindowOverview.java:48 SLOC (parse_metrics-verified)` — war 948 LOC vor Sprint v0.13.106+M-UI-3 Tab-Split (-95%). 4 Tab-Klassen liegen jetzt in `ui/tabs/Overview/{Dashboard,Demographics,Advisor,Property}Tab.java` als externe Composition-Shell. Player sieht weiterhin 4 Tabs mit identischem Verhalten, aber Coder hat nun eine Composition-Shell ohne God-Class-Risiko.
 → **M-UI-2 Impact:** Schablonen-Pattern verfügbar (TabContent interface, static inner class, TABS-Array).
 
 **A1.6: 239 EconConfig-Hebel ohne Revert-Button pro Hebel** *(NEU)*
@@ -98,7 +98,7 @@ M-UI-1 hat `KpiSection.Severity` (CRITICAL/LOW/OK/SURPLUS) für Severity-Ampel e
 ### Befunde
 
 **C3.1: ECON-Windows mit inline-Tabs (kein TabContent-Split-Pattern)** *(NEU — MED)*
-`WindowState.java:635 LOC` mit 6 inline-`static final class` Tabs. Jeder Tab = 130–220 LOC. **`WindowEconomy.java:531 LOC`** mit 6 Tabs analog.  Beide am God-Class-Threshold (Rule-14 warn=600 LOC). Das Tab-Split-Pattern aus **v0.13.106+M-UI-3** (WindowOverview 948→67 LOC) ist verfügbar aber noch nicht angewendet.
+`WindowState.java:612 SLOC (parse_metrics-verified)` mit 6 inline-`static final class` Tabs. Jeder Tab = ~100–130 LOC. **`WindowEconomy.java:486 SLOC` (parse_metrics-verified)** mit 6 Tabs analog. **WindowState liegt am Rule-14 warn-Threshold (600 SLOC) — aber ist Rule-6-exempt (UI-Window-Sacta-Pattern per God-Class-Guard baseline-yml exemption). Das Tab-Split-Pattern aus **v0.13.106+M-UI-3** (WindowOverview 948→48 SLOC, parse_metrics-verified) ist verfügbar aber noch nicht angewendet auf WindowState/WindowEconomy.
 → **M-UI-2 Impact:** Wenn WindowLevers dieses Pattern ignoriert (z.B. inline-Tab-Klassen für 6 Kategorien × ~100 LOC = 600 LOC), dann ist es ab Tag 1 eine God-Class.
 
 **C3.2: WindowState.DebugTab Reflection-Stub mit Empty-Catches** *(NEU — MED)*
@@ -128,8 +128,8 @@ M-UI-1 hat `KpiSection.Severity` (CRITICAL/LOW/OK/SURPLUS) für Severity-Ampel e
 ### Befunde
 
 **D4.1: EconConfig public static mutable — kein `volatile`** *(NEU — HIGH)*
-`EconConfig.java` — 240+ `public static` Felder (e.g. `public static boolean letterHotkeyFallbackEnabled`, `public static double perHeadTax`). Slider in UI = schreibender Thread; Engine = lesender Thread. Ohne `volatile` / `AtomicReference` / Snapshot-Map: Race-Condition, "Wert sprang zurück", "Wert wurde gespeichert aber nicht angewendet". M-UI-2 Live-Preview-Panel ist exakt der Use-Case der diese Lücke schmerzhaft sichtbar macht.
-→ **M-UI-2 Impact:** CRITICAL. Vor M-UI-2: `EconConfig` umstellen auf `volatile` für alle 240 Felder ODER `EconConfig.snapshot()` Map-Pattern mit Copy-on-Write-Schreibschutz.
+`EconConfig.java` — **257 `public static` Felder** (parse_metrics-verified, baseline_entry sagt `loc=332 fields=256` mit drift +1/+1 — innerhalb Floor-Schutz _DRIFT_FLOOR=2). Beispiele: `public static boolean letterHotkeyFallbackEnabled`, `public static double perHeadTax`. Slider in UI = schreibender Thread; Engine = lesender Thread. Ohne `volatile` / `AtomicReference` / Snapshot-Map: Race-Condition, "Wert sprang zurück", "Wert wurde gespeichert aber nicht angewendet". M-UI-2 Live-Preview-Panel ist exakt der Use-Case der diese Lücke schmerzhaft sichtbar macht.
+→ **M-UI-2 Impact:** CRITICAL. Vor M-UI-2: `EconConfig` umstellen auf `volatile` für alle 257 Felder ODER `EconConfig.snapshot()` Map-Pattern mit Copy-on-Write-Schreibschutz.
 
 **D4.2: TreasuryCrisis 6-Tier Cascade — static State ohne volatile** *(STATUS: open — verschärft)*
 `TreasuryCrisis.java:50–60` — `activeTier`, `wagesHalved`, `taxesHiked` etc. sind alle `private static`. Kein `volatile`, kein `AtomicReference`. M-UI-2 CRISIS-Szenario-Preset würde explizit diese Stufen triggern — bei Race wird die Stufe inkonsistent geschrieben.
@@ -166,7 +166,7 @@ M-UI-1 hat `KpiSection.Severity` (CRITICAL/LOW/OK/SURPLUS) für Severity-Ampel e
 Per quad-perspective-audit Skill: 3 Root-Cause-Clusters aus Q1–Q4-Cross-Synthesis identifiziert:
 
 **Cluster 1 — M-UI-2 LivePreview Race-Condition Cluster** (Severity: high, Blocker: YES)
-- **Q4-relevante Findings:** D4.1 (EconConfig 240 mutable static non-volatile), D4.2 (TreasuryCrisis static non-volatile)
+- **Q4-relevante Findings:** D4.1 (EconConfig 257 mutable static non-volatile, parse_metrics-verified), D4.2 (TreasuryCrisis 39 `private static` fields, 0 davon volatile, parse_metrics-verified)
 - **Q1-relevante Findings:** A1.4 (Severity-Ampel für Hebel-Preview benötigt), A1.6 (Revert-Button-API fehlt)
 - **Q3-relevante Findings:** C3.5 (Layout fluent-API für 239-Hebel-Tabelle benötigt)
 - **Smoking-Gun:** WindowLevers Live-Preview schreibt Slider-Werte zur Engine-Tick-Phase; ohne `volatile`/atomic liest Engine stale Werte; Player sieht Hebel-Slider beeinflusst nichts -> still simulation-state-corruption.
@@ -209,11 +209,11 @@ Per quad-perspective-audit Skill: 3 Root-Cause-Clusters aus Q1–Q4-Cross-Synthe
 
 Pre-Implementation DoD (Sprint v0.13.127+..v0.13.129+):
 
-- [ ] **D4.1 verifiziert:** `grep -c 'public static .*EconConfig' src/.../EconConfig.java | wc -l` zeigt alle 240 Felder entweder `volatile` oder hinter einem `EconConfig.Snapshot` Map mit Copy-on-Write
+- [ ] **D4.1 verifiziert:** `python3 tools/god-class-guard/parse_metrics.py src/.../EconConfig.java` zeigt `fields=257` (alle entweder `volatile` oder hinter einem `EconConfig.Snapshot` Map mit Copy-on-Write)
 - [ ] **D4.2 verifiziert:** `TreasuryCrisis` static fields converted to either `AtomicInteger` oder instance-state-mit-volatiler
 - [ ] **B2.1 verifiziert:** `mvn test -Dskip.bump=true -Dtest=KpiSectionTest` zeigt `Tests run: 24/24` (Mockito-blocker gelöst)
-- [ ] **C3.1 verifiziert (WindowState):** `WindowState.java` LOC < 200 (Pattern aus v0.13.106+M-UI-3 angewendet, 6 Tabs in `ui/tabs/State/{Warehouses,Fiscal,PublicWorks,Social,Faith,Debug}Tab.java`)
-- [ ] **C3.1 verifiziert (WindowEconomy):** `WindowEconomy.java` LOC < 200 (analog)
+- [ ] **C3.1 verifiziert (WindowState):** `python3 tools/god-class-guard/parse_metrics.py src/.../WindowState.java` zeigt `loc < 200` SLOC (Pattern aus v0.13.106+M-UI-3 angewendet, 6 Tabs in `ui/tabs/State/{Warehouses,Fiscal,PublicWorks,Social,Faith,Debug}Tab.java`)
+- [ ] **C3.1 verifiziert (WindowEconomy):** `python3 tools/god-class-guard/parse_metrics.py src/.../WindowEconomy.java` zeigt `loc < 200` SLOC (analog)
 - [ ] **C3.5 verifiziert:** `Layout.java` (~150 LOC fluent-API) implementiert + Mockito-freie `LayoutCoordinateTest.java` (für die Slider-Grid-Composition)
 
 WindowLevers Implementation DoD (Sprint v0.13.130+M-UI-2):

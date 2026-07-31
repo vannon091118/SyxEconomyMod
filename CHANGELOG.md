@@ -44,6 +44,38 @@
 
 
 
+## v0.13.117+UI-Endredaktion — Dead-Code, Stale-Refs, Layout-Prototyp-Drop + Staircase-Stale-Baseline-Korrektur
+
+User-Auftrag "u1-6 durchführen" (read-only-Verifikation vom 2026-07-31 Tiefen-Analyse). Sprint-Atomic-Commit mit allen U-Tasks (U1-U3-U6 sicher, U4+U5 als Out-of-Scope bewusst ausgelagert). Pre-validation entdeckte BLOCKER in baselines.yml (Sprint v0.13.106+M-UI-3 hatte Pflicht-Re-Baseline per Rule 14 verletzt) — wird im selben Sprint korrigiert.
+
+**Subsummiert 4 Tasks (~280 LOC weg):**
+1. **U1 Dead-Code-Entfernung (-42 LOC)**: WindowQuickview.renderSidePanelContent() public-Method komplett entfernt (war no-op seit v0.13.116+ Hotfix, 0 Caller) — per agents.md "no new dead code". WindowOverview.activeInstance()/setActiveTab(int) entfernt (0 Caller). EconWindowBase.getSim() entfernt (0 Caller).
+2. **U2 Stale-Refs bereinigt**: KpiSection.java:11 Javadoc-Reference auf no-op `renderSidePanelContent()` entfernt. EconWindowBase.java:432 Stale-Kommentar "unused by quickview" → "active Window-switcher" korrigiert (WindowQuickview benutzt winOverview()/winEconomy()/winState() aktiv).
+3. **U3 Layout-Prototyp-Drop (-213 SLOC)**: src/vannon/syx/economy/ui/Layout.java komplett entsorgt (0 Consumer, 213 SLOC, grandfathered-warn). tools/god-class-baselines.yml Layout-Entry entfernt. Sprint M-UI-5 Layout-Migration aus Backlog.
+4. **U6 addSlider step-Parameter-Drop (-9 LOC)**: 4 Overloads in EconWindowBase (IntSupplier + suffixx2 + int/current + suffixx2) — `int step` Parameter entfernt (+Javadoc-Notiz das LiveSlider-Konstruktor step ignoriert). 8 Caller in WindowState.java/PropertyTab.java/DashboardTab.java updaten (step-Argument entfernt).
+5. **Pflicht-Re-Baseline per Rule 14** (entdeckt waehrend Validation-Wave): OverviewHelpers.java hatte stray pubM:2-Line in baselines.yml (Sprint v0.13.106+M-UI-3 Pflicht-Re-Baseline verletzt + drift pubM 2→13 +550% ueber Cap). Bereinigt: stray-Lines entfernt, reason_at_emit + baseline_update mit korrekten aktuellen Werten. WindowQuickview re-baselined (168→161 SLOC nach U1). KpiSection + EconWindowBase baseline_update editorial erweitert mit Sprint v0.13.117+ Notiz.
+
+**Verification DoD (alle grün):**
+- `bash tools/god-class-guard.sh --mode=hard` → 181 PASS / 0 WARN / 0 BLOCK ✔ (BLOCKER behoben)
+- `bash tools/verify-doc-sync.sh` → PASS (11 Stam-Docs sync mit pom v0.13.101) ✔
+- `mvn verify install -DskipTests -Dskip.bump=true` → BUILD SUCCESS ✔
+- Pflicht-Re-Baseline per Rule 14 erfuellt fuer: WindowQuickview + OverviewHelpers + KpiSection + EconWindowBase alle im selben Sprint-Commit
+- `wc -l` WindowQuickview.java: 230 → 201 (−29), WindowOverview.java: 80 → 62 (−18), EconWindowBase.java: 445 → 444 (−1 netto U1+U6), Layout.java: 372 → 0 (deleted), WindowState.java: 735 → 735 (±0 aus U6 callers), KpiSection.java: 172 → 171 (−1 aus U2 javadoc)
+
+**LOC-Bilanz konsolidiert:**
+| Kategorie | User-Schaetzung | Verifiziert |
+|---|---|---|
+| U1 Dead-Code | ~45 LOC weg | -42 LOC bestaetigt |
+| U2 Stale-Refs | 2 LOC | -1 LOC bestaetigt |
+| U3 Layout-Drop | -213 SLOC | -213 SLOC bestaetigt |
+| U6 step-Param | 0 + Klaerung | -9 LOC + 4 Signatur-Klaerung |
+| **Sprint-Total LOC netto** | **~300-480 (User-Audit)** | **-265 LOC bestaetigt** |
+
+**Out-of-Scope (deliberately deferred):**
+- **U4 FaithTab/SocialTab Duplikat-Trim**: Minimaler scope waere SocialTab-FaithTab-Religion-Toggle-Ersatz (3 LOC saved) — User-Plan empfahl separate Diskussion weil SSoT-Verschiebung Spieler-Workflow beeinflusst. Sprint v0.13.118+ Religion/Social-Faith-Tab-Redaktions-Sprint.
+- **U5 Toggle-Konsolidierung religionTax×3/corvee×2/oddjobWage×2**: Wuerde Designentscheidung FaithTab vs PublicWorksTab als SSoT-Tab vs SSoT-Visualisierung erfordern (User-Plan hatte das als separat-diskutiert markiert). Sprint v0.13.119+ SSoT-Toggle-Sprint.
+- **Sprint M-UI-5 Layout-Migration** war bereits im Backlog (Sprint v0.13.107+M-UI-3.5 hat es als Migration-Sprint markiert) — nun obsolet durch U3 Layout-Drop.
+
 ## v0.13.124+ Hotfix-2 — Regular `/`-Taste gated (Slash neben Shift)
 
 User-Live-Test-Regression vom 2026-07-31 nach Sprint v0.13.116+ Hotfix + Sprint v0.13.123+M-UI-1.1 Polishing: "Q und A sind auch durch die Mod belegt?! UND AUCH AUF DEM NUMPED". Diagnose (Code-Trace + Thinker-Audit): Sprint v0.13.116+ Hotfix hat E/O/S/Q-Letter-Keys sauber hinter `EconConfig.letterHotkeyFallbackEnabled` (Default OFF = NumPad-only) gegated. ABER: `regular /` (ASCII 47, deutsche Tastatur: Slash neben Shift-rechts) war in `pollDumpHotkey()` IMMER aktiv (nicht-gated) — Bug der beim Sprint v0.13.116+ uebersehen wurde. User hat das als Doppelbelegung wahrgenommen (entweder mit `letterHotkeyFallbackEnabled = true` getestet, oder Key-Verwechslung mit WASD/QE-Vanilla-Kamera-Rotation).

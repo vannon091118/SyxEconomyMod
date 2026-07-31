@@ -28,12 +28,6 @@ import vannon.syx.economy.ui.tabs.Overview.PropertyTab;
  */
 public final class WindowOverview extends EconWindowBase {
 
-    private static WindowOverview activeInstance;
-
-    public static WindowOverview activeInstance() {
-        return activeInstance;
-    }
-
     private static final TabContent[] TABS = {
         new DashboardTab(),
         new DemographicsTab(),
@@ -43,7 +37,6 @@ public final class WindowOverview extends EconWindowBase {
 
     public WindowOverview(EconomySim sim) {
         super(sim);
-        activeInstance = this;
     }
 
     @Override
@@ -66,15 +59,4 @@ public final class WindowOverview extends EconWindowBase {
 
     @Override
     protected TabContent[] tabs() { return TABS; }
-
-    /** Set the active tab by index and reopen the window. */
-    public void setActiveTab(int index) {
-        if (index >= 0 && index < TABS.length) {
-            super.setActiveTab(index);
-            if (isShown()) {
-                close();
-                toggle();
-            }
-        }
-    }
 }
