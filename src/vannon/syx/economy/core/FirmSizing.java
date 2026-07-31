@@ -121,7 +121,19 @@ final class FirmSizing {
         // UND nextTarget zwingend clampen — Engine setFirmTarget darf nie blueprint-max+1 setzen.
         state.escapeCliffTriggered = result.escapeCliff();
         int maxEmp = room.employees().max();
-        int clampedTarget = Math.max(minimum, Math.min(maxEmp, result.nextTarget()));
+
+        // Sprint v0.13.103+ — 5-Tier-Staircase + Staatsbestand-Cap.
+        // Stock-Coverage: minimum über alle Output-Ressourcen (Bottleneck-Resource).
+        // coverage < minCoverage → Staatsbestand critical → staircaseCap = maxEmp (override).
+        // Andernfalls: Tier aus coverage-mappable Breakpoints, fraction-of-maxEmp.
+        double stockCoverage = PriorityRegistry.instance().minStockCoverage(state.outputs);
+        boolean isStaatsbestand = FirmStaircase.isStaatsbestandCritical(stockCoverage);
+        int staircaseCap = isStaatsbestand ? maxEmp : FirmStaircase.scaleMax(maxEmp, stockCoverage);
+        state.staircaseCap = staircaseCap;
+        state.staircaseTier = isStaatsbestand ? 0 : FirmStaircase.getTier(stockCoverage);
+        state.staatsbestandCritical = isStaatsbestand;
+
+        int clampedTarget = Math.max(minimum, Math.min(staircaseCap, result.nextTarget()));
         state.marketTarget = clampedTarget;
         roomAccess.setFirmTarget(room, clampedTarget);
         if (result.escapeCliff()) {

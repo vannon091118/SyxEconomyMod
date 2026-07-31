@@ -127,7 +127,11 @@ public final class DiagnosticExporter {
             "profit_per_day", "marginal_per_worker", "income_carry",
             "total_output_value_per_day", "total_input_value_per_day",
             "last_income_due", "last_income_paid", "workers_unpaid", "stuck_seconds",
-            "expansion_signals"
+            "expansion_signals",
+            // Sprint v0.13.103+ — Staircase-Audit (5-Tier 0..4) + Staatsbestand-Critical (0/1).
+            // staircase_tier=0..4 aus firmStaircaseWorkerFractions; staatsbestand_critical=1
+            // wenn coverage < minCoverage (override → 100% workers).
+            "staircase_tier", "staatsbestand_critical"
     };
 
     /** Single-thread Executor — hält Reihenfolge ein und entkoppelt Disk-IO vom Tick. */
@@ -598,7 +602,9 @@ public final class DiagnosticExporter {
                 .append(firm.lastIncomePaid()).append(',')
                 .append(firm.workersUnpaid()).append(',')
                 .append(firm.stuckSeconds()).append(',')
-                .append(expansionSignals).append('\n');
+                .append(expansionSignals).append(',')
+                .append(firm.staircaseTier()).append(',')
+                .append(firm.staatsbestandCritical()).append('\n');
         return s.toString();
     }
 

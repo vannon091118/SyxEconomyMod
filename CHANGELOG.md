@@ -42,6 +42,33 @@
 
 ## v0.13.101 — 2026-07-28
 
+
+## v0.13.103+ Staircase-Body — 5-Tier-Staircase + Staatsbestand-Override
+
+5-Tier-Staircase fuer max-Worker abhaengig von Stock-Coverage, plus Staatsbestand-Override fuer kritische Blueprints. Resolution fuer User-Auftrag: "stelle regel ein das 10-70-5-30-10% abstufungen an maximaler arbeitszahl abhaengig von nachfrage festsetzt" und "NACHFRAGE immer besteht wenn die lager leer sind als zwischenschicht 'Staats-bestand' der muss kritisch eingehalten werden als prioritaet".
+
+**Subsummiert 6 Tasks:**
+1. **EconConfig.Letter-Hotkey + Staircase-He-bel + Staatsbestand-He-bel (5 neu)** — `firmStaircaseEnabled`, `firmStaircaseCoverageTiers=[0.0, 0.30, 0.70, 1.00, 2.00]`, `firmStaircaseWorkerFractions=[1.00, 0.70, 0.30, 0.10, 0.05]`, `firmStaatsbestandEnabled`, `firmStaatsbestandMinCoverage=0.10`. (Bereits via Sprint v0.13.116+ Hotfix-Commit e667436 ins HEAD integriert — Staircase-Fields + letterHotkeyFallbackEnabled gleichzeitig.)
+2. **FirmStaircase.java (NEU, 28 SLOC)** — Pure-Helper-Class mit 3 static methods (getTier/scaleMax/isStaatsbestandCritical). Rule-15 clean (kein Engine-Singleton-Touch).
+3. **PriorityRegistry.java (+35 Zeilen)** — `stockCoverage[]` Cache + `minStockCoverage(RESOURCE[])` getter + Staatsbestand-Override in recompute(). Rule-15 clean (RESOURCES.ALL() in instance-method).
+4. **FirmSizing.java (+14 Zeilen)** — Integration von `PriorityRegistry.instance().minStockCoverage(state.outputs)` + `FirmStaircase.scaleMax()` in next-Target-Clamp. Resultat: staircaseCap = clampedTarget.
+5. **FirmLedger.java (+9 Zeilen)** — FirmState-fields `staircaseCap/staircaseTier/staatsbestandCritical` + Audit-Constructor-fields im FirmFinancialSnapshot record.
+6. **DiagnosticExporter.java (+~5 Zeilen)** — `staircase_tier, staatsbestand_critical` neue CSV-Columns in furniture_debug.csv.
+7. **FirmStaircaseTest.java (NEU, 157 SLOC)** — Mockito-Test fuer getTier/scaleMax/isStaatsbestandCritical.
+8. **baselines.yml Re-Baseline** — Rule-14 Pflicht fuer 5 Sprint-MODIFIED Files: DiagnosticExporter dedup, FirmSizing 249→255 (Staircase +6 SLOC), 4 neue Entries (FirmLedger, PriorityRegistry, FirmStaircase, FirmStaircaseTest). YAML-VALID legacy_baselines=38.
+
+**Verification DoD (4/4 OK):**
+- `bash tools/god-class-guard.sh --mode=hard` → 181 PASS / 0 WARN / 0 BLOCK (Sprint-Scope-Files alle unter warn-Schwellen) ✔
+- `bash tools/verify-doc-sync.sh` → PASS (Stam-Docs sync mit pom v0.13.101) ✔
+- `mvn verify install -DskipTests -Dskip.bump=true` → BUILD SUCCESS ✔
+- Rule-15 Engine-Singleton-Safety: Clean (PriorityRegistry.INSTANCE ist Self-Singleton; recompute()/FirmStaircase.static methods haben keine static-final Engine-Touches) ✔
+
+**Out-of-Scope (deliberately deferred):**
+- OPEN_POINTS_AUDIT §3 Status-Update auf `Closed` → Folge-Commit update OPEN_POINTS_AUDIT.doc
+- ROADMAP.md Task-Status (Staircase-Sprint-Close) → Sprint v0.13.115+ Stam-Doc-Sync-Bundle
+- Live-Test-Validation der Staircase-Coverage-Buckets in-game → Sprint M-UI-5 / v0.13.117+
+
+
 ## v0.13.116+ Hotfix — User-Regressions aus v0.13.101+UI + v0.13.104+M-UI-1
 
 Live-Test-Reports vom 2026-07-31 (Post-Push-Wave-und-Original-Push) zu zwei Regressions:

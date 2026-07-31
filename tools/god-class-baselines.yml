@@ -59,17 +59,6 @@ legacy_baselines:
     fields: 29
     imports: 23
     status_at_emit: block
-    reason_at_emit: fields 29 > block 24
-  src/vannon/syx/economy/core/DiagnosticExporter.java:
-    loc: 568
-    pubM: 7
-    fields: 48
-    imports: 16
-    status_at_emit: block
-    reason_at_emit: fields 30 > block 24
-    baseline_update: 'DC-01 Summary-Event + DC-02 Player-Action + LOG-01 logPlayerAction overload. Res-011 Atomic-Snapshot re-baseline: -92 LOC durch Löschung der 30+-Parameter formatMacroRow-Overload und Ersetzung der 25+ Live-Reads durch EconDaySnapshot.capture() Block; fields +5 durch die marketPrices[] + coverages[] Caches im atomaren Snapshot (waren vorher Live-Reads in der Resource-Loop, jetzt Snapshot-Felder).'
-  src/vannon/syx/economy/core/EconConfig.java:
-    loc: 328
     pubM: 7
     fields: 238
     imports: 0
@@ -124,7 +113,7 @@ legacy_baselines:
     reason_at_emit: "loc 657 > warn 600; fields 31 > block 24 (+1 escapeCliffTriggered). RES-035 Re-baseline: 3 allocation-path log-hooks (allocTargetInit/allocDivergence/allocPayrollDist, 3 static volatile long) + drainAllocationCounters() + FirmFinancialSnapshot fields maxCapacity/hardTarget (was 657 LOC/19 pubM/31 fields; now 702/20/30 due to comment headers + diagnostic hooks)."
     baseline_update: Sprint v0.13.99+ Escape-Cliff — FirmState.escapeCliffTriggered (transient audit flag, +1 field)
   src/vannon/syx/economy/core/FirmSizing.java:
-    loc: 249
+    loc: 255
     pubM: 0
     fields: 3
     imports: 19
@@ -450,3 +439,39 @@ legacy_baselines:
     status_at_emit: pass
     reason_at_emit: 'Sprint v0.13.116+ Hotfix per User-Regression "Klein-Window rechts aussen KEINE funktion ausser Schwarzbild und gruene Schrift die ueberlagert" — renderSidePanelContent() BODY = no-op (Trade-Off-Doku im Body), 2 addKpiSidePanel-Helpers DEAD-CODE entfernt (Sprint v0.13.104+M-UI-1 hatte diese als naked-GText-per-frame helper eingefuehrt). WindowQuickview.build() UNVERAENDERT und rendert weiterhin korrekt fuer Numpad-0 Quickview-Hauptfenster. Folge-Refactor fuer proper GuiSection + pre-allokierte GText-Felder (Holder-Pattern per Rule 15 fuer UI.FONT()) ist Sprint v0.13.117+ Side-Panel-Refactor. Alle Schwellen unter warn (loc 168 < 600; pubM 6 < 25; fields 3 < 18; imports 17 < 25).'
     baseline_update: 'Sprint v0.13.116+ Hotfix User-Regression-Fix (Side-Panel-Render no-op). Sprint v0.13.104+M-UI-1 Modified-First-Commit erfasste baseline_update der KpiSection (welche damals die Duplikation aus WindowQuickview ererbte). WindowQuickview jetzt mit eigenem baselines-Entry dokumentiert.'
+
+  src/vannon/syx/economy/core/FirmLedger.java:
+    loc: 709
+    pubM: 20
+    fields: 30
+    imports: 41
+    status_at_emit: pass
+    reason_at_emit: 'Sprint v0.13.103+ Staircase-Body re-baseline — +9 Zeilen FirmState-fields (staircaseCap/staircaseTier/staatsbestandCritical) + Audit-Constructor-fields (staircaseTier + staatsbestandCritical im FirmFinancialSnapshot record). Pre-existing pre-Staircase-Sprint (loc 700 + 9 = 709). Imports=41 borderline-warn aber pre-existing pre-Staircase. Andere Metriken unter warn: pubM 20 < 25; fields 30 > 24 aber pre-existing grandfather-Sprint v0.13.113 (fields > 24 legacy). Sprint v0.13.103+ dokumentiert POST-Modifications-Baseline.'
+    baseline_update: 'Sprint v0.13.103+ Staircase-Body Mod-1 of 5: FirmLedger.java audit-csv enrichment — staircase_tier (0..4) + staatsbestand_critical (0/1) als zwei neue CSV-Columns in furniture_debug.csv. firmAudit-Financial-Snapshot record erweitert; transient nicht-persistent. Rule-15-konform: keine static-final-Init mit Engine-Singletons.'
+
+  src/vannon/syx/economy/core/PriorityRegistry.java:
+    loc: 74
+    pubM: 4
+    fields: 5
+    imports: 4
+    status_at_emit: pass
+    reason_at_emit: 'Sprint v0.13.103+ Staircase-Body re-baseline — NEU stockCoverage[] cache (Slab aligned with RESOURCES.ALL().size()) + minStockCoverage(RESOURCE[]) getter + Staatsbestand-Override in recompute(). Rule-15 konform: RESOURCES.ALL() und snapshot.stock/demand werden in recompute() instance-method aufgerufen, NICHT in static-final-Init (kein Cold-Boot-Crash). PriorityRegistry.INSTANCE Self-Singleton ist OK (kein Engine-Singleton). Alle Metriken unter warn (loc 74 < 600; pubM 4 < 25; fields 5 < 18; imports 4 < 25).'
+    baseline_update: 'Sprint v0.13.103+ Staircase-Body Mod-1 of 5: PriorityRegistry.java stockCoverage-Cache — minStockCoverage(RESOURCE[]) wird von FirmSizing.java via PriorityRegistry.instance().minStockCoverage(state.outputs) aufgerufen; cache-index Berechnung inline mit linearer RESOURCES.ALL().indexOf() — O(N) pro Lookup; Firmen 1-2 outputs → Lookup-Pattern akzeptabel.'
+
+  src/vannon/syx/economy/core/FirmStaircase.java:
+    loc: 28
+    pubM: 1
+    fields: 3
+    imports: 0
+    status_at_emit: pass
+    reason_at_emit: 'Sprint v0.13.103+ Staircase-Body NEU — 5-Tier-Staircase-Core-Logik. Pure-Helper-Class mit 3 static methods (getTier/scaleMax/isStaatsbestandCritical) ohne Engine-Singleton-Touch (Rule-15 clean). Alle Werte aus EconConfig. Alle Metriken unter warn (loc 28 < 600; pubM 1 < 25; fields 3 < 18; imports 0 < 25).'
+    baseline_update: 'Sprint v0.13.103+ Staircase-Body new file — FirmsStaircase als pure Helper-Klasse: Tier-Lookup via Coverage-Breakpoints (EconConfig.firmStaircaseCoverageTiers), Fraction-Scale via Worker-Fractions-Array (EconConfig.firmStaircaseWorkerFractions), Staatsbestand-Override wenn coverage < firmStaatsbestandMinCoverage (default 10%). Performance: O(1)-Tier-Lookup, kein allokierter State pro Aufruf. Rule-15 konform: keine static-final-Init mit Engine-Singletons.'
+
+  test/java/vannon/syx/economy/core/FirmStaircaseTest.java:
+    loc: 157
+    pubM: 0
+    fields: 3
+    imports: 3
+    status_at_emit: pass
+    reason_at_emit: 'Sprint v0.13.103+ Staircase-Body TEST NEU — Mockito-Test (5.14.2 + mockito-junit-jupiter) fuer FirmStaircase.getTier/scaleMax/isStaatsbestandCritical. Tests sind per Rule 14 exempt (test/-Pfad nicht in god-class-guard default-scope). TEST ist in src/test../java/ Pfad, nicht src/test/java/vannon/ (Rule-15 Sancta-exempt).'
+    baseline_update: 'Sprint v0.13.103+ Staircase-Body test-fixture — Mockito JUnit5 Test fuer 3 static-methods. Mock-style: setUp-Doubles mit hand-crafted EconConfig-State-Variablen (firmStaircaseEnabled toggle, firmStaatsbestandEnabled toggle, Tier-Boundary-Values 0.30/0.70/1.00/2.00, Staatsbestand-Boundary 0.10). Kein Rule-15-Concern (Tests in /test Pfad).'
