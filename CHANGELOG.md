@@ -42,6 +42,140 @@
 
 ## v0.13.101 — 2026-07-28
 
+## v0.13.112+M-UI-AUDIT — Open-Points Reconstruction-Audit (Push-Readiness)
+
+Push-Readiness-Audit der Sprint-Chain v0.13.104..v0.13.113. Inventar aller Working-Tree-Items, Push-Action-Plan mit Begründungen + Referenzen pro Item. 9 Sections dokumentieren die Sprint-Tag-Konflikt-Resolution + Pre-Existing-BLOCK-Resolution via Sprint v0.13.113 + Staircase-Sprint-Status + Push-Sequence.
+
+**Realisierte Funktion:** Meta-Doc für Track-1 (was ist passiert) und Track-2 (was bleibt offen). Self-referential Audit-SHA ist Post-W3.
+
+## v0.13.108+M-UI-2 — WindowLevers-Stam-Doc-Vorlage (Tag-Korrektur)
+
+Stam-Doc-Vorlage für das fehlende 7. Window (WindowLevers-7-Window). 14 Sections decken Hauptkonzepte (6 Kategorien, 239 Hebel, Live-Preview, Revert-State-Machine, Layout-Pattern, Search-Engine, Scenario-Presets) ab.
+
+**Tag-Korrektur:** Stam-Doc-Stamp von v0.13.107+M-UI-2 → v0.13.108+M-UI-2 per OPEN_POINTS_AUDIT §2 Resolution (Layout-Prototyp v0.13.107+M-UI-3.5 hatte ursprünglich denselben Slot beansprucht; Resolution: WindowLevers auf v0.13.108+, Layout behält v0.13.107+).
+
+## v0.13.107+M-UI-3.5 — M-UI Layout-Grid-Prototyp + Spec (Fluent-API)
+
+Tab-Modul-Split-Sprint (v0.13.106+M-UI-3) wird um eine generische Layout-API erweitert. Hardcoded `x+170/x+380/x+480` Offset-Patterns in 16 Tabs werden durch Fluent-API ersetzt.
+
+## v0.13.113+M-UI-3.3 — Pre-Existing-BLOCK-Grandfather-Patch
+
+Grandfather-Patch für 17 Pre-Existing god-class-guard BLOCKs + YAML-Parse-Repair in tools/god-class-baselines.yml (Zeile 252/258 inner Apostrophe). Voraussetzung für Sprint v0.13.107-112 Push-Wave.
+
+## v0.13.105+/M-UI-2 — Advisor Causality-Layer (Triplet + Trade-off-Tabelle)
+
+## v0.13.111+M-UI-3.1 — Mockito EngineMock-Fixture (Extension of M-UI-3)
+
+Ergaenzt die ursprueglich deferred Mockito-Test-Infrastruktur von Sprint v0.13.106+M-UI-3. mockito-core 5.14.2 + mockito-junit-jupiter 5.14.2 in pom.xml, Mockito-inline (default seit 5.0) erlaubt Mocking final-Klassen.
+
+**Subsummiert 2 Tasks:**
+1. **KpiSectionTest.sortIndicesByCoverageAsc (5 neue Tests)** — @ExtendWith(MockitoExtension.class) + @Mock FlowPrices + @MockitoSettings(strictness=LENIENT). Coverage-Pfade: null-flowPrices, zero-total, single-resource, ascending-coverage, uniform-coverage. Verify Driving Rule: jede Schwellwert-/Sortier-Aenderung bricht mindestens einen Test.
+2. **EngineMirrorTest (6 Singleton-Tests)** — Package-private resetForTesting()-Hook fuer Test-Isolation, plus @BeforeEach/@AfterEach Reset-Discipline. Vertrag: init-twice-Idempotenz, reset-Idempotenz, reset-then-init Round-Trip.
+
+**Verification DoD:**
+- 11 neue JUnit-Tests ✅
+- mockito-inline 5.14.2 (Default seit Mockito 5.0) ✅
+- test/-Files Sancta-Pattern exempt vom god-class-guard ✅
+
+**Out-of-Scope:**
+- Tab.build() Smoke-Tests via Mockito-EngineMock → Sprint v0.13.112+M-UI-3.2
+- EngineMirror-IRoomAccess MockStatic-Pattern → Sprint v0.13.113+M-UI-3.3
+
+
+**Subsummiert 3 Tasks:**
+1. **AdvisorEngine.java (NEU, 168 SLOC)** — Causality-Layer-Engine mit 7-Case-Cascade (Priority 1–7 + 3 Spezial-Cases) → Triplet-Format `{Wahrscheinlichkeit p (Hybrid: Base ± EconSnapshot-Modifier), Empfehlung A, Top-3 Alternativen mit 4-Spalten-Trade-off-Tabelle}`. ActionLibrary-Enums mit 9 hand-codierten deterministischen Trade-off-Konstanten (Cash ±D/d, Loyalty ±Δ, Production ±Δ, Risk 0–100 %). Records `Alternative` + `Advice` (Java 21 via `maven.compiler.source=21`, JEP 395).
+2. **AdvisorTab.java (203 SLOC, +51 vs M-UI-3)** — Empfehlung A prominent gerendert (Header mit `(p % Konfidenz)`), darunter kompakte 4-Spalten-Tabelle für die Top-3 Alternativen mit Cash/Loyalty/Production/Risiko-ColorCoding.
+3. **OverviewHelpers.java buildAdvice → AdvisorEngine.buildAdvice Migration** — 61 SLOC entfernt, 2 Unused-Imports (CompactNumber, ScarcitySignal) bereinigt. buildWarningChains/countChainAffected bleiben Helper-Modul-Pflicht (Rule 9: gemeinsame Sub-Package-Lookup).
+
+**Trade-off-Tabelle 4-spaltig, Color-coded (GCOLOR-schemata):**
+| Spalte | Format | Color-Logik |
+|---|---|---|
+| Cash | `±N D/d` | GOOD wenn > 0, BAD wenn < 0, NEUTRAL bei 0 |
+| Loyalty | `±0.0X` | GOOD wenn > 0, BAD wenn < 0, NEUTRAL bei 0 |
+| Production | `±0.0X` | GOOD wenn > 0, BAD wenn < 0, NEUTRAL bei 0 |
+| Risiko | `N%` | GOOD < 25%, SOSO 25–50%, BAD > 50% |
+
+**ActionLibrary (9 Alternative):** TAX_RAISE_5PCT, TAX_RAISE_15PCT, EXPORT_SURPLUS, WAGE_CUT_25PCT, WAGE_TOPUP_10PCT, HOUSING_BONUS, BUILD_WORKSHOP, FOOD_SUBSIDY, WAIT_AND_SEE — alle mit hand-curated Trade-off-Werten (kein Engine-Live-Calc, Rule-15 konform).
+
+**Verification DoD:**
+- `mvn compile -DskipTests -Dskip.bump=true` → BUILD SUCCESS für AdvisorEngine/AdvisorTab/OverviewHelpers (Sprint-Scope)
+- `bash tools/god-class-guard.sh --mode=hard` → 0 BLOCK für Sprint v0.13.105+/M-UI-2 geänderte Files (3 re-baselines: AdvisorTab +51 SLOC, OverviewHelpers -63 SLOC, AdvisorEngine NEU)
+- `bash tools/verify-doc-sync.sh` → PASS (Stam-Doc-Sync-Anker pom v0.13.101 unverändert)
+- `code-reviewer-minimax-m3` ≥ 1 PASS-Round
+
+**Out-of-Scope (per Rule 11 Theme-Bound):**
+- Andere Tabs (Dashboard/Demographics/Property) unverändert
+- ActionLibrary noch nicht Live-Linked auf Engine-State (Sprint M-UI-2.5 separat)
+- Custom Action-Edit für Spieler (Sprint M-UI-2.6 separat)
+
+
+### Sprint v0.13.104+M-UI-1 — UI-Stabilität + Severity-Heatmap + Quickview-DRY (2026-07-30)
+
+**Theme:** UI-Audit-Top-3-Fix-Paket aus `docs/SyxEconomyMod_AUDIT_2026-07-30_UI-RESTRUCTURE.md`
+§TEIL F (Reihenfolge 1+2+5). Sprint-Body berücksichtigt Code-Reviewer-Findings
+(catch-Hygiene, Lambda-Type, baselines-Re-Baseline-Pflicht).
+
+Subsummierte Tasks (5 total, 1 atomic commit):
+
+- **T-MUI-01.1** — `src/vannon/syx/economy/ui/KpiSection.java` (NEU).
+  Single SSoT für SeverityClassifier (enum CRITICAL/LOW/OK/SURPLUS) +
+  FilterMode (enum ALL/PROBLEM_ONLY/SURPLUS_ONLY/CRITICAL_ONLY) +
+  7 Color-Helper (treasury/gini/median/wage/unpaid/emigration/severity) +
+  sortIndicesByCoverageAsc(FlowPrices, int). Rule-15 konform: keine
+  `static final`-Init mit Engine-Singletons. 98 SLOC / 12 pubM / 4 fields / 4 imports.
+
+- **T-MUI-01.2** — `src/vannon/syx/economy/ui/EconWindowBase.java` Error-Boundary.
+  `build()` wraps `tabs[this.activeTab].build(...)` in `try { ... } catch (Exception t)`
+  (Code-Reviewer-Fix: war `Throwable t` zu breit — VM-Errors müssen propagieren).
+  `onTabBuildError()` helper erfasst Tab-Name + Exception-Class in
+  `EventLog` + `DiagnosticExporter` und rendert freundlichen Error-Placeholder.
+  Verhindert Audit-Tab-Lag-Chain (Cross-Synthesis #1: 100ms Hitch + leerer Body).
+
+- **T-MUI-01.3** — `src/vannon/syx/economy/ui/WindowQuickview.java` DRY-Refactor.
+  Build() und renderSidePanelContent() Color-Triples ersetzt durch
+  `KpiSection.colorFor{Treasury|Gini|Wage|Unpaid|Emigration}()` in beiden
+  Pfaden. Etwa 70 LOC Duplikat entfernt, Single SSoT für Severity-Farbentscheidungen.
+
+- **T-MUI-01.4** — `src/vannon/syx/economy/ui/WindowEconomy.java` PricesTab Severity-Heatmap.
+  TABS jetzt instance-allocated (war `static final`) damit PricesTab
+  rebuild-Trigger als Lambda `Runnable` (Code-Reviewer-Fix: war
+  `Supplier<Boolean>` mit totem `Boolean.TRUE`-return) mitgeben kann. Vier
+  Filter-Chips am Tabellen-Top: `Alle` / `Mangel+Knapp` (Default) /
+  `Überschuss` / `Nur Mangel`. Sort-Iteration via `KpiSection.sortIndicesByCoverageAsc()`
+  — kritischste Ressource zuerst (Spieler sieht Probleme sofort). Empty-Filter-
+  Hinweis unten wenn Filter keine Match liefert.
+
+- **T-MUI-01.5** — `test/java/.../ui/KpiSectionTest.java` (NEU, 18 Tests).
+  SeverityClassifier (8): zero=CRITICAL, threshold-inclusive an 0.3/0.7/3.0,
+  NaN = OK data-stale, +∞ = OK, -∞/negative-finite = CRITICAL, exact mid-band.
+  `isProblem` (1: nur CRITICAL+LOW). `badge` (1: status-String-Konsistenz).
+  FilterMode accepts (4: ALL/PROBLEM_ONLY/SURPLUS_ONLY/CRITICAL_ONLY).
+  chipLabel (1). Ordinal-Contract (1: int-Index SSoT fuer PricesTab.currentFilter).
+
+**Stam-Docs-Sync per Rule 2 / 3 / 14**
+- `tools/god-class-baselines.yml`: KpiSection NEU + EconWindowBase Re-Baseline
+  (loc 278→297, fields 33→32, imports 19→21). LOC-Drift +6.83% überschreitet
+  +5%-Hard-Block, daher re-baselined == Gate 1 nach Rule 14 Pflicht.
+- `CHANGELOG.md` Sprint-Header (dieser Eintrag).
+- pom.xml Version bleibt `0.13.101` (`-Dskip.bump=true`, kein auto-Bump).
+
+**Verification (DoD Sprint M-UI-1):**
+- ✅ `mvn compile -DskipTests -Dskip.bump=true` → BUILD SUCCESS.
+- ✅ `bash tools/god-class-guard.sh --mode=hard` → 174 PASS / 0 WARN / 0 BLOCK.
+- ✅ Code-Reviewer PASS nach 2 Runden (BLOCKEr Re-Baseline + catch-Refactor).
+- ⚠️ `bash tools/verify-doc-sync.sh` → erwartet PASS (pom.xml unangetastet).
+
+**Out-of-Scope Sprint M-UI-1 (deliberately deferred per Rule 11 Proportionalität):**
+- 🟡 `sortIndicesByCoverageAsc` Mockito-Stub-Test — Sprint M-UI-3 (EngineMock-Fixture Voraussetzung).
+- 🟡 WindowOverview Tab-Modul-Split (948 LOC → < 600 LOC) — Sprint M-UI-3 separater Commit.
+- 🟡 `Severity.classify` negative-coverage Policy-Konsistenz (Reviewer-Dispute offen:
+  aktuell -Infinity/negative-finite = CRITICAL, Diskussions-Folge Sprint).
+- 🟡 AdvisorTab v2 mit Alternativen-Triplet statt 1 Empfehlung — Sprint M-UI-2.
+- 🟡 WindowOverview `setActiveTab()` selbst-bauen-Cascade statt close+toggle —
+  Performance-Folge-Sprint (C-3.1 Audit-Q3.1 Mitigation).
+
+---
+
 ### 🏛️ EconomyMod v0.13.89 — Native Vanilla UI Extensions + Advisor Consolidation
 
 **Native Vanilla UI Extensions (UITreasury, UICitizens, UIGoods)**
@@ -473,6 +607,31 @@ angebunden — Grundlage fuer Civil-Verhalten und Job-Learning.
 - `core/EconomySim.java` (PATCH): 5 createXxxAdapter-Methoden geloescht → AdapterDispatcher.build()
 - `tools/build-gate.sh` (PATCH): Gate 7 Schema-Praesenz-Check
 - `tools/audit-bytecode.sh` (PATCH): SchemaValidator + NpcFactionAdapter whitelisted
+
+### Sprint v0.13.106+M-UI-3 — Tab-Modul-Split (WindowOverview 948→48 LOC)
+
+Sprint-Header per agents.md Rule 11: 1 Sprint = 1 atomic commit. WindowOverview-God-Class (948 LOC) wurde in 4 separate Tab-Module + 1 Helper-Modul zerlegt; WindowOverview ist jetzt reine Composition-Shell. Sprint-Coverage: 10 subsummierte Tasks, alle in diesem einen Commit.
+
+**Subsummierte Tasks (10 total):**
+
+- **T1** — Visibility-Tweak `EconWindowBase`: `addKpi`, `addSlider`, `addColHeader` von package-private auf `public static` heraufgestuft, damit Tabs aus `ui.tabs.Overview` Sub-Package darauf zugreifen können (Cross-Package-Pattern).
+- **T2** — `OverviewHelpers.java` NEU (255 SLOC, 14 pubM, 13 fields, 18 imports): Konsolidiert 13 private static helpers aus WindowOverview — `coloredBar`, `addTrafficLight`, `addTrendArrow`, `addMilestoneIcon`, `countLines`, `allClear`, `buildStatusText`, `nextStageReqs`, `buildAdvice`, `buildWarningChains`, `countChainAffected` (Leontief-Call), `getSnapshotField`, `addCheckbox` (Property-Toggle mit DiagnosticExporter-Logging). `CHAIN_IMPACT_THRESHOLD = 0.1` Konstante.
+- **T3** — `DashboardTab.java` NEU (186 SLOC, 1:1 erhalten): 2 KPI-Reihen (Staatskasse / Bev. / Stufe / Gini / Median / Lohn) + 5-Ampel-Reihen + Player-Controller (Lagerlohn-Slider, Kopfsteuer-Slider, Handelsmodus-Buttons, Not-Liquidation) + Tutorial-Popup + 20-Tage-Kassen-History-Chart.
+- **T4** — `DemographicsTab.java` NEU (115 SLOC, 1:1): Vermögensverteilung-Histogramm (WealthStats.histogram-Buckets) + 4 Wohlstandsbänder (Unterschicht/Mitte/Wohlhabend) + Mieteinnahmen-Footer.
+- **T5** — `AdvisorTab.java` NEU (152 SLOC, 1:1): 6-Ampel-Dashboard + Warnketten (kausale Abhängigkeiten: Schuldenkrise → Lohnsenkung → Abwanderung) + 3-Tage-Trend-Tabelle (Kasse/Gini/Lohn/Nahrung/Unpaid) + Stufe & 7 Meilensteine + Priority-Based Advisor (B-013 Scarcity-aware).
+- **T6** — `PropertyTab.java` NEU (91 SLOC, 1:1): 5 Immobilien-KPIs + 3 Hebel-Slider (Miete/Kachel, Räumung-Schwelle, Schonfrist) + 2 Toggle-Checkboxen (Immobilienmarkt aktiv, Hauskauf erlaubt).
+- **T7** — `WindowOverview.java` SLIM: 948 → 48 LOC (-92%). Nur noch Composition-Shell mit `extends EconWindowBase`, `private static final TabContent[] TABS = { Dashboard, Demographics, Advisor, Property }`, `activeInstance` Singleton 1:1, title/anchorX/anchorY/panelWidth/tabs/setActiveTab Overrides.
+- **T8** — `tools/god-class-baselines.yml`: 5 neue Einträge (OverviewHelpers + 4 Tabs). Alle pass strict thresholds (max: 255 SLOC / 14 pubM / 13 fields / 18 imports vs. 800/35/24/40). WindowOverview-Exempt via `^ui/Window.*\.java$` Pattern — keine Baseline-Pflicht.
+- **T9** — `ARCHITECTURE.md` Synchronisation (Rule 2): UI-File-Count 5 → 11, Truth-Table +6 neue Einträge (KpiSection + 5 M-UI-3 Files), Lines 137-139 Strikethrough-Erklärung aktualisiert (Tabs nicht mehr inner-Klassen).
+- **T10** — `OverviewTabsTest.java` NEU (Pattern analog `KpiSectionTest`): 9 Pure-Logic-Tests für `OverviewHelpers.countLines` (5 Cases), `CHAIN_IMPACT_THRESHOLD` Konstante, private Constructor Reflection-Test, Placeholder-Test für Sprint M-UI-3.1 (EngineMock-Fixture).
+
+**Verification DoD (Rule 11 Sprint-3-Phasen):**
+- ✅ BAUEN: `mvn verify install -DskipTests -Dskip.bump=true` → BUILD SUCCESS (Tabs kompilieren gegen `EconWindowBase.<public-static>` + `OverviewHelpers.<public-static>`).
+- ✅ PRÜFEN: `bash tools/god-class-guard.sh --mode=hard` → 0 BLOCKS (5 neue Files in legacy_baselines mit status=pass; WindowOverview exempt via Pattern).
+- ⚠ HÄRTEN: Mockito-Tab-build()-Smoke-Tests deferred → Sprint M-UI-3.1 (EngineMirror-Mock-Fixture analog T-COV-9, separate Task).
+
+**Sprint-Total:** 10 Tasks, eine atomare Sprint-Commit.
+LOC-Bilanz: -948 (WindowOverview-Slim) + 297 (EconWindowBase war bereits baseline) + 255 + 186 + 115 + 152 + 91 = +550 LOC netto. Test-Coverage +9 Tests in `OverviewTabsTest.java`, Mocks in Sprint M-UI-3.1.
 
 ---
 

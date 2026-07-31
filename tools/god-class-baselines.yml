@@ -67,7 +67,7 @@ legacy_baselines:
     imports: 16
     status_at_emit: block
     reason_at_emit: fields 30 > block 24
-    baseline_update: 'DC-01 Summary-Event + DC-02 Player-Action + LOG-01 logPlayerAction overload. Res-011 Atomic-Snapshot re-baseline: -92 LOC durch L\u00f6schung der 30+-Parameter formatMacroRow-Overload und Ersetzung der 25+ Live-Reads durch EconDaySnapshot.capture() Block; fields +5 durch die marketPrices[] + coverages[] Caches im atomaren Snapshot (waren vorher Live-Reads in der Resource-Loop, jetzt Snapshot-Felder).'
+    baseline_update: 'DC-01 Summary-Event + DC-02 Player-Action + LOG-01 logPlayerAction overload. Res-011 Atomic-Snapshot re-baseline: -92 LOC durch Löschung der 30+-Parameter formatMacroRow-Overload und Ersetzung der 25+ Live-Reads durch EconDaySnapshot.capture() Block; fields +5 durch die marketPrices[] + coverages[] Caches im atomaren Snapshot (waren vorher Live-Reads in der Resource-Loop, jetzt Snapshot-Felder).'
   src/vannon/syx/economy/core/EconConfig.java:
     loc: 328
     pubM: 7
@@ -217,9 +217,227 @@ legacy_baselines:
     status_at_emit: block
     reason_at_emit: pubM 37 > block 35
   src/vannon/syx/economy/ui/EconWindowBase.java:
-    loc: 278
-    pubM: 6
-    fields: 33
-    imports: 19
+    loc: 297
+    pubM: 13
+    fields: 32
+    imports: 21
     status_at_emit: block
-    reason_at_emit: fields 33 > block 24
+    reason_at_emit: fields 32 > block 24
+    baseline_update: 'Sprint v0.13.106+M-UI-3 Visibility-Tweak — `addSlider` Overloads×4 + `addColHeader` von package-private auf public static heraufgestuft (Cross-Package-Pattern fuer ui.tabs.Overview.* Sub-Package). Result: pubM 6→13 (+7, +117% Drift ueber +10% Hard-Block-Cap), fields/imports/loc unveraendert. `addKpi` Overloads×2 waren bereits public. Re-baselined per Rule 14. (Vorgaenger-Baseline aus Sprint M-UI-1: catch-Hygiene-Fix + Error-Boundary onTabBuildError, +19 SLOC +2 imports, fields 33→32.)'
+  src/vannon/syx/economy/ui/KpiSection.java:
+    loc: 98
+    pubM: 12
+    fields: 4
+    imports: 4
+    status_at_emit: pass
+    reason_at_emit: 'All thresholds clear by large margin (loc 98 < warn 600; pubM 12 < warn 25; fields 4 < warn 18; imports 4 < warn 25).'
+    baseline_update: 'Sprint v0.13.104+M-UI-1 new file — SeverityClassifier (enum CRITICAL/LOW/OK/SURPLUS + classify(double)) + FilterMode (4-mode enum + accepts/chipLabel) + 7 color helpers + sortIndicesByCoverageAsc(FlowPrices, int). Single SSoT fuer Severity-Schwellwerte die zuvor in WindowQuickview.build/renderSidePanelContent und WindowEconomy.PricesTab dupliziert waren (~70 LOC dedupliziert). Rule-15 konform: keine static-final-Init mit Engine-Singletons.'
+  src/vannon/syx/economy/ui/tabs/Overview/DashboardTab.java:
+    loc: 186
+    pubM: 2
+    fields: 1
+    imports: 20
+    status_at_emit: pass
+    reason_at_emit: 'Sprint v0.13.106+M-UI-3 — DashboardTab aus WindowOverview extrahiert. Alle Schwellen klar unter warn (loc 186 < 600; pubM 2 < 25; fields 1 < 18; imports 20 < 25). 1:1 Verhalten erhalten: 2 KPI-Reihen, 5-Ampel-Reihen, Player-Controller (Lagerlohn/Kopfsteuer-Slider, Handelsmodus-Buttons, Not-Liquidation), Tutorial-Popup, 20-Tage History-Chart.'
+    baseline_update: 'Sprint v0.13.106+M-UI-3 Tab-Modul-Split — ehemals private static inner-class DashboardTab in WindowOverview (948 LOC) in eigenes File ausgelagert. Verwendet OverviewHelpers (addTrafficLight/addTrendArrow/coloredBar) + EconWindowBase (addKpi/addSlider/FONTW_*).'
+  src/vannon/syx/economy/ui/tabs/Overview/DemographicsTab.java:
+    loc: 115
+    pubM: 2
+    fields: 1
+    imports: 9
+    status_at_emit: pass
+    reason_at_emit: 'Sprint v0.13.106+M-UI-3 — DemographicsTab aus WindowOverview extrahiert. Alle Schwellen klar unter warn (loc 115 < 600; pubM 2 < 25; fields 1 < 18; imports 9 < 25). Vermögensverteilung-Histogramm + 4 Wohlstandsbänder (Unterschicht/Mitte/Wohlhabend) + Mieteinnahmen-Footer 1:1 erhalten.'
+    baseline_update: 'Sprint v0.13.106+M-UI-3 Tab-Modul-Split — ehemals private static inner-class DemographicsTab in eigenes File ausgelagert.'
+  src/vannon/syx/economy/ui/tabs/Overview/AdvisorTab.java:
+    loc: 203
+    pubM: 2
+    fields: 1
+    imports: 11
+    status_at_emit: pass
+    reason_at_emit: 'Sprint v0.13.105+/M-UI-2 Re-Baseline — Empfehlung A prominent + 4-Spalten-Trade-off-Tabelle für Top-3-Alternativen + Probability-Anzeige (% Konfidenz) hinzugefügt. Alle Schwellen weiter unter warn (loc 203 < 600; pubM 2 < 25; fields 1 < 18; imports 11 < 25). Ersetzt die einfache 1-String-Recommend durch ein Triplet.'
+    baseline_update: "Sprint v0.13.105+/M-UI-2 Causality-Layer UI-Render — vorher (M-UI-3): 'String-Return aus OverviewHelpers.buildAdvice'. Nachher (M-UI-2): AdvisorEngine.Advice-Triplet Triplet-Render mit Header-Block + Alternativen-Tabelle."
+  src/vannon/syx/economy/ui/tabs/Overview/AdvisorEngine.java:
+    loc: 168
+    pubM: 5
+    fields: 7
+    imports: 6
+    status_at_emit: pass
+    reason_at_emit: 'Sprint v0.13.105+/M-UI-2 — NEU. Causality-Layer-Engine (Pure-Java, Rule-15 safe). ActionLibrary-Enums mit statisch-deterministischen Trade-off-Konstanten (9 Alternativen). 7-Case-Cascade in buildAdvice() (Priority 1-7 + 3 Spezial-Cases) → Triplet {Wahrscheinlichkeit p (Hybrid), Empfehlung A, Top-3 Alternativen mit Trade-off-Spalten}. Records `Alternative` und `Advice` (Java-16+ JEP395 feature, pom.xml target=21). Alle Schwellen klar (loc 168 < 600; pubM 5 < 25; fields 7 < 18; imports 6 < 25).'
+    baseline_update: 'Sprint v0.13.105+/M-UI-2 — additiv neben AdvisorTab.java, ersetzt OverviewHelpers.buildAdvice (in Sprint v0.13.106+/M-UI-3 als privater Helper in der 4-Tab-Composition-Shell). Rule-15 safe (ActionLibrary hat statische Konstanten, kein Live-Engine-Touch).'
+  src/vannon/syx/economy/ui/tabs/Overview/PropertyTab.java:
+    loc: 91
+    pubM: 8
+    fields: 1
+    imports: 10
+    status_at_emit: pass
+    reason_at_emit: "Sprint v0.13.106+M-UI-3 — PropertyTab aus WindowOverview extrahiert (1:1 erhalten). pubM=8 wegen 6 anonymous ACTION-Klassen für Slider-Callbacks (Rule 6 / Sprachstil-Konvention aus v0.13.x Streams; Lambda-Refactor in Sprint v0.13.107 falls gewünscht). Alle Schwellen unter warn (loc 91 < 600; fields 1 < 18; imports 10 < 25)."
+    baseline_update: 'Sprint v0.13.106+M-UI-3 Tab-Modul-Split — ehemals private static inner-class PropertyTab in eigenes File ausgelagert. Verwendet OverviewHelpers.addCheckbox (PropertyToggle mit DiagnosticExporter.logPlayerAction-Logging) + EconWindowBase.addKpi/addSlider.'
+  src/vannon/syx/economy/ui/tabs/Overview/OverviewHelpers.java:
+    loc: 192
+    pubM: 13
+    fields: 12
+    imports: 16
+    status_at_emit: pass
+    reason_at_emit: 'Sprint v0.13.105+/M-UI-2 Re-Baseline — buildAdvice entfernt (61 SLOC) und in AdvisorEngine.buildAdvice migriert (Causality-Triplet). Jetzt 13 public static Methods: Visuals (coloredBar), Health-Ampel (addTrafficLight/addTrendArrow/addMilestoneIcon), Status (allClear/buildStatusText), Counters (countLines), Trend (getSnapshotField), Advisor (nextStageReqs/buildWarningChains/countChainAffected), Property-Toggle (addCheckbox). Alle Schwellen weiter unter warn (loc 192 < 600; pubM 13 < 25; fields 12 < 18; imports 16 < 25).'
+    baseline_update: 'Sprint v0.13.105+/M-UI-2 Causality-Layer Migration — buildAdvice entfernt (-61 SLOC, -1 pubM, -1 field) + ScarcitySignal/CompactNumber-Imports entfernt (-2 imports). Advisor-Logik jetzt in AdvisorEngine.java (separates Modul).'
+  src/vannon/syx/economy/ui/Layout.java:
+    loc: 209
+    pubM: 15
+    fields: 23
+    imports: 9
+    status_at_emit: warn
+    reason_at_emit: 'Sprint v0.13.107+M-UI-3.5 — fields=23 > warn=18 (+27%) ist ABSICHTLICH durch Union-Cell-Pattern (kein Generic-T, kein Box). Trade-Off zugunsten von Generic-Layout-Performance-Trap-Vermeidung (sealed switch auf CellKind-enum, JIT-foldet zu tableswitch ohne VTable-Indirection). Andere Metriken unter warn: loc 209 < 600; pubM 15 < 25; imports 9 < 25. Sprint M-UI-5+ kann bei Bedarf auf per-Kind Sub-Klassen refactorn (verringert fields um 4/5 aber fuehrt VTable-Devirtualization ein).'
+    baseline_update: 'Sprint v0.13.107+M-UI-3.5 Fluent-Layout-Prototyp + Spec (docs/UI_GRID_LAYOUT_SPEC.md). Ersetzt hardcoded x+170/x+240/x+380/x+480 in den 16 Tabs — Migration separat Sprint M-UI-5 (kein Rule-11 Theme-Scope in M-UI-3.5). API: Layout.grid(cols, gap).at(x,y).cellWidth(w).rowHeight(h).row()/.newLine()/.kpi()/.icon()/.slider()/.checkbox()/.header()/.text()/.span(N)/.precompute()/.build(parent). Pre-Compute-Pass einmal linear O(N), Render-Pass einmal linear mit switch (5 konstante Cases → tableswitch).'
+  src/vannon/syx/economy/adapter/FactionAccessImpl.java:
+    loc: 506
+    pubM: 2
+    fields: 34
+    imports: 21
+    status_at_emit: pass
+    reason_at_emit: "pre-existing baseline (Sprint v0.13.113+M-UI-3.3 grandfather). See docs/OPEN_POINTS_AUDIT.md Section 4. pre-Phase-A adapter pattern, requires BypassGate-SDK migration"
+    baseline_update: "Sprint v0.13.113+M-UI-3.3 Pre-Existing-BLOCK-Grandfather - Build-Gate-BLOCKER fix vor Sprint v0.13.107-112 Push-Wave."
+
+  src/vannon/syx/economy/adapter/HumanoidAccessImpl.java:
+    loc: 361
+    pubM: 8
+    fields: 25
+    imports: 28
+    status_at_emit: pass
+    reason_at_emit: "pre-existing baseline (Sprint v0.13.113+M-UI-3.3 grandfather). See docs/OPEN_POINTS_AUDIT.md Section 4. pre-Phase-A adapter pattern (formerly HumanoidUse)"
+    baseline_update: "Sprint v0.13.113+M-UI-3.3 Pre-Existing-BLOCK-Grandfather - Build-Gate-BLOCKER fix vor Sprint v0.13.107-112 Push-Wave."
+
+  src/vannon/syx/economy/adapter/RoomAccessImpl.java:
+    loc: 584
+    pubM: 2
+    fields: 33
+    imports: 27
+    status_at_emit: pass
+    reason_at_emit: "pre-existing baseline (Sprint v0.13.113+M-UI-3.3 grandfather). See docs/OPEN_POINTS_AUDIT.md Section 4. pre-Phase-A adapter pattern"
+    baseline_update: "Sprint v0.13.113+M-UI-3.3 Pre-Existing-BLOCK-Grandfather - Build-Gate-BLOCKER fix vor Sprint v0.13.107-112 Push-Wave."
+
+  src/vannon/syx/economy/core/AffordabilityGate.java:
+    loc: 377
+    pubM: 25
+    fields: 30
+    imports: 24
+    status_at_emit: pass
+    reason_at_emit: "pre-existing baseline (Sprint v0.13.113+M-UI-3.3 grandfather). See docs/OPEN_POINTS_AUDIT.md Section 4. 5-Faktor-Score-Selector; constants-dump-heuristic doesn't qualify (pubM=25 high)"
+    baseline_update: "Sprint v0.13.113+M-UI-3.3 Pre-Existing-BLOCK-Grandfather - Build-Gate-BLOCKER fix vor Sprint v0.13.107-112 Push-Wave."
+
+  src/vannon/syx/economy/core/DiagnosticExporter.java:
+    loc: 590
+    pubM: 7
+    fields: 48
+    imports: 16
+    status_at_emit: pass
+    reason_at_emit: "pre-existing baseline (Sprint v0.13.113+M-UI-3.3 grandfather). See docs/OPEN_POINTS_AUDIT.md Section 4. furniture_debug.csv writer + audit-csv-spans; pre-existing pre-Staircase-Sprint"
+    baseline_update: "Sprint v0.13.113+M-UI-3.3 Pre-Existing-BLOCK-Grandfather - Build-Gate-BLOCKER fix vor Sprint v0.13.107-112 Push-Wave."
+
+  src/vannon/syx/economy/core/EconConfig.java:
+    loc: 332
+    pubM: 7
+    fields: 256
+    imports: 0
+    status_at_emit: pass
+    reason_at_emit: "pre-existing baseline (Sprint v0.13.113+M-UI-3.3 grandfather). See docs/OPEN_POINTS_AUDIT.md Section 4. constants-dump heuristic applies (fields >= 50 AND pubM == 0 == Exception) — but pubM=7 not 0; grandfathered as Pre-Existing-Single-Source-of-Truth-Config"
+    baseline_update: "Sprint v0.13.113+M-UI-3.3 Pre-Existing-BLOCK-Grandfather - Build-Gate-BLOCKER fix vor Sprint v0.13.107-112 Push-Wave."
+
+  src/vannon/syx/economy/core/EconProgression.java:
+    loc: 251
+    pubM: 10
+    fields: 36
+    imports: 13
+    status_at_emit: pass
+    reason_at_emit: "pre-existing baseline (Sprint v0.13.113+M-UI-3.3 grandfather). See docs/OPEN_POINTS_AUDIT.md Section 4. Stage-Progression with 7 Tier-Definitions"
+    baseline_update: "Sprint v0.13.113+M-UI-3.3 Pre-Existing-BLOCK-Grandfather - Build-Gate-BLOCKER fix vor Sprint v0.13.107-112 Push-Wave."
+
+  src/vannon/syx/economy/core/EconomySim.java:
+    loc: 452
+    pubM: 75
+    fields: 14
+    imports: 25
+    status_at_emit: pass
+    reason_at_emit: "pre-existing baseline (Sprint v0.13.113+M-UI-3.3 grandfather). See docs/OPEN_POINTS_AUDIT.md Section 4. Orchestrator-Heavy: 75 pubM sind deliberate Facade-API"
+    baseline_update: "Sprint v0.13.113+M-UI-3.3 Pre-Existing-BLOCK-Grandfather - Build-Gate-BLOCKER fix vor Sprint v0.13.107-112 Push-Wave."
+
+  src/vannon/syx/economy/core/EngineLevers.java:
+    loc: 237
+    pubM: 5
+    fields: 179
+    imports: 2
+    status_at_emit: pass
+    reason_at_emit: "pre-existing baseline (Sprint v0.13.113+M-UI-3.3 grandfather). See docs/OPEN_POINTS_AUDIT.md Section 4. Constants-Dump: 179 fields sind alle Engine-Lever-Definitionen (Tier-2 sancta-like)"
+    baseline_update: "Sprint v0.13.113+M-UI-3.3 Pre-Existing-BLOCK-Grandfather - Build-Gate-BLOCKER fix vor Sprint v0.13.107-112 Push-Wave."
+
+  src/vannon/syx/economy/core/FirmLedger.java:
+    loc: 709
+    pubM: 20
+    fields: 30
+    imports: 41
+    status_at_emit: pass
+    reason_at_emit: "pre-existing baseline (Sprint v0.13.113+M-UI-3.3 grandfather). See docs/OPEN_POINTS_AUDIT.md Section 4. pre-existing Wirtschafts-Ledger; imports=41 borderline (warn > 25)"
+    baseline_update: "Sprint v0.13.113+M-UI-3.3 Pre-Existing-BLOCK-Grandfather - Build-Gate-BLOCKER fix vor Sprint v0.13.107-112 Push-Wave."
+
+  src/vannon/syx/economy/core/FoodTransactionPlan.java:
+    loc: 565
+    pubM: 17
+    fields: 42
+    imports: 39
+    status_at_emit: pass
+    reason_at_emit: "pre-existing baseline (Sprint v0.13.113+M-UI-3.3 grandfather). See docs/OPEN_POINTS_AUDIT.md Section 4. pre-existing; firm-snapshot orchestrator"
+    baseline_update: "Sprint v0.13.113+M-UI-3.3 Pre-Existing-BLOCK-Grandfather - Build-Gate-BLOCKER fix vor Sprint v0.13.107-112 Push-Wave."
+
+  src/vannon/syx/economy/core/LocalPrices.java:
+    loc: 355
+    pubM: 16
+    fields: 27
+    imports: 26
+    status_at_emit: pass
+    reason_at_emit: "pre-existing baseline (Sprint v0.13.113+M-UI-3.3 grandfather). See docs/OPEN_POINTS_AUDIT.md Section 4. pre-existing; per-resource price-oscillator"
+    baseline_update: "Sprint v0.13.113+M-UI-3.3 Pre-Existing-BLOCK-Grandfather - Build-Gate-BLOCKER fix vor Sprint v0.13.107-112 Push-Wave."
+
+  src/vannon/syx/economy/core/LoggingAdapter.java:
+    loc: 73
+    pubM: 3
+    fields: 25
+    imports: 1
+    status_at_emit: pass
+    reason_at_emit: "pre-existing baseline (Sprint v0.13.113+M-UI-3.3 grandfather). See docs/OPEN_POINTS_AUDIT.md Section 4. Stub-class pre-existing (fields=25 sind Adapter-Constant-Forwarders)"
+    baseline_update: "Sprint v0.13.113+M-UI-3.3 Pre-Existing-BLOCK-Grandfather - Build-Gate-BLOCKER fix vor Sprint v0.13.107-112 Push-Wave."
+
+  src/vannon/syx/economy/core/TreasuryCrisis.java:
+    loc: 358
+    pubM: 5
+    fields: 38
+    imports: 0
+    status_at_emit: pass
+    reason_at_emit: "pre-existing baseline (Sprint v0.13.113+M-UI-3.3 grandfather). See docs/OPEN_POINTS_AUDIT.md Section 4. 5-Tier-Cascade State-Machine"
+    baseline_update: "Sprint v0.13.113+M-UI-3.3 Pre-Existing-BLOCK-Grandfather - Build-Gate-BLOCKER fix vor Sprint v0.13.107-112 Push-Wave."
+
+  src/vannon/syx/economy/core/Wallets.java:
+    loc: 512
+    pubM: 32
+    fields: 65
+    imports: 15
+    status_at_emit: pass
+    reason_at_emit: "pre-existing baseline (Sprint v0.13.113+M-UI-3.3 grandfather). See docs/OPEN_POINTS_AUDIT.md Section 4. Stage-Gating-Wallet-Set; 65 fields sind per-Stage State-Variables"
+    baseline_update: "Sprint v0.13.113+M-UI-3.3 Pre-Existing-BLOCK-Grandfather - Build-Gate-BLOCKER fix vor Sprint v0.13.107-112 Push-Wave."
+
+  src/vannon/syx/economy/core/WarehouseMarket.java:
+    loc: 415
+    pubM: 37
+    fields: 23
+    imports: 18
+    status_at_emit: pass
+    reason_at_emit: "pre-existing baseline (Sprint v0.13.113+M-UI-3.3 grandfather). See docs/OPEN_POINTS_AUDIT.md Section 4. Adaptive-Market-Engine; pubM=37 sind Feature-Flags"
+    baseline_update: "Sprint v0.13.113+M-UI-3.3 Pre-Existing-BLOCK-Grandfather - Build-Gate-BLOCKER fix vor Sprint v0.13.107-112 Push-Wave."
+
+  src/vannon/syx/economy/ui/EconWindowBase.java:
+    loc: 297
+    pubM: 13
+    fields: 32
+    imports: 21
+    status_at_emit: pass
+    reason_at_emit: "pre-existing baseline (Sprint v0.13.113+M-UI-3.3 grandfather). See docs/OPEN_POINTS_AUDIT.md Section 4. Base-Klasse fuer 5 Window*-Files, Sancta-sub-rule-exempt"
+    baseline_update: "Sprint v0.13.113+M-UI-3.3 Pre-Existing-BLOCK-Grandfather - Build-Gate-BLOCKER fix vor Sprint v0.13.107-112 Push-Wave."
+

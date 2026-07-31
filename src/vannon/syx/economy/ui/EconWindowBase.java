@@ -20,6 +20,7 @@ import vannon.syx.economy.core.BuildStamp;
 import vannon.syx.economy.core.CompactNumber;
 import vannon.syx.economy.core.DiagnosticExporter;
 import vannon.syx.economy.core.EconomySim;
+import vannon.syx.economy.core.EventLog;
 
 /**
  * Vanilla-Komponenten-basierte Basis für alle Economy-Fenster.
@@ -191,10 +192,44 @@ public abstract class EconWindowBase {
             tabX += tw + tabGap;
         }
 
-        // Active tab content
+        // Active tab content (Sprint v0.13.104+M-UI-1: mit Error-Boundary)
         int contentY = tabY + tabH + 8;
         int contentH = panelH - contentY - 8;
-        tabs[this.activeTab].build(this.sim, content, 12, contentY, innerW, contentH);
+        TabContent activeTab = tabs[this.activeTab];
+        try {
+            activeTab.build(this.sim, content, 12, contentY, innerW, contentH);
+        } catch (Exception t) {
+            // Sprint M-UI-1 Review-Fix: Throwable → Exception. VM-Errors (OOM, SOE) muessen
+            // den Crash-Pfad weiter laufen — kein silent swallow. NPE/IllegalState gehoert
+            // hierhin (Tab-Build hat Engine-State verletzt).
+            onTabBuildError(activeTab, t, content, contentY);
+        }
+    }
+
+    /**
+     * Sprint v0.13.104+M-UI-1 — render a friendly error placeholder when a
+     * tab-build throws. Spieler sieht "Tab konnte nicht geladen werden" +
+     * Diagnostik-Hinweis. Statt rohem Crash sind EventLog + DiagnosticExporter
+     * mit Race-Condition-Trail gefüllt. Verhindert dass NPE in tab.build() das
+     * ganze Fenster leert (Audit Q4.2).
+     */
+    private void onTabBuildError(TabContent tab, Throwable t, GuiSection content, int contentY) {
+        CharSequence title = tab != null ? tab.title() : "?";
+        String tabTitle = title != null ? title.toString() : "?";
+        EventLog.log("WINDOW_BUILD", "Tab '" + tabTitle + "' threw "
+                + t.getClass().getSimpleName() + ": " + t.getMessage());
+        DiagnosticExporter.logPlayerAction("window_build_error",
+                tabTitle + ":" + t.getClass().getSimpleName());
+        GText errorH = new GText(UI.FONT().M, FONTW_HDR);
+        errorH.set("--- Tab-Fehler ---");
+        errorH.lablify();
+        errorH.color(GCOLOR.UI().BAD.normal);
+        content.add(errorH, 12, contentY);
+        GText errorB = new GText(UI.FONT().S, FONTW_BODY);
+        errorB.set("Tab '" + tabTitle + "' konnte nicht geladen werden: "
+                + t.getClass().getSimpleName() + ". EventLog enthaelt Details — siehe Debug-Tab.");
+        errorB.color(GCOLOR.UI().BAD.normal);
+        content.add(errorB, 12, contentY + 22);
     }
 
     /** Override to provide tabs. Default: null (no tabs). */
@@ -241,7 +276,7 @@ public abstract class EconWindowBase {
     // ─── Shared widget helpers ───────────────────────────────────────
 
     /** KPI label+value pair. Label in UI.FONT().S, value in UI.FONT().M. */
-    protected static void addKpi(GuiSection section, int x, int y, String label, String value, COLOR valueColor) {
+    public static void addKpi(GuiSection section, int x, int y, String label, String value, COLOR valueColor) {
         GText lbl = new GText(UI.FONT().S, FONTW_KPI);
         lbl.set(label);
         lbl.color(GCOLOR.T().NORMAL);
@@ -254,7 +289,7 @@ public abstract class EconWindowBase {
     }
 
     /** KPI with a leading vanilla icon. Icon renders at (x, y+2), label + value shift right by 28px. */
-    protected static void addKpi(GuiSection section, int x, int y, SPRITE icon, String label, String value, COLOR valueColor) {
+    public static void addKpi(GuiSection section, int x, int y, SPRITE icon, String label, String value, COLOR valueColor) {
         section.add(new RENDEROBJ.Sprite(icon), x, y + 2);
         GText lbl = new GText(UI.FONT().S, FONTW_KPI);
         lbl.set(label);
@@ -341,7 +376,7 @@ public abstract class EconWindowBase {
     // ─── Slider entry points ────────────────────────────────────────
 
     /** Live slider — value is re-read every frame via IntSupplier. */
-    protected static void addSlider(GuiSection section, int x, int y,
+    public static void addSlider(GuiSection section, int x, int y,
                                      String label, IntSupplier currentSupplier,
                                      int min, int max, int step,
                                      ACTION plusAction, ACTION minusAction, String suffix) {
@@ -349,7 +384,7 @@ public abstract class EconWindowBase {
     }
 
     /** Live slider with " D" suffix. */
-    protected static void addSlider(GuiSection section, int x, int y,
+    public static void addSlider(GuiSection section, int x, int y,
                                      String label, IntSupplier currentSupplier,
                                      int min, int max, int step,
                                      ACTION plusAction, ACTION minusAction) {
@@ -357,7 +392,7 @@ public abstract class EconWindowBase {
     }
 
     /** Static snapshot slider (non-live). Value captured once at creation. */
-    protected static void addSlider(GuiSection section, int x, int y,
+    public static void addSlider(GuiSection section, int x, int y,
                                      String label, int current, int min, int max, int step,
                                      ACTION plusAction, ACTION minusAction, String suffix) {
         int captured = current;
@@ -365,14 +400,14 @@ public abstract class EconWindowBase {
     }
 
     /** Static snapshot with " D" suffix. */
-    protected static void addSlider(GuiSection section, int x, int y,
+    public static void addSlider(GuiSection section, int x, int y,
                                      String label, int current, int min, int max, int step,
                                      ACTION plusAction, ACTION minusAction) {
         addSlider(section, x, y, label, current, min, max, step, plusAction, minusAction, " D");
     }
 
     /** Column header in UI.FONT().S for table layouts. */
-    protected static void addColHeader(GuiSection section, int x, int y, String label, int w) {
+    public static void addColHeader(GuiSection section, int x, int y, String label, int w) {
         GText hdr = new GText(UI.FONT().S, FONTW_LABEL);
         hdr.set(label);
         hdr.color(GCOLOR.T().NORMAL);

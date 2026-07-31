@@ -46,13 +46,13 @@ Spec-Migration: BINDUNGSMATRIX.csv ist Single-Source-of-Truth.
 
 Das Mod fügt Songs of Syx eine parallele Wirtschaftsschicht hinzu. Jeder Siedler hat ein eigenes Wallet, Firmen rechnen边际isch ab, der Staat kann Steuern erheben und Subventionen verteilen. Das Mod ersetzt keine Vanilla-Systeme, sondern arbeitet über einen **Adapter-Layer** strikt getrennt daneben.
 
-Modul-Bilanz: **163 Java-Dateien, ~31.152 LOC** (core 22.539 + adapter 5.164 + ui 2.623 + benchmark 328 + warehouse/market 51 + bridges 309 + io 220)
+Modul-Bilanz: **164 Java-Dateien, ~31.220 LOC** (core 22.539 + adapter 5.164 + ui 2.668 + benchmark 328 + warehouse/market 51 + bridges 309 + io 220)
 
 | Modul | Dateien | LOC | Aufgabe |
 |---|---:|---:|---|
 | `vannon/syx/economy/core/` | 126 | ~22.539 | Wirtschafts-Sim + Subsysteme (inkl. EngineLevers 103 Toggles, io/ 2 Dateien) |
 | `vannon/syx/economy/adapter/` | 27 | ~5.164 | EngineMirror-SDK (9) + ISyx* Legacy (7) + Vanilla (5) + Bypass-SDK (5) + Dispatcher (1) |
-| `vannon/syx/economy/ui/` | 5 | ~2.623 | 4 Fenster + Base |
+| `vannon/syx/economy/ui/` | 12 | ~3.668 | 4 Fenster + Base + KpiSection (M-UI-1) + 5 Overview-Module + AdvisorEngine (M-UI-2) |
 | `vannon/syx/economy/benchmark/` | 1 | ~328 | Reflection-vs-MethodHandle-Benchmark |
 | `vannon/syx/economy/warehouse/market/` | 1 | ~51 | MarketSharedState (Sprint M-1) |
 | `settlement/room/...` | 4 | ~309 | Package-Private Brücken (compile-time-safe, außerhalb mod-package) |
@@ -77,7 +77,7 @@ Modul-Bilanz: **163 Java-Dateien, ~31.152 LOC** (core 22.539 + adapter 5.164 + u
 ╚═════════════════════════════════════╤══════════════════════════╝
                                        ▼
 ╔════════════════════════════════════════════════════════════════╗
-║  SCHICHT 3: UI (`ui/`, 5 Dateien, 16 Tabs)                     ║
+║  SCHICHT 3: UI (`ui/`, 11 Dateien, 16 Tabs + 5 Overview-Module)   ║
 ╚════════════════════════════════════════════════════════════════╝
 ```
 
@@ -128,13 +128,19 @@ Purchase, CrownStorage, SaleDistribution, Settlement, RetailQuote, OwnerlessReta
 |---|---|---|
 | `EconWindowBase.java` | ✅ | `src/vannon/syx/economy/ui/EconWindowBase.java` (413 LOC) |
 | `WindowEconomy.java` | ✅ | `src/vannon/syx/economy/ui/WindowEconomy.java` (528 LOC) |
-| `WindowOverview.java` | ✅ | `src/vannon/syx/economy/ui/WindowOverview.java` (841 LOC) |
+| `WindowOverview.java` | ✅ | `src/vannon/syx/economy/ui/WindowOverview.java` (**48 LOC**, M-UI-3 Composition-Shell) |
 | `WindowState.java` | ✅ | `src/vannon/syx/economy/ui/WindowState.java` (645 LOC) |
 | `WindowQuickview.java` | ✅ | `src/vannon/syx/economy/ui/WindowQuickview.java` (195 LOC) |
+| `KpiSection.java` | ✅ | `src/vannon/syx/economy/ui/KpiSection.java` (98 SLOC, M-UI-1 Severity-Heatmap) |
+| `OverviewHelpers.java` | ✅ | `src/vannon/syx/economy/ui/tabs/Overview/OverviewHelpers.java` (255 SLOC, M-UI-3) |
+| `DashboardTab.java` | ✅ | `src/vannon/syx/economy/ui/tabs/Overview/DashboardTab.java` (186 SLOC, M-UI-3) |
+| `DemographicsTab.java` | ✅ | `src/vannon/syx/economy/ui/tabs/Overview/DemographicsTab.java` (115 SLOC, M-UI-3) |
+| `AdvisorTab.java` | ✅ | `src/vannon/syx/economy/ui/tabs/Overview/AdvisorTab.java` (152 SLOC, M-UI-3) |
+| `PropertyTab.java` | ✅ | `src/vannon/syx/economy/ui/tabs/Overview/PropertyTab.java` (91 SLOC, M-UI-3) |
 | ~~`EconContext.java`~~ | ❌ nicht mehr — Inhalt wurde in die 4 Window-Files integriert | — |
 | ~~`EconTab.java`~~ | ❌ nicht mehr — `TabContent`-Interface direkt in `EconWindowBase` | — |
 | ~~`EconWidgets.java`~~ | ❌ nicht mehr — Vanilla-Widgets (`SPanel`, `GColor`, `GButton`, `GCheckBox`, `GSlider`) | — |
-| ~~`OverviewTabs.java`~~ | ❌ nicht mehr — Tabs sind als statische innere Klassen in `WindowOverview` | — |
+| ~~`OverviewTabs.java`~~ | ❌ nicht mehr — Sprint M-UI-3+: Tabs in `ui/tabs/Overview/{Dashboard,Demographics,Advisor,Property}Tab.java` | — |
 | ~~`EconomyTabs.java`~~ | ❌ nicht mehr — Tabs sind als statische innere Klassen in `WindowEconomy` | — |
 | ~~`StateTabs.java`~~ | ❌ nicht mehr — Tabs sind als statische innere Klassen in `WindowState` | — |
 
