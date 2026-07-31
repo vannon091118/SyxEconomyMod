@@ -217,9 +217,18 @@ legacy_baselines:
     status_at_emit: block
     reason_at_emit: pubM 37 > block 35
   src/vannon/syx/economy/ui/EconWindowBase.java:
-    loc: 278
+    loc: 297
     pubM: 6
-    fields: 33
-    imports: 19
+    fields: 32
+    imports: 21
     status_at_emit: block
-    reason_at_emit: fields 33 > block 24
+    reason_at_emit: fields 32 > block 24
+    baseline_update: 'Sprint v0.13.104+M-UI-1 Error-Boundary — onTabBuildError() helper method added; tabs[this.activeTab].build() wrapped in try/catch (Exception) per code-review catch-hygiene fix. Result: +19 SLOC, +2 imports (EventLog, snake2d.util.misc.ACTION), fields 33→32 (one relocated static final to method-bound). LOC drift +6.83% exceeds +5% Hard-Block, so re-baselined per Rule 14.'
+  src/vannon/syx/economy/ui/KpiSection.java:
+    loc: 98
+    pubM: 12
+    fields: 4
+    imports: 4
+    status_at_emit: pass
+    reason_at_emit: 'All thresholds clear by large margin (loc 98 < warn 600; pubM 12 < warn 25; fields 4 < warn 18; imports 4 < warn 25).'
+    baseline_update: 'Sprint v0.13.104+M-UI-1 new file — SeverityClassifier (enum CRITICAL/LOW/OK/SURPLUS + classify(double)) + FilterMode (4-mode enum + accepts/chipLabel) + 7 color helpers + sortIndicesByCoverageAsc(FlowPrices, int). Single SSoT fuer Severity-Schwellwerte die zuvor in WindowQuickview.build/renderSidePanelContent und WindowEconomy.PricesTab dupliziert waren (~70 LOC dedupliziert). Rule-15 konform: keine static-final-Init mit Engine-Singletons.'

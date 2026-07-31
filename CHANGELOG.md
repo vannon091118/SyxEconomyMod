@@ -42,6 +42,73 @@
 
 ## v0.13.101 — 2026-07-28
 
+### Sprint v0.13.104+M-UI-1 — UI-Stabilität + Severity-Heatmap + Quickview-DRY (2026-07-30)
+
+**Theme:** UI-Audit-Top-3-Fix-Paket aus `docs/SyxEconomyMod_AUDIT_2026-07-30_UI-RESTRUCTURE.md`
+§TEIL F (Reihenfolge 1+2+5). Sprint-Body berücksichtigt Code-Reviewer-Findings
+(catch-Hygiene, Lambda-Type, baselines-Re-Baseline-Pflicht).
+
+Subsummierte Tasks (5 total, 1 atomic commit):
+
+- **T-MUI-01.1** — `src/vannon/syx/economy/ui/KpiSection.java` (NEU).
+  Single SSoT für SeverityClassifier (enum CRITICAL/LOW/OK/SURPLUS) +
+  FilterMode (enum ALL/PROBLEM_ONLY/SURPLUS_ONLY/CRITICAL_ONLY) +
+  7 Color-Helper (treasury/gini/median/wage/unpaid/emigration/severity) +
+  sortIndicesByCoverageAsc(FlowPrices, int). Rule-15 konform: keine
+  `static final`-Init mit Engine-Singletons. 98 SLOC / 12 pubM / 4 fields / 4 imports.
+
+- **T-MUI-01.2** — `src/vannon/syx/economy/ui/EconWindowBase.java` Error-Boundary.
+  `build()` wraps `tabs[this.activeTab].build(...)` in `try { ... } catch (Exception t)`
+  (Code-Reviewer-Fix: war `Throwable t` zu breit — VM-Errors müssen propagieren).
+  `onTabBuildError()` helper erfasst Tab-Name + Exception-Class in
+  `EventLog` + `DiagnosticExporter` und rendert freundlichen Error-Placeholder.
+  Verhindert Audit-Tab-Lag-Chain (Cross-Synthesis #1: 100ms Hitch + leerer Body).
+
+- **T-MUI-01.3** — `src/vannon/syx/economy/ui/WindowQuickview.java` DRY-Refactor.
+  Build() und renderSidePanelContent() Color-Triples ersetzt durch
+  `KpiSection.colorFor{Treasury|Gini|Wage|Unpaid|Emigration}()` in beiden
+  Pfaden. Etwa 70 LOC Duplikat entfernt, Single SSoT für Severity-Farbentscheidungen.
+
+- **T-MUI-01.4** — `src/vannon/syx/economy/ui/WindowEconomy.java` PricesTab Severity-Heatmap.
+  TABS jetzt instance-allocated (war `static final`) damit PricesTab
+  rebuild-Trigger als Lambda `Runnable` (Code-Reviewer-Fix: war
+  `Supplier<Boolean>` mit totem `Boolean.TRUE`-return) mitgeben kann. Vier
+  Filter-Chips am Tabellen-Top: `Alle` / `Mangel+Knapp` (Default) /
+  `Überschuss` / `Nur Mangel`. Sort-Iteration via `KpiSection.sortIndicesByCoverageAsc()`
+  — kritischste Ressource zuerst (Spieler sieht Probleme sofort). Empty-Filter-
+  Hinweis unten wenn Filter keine Match liefert.
+
+- **T-MUI-01.5** — `test/java/.../ui/KpiSectionTest.java` (NEU, 18 Tests).
+  SeverityClassifier (8): zero=CRITICAL, threshold-inclusive an 0.3/0.7/3.0,
+  NaN = OK data-stale, +∞ = OK, -∞/negative-finite = CRITICAL, exact mid-band.
+  `isProblem` (1: nur CRITICAL+LOW). `badge` (1: status-String-Konsistenz).
+  FilterMode accepts (4: ALL/PROBLEM_ONLY/SURPLUS_ONLY/CRITICAL_ONLY).
+  chipLabel (1). Ordinal-Contract (1: int-Index SSoT fuer PricesTab.currentFilter).
+
+**Stam-Docs-Sync per Rule 2 / 3 / 14**
+- `tools/god-class-baselines.yml`: KpiSection NEU + EconWindowBase Re-Baseline
+  (loc 278→297, fields 33→32, imports 19→21). LOC-Drift +6.83% überschreitet
+  +5%-Hard-Block, daher re-baselined == Gate 1 nach Rule 14 Pflicht.
+- `CHANGELOG.md` Sprint-Header (dieser Eintrag).
+- pom.xml Version bleibt `0.13.101` (`-Dskip.bump=true`, kein auto-Bump).
+
+**Verification (DoD Sprint M-UI-1):**
+- ✅ `mvn compile -DskipTests -Dskip.bump=true` → BUILD SUCCESS.
+- ✅ `bash tools/god-class-guard.sh --mode=hard` → 174 PASS / 0 WARN / 0 BLOCK.
+- ✅ Code-Reviewer PASS nach 2 Runden (BLOCKEr Re-Baseline + catch-Refactor).
+- ⚠️ `bash tools/verify-doc-sync.sh` → erwartet PASS (pom.xml unangetastet).
+
+**Out-of-Scope Sprint M-UI-1 (deliberately deferred per Rule 11 Proportionalität):**
+- 🟡 `sortIndicesByCoverageAsc` Mockito-Stub-Test — Sprint M-UI-3 (EngineMock-Fixture Voraussetzung).
+- 🟡 WindowOverview Tab-Modul-Split (948 LOC → < 600 LOC) — Sprint M-UI-3 separater Commit.
+- 🟡 `Severity.classify` negative-coverage Policy-Konsistenz (Reviewer-Dispute offen:
+  aktuell -Infinity/negative-finite = CRITICAL, Diskussions-Folge Sprint).
+- 🟡 AdvisorTab v2 mit Alternativen-Triplet statt 1 Empfehlung — Sprint M-UI-2.
+- 🟡 WindowOverview `setActiveTab()` selbst-bauen-Cascade statt close+toggle —
+  Performance-Folge-Sprint (C-3.1 Audit-Q3.1 Mitigation).
+
+---
+
 ### 🏛️ EconomyMod v0.13.89 — Native Vanilla UI Extensions + Advisor Consolidation
 
 **Native Vanilla UI Extensions (UITreasury, UICitizens, UIGoods)**

@@ -6,10 +6,13 @@ import init.resources.RESOURCES;
 import init.sprite.UI.UI;
 import snake2d.SPRITE_RENDERER;
 import snake2d.util.gui.GuiSection;
+import snake2d.util.misc.ACTION;
 import util.colors.GCOLOR;
+import util.gui.misc.GButt;
 import util.gui.misc.GText;
 import util.gui.panel.GPanel;
 import vannon.syx.economy.core.CompactNumber;
+import vannon.syx.economy.core.DiagnosticExporter;
 import vannon.syx.economy.core.EconSnapshot;
 import vannon.syx.economy.core.EconomySim;
 import vannon.syx.economy.core.EventLog;
@@ -23,17 +26,23 @@ import vannon.syx.economy.core.EconConfig;
  */
 public final class WindowEconomy extends EconWindowBase {
 
-    private static final TabContent[] TABS = {
-        new MarketsTab(),
-        new PricesTab(),
-        new FirmsTab(),
-        new WagesTab(),
-        new SubsidiesTab(),
-        new BooksTab()
-    };
+    /** Sprint v0.13.104+M-UI-1: TABS jetzt instance-allocated (war static), damit
+     *  PricesTab eine per-Instanz rebuild-Referenz (close+toggle) für Filter-Chips
+     *  mitbekommt. Single-Window-pro-Session, also keine Extra-Kosten. */
+    private final TabContent[] TABS;
 
     public WindowEconomy(EconomySim sim) {
         super(sim);
+        TABS = new TabContent[]{
+            new MarketsTab(),
+            // PricesTab captures window-ref for filter rebuild (Sprint M-UI-1).
+            // Runnable.run() triggert Close+Toggle ohne Return-Wert.
+            new PricesTab(() -> { this.close(); this.toggle(); }),
+            new FirmsTab(),
+            new WagesTab(),
+            new SubsidiesTab(),
+            new BooksTab()
+        };
     }
 
     @Override
@@ -143,6 +152,22 @@ public final class WindowEconomy extends EconWindowBase {
     private static final class PricesTab implements TabContent {
         @Override public CharSequence title() { return "Preise"; }
 
+        // Sprint v0.13.104+M-UI-1 — Severity-Klassifikation + Filter-Modus
+        // ----------------
+        // Persistent static filter-state: 0=Alle, 1=Mangel+Knapp (default),
+        // 2=Überschuss, 3=Nur Mangel. Spieler sieht zuerst die kritischen
+        // Ressourcen, kann chip-umschalten, bekommt CSV-Spalten mit Severity.
+        private static int currentFilter = 1;
+        /** Per-Instance: caller invokes close+toggle rebuild after filter change.
+         *  Sprint M-UI-1 Review-Fix: Runnable statt Supplier<Boolean> — der
+         *  Boolean-Return war dead (Lambda-Block wirft nichts, Wert wurde verworfen).
+         *  Runnable.run() ist semantisch sauberer und spart Boxing. */
+        private final Runnable rebuildTrigger;
+
+        PricesTab(Runnable rebuildTrigger) {
+            this.rebuildTrigger = rebuildTrigger;
+        }
+
         @Override
         public void build(EconomySim sim, GuiSection content, int x, int y, int w, int h) {
             FlowPrices fp = sim.flowPrices();
@@ -152,6 +177,48 @@ public final class WindowEconomy extends EconWindowBase {
             header.color(GCOLOR.T().NORMAL);
             content.add(header, x, y);
             y += 24;
+
+            // ── Empty-State-Kurzschluss (Sprint v0.13.104+M-UI-1) ─────
+            if (!fp.ready()) {
+                GText noData = new GText(UI.FONT().M, FONTW_KPI);
+                noData.set("Preise noch nicht initialisiert — erster Tag abwarten.");
+                noData.color(GCOLOR.T().INACTIVE);
+                content.add(noData, x, y);
+                GText noDataInfo = new GText(UI.FONT().S, FONTW_HDR);
+                noDataInfo.set("Dieser Tab wird ab Spieltag 2 automatisch befüllt.");
+                noDataInfo.color(GCOLOR.T().INACTIVE);
+                content.add(noDataInfo, x, y + 24);
+                return;
+            }
+
+            // ── Filter-Chip-Bar (Sprint v0.13.104+M-UI-1) ─────────────
+            // Sprint M-UI-1 fügt 4 Chips für Severity-Filter hinzu. Default
+            // PROBLEM_ONLY zeigt dem Spieler zuerst Mangel+Knapp — kritischste
+            // Ressourcen zuerst. Severity-Sort (coverage ASC) gibt die 25-Reihen-
+            // Grenze einen spielerischen Sinn: die 25 wichtigsten Ressourcen.
+            int chipX = x;
+            for (KpiSection.FilterMode mode : KpiSection.FilterMode.values()) {
+                final int targetOrdinal = mode.ordinal();
+                GButt.ButtPanel chip = new GButt.ButtPanel(mode.chipLabel(), 110) {
+                    @Override protected void render(SPRITE_RENDERER r, float ds,
+                                                      boolean isActive, boolean isSelected, boolean isHovered) {
+                        selectedSet(currentFilter == targetOrdinal);
+                        super.render(r, ds, isActive, isSelected, isHovered);
+                    }
+                };
+                chip.clickActionSet(new ACTION() {
+                    @Override public void exe() {
+                        if (currentFilter == targetOrdinal) return;
+                        DiagnosticExporter.logPlayerAction("prices.filter",
+                                KpiSection.FilterMode.values()[targetOrdinal].chipLabel());
+                        currentFilter = targetOrdinal;
+                        if (rebuildTrigger != null) rebuildTrigger.run();
+                    }
+                });
+                content.add(chip, chipX, y);
+                chipX += 115;
+            }
+            y += 28;
 
             addColHeader(content, x, y, "Ressource", 100);
             addColHeader(content, x + 110, y, "Lokal", 55);
@@ -164,86 +231,84 @@ public final class WindowEconomy extends EconWindowBase {
             addColHeader(content, x + 550, y, "Status", 55);
             y += 20;
 
-            // Resource rows
-            if (fp.ready()) {
-                EconSnapshot snap = sim.econIndicators().latest();
-                int rows = Math.min(RESOURCES.ALL().size(), Math.min(25, (h - 60) / 16));
-                for (int i = 0; i < rows; i++) {
-                    RESOURCE r = (RESOURCE) RESOURCES.ALL().get(i);
-                    double local = fp.price(i);
-                    double anchor = fp.anchor(i);
-                    double coverage = fp.coverage(i);
-                    double factor = anchor > 0 ? local / anchor : 0;
-                    double stock = (snap != null && i < snap.stock.length) ? snap.stock[i] : 0;
-                    double supply = (snap != null && i < snap.supplyPerDay.length) ? snap.supplyPerDay[i] : 0;
-                    double demand = (snap != null && i < snap.demandPerDay.length) ? snap.demandPerDay[i] : 0;
+            // ── Severity-Sort + Filter (Sprint v0.13.104+M-UI-1) ───────
+            // Coverage-ASC-Sort priorisiert Mangel. Filter-Mode entscheidet
+            // welche Severity-Klassen sichtbar sind. Color-For-Severity
+            // ersetzt die inline Color-Triples (DRY-Konsolidierung).
+            int n = RESOURCES.ALL().size();
+            int[] sorted = KpiSection.sortIndicesByCoverageAsc(fp, n);
+            EconSnapshot snap = sim.econIndicators().latest();
+            KpiSection.FilterMode activeMode = KpiSection.FilterMode.values()[currentFilter];
+            int maxRows = Math.min(sorted.length, Math.min(25, (h - 80) / 16));
+            int rowCount = 0;
+            for (int idx : sorted) {
+                if (rowCount >= maxRows) break;
+                double coverage = fp.coverage(idx);
+                KpiSection.Severity sev = KpiSection.Severity.classify(coverage);
+                if (!activeMode.accepts(sev)) continue;
+                RESOURCE r = (RESOURCE) RESOURCES.ALL().get(idx);
+                double local = fp.price(idx);
+                double anchor = fp.anchor(idx);
+                double factor = anchor > 0 ? local / anchor : 0;
+                double stock = (snap != null && idx < snap.stock.length) ? snap.stock[idx] : 0;
+                double supply = (snap != null && idx < snap.supplyPerDay.length) ? snap.supplyPerDay[idx] : 0;
+                double demand = (snap != null && idx < snap.demandPerDay.length) ? snap.demandPerDay[idx] : 0;
 
-                    // Resource display name (SK-06: lesbarer Name statt Rohkey)
-                    GText name = new GText(UI.FONT().S, FONTW_NAME);
-                    name.set(toDisplayName(r.key));
-                    name.color(GCOLOR.T().NORMAL);
-                    content.add(name, x, y);
+                GText name = new GText(UI.FONT().S, FONTW_NAME);
+                name.set(toDisplayName(r.key));
+                name.color(GCOLOR.T().NORMAL);
+                content.add(name, x, y);
 
-                    GText localT = new GText(UI.FONT().S, FONTW_CNT);
-                    localT.set(String.format("%.1f", local));
-                    localT.color(GCOLOR.T().NORMAL);
-                    content.add(localT, x + 110, y);
+                GText localT = new GText(UI.FONT().S, FONTW_CNT);
+                localT.set(String.format("%.1f", local));
+                localT.color(GCOLOR.T().NORMAL);
+                content.add(localT, x + 110, y);
 
-                    GText anchorT = new GText(UI.FONT().S, FONTW_CNT);
-                    anchorT.set(String.format("%.1f", anchor));
-                    anchorT.color(GCOLOR.T().NORMAL);
-                    content.add(anchorT, x + 175, y);
+                GText anchorT = new GText(UI.FONT().S, FONTW_CNT);
+                anchorT.set(String.format("%.1f", anchor));
+                anchorT.color(GCOLOR.T().NORMAL);
+                content.add(anchorT, x + 175, y);
 
-                    GText factorT = new GText(UI.FONT().S, FONTW_CNT);
-                    factorT.set(String.format("%.1fx", factor));
-                    factorT.color(factor > 10 ? GCOLOR.UI().BAD.normal : factor > 3 ? GCOLOR.UI().SOSO.normal : GCOLOR.T().NORMAL);
-                    content.add(factorT, x + 240, y);
+                GText factorT = new GText(UI.FONT().S, FONTW_CNT);
+                factorT.set(String.format("%.1fx", factor));
+                factorT.color(factor > 10 ? GCOLOR.UI().BAD.normal : factor > 3 ? GCOLOR.UI().SOSO.normal : GCOLOR.T().NORMAL);
+                content.add(factorT, x + 240, y);
 
-                    GText covT = new GText(UI.FONT().S, FONTW_CNT);
-                    covT.set(String.format("%.2f", coverage));
-                    covT.color(coverage < 0.5 ? GCOLOR.UI().BAD.normal : coverage < 1.0 ? GCOLOR.UI().SOSO.normal : GCOLOR.UI().GOOD.normal);
-                    content.add(covT, x + 295, y);
+                GText covT = new GText(UI.FONT().S, FONTW_CNT);
+                covT.set(String.format("%.2f", coverage));
+                covT.color(KpiSection.colorForSeverity(sev));
+                content.add(covT, x + 295, y);
 
-                    GText stockT = new GText(UI.FONT().S, FONTW_CNT);
-                    stockT.set(CompactNumber.format((long)stock));
-                    stockT.color(stock > 0 ? GCOLOR.T().NORMAL : GCOLOR.UI().BAD.normal);
-                    content.add(stockT, x + 355, y);
+                GText stockT = new GText(UI.FONT().S, FONTW_CNT);
+                stockT.set(CompactNumber.format((long)stock));
+                stockT.color(stock > 0 ? GCOLOR.T().NORMAL : GCOLOR.UI().BAD.normal);
+                content.add(stockT, x + 355, y);
 
-                    GText supplyT = new GText(UI.FONT().S, FONTW_CNT);
-                    supplyT.set(CompactNumber.format((long)supply));
-                    supplyT.color(supply > 0 ? GCOLOR.T().NORMAL : GCOLOR.T().INACTIVE);
-                    content.add(supplyT, x + 420, y);
+                GText supplyT = new GText(UI.FONT().S, FONTW_CNT);
+                supplyT.set(CompactNumber.format((long)supply));
+                supplyT.color(supply > 0 ? GCOLOR.T().NORMAL : GCOLOR.T().INACTIVE);
+                content.add(supplyT, x + 420, y);
 
-                    GText demandT = new GText(UI.FONT().S, FONTW_CNT);
-                    demandT.set(CompactNumber.format((long)demand));
-                    demandT.color(GCOLOR.T().NORMAL);
-                    content.add(demandT, x + 485, y);
+                GText demandT = new GText(UI.FONT().S, FONTW_CNT);
+                demandT.set(CompactNumber.format((long)demand));
+                demandT.color(GCOLOR.T().NORMAL);
+                content.add(demandT, x + 485, y);
 
-                    String status;
-                    COLOR statusColor;
-                    if (coverage < 0.3) { status = "MANGL"; statusColor = GCOLOR.UI().BAD.normal; }
-                    else if (coverage < 0.7) { status = "knapp"; statusColor = GCOLOR.UI().SOSO.normal; }
-                    else if (coverage > 3.0) { status = "UEBERSCH."; statusColor = GCOLOR.UI().GOOD.normal; }
-                    else { status = "ok"; statusColor = GCOLOR.UI().GOOD.normal; }
+                GText statusT = new GText(UI.FONT().S, FONTW_CNT);
+                statusT.set(sev.badge());
+                statusT.color(KpiSection.colorForSeverity(sev));
+                content.add(statusT, x + 550, y);
 
-                    GText statusT = new GText(UI.FONT().S, FONTW_CNT);
-                    statusT.set(status);
-                    statusT.color(statusColor);
-                    content.add(statusT, x + 550, y);
+                y += 16;
+                rowCount++;
+            }
 
-                    y += 16;
-                }
-            } else {
-                GText noData = new GText(UI.FONT().M, FONTW_KPI);
-                noData.set("Preise noch nicht initialisiert — erster Tag abwarten.");
-                noData.color(GCOLOR.T().INACTIVE);
-                content.add(noData, x, y);
-                y += 24;
-
-                GText noDataInfo = new GText(UI.FONT().S, FONTW_HDR);
-                noDataInfo.set("Dieser Tab wird ab Spieltag 2 automatisch befüllt.");
-                noDataInfo.color(GCOLOR.T().INACTIVE);
-                content.add(noDataInfo, x, y);
+            // Leerer-Filter-Hinweis unten (Sprint v0.13.104+M-UI-1)
+            if (rowCount == 0) {
+                GText empty = new GText(UI.FONT().S, FONTW_HDR);
+                empty.set("Keine Ressourcen in Filter '" + activeMode.chipLabel() + "'.");
+                empty.color(GCOLOR.T().INACTIVE);
+                content.add(empty, x, y);
             }
         }
     }

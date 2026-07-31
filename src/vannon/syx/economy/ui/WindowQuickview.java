@@ -55,7 +55,7 @@ public final class WindowQuickview extends EconWindowBase {
         // Treasury
         addKpi(content, x, y, UI.icons().m.coins, "Staatskasse",
             CompactNumber.format(treasury) + " D",
-            !hasPop ? GCOLOR.T().INACTIVE : treasury >= 0 ? GCOLOR.UI().GOOD.normal : GCOLOR.UI().BAD.normal);
+            KpiSection.colorForTreasury(treasury, hasPop));
         y += 38;
 
         // Population & Gini
@@ -63,7 +63,7 @@ public final class WindowQuickview extends EconWindowBase {
             String.valueOf(stats.people), hasPop ? GCOLOR.T().NORMAL : GCOLOR.T().INACTIVE);
         addKpi(content, x + 170, y, UI.icons().m.heart, "Gini",
             hasPop ? String.format("%.3f", stats.gini) : "N/A",
-            !hasPop ? GCOLOR.T().INACTIVE : stats.gini > 0.40 ? GCOLOR.UI().BAD.normal : stats.gini > 0.35 ? GCOLOR.UI().SOSO.normal : GCOLOR.UI().GOOD.normal);
+            KpiSection.colorForGini(stats.gini, hasPop));
         y += 38;
 
         // Median & Wage
@@ -72,7 +72,7 @@ public final class WindowQuickview extends EconWindowBase {
             !hasPop ? GCOLOR.T().INACTIVE : GCOLOR.T().NORMAL);
         addKpi(content, x + 170, y, UI.icons().m.pickaxe, "Lohn/Tag",
             CompactNumber.format((long)sim.laborMarket().meanWage()) + " D",
-            !hasPop ? GCOLOR.T().INACTIVE : sim.laborMarket().meanWage() > 0 ? GCOLOR.UI().GOOD.normal : GCOLOR.UI().BAD.normal);
+            KpiSection.colorForWage(sim.laborMarket().meanWage(), hasPop));
         y += 38;
 
         // Stage
@@ -80,13 +80,13 @@ public final class WindowQuickview extends EconWindowBase {
             sim.progression().stage.displayName, GCOLOR.T().NORMAL);
         addKpi(content, x + 170, y, UI.icons().m.skull, "Unbezahlte",
             String.valueOf(sim.firmLedger().lastWorkersUnpaid()),
-            sim.firmLedger().lastWorkersUnpaid() > 0 ? GCOLOR.UI().BAD.normal : GCOLOR.UI().GOOD.normal);
+            KpiSection.colorForUnpaid(sim.firmLedger().lastWorkersUnpaid()));
         y += 38;
 
         // Deaths / Emigrations
         addKpi(content, x, y, "Tote/Ausgewandert",
             sim.deaths() + " / " + sim.emigrations(),
-            sim.emigrations() > 3 ? GCOLOR.UI().SOSO.normal : GCOLOR.T().NORMAL);
+            KpiSection.colorForEmigration(sim.emigrations()));
         y += 38;
 
         // Trade mode buttons — ButtPanel with render override for
@@ -210,7 +210,7 @@ public final class WindowQuickview extends EconWindowBase {
         // Treasury
         addKpiSidePanel(r, x, y, "Staatskasse",
             CompactNumber.format(treasury) + " D",
-            !hasPop ? GCOLOR.T().INACTIVE : treasury >= 0 ? GCOLOR.UI().GOOD.normal : GCOLOR.UI().BAD.normal);
+            KpiSection.colorForTreasury(treasury, hasPop));
         y += 34;
 
         // Population & Gini
@@ -218,7 +218,7 @@ public final class WindowQuickview extends EconWindowBase {
             String.valueOf(stats.people), hasPop ? GCOLOR.T().NORMAL : GCOLOR.T().INACTIVE);
         addKpiSidePanel(r, x + 170, y, "Gini",
             hasPop ? String.format("%.3f", stats.gini) : "N/A",
-            !hasPop ? GCOLOR.T().INACTIVE : stats.gini > 0.40 ? GCOLOR.UI().BAD.normal : stats.gini > 0.35 ? GCOLOR.UI().SOSO.normal : GCOLOR.UI().GOOD.normal);
+            KpiSection.colorForGini(stats.gini, hasPop));
         y += 34;
 
         // Median & Wage
@@ -227,7 +227,7 @@ public final class WindowQuickview extends EconWindowBase {
             !hasPop ? GCOLOR.T().INACTIVE : GCOLOR.T().NORMAL);
         addKpiSidePanel(r, x + 170, y, "Lohn/Tag",
             CompactNumber.format((long)sim.laborMarket().meanWage()) + " D",
-            !hasPop ? GCOLOR.T().INACTIVE : sim.laborMarket().meanWage() > 0 ? GCOLOR.UI().GOOD.normal : GCOLOR.UI().BAD.normal);
+            KpiSection.colorForWage(sim.laborMarket().meanWage(), hasPop));
         y += 34;
 
         // Stage
@@ -235,13 +235,13 @@ public final class WindowQuickview extends EconWindowBase {
             sim.progression().stage.displayName, GCOLOR.T().NORMAL);
         addKpiSidePanel(r, x + 170, y, "Unbezahlte",
             String.valueOf(sim.firmLedger().lastWorkersUnpaid()),
-            sim.firmLedger().lastWorkersUnpaid() > 0 ? GCOLOR.UI().BAD.normal : GCOLOR.UI().GOOD.normal);
+            KpiSection.colorForUnpaid(sim.firmLedger().lastWorkersUnpaid()));
         y += 34;
 
         // Deaths / Emigrations
         addKpiSidePanel(r, x, y, "Tote/Ausgewandert",
             sim.deaths() + " / " + sim.emigrations(),
-            sim.emigrations() > 3 ? GCOLOR.UI().SOSO.normal : GCOLOR.T().NORMAL);
+            KpiSection.colorForEmigration(sim.emigrations()));
         y += 34;
 
         // Trade mode as text (non-interactive for side panel)
