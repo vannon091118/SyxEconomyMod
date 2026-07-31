@@ -182,8 +182,9 @@ final class InstanceScript implements SCRIPT.SCRIPT_INSTANCE {
 
     /** Numpad / (331) or regular / (47) → dump DebugTracer buffer to EventLog + file + stdout. */
     private void pollDumpHotkey() {
+        boolean letters = EconConfig.letterHotkeyFallbackEnabled;
         boolean div = CORE.getInput().getKeyboard().isPressed(331)
-                   || CORE.getInput().getKeyboard().isPressed(47);
+                   || (letters && CORE.getInput().getKeyboard().isPressed(47));
         if (div && !this.dumpWasDown) {
             DebugTracer.trace(DebugTracer.SYS, "dump requested via hotkey");
             DebugTracer.dump();

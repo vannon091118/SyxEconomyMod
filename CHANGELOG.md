@@ -44,6 +44,31 @@
 
 
 
+## v0.13.124+ Hotfix-2 — Regular `/`-Taste gated (Slash neben Shift)
+
+User-Live-Test-Regression vom 2026-07-31 nach Sprint v0.13.116+ Hotfix + Sprint v0.13.123+M-UI-1.1 Polishing: "Q und A sind auch durch die Mod belegt?! UND AUCH AUF DEM NUMPED". Diagnose (Code-Trace + Thinker-Audit): Sprint v0.13.116+ Hotfix hat E/O/S/Q-Letter-Keys sauber hinter `EconConfig.letterHotkeyFallbackEnabled` (Default OFF = NumPad-only) gegated. ABER: `regular /` (ASCII 47, deutsche Tastatur: Slash neben Shift-rechts) war in `pollDumpHotkey()` IMMER aktiv (nicht-gated) — Bug der beim Sprint v0.13.116+ uebersehen wurde. User hat das als Doppelbelegung wahrgenommen (entweder mit `letterHotkeyFallbackEnabled = true` getestet, oder Key-Verwechslung mit WASD/QE-Vanilla-Kamera-Rotation).
+
+**Subsummiert 1 Task (~5 LOC Sprint-Scope):**
+1. **InstanceScript.pollDumpHotkey() regular-slash gated** — regular / (47) wird jetzt analog zum letter-Fallback-Pattern der pollHotkeys()-Keys (E/O/S/Q) hinter `EconConfig.letterHotkeyFallbackEnabled` als Letter-Fallback gated. Numpad / (331) bleibt unconditional active (NumPad-only-Policy konsistent). Default OFF = regular / ist no-op, NumPad / triggert weiterhin Debug-Dump.
+
+**Verification DoD (4/4 OK):**
+- `bash tools/god-class-guard.sh --mode=hard` → 181 PASS / 0 WARN / 0 BLOCK ✔
+- `bash tools/verify-doc-sync.sh` → PASS (Stam-Docs sync mit pom v0.13.101) ✔
+- `mvn verify install -DskipTests -Dskip.bump=true` → BUILD SUCCESS ✔
+- `mvn test -Dskip.bump=true -Dtest=*Hotkey*Test` → noch nicht existiert (Mockito-Blocker Folge Sprint v0.13.124+M-UI-1.2)
+
+**Design-Audit (Thinker Q1-Q5):**
+- Q1: "Q und A" war vermutlich Verwechslung mit WASD/QE-Vanilla-Kamera-Rotation oder Quickview+Advisor-Window-Namen. Tatsaechlicher Bug war regular /.
+- Q2: regular / gated ist richtiger Fix (konsistent mit letter-fallback-pattern).
+- Q3: Persistenz NICHT noetig — Hardware-Layout (Laptop vs Desktop) ist Client-Setting, nicht Savegame-Setting. Mod-Config-vs-Savegame-Trennung.
+- Q4: Hotkey-Logik-Layer-Extraktion (pure-Method ohne Engine-Coupling) als Mockito-Blocker-Workaround → separate Sprint-Empfehlung.
+- Q5: CHANGELOG sachlich, loesungsorientiert, ohne User-Belehrung.
+
+**Out-of-Scope (deliberately deferred):**
+- Hotkey-Logik-Layer-Extraktion (separate pure-Method `processHotkeys(boolean...)` testbar ohne Mockito) → Sprint **v0.13.127+ Sprint-M-UI-4**
+- Vanilla-WASD/QE-Kamera-Konflikt-Warning im Mod-Window-Header → Sprint **v0.13.128+ Player-Hint-Thread**
+- ChunkedSave-Persistenz von `letterHotkeyFallbackEnabled` → per Thinker NICHT noetig, da Client-Setting
+
 ## v0.13.123+M-UI-1.1 — Polishing Severity.classify Pathological-Values-Policy
 
 Code-Reviewer-Offene-Frage aus Sprint v0.13.104+M-UI-1 (788de18) und Sprint v0.13.111+M-UI-3.1 (2006807) zur Severity.classify Pathological-Values-Policy entschieden: Variante A modified (still-silent-stale fuer harmlose Daten-Stale + laut-sichtbar fuer echte State-Bugs).
