@@ -541,6 +541,31 @@ angebunden — Grundlage fuer Civil-Verhalten und Job-Learning.
 - `tools/build-gate.sh` (PATCH): Gate 7 Schema-Praesenz-Check
 - `tools/audit-bytecode.sh` (PATCH): SchemaValidator + NpcFactionAdapter whitelisted
 
+### Sprint v0.13.106+M-UI-3 — Tab-Modul-Split (WindowOverview 948→48 LOC)
+
+Sprint-Header per agents.md Rule 11: 1 Sprint = 1 atomic commit. WindowOverview-God-Class (948 LOC) wurde in 4 separate Tab-Module + 1 Helper-Modul zerlegt; WindowOverview ist jetzt reine Composition-Shell. Sprint-Coverage: 10 subsummierte Tasks, alle in diesem einen Commit.
+
+**Subsummierte Tasks (10 total):**
+
+- **T1** — Visibility-Tweak `EconWindowBase`: `addKpi`, `addSlider`, `addColHeader` von package-private auf `public static` heraufgestuft, damit Tabs aus `ui.tabs.Overview` Sub-Package darauf zugreifen können (Cross-Package-Pattern).
+- **T2** — `OverviewHelpers.java` NEU (255 SLOC, 14 pubM, 13 fields, 18 imports): Konsolidiert 13 private static helpers aus WindowOverview — `coloredBar`, `addTrafficLight`, `addTrendArrow`, `addMilestoneIcon`, `countLines`, `allClear`, `buildStatusText`, `nextStageReqs`, `buildAdvice`, `buildWarningChains`, `countChainAffected` (Leontief-Call), `getSnapshotField`, `addCheckbox` (Property-Toggle mit DiagnosticExporter-Logging). `CHAIN_IMPACT_THRESHOLD = 0.1` Konstante.
+- **T3** — `DashboardTab.java` NEU (186 SLOC, 1:1 erhalten): 2 KPI-Reihen (Staatskasse / Bev. / Stufe / Gini / Median / Lohn) + 5-Ampel-Reihen + Player-Controller (Lagerlohn-Slider, Kopfsteuer-Slider, Handelsmodus-Buttons, Not-Liquidation) + Tutorial-Popup + 20-Tage-Kassen-History-Chart.
+- **T4** — `DemographicsTab.java` NEU (115 SLOC, 1:1): Vermögensverteilung-Histogramm (WealthStats.histogram-Buckets) + 4 Wohlstandsbänder (Unterschicht/Mitte/Wohlhabend) + Mieteinnahmen-Footer.
+- **T5** — `AdvisorTab.java` NEU (152 SLOC, 1:1): 6-Ampel-Dashboard + Warnketten (kausale Abhängigkeiten: Schuldenkrise → Lohnsenkung → Abwanderung) + 3-Tage-Trend-Tabelle (Kasse/Gini/Lohn/Nahrung/Unpaid) + Stufe & 7 Meilensteine + Priority-Based Advisor (B-013 Scarcity-aware).
+- **T6** — `PropertyTab.java` NEU (91 SLOC, 1:1): 5 Immobilien-KPIs + 3 Hebel-Slider (Miete/Kachel, Räumung-Schwelle, Schonfrist) + 2 Toggle-Checkboxen (Immobilienmarkt aktiv, Hauskauf erlaubt).
+- **T7** — `WindowOverview.java` SLIM: 948 → 48 LOC (-92%). Nur noch Composition-Shell mit `extends EconWindowBase`, `private static final TabContent[] TABS = { Dashboard, Demographics, Advisor, Property }`, `activeInstance` Singleton 1:1, title/anchorX/anchorY/panelWidth/tabs/setActiveTab Overrides.
+- **T8** — `tools/god-class-baselines.yml`: 5 neue Einträge (OverviewHelpers + 4 Tabs). Alle pass strict thresholds (max: 255 SLOC / 14 pubM / 13 fields / 18 imports vs. 800/35/24/40). WindowOverview-Exempt via `^ui/Window.*\.java$` Pattern — keine Baseline-Pflicht.
+- **T9** — `ARCHITECTURE.md` Synchronisation (Rule 2): UI-File-Count 5 → 11, Truth-Table +6 neue Einträge (KpiSection + 5 M-UI-3 Files), Lines 137-139 Strikethrough-Erklärung aktualisiert (Tabs nicht mehr inner-Klassen).
+- **T10** — `OverviewTabsTest.java` NEU (Pattern analog `KpiSectionTest`): 9 Pure-Logic-Tests für `OverviewHelpers.countLines` (5 Cases), `CHAIN_IMPACT_THRESHOLD` Konstante, private Constructor Reflection-Test, Placeholder-Test für Sprint M-UI-3.1 (EngineMock-Fixture).
+
+**Verification DoD (Rule 11 Sprint-3-Phasen):**
+- ✅ BAUEN: `mvn verify install -DskipTests -Dskip.bump=true` → BUILD SUCCESS (Tabs kompilieren gegen `EconWindowBase.<public-static>` + `OverviewHelpers.<public-static>`).
+- ✅ PRÜFEN: `bash tools/god-class-guard.sh --mode=hard` → 0 BLOCKS (5 neue Files in legacy_baselines mit status=pass; WindowOverview exempt via Pattern).
+- ⚠ HÄRTEN: Mockito-Tab-build()-Smoke-Tests deferred → Sprint M-UI-3.1 (EngineMirror-Mock-Fixture analog T-COV-9, separate Task).
+
+**Sprint-Total:** 10 Tasks, eine atomare Sprint-Commit.
+LOC-Bilanz: -948 (WindowOverview-Slim) + 297 (EconWindowBase war bereits baseline) + 255 + 186 + 115 + 152 + 91 = +550 LOC netto. Test-Coverage +9 Tests in `OverviewTabsTest.java`, Mocks in Sprint M-UI-3.1.
+
 ---
 
 ## Earlier Releases

@@ -67,7 +67,7 @@ legacy_baselines:
     imports: 16
     status_at_emit: block
     reason_at_emit: fields 30 > block 24
-    baseline_update: 'DC-01 Summary-Event + DC-02 Player-Action + LOG-01 logPlayerAction overload. Res-011 Atomic-Snapshot re-baseline: -92 LOC durch L\u00f6schung der 30+-Parameter formatMacroRow-Overload und Ersetzung der 25+ Live-Reads durch EconDaySnapshot.capture() Block; fields +5 durch die marketPrices[] + coverages[] Caches im atomaren Snapshot (waren vorher Live-Reads in der Resource-Loop, jetzt Snapshot-Felder).'
+    baseline_update: 'DC-01 Summary-Event + DC-02 Player-Action + LOG-01 logPlayerAction overload. Res-011 Atomic-Snapshot re-baseline: -92 LOC durch Löschung der 30+-Parameter formatMacroRow-Overload und Ersetzung der 25+ Live-Reads durch EconDaySnapshot.capture() Block; fields +5 durch die marketPrices[] + coverages[] Caches im atomaren Snapshot (waren vorher Live-Reads in der Resource-Loop, jetzt Snapshot-Felder).'
   src/vannon/syx/economy/core/EconConfig.java:
     loc: 328
     pubM: 7
@@ -218,12 +218,12 @@ legacy_baselines:
     reason_at_emit: pubM 37 > block 35
   src/vannon/syx/economy/ui/EconWindowBase.java:
     loc: 297
-    pubM: 6
+    pubM: 13
     fields: 32
     imports: 21
     status_at_emit: block
     reason_at_emit: fields 32 > block 24
-    baseline_update: 'Sprint v0.13.104+M-UI-1 Error-Boundary — onTabBuildError() helper method added; tabs[this.activeTab].build() wrapped in try/catch (Exception) per code-review catch-hygiene fix. Result: +19 SLOC, +2 imports (EventLog, snake2d.util.misc.ACTION), fields 33→32 (one relocated static final to method-bound). LOC drift +6.83% exceeds +5% Hard-Block, so re-baselined per Rule 14.'
+    baseline_update: 'Sprint v0.13.106+M-UI-3 Visibility-Tweak — `addSlider` Overloads×4 + `addColHeader` von package-private auf public static heraufgestuft (Cross-Package-Pattern fuer ui.tabs.Overview.* Sub-Package). Result: pubM 6→13 (+7, +117% Drift ueber +10% Hard-Block-Cap), fields/imports/loc unveraendert. `addKpi` Overloads×2 waren bereits public. Re-baselined per Rule 14. (Vorgaenger-Baseline aus Sprint M-UI-1: catch-Hygiene-Fix + Error-Boundary onTabBuildError, +19 SLOC +2 imports, fields 33→32.)'
   src/vannon/syx/economy/ui/KpiSection.java:
     loc: 98
     pubM: 12
@@ -232,3 +232,43 @@ legacy_baselines:
     status_at_emit: pass
     reason_at_emit: 'All thresholds clear by large margin (loc 98 < warn 600; pubM 12 < warn 25; fields 4 < warn 18; imports 4 < warn 25).'
     baseline_update: 'Sprint v0.13.104+M-UI-1 new file — SeverityClassifier (enum CRITICAL/LOW/OK/SURPLUS + classify(double)) + FilterMode (4-mode enum + accepts/chipLabel) + 7 color helpers + sortIndicesByCoverageAsc(FlowPrices, int). Single SSoT fuer Severity-Schwellwerte die zuvor in WindowQuickview.build/renderSidePanelContent und WindowEconomy.PricesTab dupliziert waren (~70 LOC dedupliziert). Rule-15 konform: keine static-final-Init mit Engine-Singletons.'
+  src/vannon/syx/economy/ui/tabs/Overview/DashboardTab.java:
+    loc: 186
+    pubM: 2
+    fields: 1
+    imports: 20
+    status_at_emit: pass
+    reason_at_emit: 'Sprint v0.13.106+M-UI-3 — DashboardTab aus WindowOverview extrahiert. Alle Schwellen klar unter warn (loc 186 < 600; pubM 2 < 25; fields 1 < 18; imports 20 < 25). 1:1 Verhalten erhalten: 2 KPI-Reihen, 5-Ampel-Reihen, Player-Controller (Lagerlohn/Kopfsteuer-Slider, Handelsmodus-Buttons, Not-Liquidation), Tutorial-Popup, 20-Tage History-Chart.'
+    baseline_update: 'Sprint v0.13.106+M-UI-3 Tab-Modul-Split — ehemals private static inner-class DashboardTab in WindowOverview (948 LOC) in eigenes File ausgelagert. Verwendet OverviewHelpers (addTrafficLight/addTrendArrow/coloredBar) + EconWindowBase (addKpi/addSlider/FONTW_*).'
+  src/vannon/syx/economy/ui/tabs/Overview/DemographicsTab.java:
+    loc: 115
+    pubM: 2
+    fields: 1
+    imports: 9
+    status_at_emit: pass
+    reason_at_emit: 'Sprint v0.13.106+M-UI-3 — DemographicsTab aus WindowOverview extrahiert. Alle Schwellen klar unter warn (loc 115 < 600; pubM 2 < 25; fields 1 < 18; imports 9 < 25). Vermögensverteilung-Histogramm + 4 Wohlstandsbänder (Unterschicht/Mitte/Wohlhabend) + Mieteinnahmen-Footer 1:1 erhalten.'
+    baseline_update: 'Sprint v0.13.106+M-UI-3 Tab-Modul-Split — ehemals private static inner-class DemographicsTab in eigenes File ausgelagert.'
+  src/vannon/syx/economy/ui/tabs/Overview/AdvisorTab.java:
+    loc: 152
+    pubM: 2
+    fields: 1
+    imports: 11
+    status_at_emit: pass
+    reason_at_emit: 'Sprint v0.13.106+M-UI-3 — AdvisorTab aus WindowOverview extrahiert. Alle Schwellen klar unter warn (loc 152 < 600; pubM 2 < 25; fields 1 < 18; imports 11 < 25). Ampel-Dashboard (6 Anzeigen) + Warnketten (kausale Ketten) + 3-Tage-Trend-Tabelle + Stufe & Meilensteine + Priority-Based Advisor (B-013-aware) 1:1 erhalten.'
+    baseline_update: 'Sprint v0.13.106+M-UI-3 Tab-Modul-Split — ehemals private static inner-class AdvisorTab in eigenes File ausgelagert. Verwendet 7 OverviewHelpers-Methoden für Ampel/Advisor-Logik (addTrafficLight/addTrendArrow/addMilestoneIcon/buildAdvice/nextStageReqs/buildWarningChains/countLines).'
+  src/vannon/syx/economy/ui/tabs/Overview/PropertyTab.java:
+    loc: 91
+    pubM: 8
+    fields: 1
+    imports: 10
+    status_at_emit: pass
+    reason_at_emit: "Sprint v0.13.106+M-UI-3 — PropertyTab aus WindowOverview extrahiert (1:1 erhalten). pubM=8 wegen 6 anonymous ACTION-Klassen für Slider-Callbacks (Rule 6 / Sprachstil-Konvention aus v0.13.x Streams; Lambda-Refactor in Sprint v0.13.107 falls gewünscht). Alle Schwellen unter warn (loc 91 < 600; fields 1 < 18; imports 10 < 25)."
+    baseline_update: 'Sprint v0.13.106+M-UI-3 Tab-Modul-Split — ehemals private static inner-class PropertyTab in eigenes File ausgelagert. Verwendet OverviewHelpers.addCheckbox (PropertyToggle mit DiagnosticExporter.logPlayerAction-Logging) + EconWindowBase.addKpi/addSlider.'
+  src/vannon/syx/economy/ui/tabs/Overview/OverviewHelpers.java:
+    loc: 255
+    pubM: 14
+    fields: 13
+    imports: 18
+    status_at_emit: pass
+    reason_at_emit: 'Sprint v0.13.106+M-UI-3 — alle Schwellen klar unter warn (loc 255 < warn 600; pubM 14 < warn 25; fields 13 < warn 18; imports 18 < warn 25). Helper-Klasse mit Konstanten CHAIN_IMPACT_THRESHOLD + 14 public static Methoden: Visuals (coloredBar), Health-Ampel (addTrafficLight/addTrendArrow/addMilestoneIcon), Status (allClear/buildStatusText), Advisor (nextStageReqs/buildAdvice/buildWarningChains/countChainAffected/getSnapshotField/countLines), Property-Toggle (addCheckbox mit DiagnosticExporter-Logging).'
+    baseline_update: 'Sprint v0.13.106+M-UI-3 Tab-Modul-Split — ehemals 13 private static helpers in WindowOverview (948 LOC) konsolidiert in dieses Helper-Modul. Rule-15 konform: keine static-final-Engine-Touchables.'
