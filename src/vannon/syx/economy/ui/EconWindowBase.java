@@ -375,10 +375,12 @@ public abstract class EconWindowBase {
 
     // ─── Slider entry points ────────────────────────────────────────
 
-    /** Live slider — value is re-read every frame via IntSupplier. */
+    /** Live slider — value is re-read every frame via IntSupplier. Sprint v0.13.117+:
+     *  step-Parameter entfernt (LiveSlider-Konstruktor nimmt kein step; Callers
+     *  implementieren step selbst in ±ACTION, z.B. `minusAction = val -> max(0, val - 5)`). */
     public static void addSlider(GuiSection section, int x, int y,
                                      String label, IntSupplier currentSupplier,
-                                     int min, int max, int step,
+                                     int min, int max,
                                      ACTION plusAction, ACTION minusAction, String suffix) {
         new LiveSlider(section, x, y, label, currentSupplier, min, max, suffix, plusAction, minusAction);
     }
@@ -386,14 +388,14 @@ public abstract class EconWindowBase {
     /** Live slider with " D" suffix. */
     public static void addSlider(GuiSection section, int x, int y,
                                      String label, IntSupplier currentSupplier,
-                                     int min, int max, int step,
+                                     int min, int max,
                                      ACTION plusAction, ACTION minusAction) {
-        addSlider(section, x, y, label, currentSupplier, min, max, step, plusAction, minusAction, " D");
+        addSlider(section, x, y, label, currentSupplier, min, max, plusAction, minusAction, " D");
     }
 
     /** Static snapshot slider (non-live). Value captured once at creation. */
     public static void addSlider(GuiSection section, int x, int y,
-                                     String label, int current, int min, int max, int step,
+                                     String label, int current, int min, int max,
                                      ACTION plusAction, ACTION minusAction, String suffix) {
         int captured = current;
         new LiveSlider(section, x, y, label, () -> captured, min, max, suffix, plusAction, minusAction);
@@ -401,9 +403,9 @@ public abstract class EconWindowBase {
 
     /** Static snapshot with " D" suffix. */
     public static void addSlider(GuiSection section, int x, int y,
-                                     String label, int current, int min, int max, int step,
+                                     String label, int current, int min, int max,
                                      ACTION plusAction, ACTION minusAction) {
-        addSlider(section, x, y, label, current, min, max, step, plusAction, minusAction, " D");
+        addSlider(section, x, y, label, current, min, max, plusAction, minusAction, " D");
     }
 
     /** Column header in UI.FONT().S for table layouts. */
@@ -429,10 +431,7 @@ public abstract class EconWindowBase {
         }
     }
 
-    // ─── Switcher helpers (unused by quickview) ──────────────────────
-
-    /** Returns the EconomySim instance for HUD traffic-light computation. */
-    public EconomySim getSim() { return sim; }
+    // ─── Switcher helpers (active Window-switcher, used by WindowQuickview) ─
 
     /** Returns the overview window reference (for switcher buttons). */
     protected static EconWindowBase winOverview() { return winOverview; }

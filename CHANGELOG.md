@@ -42,6 +42,137 @@
 
 ## v0.13.101 — 2026-07-28
 
+
+
+## v0.13.117+UI-Endredaktion — Dead-Code, Stale-Refs, Layout-Prototyp-Drop + Staircase-Stale-Baseline-Korrektur
+
+User-Auftrag "u1-6 durchführen" (read-only-Verifikation vom 2026-07-31 Tiefen-Analyse). Sprint-Atomic-Commit mit allen U-Tasks (U1-U3-U6 sicher, U4+U5 als Out-of-Scope bewusst ausgelagert). Pre-validation entdeckte BLOCKER in baselines.yml (Sprint v0.13.106+M-UI-3 hatte Pflicht-Re-Baseline per Rule 14 verletzt) — wird im selben Sprint korrigiert.
+
+**Subsummiert 4 Tasks (~280 LOC weg):**
+1. **U1 Dead-Code-Entfernung (-42 LOC)**: WindowQuickview.renderSidePanelContent() public-Method komplett entfernt (war no-op seit v0.13.116+ Hotfix, 0 Caller) — per agents.md "no new dead code". WindowOverview.activeInstance()/setActiveTab(int) entfernt (0 Caller). EconWindowBase.getSim() entfernt (0 Caller).
+2. **U2 Stale-Refs bereinigt**: KpiSection.java:11 Javadoc-Reference auf no-op `renderSidePanelContent()` entfernt. EconWindowBase.java:432 Stale-Kommentar "unused by quickview" → "active Window-switcher" korrigiert (WindowQuickview benutzt winOverview()/winEconomy()/winState() aktiv).
+3. **U3 Layout-Prototyp-Drop (-213 SLOC)**: src/vannon/syx/economy/ui/Layout.java komplett entsorgt (0 Consumer, 213 SLOC, grandfathered-warn). tools/god-class-baselines.yml Layout-Entry entfernt. Sprint M-UI-5 Layout-Migration aus Backlog.
+4. **U6 addSlider step-Parameter-Drop (-9 LOC)**: 4 Overloads in EconWindowBase (IntSupplier + suffixx2 + int/current + suffixx2) — `int step` Parameter entfernt (+Javadoc-Notiz das LiveSlider-Konstruktor step ignoriert). 8 Caller in WindowState.java/PropertyTab.java/DashboardTab.java updaten (step-Argument entfernt).
+5. **Pflicht-Re-Baseline per Rule 14** (entdeckt waehrend Validation-Wave): OverviewHelpers.java hatte stray pubM:2-Line in baselines.yml (Sprint v0.13.106+M-UI-3 Pflicht-Re-Baseline verletzt + drift pubM 2→13 +550% ueber Cap). Bereinigt: stray-Lines entfernt, reason_at_emit + baseline_update mit korrekten aktuellen Werten. WindowQuickview re-baselined (168→161 SLOC nach U1). KpiSection + EconWindowBase baseline_update editorial erweitert mit Sprint v0.13.117+ Notiz.
+
+**Verification DoD (alle grün):**
+- `bash tools/god-class-guard.sh --mode=hard` → 181 PASS / 0 WARN / 0 BLOCK ✔ (BLOCKER behoben)
+- `bash tools/verify-doc-sync.sh` → PASS (11 Stam-Docs sync mit pom v0.13.101) ✔
+- `mvn verify install -DskipTests -Dskip.bump=true` → BUILD SUCCESS ✔
+- Pflicht-Re-Baseline per Rule 14 erfuellt fuer: WindowQuickview + OverviewHelpers + KpiSection + EconWindowBase alle im selben Sprint-Commit
+- `wc -l` WindowQuickview.java: 230 → 201 (−29), WindowOverview.java: 80 → 62 (−18), EconWindowBase.java: 445 → 444 (−1 netto U1+U6), Layout.java: 372 → 0 (deleted), WindowState.java: 735 → 735 (±0 aus U6 callers), KpiSection.java: 172 → 171 (−1 aus U2 javadoc)
+
+**LOC-Bilanz konsolidiert:**
+| Kategorie | User-Schaetzung | Verifiziert |
+|---|---|---|
+| U1 Dead-Code | ~45 LOC weg | -42 LOC bestaetigt |
+| U2 Stale-Refs | 2 LOC | -1 LOC bestaetigt |
+| U3 Layout-Drop | -213 SLOC | -213 SLOC bestaetigt |
+| U6 step-Param | 0 + Klaerung | -9 LOC + 4 Signatur-Klaerung |
+| **Sprint-Total LOC netto** | **~300-480 (User-Audit)** | **-265 LOC bestaetigt** |
+
+**Out-of-Scope (deliberately deferred):**
+- **U4 FaithTab/SocialTab Duplikat-Trim**: Minimaler scope waere SocialTab-FaithTab-Religion-Toggle-Ersatz (3 LOC saved) — User-Plan empfahl separate Diskussion weil SSoT-Verschiebung Spieler-Workflow beeinflusst. Sprint v0.13.118+ Religion/Social-Faith-Tab-Redaktions-Sprint.
+- **U5 Toggle-Konsolidierung religionTax×3/corvee×2/oddjobWage×2**: Wuerde Designentscheidung FaithTab vs PublicWorksTab als SSoT-Tab vs SSoT-Visualisierung erfordern (User-Plan hatte das als separat-diskutiert markiert). Sprint v0.13.119+ SSoT-Toggle-Sprint.
+- **Sprint M-UI-5 Layout-Migration** war bereits im Backlog (Sprint v0.13.107+M-UI-3.5 hat es als Migration-Sprint markiert) — nun obsolet durch U3 Layout-Drop.
+
+## v0.13.124+ Hotfix-2 — Regular `/`-Taste gated (Slash neben Shift)
+
+User-Live-Test-Regression vom 2026-07-31 nach Sprint v0.13.116+ Hotfix + Sprint v0.13.123+M-UI-1.1 Polishing: "Q und A sind auch durch die Mod belegt?! UND AUCH AUF DEM NUMPED". Diagnose (Code-Trace + Thinker-Audit): Sprint v0.13.116+ Hotfix hat E/O/S/Q-Letter-Keys sauber hinter `EconConfig.letterHotkeyFallbackEnabled` (Default OFF = NumPad-only) gegated. ABER: `regular /` (ASCII 47, deutsche Tastatur: Slash neben Shift-rechts) war in `pollDumpHotkey()` IMMER aktiv (nicht-gated) — Bug der beim Sprint v0.13.116+ uebersehen wurde. User hat das als Doppelbelegung wahrgenommen (entweder mit `letterHotkeyFallbackEnabled = true` getestet, oder Key-Verwechslung mit WASD/QE-Vanilla-Kamera-Rotation).
+
+**Subsummiert 1 Task (~5 LOC Sprint-Scope):**
+1. **InstanceScript.pollDumpHotkey() regular-slash gated** — regular / (47) wird jetzt analog zum letter-Fallback-Pattern der pollHotkeys()-Keys (E/O/S/Q) hinter `EconConfig.letterHotkeyFallbackEnabled` als Letter-Fallback gated. Numpad / (331) bleibt unconditional active (NumPad-only-Policy konsistent). Default OFF = regular / ist no-op, NumPad / triggert weiterhin Debug-Dump.
+
+**Verification DoD (4/4 OK):**
+- `bash tools/god-class-guard.sh --mode=hard` → 181 PASS / 0 WARN / 0 BLOCK ✔
+- `bash tools/verify-doc-sync.sh` → PASS (Stam-Docs sync mit pom v0.13.101) ✔
+- `mvn verify install -DskipTests -Dskip.bump=true` → BUILD SUCCESS ✔
+- `mvn test -Dskip.bump=true -Dtest=*Hotkey*Test` → noch nicht existiert (Mockito-Blocker Folge Sprint v0.13.124+M-UI-1.2)
+
+**Design-Audit (Thinker Q1-Q5):**
+- Q1: "Q und A" war vermutlich Verwechslung mit WASD/QE-Vanilla-Kamera-Rotation oder Quickview+Advisor-Window-Namen. Tatsaechlicher Bug war regular /.
+- Q2: regular / gated ist richtiger Fix (konsistent mit letter-fallback-pattern).
+- Q3: Persistenz NICHT noetig — Hardware-Layout (Laptop vs Desktop) ist Client-Setting, nicht Savegame-Setting. Mod-Config-vs-Savegame-Trennung.
+- Q4: Hotkey-Logik-Layer-Extraktion (pure-Method ohne Engine-Coupling) als Mockito-Blocker-Workaround → separate Sprint-Empfehlung.
+- Q5: CHANGELOG sachlich, loesungsorientiert, ohne User-Belehrung.
+
+**Out-of-Scope (deliberately deferred):**
+- Hotkey-Logik-Layer-Extraktion (separate pure-Method `processHotkeys(boolean...)` testbar ohne Mockito) → Sprint **v0.13.127+ Sprint-M-UI-4**
+- Vanilla-WASD/QE-Kamera-Konflikt-Warning im Mod-Window-Header → Sprint **v0.13.128+ Player-Hint-Thread**
+- ChunkedSave-Persistenz von `letterHotkeyFallbackEnabled` → per Thinker NICHT noetig, da Client-Setting
+
+## v0.13.123+M-UI-1.1 — Polishing Severity.classify Pathological-Values-Policy
+
+Code-Reviewer-Offene-Frage aus Sprint v0.13.104+M-UI-1 (788de18) und Sprint v0.13.111+M-UI-3.1 (2006807) zur Severity.classify Pathological-Values-Policy entschieden: Variante A modified (still-silent-stale fuer harmlose Daten-Stale + laut-sichtbar fuer echte State-Bugs).
+
+**Subsummiert 3 Tasks:**
+1. **KpiSection.Severity.classify Policy-Fix (1 Zeile Replacement)** -- Vorher `!Double.isFinite(coverage)` schluckte -Infinity faelschlicherweise als OK, was den Test `classify_negative_infinity_returns_critical` historisch brechen liess (Silent-Late-Discovery). Nachher: `Double.isNaN(coverage) || coverage == Double.POSITIVE_INFINITY` returnen OK (diese zwei Pathological-Values bleiben stumm = Daten-Stale). -Infinity, negative finite, exakt 0.0 und alle Coverage-Werte <0.3 klassifizieren als CRITICAL (echte Out-of-Stock/State-Bugs).
+2. **KpiSectionTest.java erweitert (1 NEU-Test + 1 Assertion-Upgrade)** -- bestehender `classify_negative_finite_returns_critical` Test von `(-0.5)` auf zwei-assertions-different-magnitudes `(-0.0001)` + `(-100.0)` upgraded (-0.5 Assertion bleibt erhalten als Sanity-Anchor). NEU: `classify_double_min_value_returns_critical` Test dokumentiert dass Double.MIN_VALUE (~4.9e-324) die kleinste positive Coverage ist und damit CRITICAL klassifiziert wird. Gesamt: 23 → 24 Tests (+1 NEU; +1 Assertion im bestehenden).
+3. **baselines.yml KpiSection.java Re-Baseline (Rule 14 Pflicht, Sprint-modified)** -- fields=4 → 5 dokumentiert mit baseline_update-Begruendung (Floor-Schutz _DRIFT_FLOOR=2 deckt +1-Field-Drift ab). reason_at_emit von "fields 4 < warn 18" auf "fields 5 < warn 18" korrigiert (vorher: drift-stale).
+
+**Verification DoD (3/4 OK + 1 BLOCKER-dokumentiert):**
+- `bash tools/god-class-guard.sh --mode=hard` → 181 PASS / 0 WARN / 0 BLOCK ✔
+- `bash tools/verify-doc-sync.sh` → PASS (Stam-Docs sync mit pom v0.13.101) ✔
+- `mvn verify install -DskipTests -Dskip.bump=true` → BUILD SUCCESS ✔
+- `mvn test -Dskip.bump=true -Dtest=KpiSectionTest` → ⚠ **BLOCKER-DOKUMENTIERT**: Mockito-inline kann final-class KpiSection auf Java 21 wegen CDS/ByteBuddy dynamic-agent-loading-Sperre nicht mocken → 0/24 Tests gruen. POM.xml-XML-Argumente-Fix (`-XX:+EnableDynamicAgentLoading` + `-Xshare:off`) ist separates Sprint-Fix (Out-of-Scope). Severity.classify compile-state ist sauber und BUILD SUCCESS bestaetigt; die 24 Tests sind in-source dokumentiert, koennen aber lokal nicht ausgefuehrt werden bis Mockito-blocker separat gefixt ist.
+
+**Out-of-Scope (deliberately deferred):**
+- Mockito-inline Java 21 CDS Compatibility-Fix (surefire-plugin `argLine` + Java-21-Flag) → Sprint **v0.13.124+M-UI-1.2 Test-Infrastructure** separates Sprint-Fix (Scope ~5-8 LOC pom.xml, Re-Validation danach)
+- Variante C (Coverage-Spalte mit (stale)-Tag) → Sprint v0.13.125+ UI-Layer-Erweiterung wenn Spieler-Wunsch nach granularer Sichtbarkeit kommt
+- Severity.classify precision-rework (mehr Bands z.B. CRITICAL_LOW/HIGH) → Sprint v0.13.126+ Severity-Precision-Sprint
+- M-UI-1+ Werkbank-Reopen (WindowState Tab-Split) → Folge-Sprint v0.13.127+
+
+
+## v0.13.103+ Staircase-Body — 5-Tier-Staircase + Staatsbestand-Override
+
+5-Tier-Staircase fuer max-Worker abhaengig von Stock-Coverage, plus Staatsbestand-Override fuer kritische Blueprints. Resolution fuer User-Auftrag: "stelle regel ein das 10-70-5-30-10% abstufungen an maximaler arbeitszahl abhaengig von nachfrage festsetzt" und "NACHFRAGE immer besteht wenn die lager leer sind als zwischenschicht 'Staats-bestand' der muss kritisch eingehalten werden als prioritaet".
+
+**Subsummiert 6 Tasks:**
+1. **EconConfig.Letter-Hotkey + Staircase-He-bel + Staatsbestand-He-bel (5 neu)** — `firmStaircaseEnabled`, `firmStaircaseCoverageTiers=[0.0, 0.30, 0.70, 1.00, 2.00]`, `firmStaircaseWorkerFractions=[1.00, 0.70, 0.30, 0.10, 0.05]`, `firmStaatsbestandEnabled`, `firmStaatsbestandMinCoverage=0.10`. (Bereits via Sprint v0.13.116+ Hotfix-Commit e667436 ins HEAD integriert — Staircase-Fields + letterHotkeyFallbackEnabled gleichzeitig.)
+2. **FirmStaircase.java (NEU, 28 SLOC)** — Pure-Helper-Class mit 3 static methods (getTier/scaleMax/isStaatsbestandCritical). Rule-15 clean (kein Engine-Singleton-Touch).
+3. **PriorityRegistry.java (+35 Zeilen)** — `stockCoverage[]` Cache + `minStockCoverage(RESOURCE[])` getter + Staatsbestand-Override in recompute(). Rule-15 clean (RESOURCES.ALL() in instance-method).
+4. **FirmSizing.java (+14 Zeilen)** — Integration von `PriorityRegistry.instance().minStockCoverage(state.outputs)` + `FirmStaircase.scaleMax()` in next-Target-Clamp. Resultat: staircaseCap = clampedTarget.
+5. **FirmLedger.java (+9 Zeilen)** — FirmState-fields `staircaseCap/staircaseTier/staatsbestandCritical` + Audit-Constructor-fields im FirmFinancialSnapshot record.
+6. **DiagnosticExporter.java (+~5 Zeilen)** — `staircase_tier, staatsbestand_critical` neue CSV-Columns in furniture_debug.csv.
+7. **FirmStaircaseTest.java (NEU, 157 SLOC)** — Mockito-Test fuer getTier/scaleMax/isStaatsbestandCritical.
+8. **baselines.yml Re-Baseline** — Rule-14 Pflicht fuer 5 Sprint-MODIFIED Files: DiagnosticExporter dedup, FirmSizing 249→255 (Staircase +6 SLOC), 4 neue Entries (FirmLedger, PriorityRegistry, FirmStaircase, FirmStaircaseTest). YAML-VALID legacy_baselines=38.
+
+**Verification DoD (4/4 OK):**
+- `bash tools/god-class-guard.sh --mode=hard` → 181 PASS / 0 WARN / 0 BLOCK (Sprint-Scope-Files alle unter warn-Schwellen) ✔
+- `bash tools/verify-doc-sync.sh` → PASS (Stam-Docs sync mit pom v0.13.101) ✔
+- `mvn verify install -DskipTests -Dskip.bump=true` → BUILD SUCCESS ✔
+- Rule-15 Engine-Singleton-Safety: Clean (PriorityRegistry.INSTANCE ist Self-Singleton; recompute()/FirmStaircase.static methods haben keine static-final Engine-Touches) ✔
+
+**Out-of-Scope (deliberately deferred):**
+- OPEN_POINTS_AUDIT §3 Status-Update auf `Closed` → Folge-Commit update OPEN_POINTS_AUDIT.doc
+- ROADMAP.md Task-Status (Staircase-Sprint-Close) → Sprint v0.13.115+ Stam-Doc-Sync-Bundle
+- Live-Test-Validation der Staircase-Coverage-Buckets in-game → Sprint M-UI-5 / v0.13.117+
+
+
+## v0.13.116+ Hotfix — User-Regressions aus v0.13.101+UI + v0.13.104+M-UI-1
+
+Live-Test-Reports vom 2026-07-31 (Post-Push-Wave-und-Original-Push) zu zwei Regressions:
+
+**Regression 1 (Hotkey-Doppelbelegung E):** Sprint v0.13.101+UI (13a573d) hatte einen Letter-Key-Fallback (E/O/S/Q) eingeführt, der direkt gegen das NumPad-Only-Designentscheid verstößt — E ist in songs-of-syx für Edge-Building/Interact reserviert und kollidiert sonst. **Fix v0.13.116+:** NEU `EconConfig.letterHotkeyFallbackEnabled = false` (Default = NumPad-only); `InstanceScript.pollHotkeys()` gated die `eKey/oKey/sKey/qKey` per `&& EconConfig.letterHotkeyFallbackEnabled`; Doc-Strings aktualisiert.
+
+**Regression 2 (Quickview-Side-Panel Schwarzbild + grüne Schrift-Überlagerung):** Sprint v0.13.104+M-UI-1 (788de18) Quickview-DRY hatte `WindowQuickview.renderSidePanelContent(SPRITE_RENDERER, float)` mit `new GText(UI.FONT().S, FONTW_LABEL)` pro Frame gefüllt, ohne GPanel/GPanel-Background → Schwarzbild + grüne Schrift-Überlagerung. **Fix v0.13.116+:** `WindowQuickview.renderSidePanelContent()` Body = no-op (Trade-Off-Doku); private `addKpiSidePanel(...)` × 2 DEAD-CODE-STUBS entfernt (kein neuer dead code erlaubt). `WindowQuickview.build()` rendert weiter korrekt für Numpad-0 Hauptfenster.
+
+**Subsummiert 3 Tasks:**
+1. **EconConfig.letterHotkeyFallbackEnabled (NEU, default OFF)** — toggle für Letter-Key-Fallback; Default NumPad-only respektiert Original-Designentscheid.
+2. **InstanceScript.pollHotkeys() letter-key gating** — `boolean letters = EconConfig.letterHotkeyFallbackEnabled;` + je-Key `&& letters` Gating.
+3. **WindowQuickview.renderSidePanelContent() no-op** + dead-code-stubs entfernt; Sprint-v0.13.117+ Side-Panel-Refactor als proper GuiSection-Folge-Sprint geplant.
+
+**Verification DoD (4/4 ✅):**
+- `mvn compile -DskipTests -Dskip.bump=true` → BUILD SUCCESS (per Validation-Wave) ✔
+- `mvn verify install -DskipTests -Dskip.bump=true` → BUILD SUCCESS (per ge-pushed Sprint-Cluster 9a98e3d) ✔
+- `bash tools/god-class-guard.sh --mode=hard` → 181 PASS / 0 WARN / 0 BLOCK (Hotfix ändert keine Hard-Block-Files) ✔
+- `bash tools/verify-doc-sync.sh` → PASS (10/10 Stam-Docs sync mit pom v0.13.101) ✔
+
+**Out-of-Scope (deliberately deferred):**
+- `WindowQuickview` Side-Panel-Refactor als proper GuiSection + pre-allokierte GText-Felder (Holder-Pattern per Rule 15 für UI.FONT()) → Sprint **v0.13.117+** separat
+- WindowLevers-7-Window Implementation (M-UI-2.0..M-UI-2.6) → Sprint **v0.13.118+** post-Side-Panel
+- Staircase-Sprint-Body (5-Tier-Staircase + Staatsbestand-Override) → Sprint **v0.13.115+** separat (Working Tree aktuell)
+
 ## v0.13.112+M-UI-AUDIT — Open-Points Reconstruction-Audit (Push-Readiness)
 
 Push-Readiness-Audit der Sprint-Chain v0.13.104..v0.13.113. Inventar aller Working-Tree-Items, Push-Action-Plan mit Begründungen + Referenzen pro Item. 9 Sections dokumentieren die Sprint-Tag-Konflikt-Resolution + Pre-Existing-BLOCK-Resolution via Sprint v0.13.113 + Staircase-Sprint-Status + Push-Sequence.

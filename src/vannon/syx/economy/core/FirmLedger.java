@@ -819,6 +819,13 @@ public final class FirmLedger {
          *  persistiert, beim Load implizit false). Dient als Audit-Signal in
          *  furniture_debug.csv. Wird pro Sizing-Tick neu evaluiert. */
         boolean escapeCliffTriggered;
+        /** Sprint v0.13.103+ — Staircase-Cap: max-Worker-Limit aus 5-Tier-Skalierung.
+         *  Audit-Spalte in furniture_debug.csv. Transient, kein Save. */
+        int staircaseCap;
+        /** Sprint v0.13.103+ — Tier-Index (0..4) der Staircase fuer diese Firma. */
+        int staircaseTier;
+        /** Sprint v0.13.103+ — Staatsbestand-Override (true = full capacity, ignore staircase). */
+        boolean staatsbestandCritical;
 
         private FirmState() {
         }
@@ -857,7 +864,10 @@ public final class FirmLedger {
             int lastIncomeDue,
             int lastIncomePaid,
             int workersUnpaid,
-            int stuckSeconds
+            int stuckSeconds,
+            // Sprint v0.13.103+ — Staircase-Audit (5-Tier 0..4, Staatsbestand 0/1).
+            int staircaseTier,
+            int staatsbestandCritical
     ) {}
 
     /**
@@ -890,7 +900,9 @@ public final class FirmLedger {
                     state.lastIncomeDueThisTick,
                     state.lastIncomePaidThisTick,
                     state.workersUnpaidThisTick,
-                    state.stuckSeconds
+                    state.stuckSeconds,
+                    state.staircaseTier,
+                    state.staatsbestandCritical ? 1 : 0
             ));
         }
         return Collections.unmodifiableList(result);

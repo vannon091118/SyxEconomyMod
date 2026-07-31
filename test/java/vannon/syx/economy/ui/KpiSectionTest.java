@@ -103,7 +103,24 @@ class KpiSectionTest {
 
     @Test
     void classify_negative_finite_returns_critical() {
-        assertEquals(KpiSection.Severity.CRITICAL, KpiSection.Severity.classify(-0.5));
+        // Sprint M-UI-1.1 Polishing — Bug-bedingt negativer stock (z.B. -0.0001 oder
+        // -100.0) sind State-Bugs. Mute-nicht-mehr: Spieler sieht CRITICAL statt
+        // stumm OK. Two-assertions-different-magnitudes dokumentiert dass die
+        // Policy alle negative finite Werte gleichermassen flagged, nicht nur
+        // one-Edge-Magnitude.
+        assertEquals(KpiSection.Severity.CRITICAL, KpiSection.Severity.classify(-0.0001));
+        assertEquals(KpiSection.Severity.CRITICAL, KpiSection.Severity.classify(-100.0));
+    }
+
+    @Test
+    void classify_double_min_value_returns_critical() {
+        // Sprint M-UI-1.1 Polishing — Double.MIN_VALUE ist die kleinste positive
+        // subnormale Zahl (~4.9e-324). Policy: kleinste positive Coverage < 0.3
+        // fällt in CRITICAL (echte Out-of-Stock). Sanity-Check dass LOW-Band
+        // weiterhin LOW bleibt (negative-infinity Pfad nicht versehentlich
+        // in CRITICAL-Path gefallen).
+        assertEquals(KpiSection.Severity.CRITICAL, KpiSection.Severity.classify(Double.MIN_VALUE));
+        assertEquals(KpiSection.Severity.LOW, KpiSection.Severity.classify(0.5));
     }
 
     // ── Severity.isProblem (Sprint M-UI-1) ───────────────────────────

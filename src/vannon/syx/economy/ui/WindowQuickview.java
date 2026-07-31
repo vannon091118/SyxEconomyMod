@@ -59,7 +59,7 @@ public final class WindowQuickview extends EconWindowBase {
         y += 38;
 
         // Population & Gini
-        addKpi(content, x, y, UI.icons().m.citizen, "Bevölkerung",
+        addKpi(content, x, y, UI.icons().m.citizen, "Bevoelkerung",
             String.valueOf(stats.people), hasPop ? GCOLOR.T().NORMAL : GCOLOR.T().INACTIVE);
         addKpi(content, x + 170, y, UI.icons().m.heart, "Gini",
             hasPop ? String.format("%.3f", stats.gini) : "N/A",
@@ -192,112 +192,10 @@ public final class WindowQuickview extends EconWindowBase {
         }
     }
 
-    /** Renders the quickview content inline for Vanilla ISidePanel.
-     *  Called from InstanceScript's Panel implementation. */
-    public void renderSidePanelContent(SPRITE_RENDERER r, float ds) {
-        if (!EconConfig.windowEnabled) return;
-        EconomySim sim = this.sim;
-        if (sim == null) return;
-
-        WealthStats stats = sim.stats();
-        StateWarehouses wh = sim.stateWarehouses();
-        long treasury = sim.treasury();
-        boolean hasPop = stats.people > 0;
-
-        int x = 16;
-        int y = 8;
-
-        // Treasury
-        addKpiSidePanel(r, x, y, "Staatskasse",
-            CompactNumber.format(treasury) + " D",
-            KpiSection.colorForTreasury(treasury, hasPop));
-        y += 34;
-
-        // Population & Gini
-        addKpiSidePanel(r, x, y, "Bevölkerung",
-            String.valueOf(stats.people), hasPop ? GCOLOR.T().NORMAL : GCOLOR.T().INACTIVE);
-        addKpiSidePanel(r, x + 170, y, "Gini",
-            hasPop ? String.format("%.3f", stats.gini) : "N/A",
-            KpiSection.colorForGini(stats.gini, hasPop));
-        y += 34;
-
-        // Median & Wage
-        addKpiSidePanel(r, x, y, "Median",
-            CompactNumber.format(stats.median) + " D",
-            !hasPop ? GCOLOR.T().INACTIVE : GCOLOR.T().NORMAL);
-        addKpiSidePanel(r, x + 170, y, "Lohn/Tag",
-            CompactNumber.format((long)sim.laborMarket().meanWage()) + " D",
-            KpiSection.colorForWage(sim.laborMarket().meanWage(), hasPop));
-        y += 34;
-
-        // Stage
-        addKpiSidePanel(r, x, y, "Stufe",
-            sim.progression().stage.displayName, GCOLOR.T().NORMAL);
-        addKpiSidePanel(r, x + 170, y, "Unbezahlte",
-            String.valueOf(sim.firmLedger().lastWorkersUnpaid()),
-            KpiSection.colorForUnpaid(sim.firmLedger().lastWorkersUnpaid()));
-        y += 34;
-
-        // Deaths / Emigrations
-        addKpiSidePanel(r, x, y, "Tote/Ausgewandert",
-            sim.deaths() + " / " + sim.emigrations(),
-            KpiSection.colorForEmigration(sim.emigrations()));
-        y += 34;
-
-        // Trade mode as text (non-interactive for side panel)
-        GText modeLabel = new GText(UI.FONT().M, FONTW_KPI);
-        modeLabel.set("Lager-Modus: " + wh.tradeMode().name());
-        modeLabel.lablify();
-        modeLabel.render(r, x, y, 300, 20);
-        y += 26;
-
-        // Warehouse stats
-        GText whLabel = new GText(UI.FONT().M, FONTW_HDR);
-        whLabel.set("Lager: " + wh.ownedCount() + " staatlich");
-        whLabel.color(GCOLOR.T().NORMAL);
-        whLabel.render(r, x, y, 300, 20);
-        y += 18;
-
-        GText whStats = new GText(UI.FONT().S, FONTW_HDR);
-        whStats.set("Gekauft: " + CompactNumber.format(wh.lastBought()) + "  Verkauft: " + CompactNumber.format(wh.lastSold()));
-        whStats.color(GCOLOR.T().NORMAL);
-        whStats.render(r, x, y, 320, 16);
-        y += 26;
-
-        GText fiscalLabel = new GText(UI.FONT().S, FONTW_HDR);
-        fiscalLabel.set("Steuern: " + CompactNumber.format(sim.fiscal().headTaxCollected()) + "  Markt: " + CompactNumber.format(sim.fiscal().marketReceipts()));
-        fiscalLabel.color(GCOLOR.T().NORMAL);
-        fiscalLabel.render(r, x, y, 320, 16);
-        y += 18;
-
-        GText wagesLabel = new GText(UI.FONT().S, FONTW_HDR);
-        wagesLabel.set("Loehne: " + CompactNumber.format(sim.wagesPaid()) + "  Rationen: " + CompactNumber.format(sim.fiscal().rationOut()));
-        wagesLabel.color(GCOLOR.T().NORMAL);
-        wagesLabel.render(r, x, y, 320, 16);
-    }
-
-    /** Helper for side-panel KPI rendering (simplified, no GuiSection). */
-    private void addKpiSidePanel(SPRITE_RENDERER r, int x, int y, init.sprite.UI.Icon icon, String label, String value, COLOR valueColor) {
-        icon.render(r, x, y + 2);
-        GText lbl = new GText(UI.FONT().S, FONTW_LABEL);
-        lbl.set(label);
-        lbl.color(GCOLOR.T().NORMAL);
-        lbl.render(r, x + 28, y, 120, 16);
-        GText val = new GText(UI.FONT().M, FONTW_LABEL);
-        val.set(value);
-        val.color(valueColor);
-        val.render(r, x + 28, y + 16, 120, 16);
-    }
-
-    /** Helper for side-panel KPI rendering without icon. */
-    private void addKpiSidePanel(SPRITE_RENDERER r, int x, int y, String label, String value, COLOR valueColor) {
-        GText lbl = new GText(UI.FONT().S, FONTW_LABEL);
-        lbl.set(label);
-        lbl.color(GCOLOR.T().NORMAL);
-        lbl.render(r, x, y, 120, 16);
-        GText val = new GText(UI.FONT().M, FONTW_LABEL);
-        val.set(value);
-        val.color(valueColor);
-        val.render(r, x, y + 16, 120, 16);
-    }
+    // Sprint v0.13.117+ UI-Endredaktion — renderSidePanelContent ENTFERNT (0 Caller, no-op).
+    // Sprint v0.13.116+ Hotfix hatte Body disabled wegen Regression "Schwarzbild+grüne Schrift",
+    // die privaten addKpiSidePanel-Helper waren bereits in e667436 entfernt. Sprint v0.13.117+
+    // schliesst das Thema komplett: public no-op API ohne Aufrufer ist dead code per agents.md.
+    // Folge-Sprint fuer proper Side-Panel-Rebuild (neu mit Layout-Migration v0.13.117+ falls noetig)
+    // bleibt Sprint v0.13.126+ WindowQuickview Side-Panel proper Rebuild.
 }

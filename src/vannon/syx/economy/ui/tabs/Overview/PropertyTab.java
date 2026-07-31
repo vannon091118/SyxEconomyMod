@@ -64,7 +64,7 @@ public final class PropertyTab implements EconWindowBase.TabContent {
         content.add(sliderHdr, x, y);
         y += 22;
 
-        EconWindowBase.addSlider(content, x, y, "Miete/Kachel", () -> EconConfig.housingBaseRentPerTile, 0, 500, 5,
+        EconWindowBase.addSlider(content, x, y, "Miete/Kachel", () -> EconConfig.housingBaseRentPerTile, 0, 500,
                 new ACTION() {
                     @Override public void exe() {
                         int old = EconConfig.housingBaseRentPerTile;
@@ -81,7 +81,7 @@ public final class PropertyTab implements EconWindowBase.TabContent {
                 });
         y += 38;
 
-        EconWindowBase.addSlider(content, x, y, "Raeumung bei Schulden >", () -> EconConfig.housingEvictionDebtThreshold, 0, 5000, 100,
+        EconWindowBase.addSlider(content, x, y, "Raeumung bei Schulden >", () -> EconConfig.housingEvictionDebtThreshold, 0, 5000,
                 new ACTION() {
                     @Override public void exe() {
                         EconConfig.housingEvictionDebtThreshold = Math.min(5000, EconConfig.housingEvictionDebtThreshold + 100);
@@ -94,7 +94,7 @@ public final class PropertyTab implements EconWindowBase.TabContent {
                 });
         y += 38;
 
-        EconWindowBase.addSlider(content, x, y, "Schonfrist (Tage)", () -> EconConfig.housingGraceDays, 0, 30, 1,
+        EconWindowBase.addSlider(content, x, y, "Schonfrist (Tage)", () -> EconConfig.housingGraceDays, 0, 30,
                 new ACTION() {
                     @Override public void exe() {
                         EconConfig.housingGraceDays = Math.min(30, EconConfig.housingGraceDays + 1);

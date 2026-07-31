@@ -213,6 +213,29 @@ public final class EconConfig {
     public static double priorityMarginalSafetyThreshold = 1.0;
     /** Minimum Demand/Tag für gültigen pressure-Score (Anti-Micro-Score). */
     public static double priorityExpansionMinDemandLed = 200.0;
+
+    // ── Sprint v0.13.103+ — 5-Tier-Staircase für max-Worker abhängig von Stock-Coverage
+    // User-Auftrag wörtlich: "stelle regel ein das 10-70-5-30-10% abstufungen an maximaler
+    // arbeitszahl abhängig von nachfrage festsetzt". 5 Tier-Stufen, breakpoints coverage
+    // (stock/demand) ascending, fractions max-Worker descending. Default-Breakpoints
+    // [0.0, 0.30, 0.70, 1.00, 2.00] und fractions [1.00, 0.70, 0.30, 0.10, 0.05] — Carpenter
+    // bei leerem MOEBEL-Lager laeuft mit 100%, bei 1.0 coverage (genug fuer 1 Tag) nur 10%.
+    public static boolean firmStaircaseEnabled = true;
+    /** Stock-Coverage Breakpoints ascending (coverage = stock / demand). */
+    public static double[] firmStaircaseCoverageTiers = {0.0, 0.30, 0.70, 1.00, 2.00};
+    /** Worker-Fraction per Tier (max 1.0 = full capacity). Gleiche Laenge wie Tiers. */
+    public static double[] firmStaircaseWorkerFractions = {1.00, 0.70, 0.30, 0.10, 0.05};
+
+    // ── Sprint v0.13.103+ — Staatsbestand (state stock) demand floor
+    // User-Auftrag wörtlich: "NACHFRAGE immer besteht wenn die lager leer sind als
+    // zwischenschicht 'Staats-bestand' der muss kritisch eingehalten werden als priortät".
+    // Wenn stock coverage < minCoverage, forciert PressureRegistry pressure=1.0
+    // UND FirmStaircase cap = 100% (override). Stellt sicher dass lebenswichtige
+    // Blueprints (CARPENTER fuer MOEBEL, BAKERY fuer BREAD) auch bei leerem Lager
+    // Produktion hochfahren.
+    public static boolean firmStaatsbestandEnabled = true;
+    /** Stock-Coverage unter diesem Wert = critical Staatsbestand. Default 10% = 0.1. */
+    public static double firmStaatsbestandMinCoverage = 0.10;
     public static boolean warehouseMarketEnabled = true;
     public static boolean stateWarehousesEnabled = true;
     public static boolean warehouseAutoTuneEnabled = true;
@@ -423,6 +446,15 @@ public final class EconConfig {
     public static double priceAbsoluteMax = 50000.0;
     public static double flowPriceRefreshDays = 60.0 / DEFAULT_TICKS_PER_DAY;
     public static boolean windowEnabled = true;
+    /** Sprint v0.13.116+ Hotfix — Letter-Key-Hotkey-Fallback (E/O/S/Q).
+     *  Default FALSE = NumPad-only (Original-Designentscheidung: NumPad-Tasten wurden
+     *  gewaehlt UM Vanilla-Hotkey-Kollisionen zu vermeiden — E ist in songs-of-syx fuer
+     *  Edge-Building/Interact reserviert und kollidiert sonst mit unserem Window-Open).
+     *  Toggle ON fuer Laptop-Spieler ohne Numpad (mit Kollisionsrisiko bei E).
+     *  Resolution: User-Regression-Meldung "0.13.101 E ist hotkey und damit doppelt belegt
+     *  — wir haben num pad tasten genommen um genau das zu vermeiden." Default zurueck auf
+     *  NumPad-only. */
+    public static boolean letterHotkeyFallbackEnabled = false;
     public static boolean heterogeneousLambda = true;
     public static double lambdaMin = 0.0;
     public static double lambdaMax = 0.99;
