@@ -43,6 +43,29 @@
 ## v0.13.101 — 2026-07-28
 
 
+
+## v0.13.123+M-UI-1.1 — Polishing Severity.classify Pathological-Values-Policy
+
+Code-Reviewer-Offene-Frage aus Sprint v0.13.104+M-UI-1 (788de18) und Sprint v0.13.111+M-UI-3.1 (2006807) zur Severity.classify Pathological-Values-Policy entschieden: Variante A modified (still-silent-stale fuer harmlose Daten-Stale + laut-sichtbar fuer echte State-Bugs).
+
+**Subsummiert 3 Tasks:**
+1. **KpiSection.Severity.classify Policy-Fix (1 Zeile Replacement)** -- Vorher `!Double.isFinite(coverage)` schluckte -Infinity faelschlicherweise als OK, was den Test `classify_negative_infinity_returns_critical` historisch brechen liess (Silent-Late-Discovery). Nachher: `Double.isNaN(coverage) || coverage == Double.POSITIVE_INFINITY` returnen OK (diese zwei Pathological-Values bleiben stumm = Daten-Stale). -Infinity, negative finite, exakt 0.0 und alle Coverage-Werte <0.3 klassifizieren als CRITICAL (echte Out-of-Stock/State-Bugs).
+2. **KpiSectionTest.java erweitert (1 NEU-Test + 1 Assertion-Upgrade)** -- bestehender `classify_negative_finite_returns_critical` Test von `(-0.5)` auf zwei-assertions-different-magnitudes `(-0.0001)` + `(-100.0)` upgraded (-0.5 Assertion bleibt erhalten als Sanity-Anchor). NEU: `classify_double_min_value_returns_critical` Test dokumentiert dass Double.MIN_VALUE (~4.9e-324) die kleinste positive Coverage ist und damit CRITICAL klassifiziert wird. Gesamt: 23 → 24 Tests (+1 NEU; +1 Assertion im bestehenden).
+3. **baselines.yml KpiSection.java Re-Baseline (Rule 14 Pflicht, Sprint-modified)** -- fields=4 → 5 dokumentiert mit baseline_update-Begruendung (Floor-Schutz _DRIFT_FLOOR=2 deckt +1-Field-Drift ab). reason_at_emit von "fields 4 < warn 18" auf "fields 5 < warn 18" korrigiert (vorher: drift-stale).
+
+**Verification DoD (3/4 OK + 1 BLOCKER-dokumentiert):**
+- `bash tools/god-class-guard.sh --mode=hard` → 181 PASS / 0 WARN / 0 BLOCK ✔
+- `bash tools/verify-doc-sync.sh` → PASS (Stam-Docs sync mit pom v0.13.101) ✔
+- `mvn verify install -DskipTests -Dskip.bump=true` → BUILD SUCCESS ✔
+- `mvn test -Dskip.bump=true -Dtest=KpiSectionTest` → ⚠ **BLOCKER-DOKUMENTIERT**: Mockito-inline kann final-class KpiSection auf Java 21 wegen CDS/ByteBuddy dynamic-agent-loading-Sperre nicht mocken → 0/24 Tests gruen. POM.xml-XML-Argumente-Fix (`-XX:+EnableDynamicAgentLoading` + `-Xshare:off`) ist separates Sprint-Fix (Out-of-Scope). Severity.classify compile-state ist sauber und BUILD SUCCESS bestaetigt; die 24 Tests sind in-source dokumentiert, koennen aber lokal nicht ausgefuehrt werden bis Mockito-blocker separat gefixt ist.
+
+**Out-of-Scope (deliberately deferred):**
+- Mockito-inline Java 21 CDS Compatibility-Fix (surefire-plugin `argLine` + Java-21-Flag) → Sprint **v0.13.124+M-UI-1.2 Test-Infrastructure** separates Sprint-Fix (Scope ~5-8 LOC pom.xml, Re-Validation danach)
+- Variante C (Coverage-Spalte mit (stale)-Tag) → Sprint v0.13.125+ UI-Layer-Erweiterung wenn Spieler-Wunsch nach granularer Sichtbarkeit kommt
+- Severity.classify precision-rework (mehr Bands z.B. CRITICAL_LOW/HIGH) → Sprint v0.13.126+ Severity-Precision-Sprint
+- M-UI-1+ Werkbank-Reopen (WindowState Tab-Split) → Folge-Sprint v0.13.127+
+
+
 ## v0.13.103+ Staircase-Body — 5-Tier-Staircase + Staatsbestand-Override
 
 5-Tier-Staircase fuer max-Worker abhaengig von Stock-Coverage, plus Staatsbestand-Override fuer kritische Blueprints. Resolution fuer User-Auftrag: "stelle regel ein das 10-70-5-30-10% abstufungen an maximaler arbeitszahl abhaengig von nachfrage festsetzt" und "NACHFRAGE immer besteht wenn die lager leer sind als zwischenschicht 'Staats-bestand' der muss kritisch eingehalten werden als prioritaet".

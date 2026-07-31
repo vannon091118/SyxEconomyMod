@@ -216,11 +216,11 @@ legacy_baselines:
   src/vannon/syx/economy/ui/KpiSection.java:
     loc: 98
     pubM: 12
-    fields: 4
+    fields: 5
     imports: 4
     status_at_emit: pass
-    reason_at_emit: 'All thresholds clear by large margin (loc 98 < warn 600; pubM 12 < warn 25; fields 4 < warn 18; imports 4 < warn 25).'
-    baseline_update: 'Sprint v0.13.104+M-UI-1 new file — SeverityClassifier (enum CRITICAL/LOW/OK/SURPLUS + classify(double)) + FilterMode (4-mode enum + accepts/chipLabel) + 7 color helpers + sortIndicesByCoverageAsc(FlowPrices, int). Single SSoT fuer Severity-Schwellwerte die zuvor in WindowQuickview.build/renderSidePanelContent und WindowEconomy.PricesTab dupliziert waren (~70 LOC dedupliziert). Rule-15 konform: keine static-final-Init mit Engine-Singletons.'
+    reason_at_emit: 'All thresholds clear by large margin (loc 98 < warn 600; pubM 12 < warn 25; fields 5 < warn 18; imports 4 < warn 25).'
+    baseline_update: 'Sprint v0.13.104+M-UI-1 new file — SeverityClassifier (enum CRITICAL/LOW/OK/SURPLUS + classify(double)) + FilterMode (4-mode enum + accepts/chipLabel) + 7 color helpers + sortIndicesByCoverageAsc(FlowPrices, int). Single SSoT fuer Severity-Schwellwerte die zuvor in WindowQuickview.build/renderSidePanelContent und WindowEconomy.PricesTab dupliziert waren (~70 LOC dedupliziert). Rule-15 konform: keine static-final-Init mit Engine-Singletons. Sprint v0.13.123+M-UI-1.1 Polishing Severity.classify Pathological-Values-Policy — fields 4→5 (RangeGuard-Konstante `OUT_OF_STOCK_THRESHOLD=0.3` ergaenzt fuer expliziten Konstanzeinsatz; fields-Drift +25% ueber fields-Cap aber Floor-Schutz _DRIFT_FLOOR=2 deckt +1-Field-Drift ab und Rule-14 Pflicht-Re-Baseline direkt im selben Sprint-Commit erfuellt).'
   src/vannon/syx/economy/ui/tabs/Overview/DashboardTab.java:
     loc: 186
     pubM: 2

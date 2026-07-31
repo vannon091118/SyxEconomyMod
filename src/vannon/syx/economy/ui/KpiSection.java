@@ -44,9 +44,16 @@ public final class KpiSection {
     public enum Severity {
         CRITICAL, LOW, OK, SURPLUS;
 
-        /** Coverage → Severity. NaN oder Infinite zählt als OK (Datenbank-Stale). */
+        /** Coverage → Severity. Sprint M-UI-1.1 Polishing Pathological-Values-Policy:
+         *  NaN und +Infinity → OK (Division-durch-0 oder "sehr grosser Stock" sind
+         *  Daten-Stale und sollen keine False-Positive-CRITICAL-Alarme auslösen).
+         *  -Infinity, negative finite, exakt 0.0 → CRITICAL (echte State-Bugs
+         *  oder Out-of-Stock sollen laut sichtbar sein statt still unterdrückt).
+         *  Vorherige Implementation hatte `!Double.isFinite()` was -Infinity
+         *  fälschlicherweise als OK maskierte (Bug, Test-classify_negative_infinity_returns_critical
+         *  schlug fehl). */
         public static Severity classify(double coverage) {
-            if (!Double.isFinite(coverage)) return OK;
+            if (Double.isNaN(coverage) || coverage == Double.POSITIVE_INFINITY) return OK;
             if (coverage < 0.3) return CRITICAL;
             if (coverage < 0.7) return LOW;
             if (coverage > 3.0) return SURPLUS;
