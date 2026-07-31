@@ -1,5 +1,8 @@
 # =============================================================================
-# VANILLA BYTECODE-SCHEMA — SyxEconomyMod v0.13.106
+# VANILLA BYTECODE-SCHEMA — SyxEconomyMod
+# Sprint v0.13.108+Doku-Slim GATE-8: vanillaschema.yaml Header-Version-Stamp entfernt.
+# Re-Injection (fuer externe Tools die das Feld brauchen) via tools/doku-sync.sh fix.
+# Auto-managed by tools/doku-sync.sh fix.
 #
 # Single-Source-of-Truth für ALLE Vanilla-Klassen die der Mod per
 # BypassGate, ClassResolver oder direkter public API anfasst.

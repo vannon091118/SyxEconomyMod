@@ -4,24 +4,26 @@
 # Master-Orchestrator: führt alle Checks vor dem Build aus.
 #
 # Gates (Reihenfolge = Abhängigkeiten):
-#   1. Stam-Doku-Sync        (NEU — SKIP_SYNC=1)       → verify-doc-sync.sh
+#   1. Stam-Doku-Sync        (SKIP_SYNC=1)             → doku-sync.sh check
 #   2. Code Audit            (SKIP_AUDIT=1)            → code-audit.sh
-#   3. Version Consistency   (SKIP_VERSION_CHECK=1)    → verify-version-consistency.sh
-#   4. Adapter Signaturen    (ADAPTER_JAR=…; sonst Light-Check)
-#   5. Bytecode-Injection    (Sprint 6.2)              → audit-bytecode.sh
-#   6. Sim-Logik Audit       (Sprint 6.3)              → audit-sim-logic.sh
-#   7. Schema-Validierung    (Sprint 7)                 → vanilla-schema.yaml vs. adapter/*
-#   8. Balance-Regression    (Sprint 9 / 7-2)           → balance-regression-check.sh
+#   3. Adapter Signaturen    (ADAPTER_JAR=…; sonst Light-Check)
+#   4. Bytecode-Injection    (Sprint 6.2)              → audit-bytecode.sh
+#   5. Sim-Logik Audit       (Sprint 6.3)              → audit-sim-logic.sh
+#   6. Schema-Validierung    (Sprint 7)                → vanilla-schema.yaml vs. adapter/*
+#   7. Balance-Regression    (Sprint 9 / 7-2)          → balance-regression-check.sh
+#   8. God-Class-Guard       (SKIP_GOD_GUARD=1)        → god-class-guard.sh --mode=hard
+#   9. BINDUNGSMATRIX Canon  (SKIP_BINDUNGSMATRIX=1)
 #
 # Exit-Codes: 0 = alle Gates bestanden, 1 = mindestens ein Gate fehlgeschlagen.
+# Sprung-Break: -Dgate.skip=true (Maven) bzw. gate.skip=true überspringt ALLE Gates.
 #
 # Usage:
 #   bash tools/build-gate.sh                     # Alle Gates
 #   bash tools/build-gate.sh --strict             # Audit im Strict-Mode
 #
-# Installation als Pre-Commit-Hook:
-#   cp tools/build-gate.sh .git/hooks/pre-commit
-#   chmod +x .git/hooks/pre-commit
+# Sprint v0.13.108+Doku-Slim: Empfohlen ist `bash tools/gate.sh precommit` als Hook-Wrapper
+# der build-gate + doku-sync + phase47-shield kombiniert. Direktinstallation dieses
+# build-gate.sh als Pre-Commit-Hook weiter möglich.
 
 set -euo pipefail
 
@@ -54,42 +56,25 @@ gate_skip() {
 }
 
 echo -e "${CYAN}╔════════════════════════════════════════════════════════╗${NC}"
-echo -e "${CYAN}║  SyxEconomyMod — Build Gate v0.13.118+ (Sprint U2: 11 Gates) ║${NC}"
+echo -e "${CYAN}║  SyxEconomyMod — Build Gate v0.13.118++ (Sprint v0.13.108+StartingFromGround: 10 Gates)   ║${NC}"
 echo -e "${CYAN}╚════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
-# ── Gate 0: Stam-Version Snapshot (anti-Phantom-Bump) ─────────────
-# Fail-fast VOR Gate 1 (Stam-Doku-Sync). Vergleicht pom.xml <version>
-# gegen den zuletzt gespeicherten Snapshot in
-# .git/hooks/.stam-version-snapshot. Wenn ungleich UND Snapshot
-# existiert: Phantom-Bump seit Rule-3-Capture → fail-fast mit
-# Remediation-Hinweis auf agents.md Rule 3.
-# Bypass: SKIP_SNAPSHOT=1 (Notfall-Toggle; Audit-Trail nicht verfügbar
-# dann).
-echo -e "${CYAN}[0/9] Stam-Version Snapshot (anti-Phantom-Bump Pre-Flight)${NC}"
-if [ "${SKIP_SNAPSHOT:-0}" = "1" ]; then
-    gate_skip "Snapshot-Check uebersprungen (SKIP_SNAPSHOT=1) — Audit-Trail disabled"
-else
-    if bash tools/snapshot-stam-version.sh check 2>/dev/null; then
-        gate_pass "pom.xml == snapshot — kein Phantom-Bump seit Rule-3-Capture"
-    else
-        SNAP_EXIT=$?
-        gate_fail "PHANTOM-BUMP seit letztem Rule-3-Capture — agents.md Rule 3 Step 1-5 + bash tools/snapshot-stam-version.sh capture"
-    fi
-fi
-echo ""
-
-# ── Gate 1: Stam-Doku-Sync (NEU) ────────────────────────────────────────
-echo -e "${CYAN}[1/9] Stam-Doku-Sync (7 Dokumente ↔ pom.xml)${NC}"
+# ── Gate 1: Stam-Doku-Sync (Sprint v0.13.108+Doku-Slim: Migration verify-doc-sync.sh → doku-sync.sh check) ──
+echo -e "${CYAN}[1/9] Stam-Doku-Sync (Doku ↔ pom.xml)${NC}"
 if [ "${SKIP_SYNC:-0}" = "1" ]; then
     gate_skip "Sync-Gate uebersprungen (SKIP_SYNC=1)"
-elif [ "${POM_PREFLIGHT_DONE:-0}" = "1" ]; then
-    gate_skip "Sync-Gate uebersprungen (POM_PREFLIGHT_DONE=1) — pom.xml antrun preflight-stam-doc-sync hat bereits gefeuert"
 else
-    if bash tools/verify-doc-sync.sh 2>/dev/null; then
-        gate_pass "Alle 7 Stam-Dokumente sync mit pom.xml"
+    # Fallback auf verify-doc-sync.sh wenn doku-sync.sh noch nicht migriert (Legacy-Pfad)
+    if [ -x tools/doku-sync.sh ]; then
+        SYNC_CMD="bash tools/doku-sync.sh check"
     else
-        gate_fail "Stam-Doku-Drift — verify-doc-sync.sh Details"
+        SYNC_CMD="bash tools/verify-doc-sync.sh"
+    fi
+    if $SYNC_CMD 2>/dev/null; then
+        gate_pass "Alle Doku-Anker sync mit pom.xml"
+    else
+        gate_fail "Stam-Doku-Drift — ${SYNC_CMD} Details"
     fi
 fi
 echo ""
@@ -114,17 +99,10 @@ else
 fi
 echo ""
 
-# ── Gate 3: Version Consistency ────────────────────────────────────────
-echo -e "${CYAN}[3/9] Version ↔ Changelog Consistency${NC}"
+# ── Gate 2.5 (entfernt Sprint v0.13.108+Doku-Slim): Version ↔ Changelog
+# in doku-sync.sh integriert. ───────────────────────────────────────────
 
-if bash tools/verify-version-consistency.sh 2>/dev/null; then
-    gate_pass "pom.xml = changelog"
-else
-    gate_fail "Version stimmt nicht mit Changelog überein"
-fi
-echo ""
-
-# ── Gate 4: Adapter Signature Verification ─────────────────────────────
+# ── Gate 3: Adapter Signature Verification ─────────────────────────────
 echo -e "${CYAN}[4/9] Adapter ↔ Engine-Signaturen${NC}"
 
 ADAPTER_JAR="${ADAPTER_JAR:-}"
@@ -190,7 +168,7 @@ else
 fi
 echo ""
 
-# ── Gate 5: Bytecode-Injection Audit (Sprint 6.2) ────────────────────
+# ── Gate 4: Bytecode-Injection Audit (Sprint 6.2) ────────────────────
 echo -e "${CYAN}[5/9] Bytecode-Injection Audit (Reflection-Patterns)${NC}"
 if bash tools/audit-bytecode.sh ${AUDIT_ARGS:-} 2>/dev/null; then
     gate_pass "Keine ungesicherten Bytecode-Injection-Pfade"
@@ -205,7 +183,7 @@ fi
 echo ""
 
 # ── Gate 6: Sim-Logik Audit (Sprint 6.3) ───────────────────────────────
-echo -e "${CYAN}[6/9] Ingame-Sim-Logik Audit (Boundary-Conditions)${NC}"
+echo -e "${CYAN}[5/9] Ingame-Sim-Logik Audit (Boundary-Conditions)${NC}"
 if bash tools/audit-sim-logic.sh ${AUDIT_ARGS:-} 2>/dev/null; then
     gate_pass "Keine Boundary-Condition-Verletzungen in Sim-Klassen"
 else
@@ -219,7 +197,7 @@ fi
 echo ""
 
 # ── Gate 7: Schema-Validierung (Sprint 7) ──────────────────────────────
-echo -e "${CYAN}[7/9] Vanilla-Schema ↔ Adapter-Dateien${NC}"
+echo -e "${CYAN}[6/9] Vanilla-Schema ↔ Adapter-Dateien${NC}"
 if [ -f "tools/vanilla-schema.yaml" ]; then
     # Prüfe ob jede Klasse im YAML eine entsprechende Adapter-Datei hat
     SCHEMA_CLASS=$(grep -c 'class:' tools/vanilla-schema.yaml 2>/dev/null || echo 0)
@@ -235,7 +213,7 @@ fi
 echo ""
 
 # ── Gate 8: Balance-Regression (Sprint 9 / 7-2) ──────────────────────────────
-echo -e "${CYAN}[8/9] Balance-Regression (EconConfig-Referenzwerte)${NC}"
+echo -e "${CYAN}[7/9] Balance-Regression (EconConfig-Referenzwerte)${NC}"
 if [ "${SKIP_BALANCE:-0}" = "1" ]; then
     gate_skip "Balance-Check uebersprungen (SKIP_BALANCE=1)"
 else
@@ -247,12 +225,10 @@ else
 fi
 echo ""
 
-# ── Gate 9: God-Class-Guard (Hard-Block Struktur-Quo) — Sprint M-3 ────────
-echo -e "${CYAN}[9/9] God-Class-Guard (LOC/PubM/Fields-Caps + Baseline-Drift)${NC}"
+# ── Gate 8: God-Class-Guard (Hard-Block Struktur-Quo) — Sprint M-3 ────────
+echo -e "${CYAN}[8/11] God-Class-Guard (LOC/PubM/Fields-Caps + Baseline-Drift)${NC}"
 if [ "${SKIP_GOD_GUARD:-0}" = "1" ]; then
     gate_skip "God-Class-Guard uebersprungen (SKIP_GOD_GUARD=1)"
-elif [ "${POM_PREFLIGHT_DONE:-0}" = "1" ]; then
-    gate_skip "God-Class-Guard uebersprungen (POM_PREFLIGHT_DONE=1) — pom.xml antrun preflight-god-class-guard hat bereits gefeuert"
 else
     # Mode=hard: WARN zählt als BLOCKER (god-class-guard.sh --mode=hard)
     if bash tools/god-class-guard.sh --mode=hard 2>/dev/null; then
@@ -274,7 +250,7 @@ echo ""
 # intakt ist: 11 Spalten pro Zeile (awk NF==11), und >=100 Zeilen als Sanity-Check.
 # Seit der Doku-Restruktur liegt die SSoT unter Doku/ (Root-Fallback fuer Alt-Branches).
 # Bypass: SKIP_BINDUNGSMATRIX=1
-echo -e "${CYAN}[10/11] BINDUNGSMATRIX Canon (332 Hebel × 11 Spalten SSoT)${NC}"
+echo -e "${CYAN}[9/11] BINDUNGSMATRIX Canon (332 Hebel × 11 Spalten SSoT)${NC}"
 if [ "${SKIP_BINDUNGSMATRIX:-0}" = "1" ]; then
     gate_skip "BINDUNGSMATRIX Canon uebersprungen (SKIP_BINDUNGSMATRIX=1)"
 elif [ -f "Doku/BINDUNGSMATRIX.csv" ] || [ -f "BINDUNGSMATRIX.csv" ]; then
@@ -291,6 +267,36 @@ elif [ -f "Doku/BINDUNGSMATRIX.csv" ] || [ -f "BINDUNGSMATRIX.csv" ]; then
     fi
 else
     gate_fail "BINDUNGSMATRIX.csv fehlt (weder Doku/BINDUNGSMATRIX.csv noch Root) — Data-SSoT nicht gefunden"
+fi
+echo ""
+
+# ── Gate 10: Benchmark-CSV Compare (Sprint v0.13.108+StartingFromGround) ──
+# Vergleicht bench-baseline.csv ↔ bench-run.csv per-Spalte mit Toleranzen
+# (gini 0.1%, money_supply 1%, median_price 2% relativ). Optional gate —
+# überspringt wenn die CSV-Paare im Repo-Root fehlen (kein Benchmark-Harness
+# in diesem Build-Kontext eingesetzt). Paths via BENCH_BASELINE / BENCH_RUN.
+# Skip-Flag: SKIP_BENCH_COMPARE=1 (respektiert gate.skip=true übergeordnet).
+echo -e "${CYAN}[10/11] Benchmark-CSV Compare (Baseline vs. aktueller Run)${NC}"
+if [ "${SKIP_BENCH_COMPARE:-0}" = "1" ]; then
+    gate_skip "Benchmark-CSV-Compare übersprungen (SKIP_BENCH_COMPARE=1)"
+elif [ ! -x "tools/benchmark-compare.sh" ]; then
+    gate_skip "tools/benchmark-compare.sh nicht installiert (muss chmod +x) — Gate inert"
+elif [ -f "${BENCH_BASELINE:-./bench-baseline.csv}" ] && \
+     [ -f "${BENCH_RUN:-./bench-run.csv}" ]; then
+    if bash tools/benchmark-compare.sh \
+        "${BENCH_BASELINE:-./bench-baseline.csv}" \
+        "${BENCH_RUN:-./bench-run.csv}" 2>/dev/null; then
+        gate_pass "Benchmark-CSV-Drift innerhalb Toleranz (gini .1% / money 1% / price 2%)"
+    else
+        BC_EXIT=$?
+        if [ "$BC_EXIT" -eq 2 ]; then
+            gate_fail "BLOCKER: Benchmark-CSV Eingabefehler (siehe tools/benchmark_compare.py --help)"
+        else
+            gate_fail "Benchmark-CSV-Drift ausserhalb Toleranz — tools/benchmark-compare.sh Details"
+        fi
+    fi
+else
+    gate_skip "Benchmark-CSV-Paar fehlt (kein baseline.csv / run.csv im Repo-Root) — Gate inert"
 fi
 echo ""
 

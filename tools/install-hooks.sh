@@ -1,22 +1,19 @@
 #!/usr/bin/env bash
-# SyxEconomyMod — Install Pre-Commit-Hooks
-# ==========================================
+# SyxEconomyMod — Install Pre-Commit-Hooks (Sprint v0.13.108+Doku-Slim)
+# =====================================================================
 # Installiert die kombinierten Pre-Commit-Gates aus tools/.
 # Idempotent: bei wiederholtem Lauf werden bestehende Hooks ersetzt.
+#
+# Sprint v0.13.108+Doku-Slim: 1 Universal-Gate statt 4 Skripten.
+#   - Alte Skripte (verify-version-consistency.sh, docs-truth-consistency.sh,
+#     verify-audit-claims.sh, post-commit-pom-watchdog.sh, truth-stamp.sh+py,
+#     post-commit-session-handover.sh) wurden geloescht — preflight-Guard
+#     verifiziert NICHT mehr deren Existenz.
+#   - Hook-Template ruft einheitlich `bash tools/gate.sh precommit`.
 #
 # Verwendung:
 #   bash tools/install-hooks.sh          # installiert nach .git/hooks/pre-commit
 #   bash tools/install-hooks.sh --remove # entfernt installierte Hooks
-#
-# Was installiert wird:
-#   .git/hooks/pre-commit kombiniert:
-#     - tools/phase47-shield.sh             (IdentityHashMap/EngineSeams/catch(Throwable)/printStackTrace)
-#     - tools/verify-version-consistency.sh (pom.xml ↔ mod.changelog)
-#     - tools/docs-truth-consistency.sh     (Doku ↔ Code)
-#
-# Voraussetzung:
-#   - Lauf aus dem Repo-Root
-#   - git muss verfuegbar sein (auch ohne vorhandenes .git/ - siehe --init)
 
 set -eo pipefail
 
@@ -32,15 +29,11 @@ HOOK_FILE=".git/hooks/pre-commit"
 POST_COMMIT_FILE=".git/hooks/post-commit"
 PHASE47_GATE="tools/phase47-shield.sh"
 SHIELD_POST="tools/post-commit-shield.sh"
-VERSION_GATE="tools/verify-version-consistency.sh"
-TRUTH_GATE="tools/docs-truth-consistency.sh"
-WATCHDOG="tools/post-commit-pom-watchdog.sh"
-TRUTH_STAMP="tools/truth-stamp.sh"
-HANDOVER_HOOK="tools/post-commit-session-handover.sh"
+UNIFIED_GATE="tools/gate.sh"
 
 remove_hook() {
-    if [[ -f "$HOOK_FILE" ]]; then
-        if grep -q 'phase47-shield.sh\|verify-version-consistency.sh\|docs-truth-consistency.sh' "$HOOK_FILE"; then
+    if [ -f "$HOOK_FILE" ]; then
+        if grep -q 'gate.sh precommit\|docs-truth-consistency.sh\|verify-version-consistency.sh' "$HOOK_FILE"; then
             rm "$HOOK_FILE"
             echo -e "${GREEN}Hook entfernt: $HOOK_FILE${NC}"
         else
@@ -53,10 +46,10 @@ remove_hook() {
     exit 0
 }
 
-if [[ "${1:-}" == "--remove" ]]; then
+if [ "${1:-}" = "--remove" ]; then
     remove_hook
-    if [[ -f "$POST_COMMIT_FILE" ]]; then
-        if grep -q 'post-commit-shield\|pom-watchdog' "$POST_COMMIT_FILE"; then
+    if [ -f "$POST_COMMIT_FILE" ]; then
+        if grep -q 'post-commit-shield\|gate.sh' "$POST_COMMIT_FILE"; then
             rm "$POST_COMMIT_FILE"
             echo -e "${GREEN}Hook entfernt: $POST_COMMIT_FILE${NC}"
         fi
@@ -64,28 +57,24 @@ if [[ "${1:-}" == "--remove" ]]; then
     exit 0
 fi
 
-# Preflight
-if [[ ! -f "$PHASE47_GATE" ]] || [[ ! -f "$VERSION_GATE" ]] || [[ ! -f "$TRUTH_GATE" ]]; then
-    echo -e "${RED}FEHLER: Gate-Skripte fehlen.${NC}" >&2
-    echo "  Erwartet: $PHASE47_GATE, $VERSION_GATE und $TRUTH_GATE" >&2
+# Sprint v0.13.108+Doku-Slim Preflight: nur phase47 + gate.sh erforderlich.
+# 4 Wrapper-Skripte (verify-version / docs-truth / verify-audit / truth-stamp +
+# post-commit-watchdog + handover) sind in GATE-11 obsolet geworden.
+if [ ! -x "$PHASE47_GATE" ]; then
+    echo -e "${RED}FEHLER: $PHASE47_GATE fehlt oder nicht ausfuehrbar.${NC}" >&2
+    echo "  Sprint v0.13.108+Doku-Slim: nur phase47-shield + gate.sh erforderlich." >&2
+    exit 2
+fi
+if [ ! -x "$UNIFIED_GATE" ]; then
+    echo -e "${RED}FEHLER: $UNIFIED_GATE fehlt oder nicht ausfuehrbar.${NC}" >&2
+    echo "  Sprint v0.13.108+Doku-Slim: tools/gate.sh ist Pflicht-Hook-Backend." >&2
     exit 2
 fi
 
-if [[ ! -f "$SHIELD_POST" ]]; then
-    echo -e "${YELLOW}Hinweis: $SHIELD_POST fehlt - Post-Commit-Shield wird nicht installiert.${NC}" >&2
+# Optional Post-Commit-Shield: warn-only wenn fehlend
+if [ ! -f "$SHIELD_POST" ]; then
+    echo -e "${YELLOW}Hinweis: $SHIELD_POST fehlt - Post-Commit-Shield nicht installiert.${NC}" >&2
     SKIP_SHIELD_POST=1
-fi
-if [[ ! -f "$WATCHDOG" ]]; then
-    echo -e "${YELLOW}Hinweis: $WATCHDOG fehlt - Post-Commit-Watchdog wird nicht installiert.${NC}" >&2
-    SKIP_WATCHDOG=1
-fi
-if [[ ! -f "$HANDOVER_HOOK" ]]; then
-    echo -e "${YELLOW}Hinweis: $HANDOVER_HOOK fehlt - Post-Commit-Session-Handover wird nicht installiert.${NC}" >&2
-    SKIP_HANDOVER=1
-fi
-if [[ ! -f "$TRUTH_STAMP" ]]; then
-    echo -e "${YELLOW}Hinweis: $TRUTH_STAMP fehlt - Post-Commit-Truth-Stamp wird nicht installiert.${NC}" >&2
-    SKIP_TRUTH_STAMP=1
 fi
 
 if ! command -v git >/dev/null 2>&1; then
@@ -94,9 +83,9 @@ if ! command -v git >/dev/null 2>&1; then
 fi
 
 # .git-Verzeichnis anlegen falls noetig
-if [[ ! -d .git ]]; then
-    echo -e "${YELLOW}Hinweis: kein .git/ gefunden - fuehre 'git init' durch.${NC}"
-    if [[ "${SKIP_GIT_INIT:-0}" -ne 1 ]]; then
+if [ ! -d .git ]; then
+    echo -e "${YELLOW}Hinweis: kein .git/ gefunden — fuehre 'git init' durch.${NC}"
+    if [ "${SKIP_GIT_INIT:-0}" -ne 1 ]; then
         git init -q
         echo -e "${GREEN}git init ausgefuehrt.${NC}"
     else
@@ -107,85 +96,49 @@ fi
 
 mkdir -p .git/hooks
 
-# Hook schreiben
+# Sprint v0.13.108+Doku-Slim: Hook-Template ruft 1 Universal-Gate.
 cat > "$HOOK_FILE" << 'EOF'
 #!/usr/bin/env bash
 # SyxEconomyMod — Pre-Commit Gate (auto-generated by tools/install-hooks.sh)
 # =============================================================================
-# Kombiniert vier Drift-Gates:
+# Sprint v0.13.108+Doku-Slim: 1 Aufruf von tools/gate.sh precommit kombiniert:
 #   1) Phase-4.7-Shield: IdentityHashMap/EngineSeams/catch(Throwable)/printStackTrace
-#   2) Version-Consistency: pom.xml <version> ↔ <mod.changelog> erster Eintrag
-#   3) Doku-Truth: aktive Markdown-Docs vs. Code-Stand (108 vs. 112, Tier-Zahl,
-#      Phase-5-Klassen, stale Pfade)
+#   2) Doku-Sync: pom.xml <version> ↔ Doku Anchor (README/CHANGELOG/ROADMAP/GLOSSARY)
+#   3) God-Class-Guard: Hard-Block gegen neue God-Files
 # Alle muessen PASS liefern, sonst wird der Commit abgebrochen.
 
 set -e
 
 echo ""
-echo ">>> [1/4] Phase-4.7 Shield (IdentityHashMap/EngineSeams/catch(Throwable)/printStackTrace)"
-bash tools/phase47-shield.sh --mode=delta-only
-
-echo ""
-echo ">>> [2/4] Version-Consistency Gate"
-bash tools/verify-version-consistency.sh
-
-echo ""
-echo ">>> [3/4] Doku-Truth Gate"
-bash tools/docs-truth-consistency.sh
-
-echo ""
-echo ">>> [4/4] God-Class-Guard (Hard-Block gegen neue God-Files)"
-bash tools/god-class-guard.sh --mode=hard
-
-echo ""
-echo ">>> Pre-Commit-Gates: PASS"
-exit 0
+echo ">>> Pre-Commit Gate (1 unified check via tools/gate.sh precommit)"
+bash tools/gate.sh precommit
 EOF
 
 chmod +x "$HOOK_FILE"
 
-echo -e "${GREEN}Installiert: $HOOK_FILE${NC}"
+echo -e "${GREEN}Installiert: $HOOK_FILE (1 unified gate via tools/gate.sh precommit)${NC}"
 
-# Post-Commit-Shield + Watchdog + Truth-Stamp installieren (non-blocking).
-# Erkennt alte Installation (verbatim-copy des Watchdog-Skripts) und migriert
-# automatisch auf das neue Composite-Format, um Doppel-Ausfuehrung zu
-# verhindern. Die alte Datei wird NICHT geloescht sondern als Backup
-# beiseitegelegt (sicherer gegen User-Customizations).
-OLD_WATCHDOG_BANNER='# SyxEconomyMod — Post-Commit-Pom-Watchdog'
-if [[ -f "$POST_COMMIT_FILE" ]] && grep -qF "$OLD_WATCHDOG_BANNER" "$POST_COMMIT_FILE"; then
-    BAK="${POST_COMMIT_FILE}.bak.$(date +%Y%m%d-%H%M%S)"
-    mv "$POST_COMMIT_FILE" "$BAK"
-    echo -e "${YELLOW}Migration: alte Watchdog-Kopie gesichert nach $BAK${NC}"
-fi
-
-if [[ ! -f "$POST_COMMIT_FILE" ]]; then
+# Post-Commit-Shield installieren (non-blocking). Alte Hook-Systeme (Watcher,
+# Truth-Stamp, Session-Handover) sind in GATE-11 geloescht — keine
+# Re-Integration noetig.
+if [ ! -f "$POST_COMMIT_FILE" ] && [ -z "${SKIP_SHIELD_POST:-}" ]; then
     cat > "$POST_COMMIT_FILE" <<'HOOK_EOF'
 #!/usr/bin/env bash
-# SyxEconomyMod — Post-Commit Composite Hook (auto-generated by tools/install-hooks.sh)
-# =====================================================================================
-# Non-blocking Post-Commit-Work:
-#   - tools/post-commit-shield.sh         Phase-4.7 Regression-Detector (Baseline)
-#   - tools/post-commit-pom-watchdog.sh  warnt wenn pom.xml ohne CHANGELOG.md
-#   - tools/truth-stamp.sh               stempelt TRUTH_REPORT.md-Sektionen + git add
+# SyxEconomyMod — Post-Commit Shield Hook (auto-generated by tools/install-hooks.sh)
+# ==================================================================================
+# Sprint v0.13.108+Doku-Slim: Non-blocking Phase-4.7 Regression Detector.
 HOOK_EOF
+    echo "bash tools/post-commit-shield.sh" >> "$POST_COMMIT_FILE"
+    chmod +x "$POST_COMMIT_FILE"
+    echo -e "${GREEN}Installiert: $POST_COMMIT_FILE (Phase-4.7 Regression Detector)${NC}"
 fi
 
-# Idempotent: nur anhängen wenn noch nicht vorhanden.
-grep -qF 'bash tools/post-commit-shield.sh'      "$POST_COMMIT_FILE" || echo "bash tools/post-commit-shield.sh"      >> "$POST_COMMIT_FILE"
-grep -qF 'bash tools/post-commit-pom-watchdog.sh' "$POST_COMMIT_FILE" || echo "bash tools/post-commit-pom-watchdog.sh" >> "$POST_COMMIT_FILE"
-grep -qF 'bash tools/truth-stamp.sh'              "$POST_COMMIT_FILE" || echo "bash tools/truth-stamp.sh"              >> "$POST_COMMIT_FILE"
-grep -qF 'bash tools/post-commit-session-handover.sh' "$POST_COMMIT_FILE" || echo "bash tools/post-commit-session-handover.sh" >> "$POST_COMMIT_FILE"
-chmod +x "$POST_COMMIT_FILE"
-echo -e "${GREEN}Installiert: $POST_COMMIT_FILE (composite: shield + watchdog + truth-stamp + session-handover)${NC}"
-
 echo ""
-echo "Kombiniertes Gate: Phase-4.7-Shield + Version-Consistency + Doku-Truth + God-Class-Guard"
+echo "Kombiniertes Pre-Commit-Gate: tools/gate.sh precommit"
 echo "  Phase-4.7-Shield: blockt IdentityHashMap/EngineSeams/catch(Throwable)/printStackTrace-Regression"
-echo "  Version-Consistency: pom.xml ↔ CHANGELOG.md"
-echo "  Doku-Truth: Docs ↔ Code-Drift"
-echo "Post-Commit-Hook: Phase-4.7-Shield + pom-Watchdog + Truth-Stamp (non-blocking)"
-echo "  Phase-4.7-Shield: IdentityHashMap/EngineSeams/catch(Throwable)-Regression → WARNUNG"
-echo "  Truth-Stamp:  docs/-Edits -> TRUTH_REPORT Sektionen gestempelt + gestaged"
+echo "  Doku-Sync: pom.xml ↔ Doku-Anker (README/CHANGELOG/ROADMAP/GLOSSARY)"
+echo "  God-Class-Guard: Hard-Block gegen neue God-Klassen"
+echo "Post-Commit-Hook: Phase-4.7 Shield-Regression-Detector (non-blocking)"
 echo "Bypass fuer einzelnen Commit: git commit --no-verify"
 echo "Bypass dauerhaft: Hook loeschen via:"
 echo "  bash tools/install-hooks.sh --remove"
