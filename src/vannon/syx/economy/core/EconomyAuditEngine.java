@@ -183,9 +183,13 @@ final class EconomyAuditEngine {
     // ── Demography (hunger damage + starvation risk) ───────────────
 
     static void updateDemography(EconomySim sim) {
-        if (!(EngineMirror.api() != null && EngineMirror.api().rooms() != null
-                ? EngineMirror.api().rooms().entitiesAvailable()
-                : EngineSeams.entitiesAvailable())) return;
+        // Sprint v0.13.119+B-008-Phase-2: EngineSeams.entitiesAvailable()-Fallback entfernt.
+        // Production: AdapterDispatcher.build() initialisiert EngineMirror.api() im
+        // EconomySim-Constructor — api() ist != null und alle 7 Sub-Interfaces OK.
+        // Test: bei direkten `EconomyAuditEngine.updateDemography(sim)`-Aufrufen ohne
+        // EngineMirror-Init ist api() null → early-return statt NPE.
+        EngineMirror m = EngineMirror.api();
+        if (m == null || !m.isFullyAvailable()) return;
         int threshold = EconConfig.hungerDeathThreshold;
         if (threshold <= 0) return;
         int hungerDeaths = 0;

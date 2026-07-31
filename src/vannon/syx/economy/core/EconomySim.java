@@ -1,7 +1,6 @@
 package vannon.syx.economy.core;
 
 import game.faction.FACTIONS;
-import game.faction.FCredits;
 import game.time.TIME;
 import init.resources.RESOURCE;
 import init.resources.RESOURCES;
@@ -13,7 +12,6 @@ import settlement.room.infra.stockpile.StockpileInstance;
 import settlement.room.main.RoomBlueprintImp;
 import settlement.room.main.RoomInstance;
 import settlement.stats.Induvidual;
-import snake2d.LOG;
 import snake2d.util.file.FileGetter;
 import snake2d.util.file.FilePutter;
 import snake2d.util.rnd.RND;
@@ -224,66 +222,9 @@ public final class EconomySim {
         return Math.max(0.0, Math.min(1.0, rel));
     }
 
-    // ── Debug / Cheat API ──────────────────────────────────────────
+    // ── Debug / Cheat API ── extracted to EconomyDebugTools (Sprint E1)
 
-    public String[] debugAdapterStatus() {
-        return new String[]{
-            "Transport:  " + (transportAdapter.isDistanceAvailable() ? "OK" : "FAIL"),
-            "Warehouse:  " + (warehouseAdapter.isStoringLockAvailable() ? "OK" : "FAIL"),
-            "Diplomacy:  " + (diplomacyAdapter.isAvailable() ? "OK" : "FAIL"),
-            "Boosting:   " + (boostingAdapter.isAdminBoosterAvailable() ? "OK" : "FAIL"),
-            "AI:         " + (aiAdapter.isAvailable() ? "OK" : "FAIL"),
-            "NPC:        " + (npcAdapter != null && npcAdapter.isAvailable() ? "OK" : (npcAdapter != null ? "FAIL" : "N/A"))
-        };
-    }
-
-    public String[] debugSelfTest() {
-        java.util.List<String> results = new java.util.ArrayList<>();
-        boolean tOk = transportAdapter.isDistanceAvailable();
-        results.add("Transport  " + (tOk ? "PASS" : "SKIP") + "  distanceField=" + tOk);
-        boolean wOk = warehouseAdapter.isStoringLockAvailable();
-        results.add("Warehouse  " + (wOk ? "PASS" : "SKIP") + "  storingLock=" + wOk);
-        boolean dOk = diplomacyAdapter.isAvailable();
-        results.add("Diplomacy  " + (dOk ? "PASS" : "SKIP") + "  numericFields=" + dOk);
-        boolean bOk = boostingAdapter.isAdminBoosterAvailable();
-        game.boosting.Boostable b = bOk ? boostingAdapter.getAdminBoostable() : null;
-        results.add("Boosting   " + (bOk && b != null ? "PASS" : (bOk ? "PARTIAL" : "SKIP"))
-                + "  adminBoostable=" + (b != null ? b.key : "null"));
-        boolean aOk = aiAdapter.isAvailable();
-        boolean nullCheck = !aiAdapter.isFoodPlan(null);
-        results.add("AI         " + (aOk && nullCheck ? "PASS" : (aOk ? "PARTIAL" : "SKIP"))
-                + "  classResolution=" + aOk + "  nullSafe=" + nullCheck);
-        boolean nOk = npcAdapter != null && npcAdapter.isAvailable();
-        int npcN = nOk ? npcAdapter.npcCount() : 0;
-        results.add("NPC        " + (nOk ? "PASS" : (npcAdapter != null ? "FAIL" : "N/A"))
-                + "  priceAccess=" + nOk + "  factions=" + npcN);
-        return results.toArray(new String[0]);
-    }
-
-    public void mintTreasury(long amount) {
-        FACTIONS.player().credits().inc((double) amount, FCredits.CTYPE.MISC);
-        LOG.ln("[ECON CHEAT] minted " + amount + " D into treasury (new balance: " + treasury() + " D)");
-        EventLog.log("CHEAT", "Minted " + amount + " D \u2014 new treasury: " + treasury());
-        DiagnosticExporter.logPlayerAction(this.ticks, "CHEAT_MINT", "amount=" + amount + ",treasury=" + treasury());
-    }
-
-    public void forceDiagnosticExport() {
-        DiagnosticExporter.resetExportGuard();
-        DiagnosticExporter.exportDay(this);
-        LOG.ln("[ECON CHEAT] forced diagnostic export");
-        EventLog.log("CHEAT", "Forced diagnostic export");
-        DiagnosticExporter.logPlayerAction(this.ticks, "CHEAT_EXPORT", "forced");
-    }
-
-    public void logAuditDelta() {
-        long delta = auditDelta();
-        LOG.ln("[ECON CHEAT] auditDelta=" + delta + " | circulating=" + wallets().circulating()
-                + " | treasury=" + treasury() + " | seed=" + seedSupply()
-                + " | imported=" + imported() + " | exported=" + exported()
-                + " | wagesPaid=" + wagesPaid() + " | drift=" + roundingDrift());
-        EventLog.log("CHEAT", "Audit delta: " + delta
-                + " (circulating=" + wallets().circulating() + ", treasury=" + treasury() + ")");
-    }
+    // ── Debug / Cheat API ── extracted to EconomyDebugTools (Sprint E1)
 
     // ── Constructors ───────────────────────────────────────────────
 
@@ -363,7 +304,15 @@ public final class EconomySim {
         if (!this.updateGuard.tryEnter()) return;
         try {
             this.debtDiplomacyBuffer.update();
-            if (!(EngineMirror.api() != null && EngineMirror.api().rooms() != null ? EngineMirror.api().rooms().entitiesAvailable() : EngineSeams.entitiesAvailable())) return;
+            // Sprint v0.13.119+B-008-Phase-2: EngineSeams.entitiesAvailable()-Fallback entfernt.
+            // Production-Kontext: AdapterDispatcher.build() initialisiert EngineMirror.api()
+            // im selben EconomySim-Constructor; api() ist vor update() garantiert != null und
+            // isFullyAvailable() == true (alle 7 Sub-Interfaces OK).
+            // Test-Kontext: bei `new EconomySim(mock, mock, ...)` ohne AdapterDispatcher ist
+            // api() == null → early-return statt NPE (Identisch zur alten Ternary-Semantik).
+            // Strikt-Equivalent zur alten `rooms().entitiesAvailable()`-Prüfung + null-safety.
+            EngineMirror m = EngineMirror.api();
+            if (m == null || !m.isFullyAvailable()) return;
             if (ds <= 0.0) return;
             this.roster.rebuild();
             this.wallets.clearPaidThisTick();
@@ -455,52 +404,7 @@ public final class EconomySim {
 
     public long auditDelta() { return EconomyAuditEngine.auditDelta(this); }
 
-    void resetEconomy() {
-        this.wallets.reset();
-        this.wages.clear();
-        this.taxes.clear();
-        this.purchases.reset();
-        this.grainDole.clear();
-        this.fiscal.clear();
-        this.laborMarket.clear();
-        this.firmLedger.clear();
-        this.maintenanceMarket.clear();
-        this.serviceMarket.clear();
-        if (this.servicePlanController != null) this.servicePlanController.clear();
-        this.housingMarket.clear();
-        this.affordabilityGate.clear();
-        this.flowMeter.clear();
-        this.flowPrices.clear();
-        this.scarcitySignal.clear();
-        this.warehouseMarket.clear();
-        this.stateWarehouses.clear();
-        this.religionMarket.clear();
-        this.liturgy.clear();
-        this.debtBondage.clear();
-        this.oddjobMarket.clear();
-        this.militaryPayroll.clear();
-        this.stateWages.clear();
-        this.transportMarket.clear();
-        this.handoutRelief.clear();
-        this.productionSubsidies.clear();
-        LocalPrices.clearCache();
-        this.escheated = 0L;
-        this.exported = 0L;
-        this.imported = 0L;
-        this.seedSupply = 0L;
-        this.spent = 0L;
-        this.taxesCollected = 0L;
-        this.guildIncomePaid = 0L;
-        this.liturgyCollected = 0L;
-        this.religionTaxCollected = 0L;
-        this.warehouseTaxCollected = 0L;
-        this.wagesPaid = 0L;
-        this.housingRentCollected = 0L;
-        this.propertyMarket.reset();
-        this.lastTaxSeason = -1;
-        this.roundingDrift = 0L;
-        this.reportedAuditDelta = 0L;
-    }
+    // ── Reset ── delegated to EconomySaveLoad.resetAll() (Sprint E2)
 
     // ── Save / Load (delegated) ────────────────────────────────────
 

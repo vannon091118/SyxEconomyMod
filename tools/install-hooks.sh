@@ -36,6 +36,7 @@ VERSION_GATE="tools/verify-version-consistency.sh"
 TRUTH_GATE="tools/docs-truth-consistency.sh"
 WATCHDOG="tools/post-commit-pom-watchdog.sh"
 TRUTH_STAMP="tools/truth-stamp.sh"
+HANDOVER_HOOK="tools/post-commit-session-handover.sh"
 
 remove_hook() {
     if [[ -f "$HOOK_FILE" ]]; then
@@ -78,6 +79,10 @@ if [[ ! -f "$WATCHDOG" ]]; then
     echo -e "${YELLOW}Hinweis: $WATCHDOG fehlt - Post-Commit-Watchdog wird nicht installiert.${NC}" >&2
     SKIP_WATCHDOG=1
 fi
+if [[ ! -f "$HANDOVER_HOOK" ]]; then
+    echo -e "${YELLOW}Hinweis: $HANDOVER_HOOK fehlt - Post-Commit-Session-Handover wird nicht installiert.${NC}" >&2
+    SKIP_HANDOVER=1
+fi
 if [[ ! -f "$TRUTH_STAMP" ]]; then
     echo -e "${YELLOW}Hinweis: $TRUTH_STAMP fehlt - Post-Commit-Truth-Stamp wird nicht installiert.${NC}" >&2
     SKIP_TRUTH_STAMP=1
@@ -118,7 +123,7 @@ set -e
 
 echo ""
 echo ">>> [1/4] Phase-4.7 Shield (IdentityHashMap/EngineSeams/catch(Throwable)/printStackTrace)"
-bash tools/phase47-shield.sh
+bash tools/phase47-shield.sh --mode=delta-only
 
 echo ""
 echo ">>> [2/4] Version-Consistency Gate"
@@ -169,8 +174,9 @@ fi
 grep -qF 'bash tools/post-commit-shield.sh'      "$POST_COMMIT_FILE" || echo "bash tools/post-commit-shield.sh"      >> "$POST_COMMIT_FILE"
 grep -qF 'bash tools/post-commit-pom-watchdog.sh' "$POST_COMMIT_FILE" || echo "bash tools/post-commit-pom-watchdog.sh" >> "$POST_COMMIT_FILE"
 grep -qF 'bash tools/truth-stamp.sh'              "$POST_COMMIT_FILE" || echo "bash tools/truth-stamp.sh"              >> "$POST_COMMIT_FILE"
+grep -qF 'bash tools/post-commit-session-handover.sh' "$POST_COMMIT_FILE" || echo "bash tools/post-commit-session-handover.sh" >> "$POST_COMMIT_FILE"
 chmod +x "$POST_COMMIT_FILE"
-echo -e "${GREEN}Installiert: $POST_COMMIT_FILE (composite: shield + watchdog + truth-stamp)${NC}"
+echo -e "${GREEN}Installiert: $POST_COMMIT_FILE (composite: shield + watchdog + truth-stamp + session-handover)${NC}"
 
 echo ""
 echo "Kombiniertes Gate: Phase-4.7-Shield + Version-Consistency + Doku-Truth + God-Class-Guard"

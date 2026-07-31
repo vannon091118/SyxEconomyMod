@@ -26,7 +26,7 @@ public final class EconSnapshot {
     public final long incomePaid;
     public final int workersUnpaid;
     public final double meanWage;
-    public final double actualMeanWage;
+    public final double actualMeanWage;  // Sprint v0.13.140+: now market wage from laborMarket(), not actual paid
     
     // Fiskal
     public final long headTax;
@@ -80,8 +80,7 @@ public final class EconSnapshot {
         this.incomePaid = sim.firmLedger().lastIncomePaid();
         this.workersUnpaid = sim.firmLedger().lastWorkersUnpaid();
         this.meanWage = sim.laborMarket().meanWage();
-        int workers = sim.wages().lastWorkersPaid();
-        this.actualMeanWage = workers > 0 ? (double) sim.wages().lastPayrollPaid() / (double) workers : 0.0;
+        this.actualMeanWage = sim.laborMarket().meanWage();
         
         // Fiskal
         this.headTax = sim.fiscal().headTaxCollected();

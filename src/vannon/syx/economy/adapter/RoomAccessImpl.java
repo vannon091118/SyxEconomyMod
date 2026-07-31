@@ -657,7 +657,7 @@ public final class RoomAccessImpl implements IRoomAccess {
                 EngineLevers.serviceEmploymentEnabled)) return null;
         if (humanoid == null) return null;
         try {
-            // Uses STATS.WORK().EMPLOYED — same as EngineSeams
+            // Uses STATS.WORK().EMPLOYED — pre-v0.13.119 als EngineSeams.employedRoom() statisch exposed
             RoomInstance v = (RoomInstance) settlement.stats.STATS.WORK()
                     .EMPLOYED.get(humanoid.indu());
             trace("employed_room", v != null ? "ok" : "null", "");

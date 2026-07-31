@@ -13,6 +13,7 @@ import vannon.syx.economy.core.CompactNumber;
 import vannon.syx.economy.core.DebugTracer;
 import vannon.syx.economy.core.DiagnosticExporter;
 import vannon.syx.economy.core.EconConfig;
+import vannon.syx.economy.core.EconomyDebugTools;
 import vannon.syx.economy.core.EconomySim;
 import vannon.syx.economy.core.EventLog;
 import vannon.syx.economy.core.StateWarehouses;
@@ -569,7 +570,7 @@ public final class WindowState extends EconWindowBase {
             exportBtn.clickActionSet(new ACTION() {
                 @Override public void exe() {
                     DiagnosticExporter.logPlayerAction("state.export_csv", "forced");
-                    sim.forceDiagnosticExport();
+                    EconomyDebugTools.forceDiagnosticExport(sim);
                     cheatStatus = "CSV exportiert";
                 }
             });
@@ -632,9 +633,7 @@ public final class WindowState extends EconWindowBase {
             gateHeader.set("--- BypassGate Adapter ---");
             gateHeader.lablify();
             content.add(gateHeader, x, y);
-            y += 20;
-
-            String[] adapterStatus = sim.debugAdapterStatus();
+            y += 20;                    String[] adapterStatus = EconomyDebugTools.debugAdapterStatus(sim);
             for (String status : adapterStatus) {
                 boolean ok = status.contains("OK");
                 GText line = new GText(UI.FONT().S, FONTW_BODY);
@@ -656,7 +655,7 @@ public final class WindowState extends EconWindowBase {
             testBtn.clickActionSet(new ACTION() {
                 @Override public void exe() {
                     DiagnosticExporter.logPlayerAction("state.self_test", "all_adapters");
-                    selfTestResults = sim.debugSelfTest();
+                    selfTestResults = EconomyDebugTools.debugSelfTest(sim);
                     cheatStatus = "Self-Test abgeschlossen";
                 }
             });
@@ -689,7 +688,7 @@ public final class WindowState extends EconWindowBase {
             mintBtn.clickActionSet(new ACTION() {
                 @Override public void exe() {
                     DiagnosticExporter.logPlayerAction("state.cheat_mint", "+100000");
-                    sim.mintTreasury(100_000L);
+                    EconomyDebugTools.mintTreasury(sim, 100_000L);
                     cheatStatus = "+100.000 D (Kasse: " + CompactNumber.format(sim.treasury()) + " D)";
                 }
             });
@@ -700,7 +699,7 @@ public final class WindowState extends EconWindowBase {
             auditBtn.clickActionSet(new ACTION() {
                 @Override public void exe() {
                     DiagnosticExporter.logPlayerAction("state.audit", "delta_check");
-                    sim.logAuditDelta();
+                    EconomyDebugTools.logAuditDelta(sim);
                     cheatStatus = "Audit: delta=" + sim.auditDelta();
                 }
             });

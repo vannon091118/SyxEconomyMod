@@ -3,16 +3,17 @@
 > **Stand:** 2026-07-31 | **Basis:** v0.13.106+M-UI-3 (Tab-Modul-Split) | **Engine:** Songs of Syx V71.44
 > **Methodik:** Fluent-API + Pre-Computed-Cells (kein Reflection-in-Render-Loop)
 > **Fokus:** Layout.java Prototyp + Migration-Plan für die 16 Tabs (5 Windows)
+> **Tag-Konvention:** `[HYP]` für Prototyp-Schätzungen — Implementierung in Sprint M-UI-5 liefert parse_metrics-Werte.
 
 ## Executive Summary
 
-Ersetze hardcoded `x + 170` / `x + 240` / `x + 380` / `x + 480` durch ein deklaratives Grid-Layout. Trade-Off: ~190 SLOC Layout-Komponente, −~150 SLOC Layout-Boilerplate verteilt über 16 Tabs. **Migration selbst:** Sprint M-UI-5 (separater Sprint, da kein Rule-11 Theme-Scope für Tab-Modifikation in M-UI-3.5; Prototyp ist additiv).
+Ersetze hardcoded `x + 170` / `x + 240` / `x + 380` / `x + 480` durch ein deklaratives Grid-Layout. Trade-Off: ~190 SLOC Layout-Komponente `[HYP: prototype-estimate]`, −~150 SLOC Layout-Boilerplate verteilt über 16 Tabs `[HYP: speculative-migration-savings]`. **Migration selbst:** Sprint M-UI-5 (separater Sprint, da kein Rule-11 Theme-Scope für Tab-Modifikation in M-UI-3.5; Prototyp ist additiv).
 
 ## 1 · Motivation (Problem)
 
-**Symptom:** Tabs verwenden hardcoded Pixel-Offsets statt deklarativer Spalten-Position:
+**Symptom:** Tabs verwenden hardcoded Pixel-Offsets statt deklarativer Spalten-Position `[HYP: requires-M-UI-3-tab-files-verification]`:
 
-| Datei | Magic-Numbers | Cells/Tab (geschätzt) |
+| Datei | Magic-Numbers | Cells/Tab (geschätzt) `[HYP]` |
 |---|---:|---:|
 | `Overview/DashboardTab.java` | `x+240`, `x+480` | ~30 |
 | `Overview/DemographicsTab.java` | `x+110`, `x+180`, `x+290` | ~25 |

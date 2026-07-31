@@ -5,7 +5,9 @@
 # Exit 0 = PASS, Exit 1 = Drift gefunden, Exit 2 = Skript-Umgebungsfehler.
 #
 # 4 Checks:
-#   1. Java-File-Count-Drift: keine "108" als aktive Aussage (Truth: 112 .java in src/vannon/)
+#   1. Java-File-Count-Drift: keine "108" als aktive Datei-Count-Aussage (Truth: live-count in src/vannon/).
+#      ACHTUNG: Nur Count-Kontext matchen ("108 Dateien" / "108 Java-Dateien"), KEINE Task-IDs (T-108)
+#      oder Sprint-Tags (v0.13.108+) — `\b108\b` allein ist zu breit (False-Positives).
 #   2. TreasuryCrisis-Tier-Count: keine "3-stufige"/"6-stufige" als Hauptbeschreibung
 #      (Truth: 5 Tier-Stufen + Hard-Floor in Tier 5)
 #   3. Phase-5-Klassen: 0/8 implementiert - solange der Plan in docs/superpowers/plans/
@@ -153,10 +155,12 @@ echo ""
 echo "--- Check 1: Java-File-Count-Drift ---"
 SRC_JAVA=$(find src -name '*.java' 2>/dev/null | wc -l)
 echo "  Truth (live):  src/vannon/ hat $SRC_JAVA .java-Dateien"
-echo "  Erwartung:     112 in aktiver Doku (oder aktueller Live-Wert). Keine '108' mehr."
+echo "  Erwartung:     aktiver Live-Wert ($SRC_JAVA). Keine '108'-Count-Aussage mehr."
 echo ""
 
-HITS_108=$(safe_grep '\b108\b')
+# Nur Datei-Count-Kontext matchen: '108 Dateien', '108 Java-Dateien', '108 files'.
+# NICHT: Task-IDs (T-108), Sprint-Tags (v0.13.108+), Versionszahlen, Zeilennummern.
+HITS_108=$(safe_grep '\b108\b[^A-Za-z0-9_+.-]*(Java[[:space:]-]*)?(Dateien|Datei|Files|files|\\.java)')
 if [[ -z "$HITS_108" ]]; then
     print_pass "Keine '108'-Datei-Behauptung in aktiven Docs"
 else

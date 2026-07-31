@@ -1,6 +1,6 @@
 # 🏛️ SyxEconomyMod
 
-> **Version:** v0.13.101 | **Songs of Syx** V71.44
+> **Version:** v0.13.106 | **Songs of Syx** V71.44
 
 **Deine Bürger haben jetzt Geldbeutel. Deine Firmen haben Bilanzen. Dein Staat hat ein echtes Budget — und kann pleitegehen.**
 
@@ -73,7 +73,7 @@ cp -r target/out/SyxEconomyMod <Mod-Pfad>
 
 - Vanilla-konform — keine Vanilla-Klassen verändert, Zugriff über Adapter
 - 163 Java-Dateien, ~31.000 LOC
-- 402 Tests, 10 Build-Gates, automatisierte Balance-Regression
+- 402 Tests, 11 Gatess, automatisierte Balance-Regression
 - Save/Load abwärtskompatibel (Chunked-Format v33)
 - Vollständige Architektur-Doku: [`ARCHITECTURE.md`](ARCHITECTURE.md)
 
@@ -87,4 +87,4 @@ cp -r target/out/SyxEconomyMod <Mod-Pfad>
 
 ---
 
-> **Version:** v0.13.101 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-28
+> **Version:** v0.13.106 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-31

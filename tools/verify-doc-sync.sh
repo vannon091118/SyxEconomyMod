@@ -4,12 +4,12 @@
 # Stellt vor jedem `mvn compile` (validate-Phase) sicher, dass die
 # 7 Stam-Dokumente dieselbe Versions-Information tragen wie `pom.xml`.
 #
-# Stam-Dokumente:
-#   1. README.md                  (root)
-#   2. CHANGELOG.md               (root) — Erstes `## vX.Y.Z` Heading
-#   3. ARCHITECTURE.md            (root)
-#   4. ROADMAP.md                 (root)
-#   5. GLOSSARY.md                (root)
+# Stam-Dokumente (seit Doku-Restruktur unter Doku/):
+#   1. Doku/README.md                  — **Version:** vX.Y.Z
+#   2. Doku/CHANGELOG.md               — Erstes `## vX.Y.Z` Heading + Kopfzeile
+#   3. Doku/ARCHITECTURE.md            — > **Version:** vX.Y.Z
+#   4. Doku/ROADMAP.md                 — > **Version:** vX.Y.Z
+#   5. Doku/GLOSSARY.md                — > **Version:** vX.Y.Z
 #   6. pom.xml                    (root) — Truth of Record
 #   7. _Info.txt                  (root) — Maven-Filter-Template
 #   8. tools/vanilla-schema.yaml  — Schema-Version + YAML↔Java-Feld-Abgleich
@@ -112,28 +112,28 @@ check_doc() {
 
 # ── 3. Pro Stam-Dokument prüfen ─────────────────────────────────────
 
-# README.md: "**Version:** vX.Y.Z"
-check_doc "README.md" \
+# Doku/README.md: "**Version:** vX.Y.Z"
+check_doc "Doku/README.md" \
     '(\*\*Version:\*\*|Version:)[[:space:]]*v?[0-9]+\.[0-9]+\.[0-9]+' \
     "**Version:** vX.Y.Z  ODER  Version: vX.Y.Z"
 
-# CHANGELOG.md: erstes "## vX.Y.Z" Heading
-check_doc "CHANGELOG.md" \
+# Doku/CHANGELOG.md: erstes "## vX.Y.Z" Heading
+check_doc "Doku/CHANGELOG.md" \
     '^##[[:space:]]+v[0-9]+\.[0-9]+\.[0-9]+' \
     "## vX.Y.Z als erstes Release-Heading"
 
-# ARCHITECTURE.md: "> **Version:** vX.Y.Z"
-check_doc "ARCHITECTURE.md" \
+# Doku/ARCHITECTURE.md: "> **Version:** vX.Y.Z"
+check_doc "Doku/ARCHITECTURE.md" \
     '>\s*\*\*Version:\*\*[[:space:]]*v?[0-9]+\.[0-9]+\.[0-9]+' \
     "> **Version:** vX.Y.Z"
 
-# ROADMAP.md: "> **Version:** vX.Y.Z"
-check_doc "ROADMAP.md" \
+# Doku/ROADMAP.md: "> **Version:** vX.Y.Z"
+check_doc "Doku/ROADMAP.md" \
     '>\s*\*\*Version:\*\*[[:space:]]*v?[0-9]+\.[0-9]+\.[0-9]+' \
     "> **Version:** vX.Y.Z"
 
-# GLOSSARY.md: "> **Version:** vX.Y.Z" oder "Version: vX.Y.Z"
-check_doc "GLOSSARY.md" \
+# Doku/GLOSSARY.md: "> **Version:** vX.Y.Z" oder "Version: vX.Y.Z"
+check_doc "Doku/GLOSSARY.md" \
     '>\s*\*\*Version:\*\*[[:space:]]*v?[0-9]+\.[0-9]+\.[0-9]+|Version:[[:space:]]+v?[0-9]+\.[0-9]+\.[0-9]+' \
     "> **Version:** vX.Y.Z"
 
@@ -157,8 +157,8 @@ else
     # Kein FAIL — _Info.txt wird erst nach `mvn package` aus dem Template generiert.
 fi
 
-# CHANGELOG.md Kopfzeile: "> **Version:** vX.Y.Z" (zusätzlich zum ## v-Heading)
-check_doc "CHANGELOG.md" \
+# Doku/CHANGELOG.md Kopfzeile: "> **Version:** vX.Y.Z" (zusätzlich zum ## v-Heading)
+check_doc "Doku/CHANGELOG.md" \
     '>\s*\*\*Version:\*\*[[:space:]]*v?[0-9]+\.[0-9]+\.[0-9]+' \
     "> **Version:** vX.Y.Z in CHANGELOG-Kopfzeile"
 
@@ -209,6 +209,51 @@ else
     FAILED=1
 fi
 
+# ── 3.X Rule 3.1 Audit — mod.info global sync-invariant (Sprint v0.13.127+) ──
+# Rule 3.1 (agents.md) verbietet hardcoded Versions-Strings in <mod.info>.
+# AKzeptabel: <mod.info>SyxEconomyMod v${project.version}</mod.info>
+# Verboten:   <mod.info>SyxEconomyMod v0.13.31-alpha: ...</mod.info>
+#
+# Wenn hardcoded Version gefunden: FAIL (Drift-Risk per Rule 3.1).
+MOD_INFO_COUNT=$(python3 -c "
+import xml.etree.ElementTree as ET
+import sys
+try:
+    tree = ET.parse('$POM')
+    ns = '{http://maven.apache.org/POM/4.0.0}'
+    count = sum(1 for e in tree.iter() if e.tag == ns + 'info')
+    print(count)
+except Exception:
+    # Fallback: strip XML comments first, then count
+    import subprocess
+    result = subprocess.run(
+        ['sed', '-E', '-z', 's/<!--[^-]*(-->|(-[^-])|(-[^-][^-]))//g', '$POM'],
+        capture_output=True, text=True, timeout=5
+    )
+    if result.returncode == 0:
+        print(result.stdout.count('<mod.info>'))
+    else:
+        print(0)
+" 2>/dev/null || echo 0)
+if [ "$MOD_INFO_COUNT" -gt 1 ]; then
+    printf '  %sFAIL%s  %-30s  <mod.info> appears %d times — expected 1 (XML-duplicate-attribute, Rule 3.1 violation)\n' "$RED" "$NC" "$POM:mod.info" "$MOD_INFO_COUNT"
+    FAILED=1
+fi
+MOD_INFO=$(grep -oE '<mod.info>[^<]*</mod.info>' "$POM" | head -1 || true)
+if [ -z "$MOD_INFO" ]; then
+    printf '  %sINFO%s  %-30s  <mod.info> tag empty/missing — Rule 3.1 Audit uebersprungen\n' "$CYAN" "$NC" "$POM:mod.info"
+elif echo "$MOD_INFO" | grep -qE '<mod\.info>[[:space:]]*</mod\.info>'; then
+    printf '  %sFAIL%s  %-30s  <mod.info> tag empty content — Rule 3.1 violation (missing version)\n' "$RED" "$NC" "$POM:mod.info"
+    FAILED=1
+elif echo "$MOD_INFO" | grep -qE '\${project\.version}'; then
+    printf '  %sOK%s    %-30s  <mod.info> binds to ${project.version} (Rule 3.1 compliant)\n' "$GREEN" "$NC" "$POM:mod.info"
+    CHECKED=$((CHECKED + 1))
+elif echo "$MOD_INFO" | grep -qE 'v[0-9]+\.[0-9]+\.[0-9]+'; then
+    HARDCODED=$(echo "$MOD_INFO" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true)
+    printf '  %sFAIL%s  %-30s  <mod.info> hardcoded version=%s — Rule 3.1 violation (agents.md)\n' "$RED" "$NC" "$POM:mod.info" "$HARDCODED"
+    FAILED=1
+fi
+
 # ── 3.X MD-Tool-Reference Sync (Gate 10) ──────────────────────────────
 # Sprint 9 Audit-Lesson (Run 3 — final): Live-Invocation-Pattern statt alle
 # md-tool-Refs. Eine zu breite Regex (Run 2) hat drei Klassen von False-
@@ -242,6 +287,74 @@ else
         printf '  %sOK%s    %-30s  %s md-tool-refs all resolve\n' "$GREEN" "$NC" "tools/verify-doc-sync.sh:Gate10" "${OK_COUNT:-0}"
         CHECKED=$((CHECKED + 1))
     fi
+fi
+
+# ── 3.X Version-Consolidation (Sprint v0.13.118+Governance-Diät merge) ──
+# Single-Source-of-Truth: verify-doc-sync.sh konsolidiert jetzt ALLE Version-Checks.
+# verify-version-consistency.sh ist DEPRECATED Thin-Wrapper fuer Backward-Compat
+# mit install-hooks.sh (reserviert Bash-Skript-Namen). Die Logik hier drinnen
+# ist die kanonische.
+
+# 3a. mod.version.history aus letzten 5 git-tags regenerieren (work-on-pom Side-Effect)
+if command -v git &>/dev/null && git rev-parse --git-dir &>/dev/null 2>&1; then
+    TAGS=$(git tag --sort=-creatordate 2>/dev/null | head -5 | paste -sd ';' - || true)
+    if [ -n "$TAGS" ] && grep -q '<mod.version.history>' "$POM"; then
+        sed -i "s|<mod.version.history>.*</mod.version.history>|<mod.version.history>${TAGS}</mod.version.history>|" "$POM"
+        printf '  %sOK%s    %-30s  mod.version.history aus git-tags aktualisiert: %s
+' "$GREEN" "$NC" "$POM:mod.version.history" "$TAGS"
+        CHECKED=$((CHECKED + 1))
+    fi
+fi
+
+# 3b. mod.changelog first-entry vs pom.xml <version> (Rule 2 Stam-Sync)
+CHANGELOG_FIRST=$(grep -m1 '<mod.changelog>' "$POM" | sed 's/.*<mod.changelog>//' | sed 's/;.*//' | grep -oP 'v?[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true)
+if [ -n "$CHANGELOG_FIRST" ]; then
+    CHANGELOG_NUM=$(echo "$CHANGELOG_FIRST" | sed 's/^v//')
+    if [ "$CHANGELOG_NUM" = "$POM_VERSION" ]; then
+        printf '  %sOK%s    %-30s  mod.changelog first entry v%s == pom.xml %s
+' "$GREEN" "$NC" "$POM:mod.changelog" "$CHANGELOG_NUM" "$POM_VERSION"
+        CHECKED=$((CHECKED + 1))
+    else
+        printf '  %sFAIL%s  %-30s  mod.changelog first entry v%s != pom.xml %s — Rule-2 Stam-Sync drift
+' "$RED" "$NC" "$POM:mod.changelog" "$CHANGELOG_NUM" "$POM_VERSION"
+        FAILED=1
+    fi
+else
+    printf '  %sWARN%s  %-30s  kein mod.changelog first-entry gefunden — uebersprungen
+' "$YELLOW" "$NC" "$POM:mod.changelog"
+fi
+
+# 3c. _Info.txt Template ↔ pom.xml properties (strict via lib)
+SCRIPT_DIR_VDS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LIB_VDS="${SCRIPT_DIR_VDS}/lib/_info-txt-sync.sh"
+if [ -f "$LIB_VDS" ]; then
+    # shellcheck source=lib/_info-txt-sync.sh
+    . "$LIB_VDS"
+    if ! sync_info_txt_template_report "strict" "$POM"; then
+        FAILED=1
+    fi
+fi
+
+# 3d. _Info.txt deployed freshness (warn-only, non-blocking)
+if [ -f "$LIB_VDS" ]; then
+    sync_info_txt_deployed_report "$POM_VERSION" || true
+fi
+
+# ─────────────────────────────────────────────────────────────────────
+# Gate 11: Audit-Claims Verification (Rule 3.2 — Sprint v0.13.128+)
+# Scan docs/*_AUDIT*.md + docs/*_SPEC*.md auf [PM-OK: ...]-Tags und
+# verifiziere sie gegen python3 tools/god-class-guard/parse_metrics.py.
+# [HYP]-Tags sind Soft-Warn. Drift auf PM-OK = HARD-BLOCK.
+# ─────────────────────────────────────────────────────────────────────
+echo ""
+echo -e "${CYAN}>>> Gate 11: Audit-Claims Verification (Rule 3.2)${NC}"
+if [ -f "tools/verify-audit-claims.sh" ]; then
+    if ! bash tools/verify-audit-claims.sh; then
+        echo -e "${RED}  FAIL${NC}  Gate 11: Audit-Claims Verification — siehe tools/verify-audit-claims.sh output"
+        FAILED=1
+    fi
+else
+    echo -e "${YELLOW}  WARN${NC}  Gate 11 nicht ausgeführt: tools/verify-audit-claims.sh existiert nicht (Sprint v0.13.128+ Pflicht-File)."
 fi
 
 # ── 4. Result ─────────────────────────────────────────────────────────

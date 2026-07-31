@@ -575,7 +575,7 @@ public final class WindowEconomy extends EconWindowBase {
             y += 30;
 
             GText sanity = new GText(UI.FONT().M, FONTW_BODY);
-            sanity.set("Diskrepanz (erstellt − heute) = " + CompactNumber.format(discrepancy) + " D");
+            sanity.set("Diskrepanz (erstellt - heute) = " + CompactNumber.format(discrepancy) + " D");
             sanity.color(Math.abs(discrepancy) < 1000 ? GCOLOR.UI().GOOD.normal : GCOLOR.UI().BAD.normal);
             content.add(sanity, x, y);
             y += 16;

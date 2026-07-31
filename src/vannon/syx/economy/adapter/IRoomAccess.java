@@ -18,12 +18,13 @@ import snake2d.util.sets.LIST;
  * EngineMirror Sub-Interface für alle Siedlungsraum-Zugriffe.
  *
  * <p>Bündelt die Zugriffe von {@link ISyxWarehouse}, {@link ISyxTransport}
- * und den room-bezogenen Methoden aus {@code EngineSeams} in eine einheitliche
- * Fassade. Jeder Zugriff wird über {@code EngineLevers} konfigurierbar und
- * via {@code LoggingAdapter} geloggt.</p>
+ * und den room-bezogenen Vanilla-Engine-Zugriffen (ehem. {@code EngineSeams}-Klasse,
+ * entfernt in Sprint v0.13.119+B-008-Phase-2) in eine einheitliche Fassade.
+ * Jeder Zugriff wird über {@code EngineLevers} konfigurierbar und via
+ * {@code LoggingAdapter} geloggt.</p>
  *
- * <p>Implementierung: {@link RoomAccessImpl}. Ersetzt graduell die direkten
- * {@code EngineSeams}-Aufrufe (Task B-008).</p>
+ * <p>Implementierung: {@link RoomAccessImpl}. B-008 in Sprint v0.13.119
+ * abgeschlossen — alle direkten {@code EngineSeams}-Aufrufe sind migriert.</p>
  *
  * <p>Version-gebunden für Songs of Syx V71.44.</p>
  */
@@ -226,7 +227,8 @@ public interface IRoomAccess {
     // ─── Inner Types ────────────────────────────────────────
 
     /**
-     * Service-Kapazitäts-Record. Analog zu {@code EngineSeams.ServiceCapacity}.
+     * Service-Kapazitäts-Record. Vor v0.13.119 als {@code EngineSeams.ServiceCapacity}
+     * definiert; seit B-008-Phase-2 hier konsolidiert.
      */
     record ServiceCapacity(int total, int available, double utilisation) {
     }

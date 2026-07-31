@@ -72,15 +72,15 @@ legacy_baselines:
     status_at_emit: pass
     reason_at_emit: fields 46 > block 24
   src/vannon/syx/economy/core/EconomySim.java:
-    loc: 439
-    pubM: 75
-    fields: 14
-    imports: 25
+    loc: 351
+    pubM: 70
+    fields: 9
+    imports: 23
     status_at_emit: pass
-    reason_at_emit: 'Spluck-TECHD-01: 1323→439 LOC via 3-class extraction
-      (EconomySaveLoad 366 LOC, EconomyAuditEngine 273 LOC, EconomyTickOrchestrator
-      111 LOC). Fields 14 < cap 24.'
-    baseline_update: Sprint 5 Spluck-TECHD-01 EconomySim Triple-Limit-Split
+    reason_at_emit: 'Spluck-TECHD-01: 1323→439 LOC via 3-class extraction.
+      Sprint E1: -56 LOC via EconomyDebugTools extraction.
+      Sprint E2: -46 LOC via resetEconomy→EconomySaveLoad.resetAll delegation.'
+    baseline_update: Sprint E2 resetEconomy extraction (-46 LOC, -1 field)
   src/vannon/syx/economy/core/EconomyTickOrchestrator.java:
     loc: 192
     pubM: 0
@@ -325,13 +325,13 @@ legacy_baselines:
     baseline_update: "Sprint v0.13.113+M-UI-3.3 Pre-Existing-BLOCK-Grandfather - Build-Gate-BLOCKER fix vor Sprint v0.13.107-112 Push-Wave."
 
   src/vannon/syx/economy/core/EconomySim.java:
-    loc: 452
-    pubM: 75
-    fields: 14
-    imports: 25
+    loc: 351
+    pubM: 70
+    fields: 9
+    imports: 23
     status_at_emit: pass
-    reason_at_emit: "pre-existing baseline (Sprint v0.13.113+M-UI-3.3 grandfather). See docs/OPEN_POINTS_AUDIT.md Section 4. Orchestrator-Heavy: 75 pubM sind deliberate Facade-API"
-    baseline_update: "Sprint v0.13.113+M-UI-3.3 Pre-Existing-BLOCK-Grandfather - Build-Gate-BLOCKER fix vor Sprint v0.13.107-112 Push-Wave."
+    reason_at_emit: "Sprint E1+E2: EconomyDebugTools extraction + resetEconomy→EconomySaveLoad.resetAll. Total: -102 LOC from453."
+    baseline_update: "Sprint E2 resetEconomy extraction — re-baseline per Rule 14."
 
   src/vannon/syx/economy/core/EngineLevers.java:
     loc: 237

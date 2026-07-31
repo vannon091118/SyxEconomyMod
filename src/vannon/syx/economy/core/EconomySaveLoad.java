@@ -52,6 +52,59 @@ final class EconomySaveLoad {
 
     // ── Public entry points ────────────────────────────────────────
 
+    /**
+     * Resets all economy subsystems and scalar counters.
+     * Extracted from EconomySim.resetEconomy() (Sprint E2).
+     * Called after load when {@code EconConfig.resetWalletsOnLoad} is true,
+     * and by {@code EconomySim.clearActive()} teardown.
+     */
+    static void resetAll(EconomySim sim) {
+        sim.wallets.reset();
+        sim.wages.clear();
+        sim.taxes.clear();
+        sim.purchases.reset();
+        sim.grainDole.clear();
+        sim.fiscal.clear();
+        sim.laborMarket.clear();
+        sim.firmLedger.clear();
+        sim.maintenanceMarket.clear();
+        sim.serviceMarket.clear();
+        if (sim.servicePlanController != null) sim.servicePlanController.clear();
+        sim.housingMarket.clear();
+        sim.affordabilityGate.clear();
+        sim.flowMeter.clear();
+        sim.flowPrices.clear();
+        sim.scarcitySignal.clear();
+        sim.warehouseMarket.clear();
+        sim.stateWarehouses.clear();
+        sim.religionMarket.clear();
+        sim.liturgy.clear();
+        sim.debtBondage.clear();
+        sim.oddjobMarket.clear();
+        sim.militaryPayroll.clear();
+        sim.stateWages.clear();
+        sim.transportMarket.clear();
+        sim.handoutRelief.clear();
+        sim.productionSubsidies.clear();
+        LocalPrices.clearCache();
+        sim.escheated = 0L;
+        sim.exported = 0L;
+        sim.imported = 0L;
+        sim.seedSupply = 0L;
+        sim.spent = 0L;
+        sim.taxesCollected = 0L;
+        sim.guildIncomePaid = 0L;
+        sim.liturgyCollected = 0L;
+        sim.religionTaxCollected = 0L;
+        sim.warehouseTaxCollected = 0L;
+        sim.wagesPaid = 0L;
+        sim.housingRentCollected = 0L;
+        sim.propertyMarket.reset();
+        sim.lastTaxSeason = -1;
+        sim.roundingDrift = 0L;
+        sim.reportedAuditDelta = 0L;
+    }
+
     static void save(EconomySim sim, FilePutter file) {
         sim.wallets.save(file);
         saveChunked(sim, file);
@@ -65,7 +118,7 @@ final class EconomySaveLoad {
             loadLegacy(sim, file, version);
         }
         if (EconConfig.resetWalletsOnLoad) {
-            sim.resetEconomy();
+            resetAll(sim);
             if (EconConfig.debugLoggingEnabled) {
                 LOG.ln("[ECON] resetWalletsOnLoad=true -> wallets wiped; everyone will be re-seeded with " + EconConfig.initialWallet);
             }

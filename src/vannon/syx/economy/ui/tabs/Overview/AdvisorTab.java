@@ -202,7 +202,7 @@ public final class AdvisorTab implements EconWindowBase.TabContent {
             : new GText(UI.FONT().M, EconWindowBase.FONTW_BODY);
         recLine.set(recText);
         recLine.color(GCOLOR.UI().SOSO.normal);
-        content.add(recLine, x, y);
+        if (y < h - 30) content.add(recLine, x, y);
         y += 22;
 
         // ─── Alternativen-Tabelle (Top-3 mit 4 Trade-off-Spalten) ───

@@ -62,7 +62,7 @@ class EconomySimMockitoTest {
         when(mockWarehouse.isStoringLockAvailable()).thenReturn(true);
         when(mockDiplomacy.isAvailable()).thenReturn(true);
         EconomySim sim = newSim();
-        String[] status = sim.debugAdapterStatus();
+        String[] status = EconomyDebugTools.debugAdapterStatus(sim);
         assertNotNull(status);
         assertTrue(status.length >= 5);
         verify(mockTransport).isDistanceAvailable();
@@ -76,7 +76,7 @@ class EconomySimMockitoTest {
         when(mockWarehouse.isStoringLockAvailable()).thenReturn(true);
         when(mockDiplomacy.isAvailable()).thenReturn(true);
         EconomySim sim = newSim();
-        String[] status = sim.debugAdapterStatus();
+        String[] status = EconomyDebugTools.debugAdapterStatus(sim);
         boolean foundTransport = false;
         for (String line : status) {
             if (line.contains("Transport")) {
@@ -93,7 +93,7 @@ class EconomySimMockitoTest {
         when(mockWarehouse.isStoringLockAvailable()).thenReturn(false);
         when(mockDiplomacy.isAvailable()).thenReturn(false);
         EconomySim sim = newSim();
-        String[] status = sim.debugAdapterStatus();
+        String[] status = EconomyDebugTools.debugAdapterStatus(sim);
         boolean foundTransportFail = false;
         for (String line : status) {
             if (line.contains("Transport")) {
