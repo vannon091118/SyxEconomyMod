@@ -152,19 +152,19 @@ public final class AdvisorTab implements EconWindowBase.TabContent {
 
         EconWindowBase.addKpi(content, x, y, "Stufe", prog.stage.displayName, GCOLOR.T().NORMAL);
         EconWindowBase.addKpi(content, x + 380, y, "Tage in Stufe", String.valueOf(prog.stageDays), GCOLOR.T().NORMAL);
-        y += 30;
+        y += 38;
 
         EconWindowBase.addKpi(content, x, y, "Bevoelkerung", String.valueOf(stats.people), GCOLOR.T().NORMAL);
         EconWindowBase.addKpi(content, x + 240, y, "Unbezahlte", String.valueOf(sim.firmLedger().lastWorkersUnpaid()),
                 sim.firmLedger().lastWorkersUnpaid() > 0 ? GCOLOR.UI().BAD.normal : GCOLOR.UI().GOOD.normal);
         EconWindowBase.addKpi(content, x + 480, y, "Tote", String.valueOf(sim.deaths()), GCOLOR.T().NORMAL);
-        y += 30;
+        y += 38;
 
         EconWindowBase.addKpi(content, x, y, "Ausgewandert", String.valueOf(sim.emigrations()),
                 sim.emigrations() > 0 ? GCOLOR.UI().SOSO.normal : GCOLOR.T().NORMAL);
         EconWindowBase.addKpi(content, x + 240, y, "Erben", String.valueOf(sim.inherited()), GCOLOR.T().NORMAL);
         EconWindowBase.addKpi(content, x + 480, y, "Erblos", String.valueOf(sim.heirless()), GCOLOR.T().NORMAL);
-        y += 30;
+        y += 38;
 
         OverviewHelpers.addMilestoneIcon(content, x, y, "Lagerhaus", prog.msFirstStockpile);
         OverviewHelpers.addMilestoneIcon(content, x + 220, y, "Export", prog.msFirstExport);

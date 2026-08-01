@@ -45,14 +45,14 @@ public final class PropertyTab implements EconWindowBase.TabContent {
                 CompactNumber.format(sim.housingMarket().lastRentCollected()) + " D", GCOLOR.UI().GOOD.normal);
         EconWindowBase.addKpi(content, x + 380, y, "Mietforderungen",
                 CompactNumber.format(sim.housingMarket().lastRentDue()) + " D", GCOLOR.T().NORMAL);
-        y += 30;
+        y += 38;
 
         EconWindowBase.addKpi(content, x, y, "Zwangsraeumungen",
                 String.valueOf(sim.housingMarket().lastEvictions()),
                 sim.housingMarket().lastEvictions() > 3 ? GCOLOR.UI().BAD.normal : GCOLOR.UI().GOOD.normal);
         EconWindowBase.addKpi(content, x + 380, y, "Immobilienverkauf",
                 CompactNumber.format(sim.propertySalesCollected()) + " D", GCOLOR.T().NORMAL);
-        y += 30;
+        y += 38;
 
         EconWindowBase.addKpi(content, x, y, "Dividenden",
                 CompactNumber.format(sim.propertyDividendsPaid()) + " D", GCOLOR.T().NORMAL);

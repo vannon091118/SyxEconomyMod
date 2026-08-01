@@ -275,6 +275,14 @@ public abstract class EconWindowBase {
 
     // ─── Shared widget helpers ───────────────────────────────────────
 
+    /**
+     * Minimum vertical spacing between consecutive addKpi blocks.
+     * Each addKpi renders label at y and value at y+16; the value text
+     * itself needs ~14-16px height. A safe row height is therefore 36-38px.
+     * Used by KpiCoordinateDumpTest as the regression threshold.
+     */
+    public static final int KPI_ROW_HEIGHT = 38;
+
     /** KPI label+value pair. Label in UI.FONT().S, value in UI.FONT().M. */
     public static void addKpi(GuiSection section, int x, int y, String label, String value, COLOR valueColor) {
         GText lbl = new GText(UI.FONT().S, FONTW_KPI);

@@ -134,14 +134,14 @@ public final class WindowEconomy extends EconWindowBase {
             y += 28;
 
             addKpi(content, x, y, "Gekauft",
-                sim.warehouseMarket().lastUnitsBought() + " Einh. / " + CompactNumber.format(sim.warehouseMarket().lastBought()) + " D", GCOLOR.T().NORMAL);
-            y += 30;
+                sim.warehouseMarket().lastUnitsBought() + " Einh. / " +                CompactNumber.format(sim.warehouseMarket().lastBought()) + " D", GCOLOR.T().NORMAL);
+            y += 38;
             addKpi(content, x, y, "Verkauft",
-                sim.warehouseMarket().lastUnitsSold() + " Einh. / " + CompactNumber.format(sim.warehouseMarket().lastSold()) + " D", GCOLOR.T().NORMAL);
-            y += 30;
+                sim.warehouseMarket().lastUnitsSold() + " Einh. / " +                CompactNumber.format(sim.warehouseMarket().lastSold()) + " D", GCOLOR.T().NORMAL);
+            y += 38;
             addKpi(content, x, y, "Baustoffe",
                 CompactNumber.format(sim.warehouseMarket().lastConstructionPaid()) + " D", GCOLOR.T().NORMAL);
-            y += 30;
+            y += 38;
             addKpi(content, x, y, "Export",
                 CompactNumber.format(sim.warehouseMarket().lastExportBought()) + " D", GCOLOR.T().NORMAL);
         }
@@ -535,11 +535,11 @@ public final class WindowEconomy extends EconWindowBase {
             addKpi(content, x, y, "Kopfsteuer", CompactNumber.format(sim.fiscal().headTaxCollected()) + " D", GCOLOR.T().NORMAL);
             addKpi(content, x + 240, y, "Marktsteuer", CompactNumber.format(sim.fiscal().marketReceipts()) + " D", GCOLOR.T().NORMAL);
             addKpi(content, x + 480, y, "Religionssteuer", CompactNumber.format(sim.religionTaxCollected()) + " D", GCOLOR.T().NORMAL);
-            y += 30;
+            y += 38;
             addKpi(content, x, y, "Liturgie", CompactNumber.format(sim.liturgyCollected()) + " D", GCOLOR.T().NORMAL);
             addKpi(content, x + 240, y, "Miete", CompactNumber.format(sim.housingMarket().lastRentCollected()) + " D", GCOLOR.T().NORMAL);
             addKpi(content, x + 480, y, "Lagerverkauf", CompactNumber.format(sim.warehouseMarket().lastSold()) + " D", GCOLOR.T().NORMAL);
-            y += 30;
+            y += 38;
             addKpi(content, x, y, "Immobilien", CompactNumber.format(sim.propertySalesCollected()) + " D", GCOLOR.T().NORMAL);
             addKpi(content, x + 240, y, "Dividenden", CompactNumber.format(sim.propertyDividendsPaid()) + " D", GCOLOR.T().NORMAL);
             y += 50;
@@ -553,7 +553,7 @@ public final class WindowEconomy extends EconWindowBase {
             addKpi(content, x, y, "Löhne gesamt", CompactNumber.format(sim.wagesPaid()) + " D", GCOLOR.T().NORMAL);
             addKpi(content, x + 240, y, "Rationen", CompactNumber.format(sim.fiscal().rationOut()) + " D", GCOLOR.T().NORMAL);
             addKpi(content, x + 480, y, "Lagereinkauf", CompactNumber.format(sim.warehouseMarket().lastBought()) + " D", GCOLOR.T().NORMAL);
-            y += 30;
+            y += 38;
             addKpi(content, x, y, "Baustoffe", CompactNumber.format(sim.warehouseMarket().lastConstructionPaid()) + " D", GCOLOR.T().NORMAL);
             y += 40;
 
@@ -572,7 +572,7 @@ public final class WindowEconomy extends EconWindowBase {
 
             addKpi(content, x, y, "Geldmenge erstellt", CompactNumber.format(totalCreated) + " D", GCOLOR.T().NORMAL);
             addKpi(content, x + 380, y, "Geldmenge heute", CompactNumber.format(totalNow) + " D", GCOLOR.T().NORMAL);
-            y += 30;
+            y += 38;
 
             GText sanity = new GText(UI.FONT().M, FONTW_BODY);
             sanity.set("Diskrepanz (erstellt - heute) = " + CompactNumber.format(discrepancy) + " D");

@@ -138,13 +138,13 @@ public final class WindowState extends EconWindowBase {
 
             addKpi(content, x, y, UI.icons().m.coins, "Gekauft",
                 wh.lastUnitsBought() + " Einh. / " + CompactNumber.format(wh.lastBought()) + " D", GCOLOR.T().NORMAL);
-            y += 30;
+            y += 38;
             addKpi(content, x, y, UI.icons().m.coins, "Verkauft",
                 wh.lastUnitsSold() + " Einh. / " + CompactNumber.format(wh.lastSold()) + " D", GCOLOR.T().NORMAL);
-            y += 30;
+            y += 38;
             addKpi(content, x, y, UI.icons().s.crown, "Kronmarkt",
                 wh.lastCrownMarketUnitsSold() + " Einh. / " + CompactNumber.format(wh.lastCrownMarketSold()) + " D", GCOLOR.T().NORMAL);
-            y += 40;
+            y += 48;
 
             GText wageHeader = new GText(UI.FONT().M, FONTW_HDR);
             wageHeader.set("--- Lagerlöhne ---");
@@ -159,7 +159,7 @@ public final class WindowState extends EconWindowBase {
             addKpi(content, x + 380, y, UI.icons().s.human, "Bezahlt",
                 String.valueOf(wh.lastWorkersPaid()),
                 wh.lastWorkersPaid() > 0 ? GCOLOR.UI().GOOD.normal : GCOLOR.T().INACTIVE);
-            y += 30;
+            y += 38;
             addKpi(content, x, y, UI.icons().m.coins, "Lohnsumme",
                 CompactNumber.format(wh.lastWagesPaid()) + " D", GCOLOR.T().NORMAL);
             addKpi(content, x + 380, y, UI.icons().s.angry, "Unbezahlt",
@@ -205,13 +205,13 @@ public final class WindowState extends EconWindowBase {
                 CompactNumber.format(sim.fiscal().headTaxCollected()) + " D", GCOLOR.T().NORMAL);
             addKpi(content, x + 380, y, UI.icons().s.trade, "Marktsteuer",
                 CompactNumber.format(sim.fiscal().marketReceipts()) + " D", GCOLOR.T().NORMAL);
-            y += 30;
+            y += 38;
 
             addKpi(content, x, y, UI.icons().s.temple, "Religionssteuer",
                 CompactNumber.format(sim.religionTaxCollected()) + " D", GCOLOR.T().NORMAL);
             addKpi(content, x + 380, y, UI.icons().s.shrine, "Liturgie",
                 CompactNumber.format(sim.liturgyCollected()) + " D", GCOLOR.T().NORMAL);
-            y += 30;
+            y += 38;
 
             addKpi(content, x, y, UI.icons().s.plate, "Rationen",
                 CompactNumber.format(sim.fiscal().rationOut()) + " D", GCOLOR.T().NORMAL);
