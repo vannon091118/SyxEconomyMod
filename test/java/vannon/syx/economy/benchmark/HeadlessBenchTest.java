@@ -13,6 +13,8 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import vannon.syx.economy.core.EconConfig;
+import vannon.syx.economy.core.Taxes;
 
 /**
  * Headless-CI-driven benchmark test for {@link EconomyMock}. Validates that the
@@ -216,6 +218,130 @@ class HeadlessBenchTest {
     }
 
     // ───────────────────────────────────────────────────────────────────────
+
+    // ───────────────────────────────────────────────────────────────────────
+    // Sprint v0.13.127+TaxImmigrationDecoupling — Bench-Snapshot Regression
+    // ───────────────────────────────────────────────────────────────────────
+
+    /**
+     * Sprint v0.13.127+ Bench-Snapshot-Regression-Test: bestätigt empirisch dass
+     * die Sprint-v0.13.124+BootstrapEncapsulation-Entkoppelung zwischen
+     * {@code EconConfig.meticImmigrationDepth} und
+     * {@link Taxes#immigrationMultiplier(int)} hält.
+     *
+     * <p><b>Setting</b>: {@code Taxes.immigrationMultiplier(int meticModifier)} liesst
+     * {@code EconConfig.taxImmigrationDepth} (=0.20 Default) und
+     * {@code EconConfig.meticImmigrationSteepness} (=10.0 Default), NICHT
+     * {@code meticImmigrationDepth}. Pre-v0.13.124 las die Formel noch
+     * {@code meticImmigrationDepth} — Cross-Semantik-Bug: Stage-Override der
+     * Migration mutierte <em>gleichzeitig</em> die Tax-Multiplier-Berechnung.</p>
+     *
+     * <p><b>Was getestet wird</b>: vor und nach {@code setMeticImmigrationDepth(0.7)}
+     * werden {@code 180} Werte (= {@code BenchConfig.defaults().runDays}-Halb-Jahr-Convention
+     * aus bench-baseline.save-Contract) gespült — einer pro Tag mit ramping
+     * {@code meticModifier=d * 2}. Wenn die Werte-Arrays divergieren: <b>HARD-FAIL</b>
+     * weil das einen wieder eingeführten Semantik-Leak zwischen Immigration und Tax
+     * bedeuten würde.</p>
+     *
+     * <p><b>Empirik-Pattern</b>: Mit k=0.20 und k=0.7 produzieren non-decoupled
+     * Codes Tag-10-Werte von 1.0-0.20*0.964=0.807 vs. 1.0-0.7*0.964=0.325
+     * (Delta=0.482). Das ist klar detektierbar.</p>
+     */
+    @Test
+    @Timeout(value = 30, unit = TimeUnit.SECONDS)
+    void immigrationTaxDecouplingRegression() {
+        final int runDays = 180; // BenchConfig.defaults().runDays (Halb-Jahr bench-baseline-save Contract)
+
+        final double[] baselineCsv;
+        final double[] afterSetterCsv;
+
+        // Save & Restore — Testisolation: andere Tests dürfen den Default-Wert erwarten.
+        final double originalDepth = EconConfig.meticImmigrationDepth;
+        try {
+            // Run 1: vor dem Setter auf Default-Zustand. Defensive Setter-Roundtrip
+            // statt direkter Read damit der Test nicht von einem bereits mutierten
+            // State eines vorherigen Tests beeinflusst wird.
+            EconConfig.setMeticImmigrationDepth(0.20);
+            baselineCsv = flushImmigrationMultiplier(runDays);
+
+            // Run 2: nach setMeticImmigrationDepth(0.7). Wenn Tax post-v0.13.124+ korrekt
+            // entkoppelt ist: baselineCsv == afterSetterCsv byte-identical.
+            EconConfig.setMeticImmigrationDepth(0.7);
+            afterSetterCsv = flushImmigrationMultiplier(runDays);
+        } finally {
+            EconConfig.setMeticImmigrationDepth(originalDepth); // Restore für nachfolgende Tests
+        }
+
+        // Defensive Length-Pre-Check: separate error für Length-Mismatch.
+        // Wenn die Längen ungleich sind hilft `findFirstDivergence` und `Arrays.equals`
+        // mit Length-Mismatch nicht weiter — die Fail-Message würde sonst IndexOutOfBounds werfen.
+        assertEquals(baselineCsv.length, afterSetterCsv.length,
+            "CSV lengths differ: baseline=" + baselineCsv.length
+                + ", afterSetter=" + afterSetterCsv.length
+                + " — Collectors should produce identical-length arrays for matching runDays.");
+
+        // Array-Identity-Assert (Double.compare-Semantik via Arrays.equals):
+        // wenn Decoupling intakt ist, müssen die Werte-Arrays EXAKT gleich sein.
+        if (!java.util.Arrays.equals(baselineCsv, afterSetterCsv)) {
+            int divergenceDay = findFirstDivergence(baselineCsv, afterSetterCsv);
+            double baselineVal = divergenceDay < baselineCsv.length ? baselineCsv[divergenceDay] : Double.NaN;
+            double afterSetterVal = divergenceDay < afterSetterCsv.length ? afterSetterCsv[divergenceDay] : Double.NaN;
+            int meticMod = divergenceDay * DECOUPLING_METIC_PER_DAY;
+            fail(String.format(Locale.ROOT,
+                "Tax-Semantik-Leak entdeckt nach EconConfig.setMeticImmigrationDepth(0.7)."
+                + " Erste Divergenz bei Tag=%d (meticModifier=%d): baseline=%.6f afterSetter=%.6f delta=%.6f."
+                + " Ursache: Taxes.immigrationMultiplier(...) liest EconConfig.meticImmigrationDepth"
+                + " statt EconConfig.taxImmigrationDepth. Re-apply Sprint v0.13.124+BootstrapEncapsulation-Entkoppelung"
+                + " (Taxes.java: k := EconConfig.taxImmigrationDepth, NICHT meticImmigrationDepth).",
+                divergenceDay, meticMod, baselineVal, afterSetterVal,
+                afterSetterVal - baselineVal));
+        }
+
+        // Defensive Coverage-Assert damit ein stiller Empty-Array-Pass nicht durchrutscht.
+        assertEquals(180, baselineCsv.length, "expected 180 entries from runDays");
+        assertEquals(180, afterSetterCsv.length, "expected 180 entries from runDays");
+    }
+
+    /** meticModifier ramping speed: 2 units per Tag → 360 nach 180 Tagen (saturiert tanh). */
+    private static final int DECOUPLING_METIC_PER_DAY = 2;
+
+    /**
+     * Flush {@link Taxes#immigrationMultiplier(int)} values to a deterministic
+     * double-array, one value per simulated day. Pure-math: {@code tanh} ist
+     * deterministisch fuer gleiche Inputs, kein RNG involviert. Wenn Sprint
+     * v0.13.124+ korrekt entkoppelt hat, ist die Funktion unabhängig von
+     * {@code setMeticImmigrationDepth(...)} Calls.
+     */
+    private static double[] flushImmigrationMultiplier(int runDays) {
+        double[] out = new double[runDays];
+        for (int d = 0; d < runDays; d++) {
+            out[d] = Taxes.immigrationMultiplier(d * DECOUPLING_METIC_PER_DAY);
+        }
+        return out;
+    }
+
+    /**
+     * Find first content-divergence index. Returns {@code -1} if lengths differ but
+     * the prefix still matches — caller is expected to pre-verify lengths so an
+     * informative error message can include the length delta instead of a
+     * {@code [-1]} array-access {@link ArrayIndexOutOfBoundsException}.
+     *
+     * <p><b>Comparator choice</b>: uses {@link Double#compare(double, double)} to be
+     * bit-consistent with {@link java.util.Arrays#equals(double[], double[])}, which
+     * the actual assertion delegate uses internally. Contrast with
+     * {@code Double.doubleToLongBits} which collapses {@code +0.0} and {@code -0.0}
+     * (and treats {@code NaN} bits-literally). For the immigration-multiplier formula
+     * neither sign-of-zero nor NaN is a real output, so the {@code Double.compare}
+     * choice is the safer and consistent one.</p>
+     */
+    private static int findFirstDivergence(double[] a, double[] b) {
+        int n = Math.min(a.length, b.length);
+        for (int i = 0; i < n; i++) {
+            if (Double.compare(a[i], b[i]) != 0) return i;
+        }
+        return -1; // caller is expected to pre-verify length
+    }
+
     // Gini drift — the headline metric
     // ───────────────────────────────────────────────────────────────────────
 
