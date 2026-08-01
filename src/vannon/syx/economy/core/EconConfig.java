@@ -385,6 +385,162 @@ public final class EconConfig {
         earlySettlerWalletBonus = clamp(bonus, 0, Integer.MAX_VALUE);
     }
 
+    // ═══ StartingFromGround — Schwierigkeits-Presets ══════════════════════
+    //
+    // Sprint v0.13.130+StartingFromGround-Balance: Kapselt die 7 verstreuten
+    // Bootstrap-Settings (startingTreasury, earlySettlerWalletBonus,
+    // earlySettlerDoleThreshold, meticImmigrationCap, meticImmigrationDepth,
+    // phaseFactorEnabled, earlySettlerPopThreshold) in EINE kohärente Policy.
+    //
+    // Statt 3 Statics einzeln zu tweaken → eine einzige applyStartingGroundConfig()
+    // die das nächste "Punktuell-gefixt-aber-anderswo-kollabiert"-Regression verhindert.
+
+    /** Schwierigkeits-Presets für StartingFromGround-Modus. */
+    public enum StartingDifficulty {
+        /**
+         * SURVIVAL: Start bei 0 Denari, Max-Migration=50, phaseFactor=on.
+         * Spieler muss langsam durch Steuereinnahmen die Staatskasse füllen.
+         * Bis zum ersten Lagerhaus: nur verfügbare Ressourcen, Slider schalten
+         * sich mit Lagerhaus frei. Marktpreise folgen lokalen Preisen bis erster
+         * Handelspartner. Features schalten sich progressiv bei Milestones frei.
+         */
+        SURVIVAL,
+        /**
+         * BALANCED: Startgeld 100K, Migration bis 100, sanftere Preisdämpfung.
+         * Kompromiss zwischen "From the Ground" und Vanilla-Erfahrung.
+         * Genug Kapital für den Aufbau, aber nicht so viel dass der Markt irrelevant wird.
+         */
+        BALANCED,
+        /**
+         * VANILLA_MINIMAL: Minimaler Eingriff in Vanilla-Verhalten.
+         * Startgeld 200K (Vanilla-Default), keine Migrationseinschränkung,
+         * keine Preisdämpfung. Für Spieler die die Mod-Systeme testen wollen
+         * ohne sich um den Early-Game-Loop zu kümmern.
+         */
+        VANILLA_MINIMAL;
+
+        /** Menschlich lesbarer Name für UI-Anzeige. */
+        public String displayName() {
+            return switch (this) {
+                case SURVIVAL -> "Überleben (0 Denari)";
+                case BALANCED -> "Ausgewogen (100K)";
+                case VANILLA_MINIMAL -> "Vanilla-Minimal (200K)";
+            };
+        }
+    }
+
+    /** Aktuell gewählter StartingFromGround-Modus (Default: BALANCED). */
+    public static StartingDifficulty activeStartingDifficulty = StartingDifficulty.BALANCED;
+
+    /**
+     * Wendet ein StartingFromGround-Schwierigkeits-Preset atomar an.
+     * Single choke-point für ALLE Bootstrap-Settings — verhindert das nächste
+     * "Punktuell-gefixt-aber-anderswo-kollabiert"-Regression.
+     *
+     * <p>Ruft bestehende Setter (setStartingTreasury, setMeticImmigrationDepth,
+     * setEarlySettlerWalletBonus) wo vorhanden für korrekte Clamp-Bounds.</p>
+     *
+     * @param difficulty Das gewünschte Preset
+     */
+    public static void applyStartingGroundConfig(StartingDifficulty difficulty) {
+        activeStartingDifficulty = difficulty;
+        switch (difficulty) {
+            case SURVIVAL -> {
+                setStartingTreasury(0);
+                setEarlySettlerWalletBonus(300);
+                earlySettlerDoleThreshold = 10000;
+                earlySettlerPopThreshold = 50;
+                meticImmigrationCap = 50;
+                setMeticImmigrationDepth(0.15);
+                phaseFactorEnabled = true;
+                phaseFactorThreshold = 200;
+                phaseFactorMin = 0.4;
+                earlySettlerBuffEnabled = true;
+                foodAffordabilityGateEnabled = true;
+                EventLog.log("CONFIG", "StartingFromGround: SURVIVAL — "
+                        + "treasury=0, wallet-bonus=300, cap=50, phaseFactor=0.4×");
+            }
+            case BALANCED -> {
+                setStartingTreasury(100000);
+                setEarlySettlerWalletBonus(0);
+                earlySettlerDoleThreshold = 10000;
+                earlySettlerPopThreshold = 50;
+                meticImmigrationCap = 100;
+                setMeticImmigrationDepth(0.20);
+                phaseFactorEnabled = true;
+                phaseFactorThreshold = 300;
+                phaseFactorMin = 0.5;
+                earlySettlerBuffEnabled = true;
+                foodAffordabilityGateEnabled = true;
+                EventLog.log("CONFIG", "StartingFromGround: BALANCED — "
+                        + "treasury=100K, cap=100, phaseFactor=0.5×");
+            }
+            case VANILLA_MINIMAL -> {
+                setStartingTreasury(200000);
+                setEarlySettlerWalletBonus(0);
+                earlySettlerDoleThreshold = 5000;
+                earlySettlerPopThreshold = 50;
+                meticImmigrationCap = 200;
+                setMeticImmigrationDepth(0.35);
+                phaseFactorEnabled = false;
+                earlySettlerBuffEnabled = false;
+                foodAffordabilityGateEnabled = true;
+                EventLog.log("CONFIG", "StartingFromGround: VANILLA_MINIMAL — "
+                        + "treasury=200K, cap=200, phaseFactor=off");
+            }
+        }
+    }
+
+    /**
+     * UI-Vorschau-Text für ein StartingFromGround-Preset.
+     * Zeigt dem Spieler WAS das Preset tut BEVOR er es aktiviert.
+     *
+     * @param difficulty Das Preset für das die Vorschau gewünscht ist
+     * @return Mehrzeiliger Vorschau-Text für UI-Darstellung
+     */
+    public static String previewStartingGroundConfig(StartingDifficulty difficulty) {
+        return switch (difficulty) {
+            case SURVIVAL -> String.join("\n",
+                "=== ÜBERLEBEN ===",
+                "Startgeld: 0 D (kein Anfangskapital)",
+                "Siedler-Bonus: +300 D pro Kopf (bis 50 Siedler)",
+                "Gratis-Essen: bis 10.000 D Vermögen",
+                "Migration: max 50 Bürger (Cap)",
+                "Preis-Dämpfung: 0.4× bei <200 Bürgern",
+                "Immigration: langsam (depth=0.15)",
+                "",
+                "→ Du startest bei Null. Steuereinnahmen füllen",
+                "  die Staatskasse. Erstes Lagerhaus schaltet",
+                "  den Markt-Slider frei. Features kommen nach",
+                "  und nach bei Milestones (100K D, Handelspartner)."
+            );
+            case BALANCED -> String.join("\n",
+                "=== AUSGEWOGEN ===",
+                "Startgeld: 100.000 D",
+                "Siedler-Bonus: keiner (Kasse reicht)",
+                "Gratis-Essen: bis 10.000 D Vermögen",
+                "Migration: max 100 Bürger (Cap)",
+                "Preis-Dämpfung: 0.5× bei <300 Bürgern",
+                "Immigration: normal (depth=0.20)",
+                "",
+                "→ Kompromiss: genug Kapital zum Aufbau,",
+                "  aber der Markt ist trotzdem relevant."
+            );
+            case VANILLA_MINIMAL -> String.join("\n",
+                "=== VANILLA-MINIMAL ===",
+                "Startgeld: 200.000 D",
+                "Siedler-Bonus: keiner",
+                "Gratis-Essen: bis 5.000 D Vermögen",
+                "Migration: max 200 Bürger (Cap)",
+                "Preis-Dämpfung: keine",
+                "Immigration: schnell (depth=0.35)",
+                "",
+                "→ Minimaler Eingriff. Mod-Systeme testen",
+                "  ohne Early-Game-Loop."
+            );
+        };
+    }
+
     /**
      * Tax-Multiplier-Breite — VOLL entkoppelt von {@link #meticImmigrationDepth}.
      * Sprint v0.13.124+BootstrapEncapsulation: andere Semantik — wird NICHT durch Stage-Override

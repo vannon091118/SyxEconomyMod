@@ -1,6 +1,6 @@
 version: '1.0'
 auto_generated: true
-generated_at: '2026-08-01T05:31:32'
+generated_at: '2026-08-01T06:22:11'
 generator: tools/god-class-guard/emit_yaml.py
 limits:
   loc_warn: 600
@@ -65,12 +65,12 @@ legacy_baselines:
     status_at_emit: block
     reason_at_emit: fields 48 > block 24
   src/vannon/syx/economy/core/EconConfig.java:
-    loc: 395
-    pubM: 8
-    fields: 268
+    loc: 499
+    pubM: 11
+    fields: 273
     imports: 0
     status_at_emit: block
-    reason_at_emit: fields 268 > block 24
+    reason_at_emit: fields 273 > block 24
   src/vannon/syx/economy/core/EconProgression.java:
     loc: 251
     pubM: 10
@@ -79,7 +79,7 @@ legacy_baselines:
     status_at_emit: block
     reason_at_emit: fields 36 > block 24
   src/vannon/syx/economy/core/EconomySim.java:
-    loc: 370
+    loc: 386
     pubM: 70
     fields: 10
     imports: 23
