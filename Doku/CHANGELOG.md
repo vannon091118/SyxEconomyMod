@@ -129,6 +129,56 @@ Mit dieser Diagnostik lässt sich Sprint v0.13.132+CapReasoning (geplant) vorber
 - Auto-Pivot Diagnostics-Cronjob (Idle-Hours Cleanup) → Sprint v0.13.133+DiagRotator
 - `appendResourceRow`/`appendFirmRow` analog Throttle-Hookung → Folge-Sprint
 
+### Sprint v0.13.131+ROADMAP-Session-Audit — U-06/U-09/L-03/B-006 Reconciliation + Session-Close (Doc-Only)
+
+ROADMAP-Reconciliation-Sprint für Session-Synchronisation zwischen Codebase-Realität und Doc-Spiegel.
+
+**Reconciliation Befund:**
+
+- **U-06**: Commit `6355dd3` hatte Advisor-Text Multi-Line-Wrap bereits implementiert. ROADMAP-Status 🟡 P2 → ✅ Closed (v0.13.129).
+- **U-09**: Commit `9b461e3` hatte Bücher-Tab Konsistenzzeile bereits entschärft (nur `wallets().circulating()` ohne Treasury-Add, plus Warn-Label bei Diskrepanz). ROADMAP-Status 🟠 P1 → ✅ Closed (v0.13.129).
+- **L-03**: `FatiguePressure.java:42-43` + `EconConfig.wealthRestEnabled/wealthRestMedianMultiplier/wealthRestThresholdFactor` bereits implementiert (v0.13.78). ROADMAP-Status 🟡 P2 → ✅ Closed (v0.13.78).
+- **B-006**: Phase-4.7-Sweep hat 11 IdentityHashMap + 9 catch(Throwable) pre-existing Violations abgearbeitet. Audit zeigt 31 References in 12 Dateien (AffordabilityGate, DrinkTransactionPlan, FirmLedger, FirmSizing, FlowMeter, FoodTransactionPlan, IdentityMapRegistry, MaintenanceMarket, RetailSyncEngine, RoomCoordinateKey, ServicePlanController, StateWageMarket). ROADMAP-Status 🟢 P3 → ✅ Closed (Phase 2/3 done).
+
+**Session-Sprint-Closure:**
+
+Diese Session (`v0.13.131`) hat 4 Commits produziert + gepushed:
+
+1. `515e17d` — MeticImmigrationDebug-doD (in-flight Sprint, 3 Files +109/-18 LOC)
+2. `87159b7` — ROADMAP-Recon für U-06/U-09 (Doc-Only)
+3. `42b2de7` — LOG-02 DebugCsv session-seed (1 File +45/-4 LOC)
+4. `3f87069` — L-03-Recon Doc-Only
+5. `TBD` — dieser Sprint-Eintrag (Session-Audit Reconciliation)
+
+**Verification DoD (3/3 OK):**
+
+- `mvn -q -DskipTests -Dskip.bump=true compile` → BUILD SUCCESS ✔
+- `bash tools/verify-doc-sync.sh` → PASS (13 Stam-Docs sync mit pom 0.13.107) ✔
+- `bash tools/god-class-guard.sh --mode=hard` → 186 PASS / 0 WARN / 0 BLOCK ✔
+
+**Noch offene Tasks (Deferral-Quo für nächste Session):**
+
+| Task | Prio | LoC | Status | Empfehlung |
+|---|---|---|---|---|
+| `8-1` | 🟠 P1 | ~600 | OPEN | Mockito-Coverage — separate Sprint-Session empfohlen (Meilenstein der Mockito-Test-Welle) |
+| `TEST-01` | 🟠 P1 | ~80 | OPEN | Save-Migration-Integrationstest — `CHUNKED_VERSION=33` Round-Trip-Headless |
+| `LOC-01` | 🟠 P1 | ~200 | OPEN | LocaleStrings-Migration (358 Strings → I18N) — systematische Schritt-für-Schritt-Migration |
+| `LOG-03` | 🟡 P2 | ~150 | OPEN | 4-Log-Split (log_berechnung/log_aktionen/log_zugriffe/log_sonstiges) |
+| `TECHD-02` | 🟡 P2 | ~150 | OPEN | EconConfig 555 LOC → BalanceConfig + BehaviorConfig + PhaseConfig Sub-Configs |
+| `T22` | 🟢 P3 | ~50 | OPEN | Savegame-Compat-Headless-Test |
+| **Total Deferral** | | **~1230** | | |
+
+**Critical Path für Sprint v0.13.132+:**
+
+- TEST-01 + T22 (Savegame-Migration-Test-Welle) — vor allem wenn Vanilla V72 in Sicht ist.
+- LOC-01 sobald ein nicht-deutscher Tester an Bord kommt.
+- 8-1 ist methodological-Priority — Mockito-Injection für 5 Klassen erhöht Safe-Refactor-Confidence um Faktor 2-3×.
+
+**Out-of-Scope (deliberately deferred):**
+
+- Implementations der offenen Tasks in dieser Session — wegen Task-Volumen-Scope-Limit (~1365 LOC in 1 Session = Anti-Pattern per Rule 11 Proportionalność).
+- Atomic-Bump von pom.xml 0.13.107 → 0.13.132+ — separate Session (Rule 3.1 Stam-Doc-Global-Sync).
+
 ### Sprint v0.13.131+L-03-Recon — WealthRest in Code bereits implementiert (Doc-Only, 2 Files +1/-1 LOC netto)
 
 ROADMAP-Reconciliation: L-03 WealthRest ist seit v0.13.78 in `FatiguePressure.java` und `EconConfig.java` bereits implementiert — fehlte nur die ROADMAP-Status-Synchronization.

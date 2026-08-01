@@ -24,7 +24,7 @@
 | **8-5** | ✅ Closed (v0.13.64) | Hungersignal → Bevölkerungs-Kopplung: MeticImmigration + Roster (B-009) | ~18 | 8 |
 | *B-004* | ✅ Closed (v0.13.61) | Vermögensklassen-Drift: WealthStats ↔ CitizenClass angleichen | ~30 | — |
 | *B-002* | ✅ Closed (v0.13.57) | AccessAutomation-Spam: Rate-Limiter für Statusmeldungen | ~6 | — |
-| *B-006* | 🟢 P3 | IdentityHashMap-Migration Phase 2/3 | ~50 | — |
+| *B-006* | ✅ Closed (Phase 2/3 done) | IdentityHashMap-Migration: 31 References in 12 Dateien — AffordabilityGate (4 maps), DrinkTransactionPlan, FirmLedger, FirmSizing, FlowMeter, FoodTransactionPlan, IdentityMapRegistry (zentrale Registry), MaintenanceMarket, RetailSyncEngine, RoomCoordinateKey, ServicePlanController, StateWageMarket. Phase 4.7-Sweep hat IdentityHashMap + catch(Throwable) pre-existing Violations abgearbeitet. Sprint-Reconciliation v0.13.132+ prüft verbleibende HashMap-Usages auf Referenz-Equality-Bedarf. | ~50 | — |
 | *B-008* | ✅ Closed (v0.13.66) | EngineSeams-Direkt-Calls: 55→0 (Phase 1: 25, Phase 2: 30 — alle migriert auf EngineMirror mit Fallback) | ~40 | — |
 | *B-010* | ✅ Closed (v0.13.46) | Carpenter targetWage=0 in FlowPrices | ~8 | — |
 | *T22* | 🟢 P3 | Savegame-Compat-Headless-Test | ~50 | — |
