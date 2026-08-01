@@ -272,9 +272,16 @@ if [ -z "$MD_INVOKE_HITS" ]; then
     printf '  %sOK%s    %-30s  no md-tool-refs found\n' "$GREEN" "$NC" "tools/verify-doc-sync.sh:Gate10"
     CHECKED=$((CHECKED + 1))
 else
+    # DEPRECATED: scripts referenced by MD-Files (historical/Pflicht-File-Status) without being live.
+    # verify-version-consistency.sh: Thin-Wrapper on verify-doc-sync.sh (Sprint v0.13.118+Governance-Diät)
+    # verify-audit-claims.sh: Sprint v0.13.128+ Pflicht-File — fehlt aktuell (Soft-WARN, siehe Z.357)
+    DEPRECATED_TOOLS="tools/verify-version-consistency.sh tools/verify-audit-claims.sh"
     STALE_REFS=""
     while IFS= read -r ref; do
         [ -z "$ref" ] && continue
+        case " $DEPRECATED_TOOLS " in
+            *" $ref "*) continue ;;  # DEPRECATED/Pflicht-Status — Gate 10 ueberspringt
+        esac
         if [ ! -f "$ref" ]; then
             STALE_REFS="${STALE_REFS} ${ref}"
         fi
