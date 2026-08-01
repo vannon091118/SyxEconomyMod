@@ -443,13 +443,13 @@ Ketten-Effekte über die gesamte Produktionskette.
 
 **Once-Only-Bump** — Ein Hybrid aus Bump- und Ratchet-Mechanismus. Ein boolescher oder numerischer Status, der nur ein einziges Mal in eine bestimmte Richtung getriggert wird (z. B. „erster Markttag erreicht" oder „Trade-Partner-Gate gefeuert") und dann für die Lebensdauer der Spielinstanz gesperrt bleibt. Verhindert zyklisches State-Flackern bei Save/Load-Zyklen.
 → Java-Klasse: `src/vannon/syx/economy/core/EconomySim.java`, `src/vannon/syx/economy/core/EconomySaveLoad.java`
-→ Cross-Ref: Policy-Bundle, Ratchet, Threshold-Bump, Trade-Partner-Gate
+→ Cross-Ref: Policy-Bundle, Ratchet, Threshold-Bump, Trade-Partner-Gate, StartingFromGround
 → Beispiel: „Sprint v0.13.110+: Once-Only-Bump sobald Stage ≥ HANDEL + Trade-Partner existiert — `tradePartnerGatePassed` Flag persistiert via Save/Load."
 
-**Policy-Bundle** — Eine kohärente Sammlung verwandter Settings-Bumps, die als Single-Choke-Point-Methode bündelt statt als isolierte statische Field-Writes. Im Sprint v0.13.124+BootstrapEncapsulation entstanden: `applyEarlyPhaseBumpRules()` gruppiert alle Once-Only-Bump-relevanten Bootstrap-Writes (`startingTreasury`-Write, Ratchet-Flag-Set, EventLog-Eintrag) zu einem Single-Entry-Point und verhindert verstreute Mutations an anderen Stellen. Future-Variante `applyStartingGroundConfig()` ist explizit im Sprint-Backlog als kohärente Phase-Welle.
+**Policy-Bundle** — Eine kohärente Sammlung verwandter Settings-Bumps, die als Single-Choke-Point-Methode bündelt statt als isolierte statische Field-Writes. Im Sprint v0.13.124+BootstrapEncapsulation entstanden: `applyEarlyPhaseBumpRules()` gruppiert alle Once-Only-Bump-relevanten Bootstrap-Writes (`startingTreasury`-Write, Ratchet-Flag-Set, EventLog-Eintrag) zu einem Single-Entry-Point und verhindert verstreute Mutations an anderen Stellen. Future-Variante `applyStartingGroundConfig()` ist explizit im Sprint-Backlog als kohärente Phase-Welle für Sprint v0.13.150+.
 → Java-Klasse: `src/vannon/syx/economy/core/EconomySim.java`, `src/vannon/syx/economy/core/EconConfig.java` (Setter-Routes)
-→ Cross-Ref: Once-Only-Bump, Setter-Pattern, Trade-Partner-Gate
-→ Beispiel: „Sprint v0.13.124+: `applyEarlyPhaseBumpRules()` ist ein Policy-Bundle — alle Trade-Partner-Gate-relevanten Entscheidungen (startingTreasury-Update via `setStartingTreasury()`, Ratchet-Transition, Stage-Check, hasTradePartner-Bedingung) in einem einzigen Methoden-Body. Vorher waren das 3+ verstreute Static-Writes mit ungekoppelter Validierung."
+→ Cross-Ref: Once-Only-Bump, Setter-Pattern, Trade-Partner-Gate, StartingFromGround
+→ Beispiel: „Sprint v0.13.124+: `applyEarlyPhaseBumpRules()` ist ein Policy-Bundle — alle Trade-Partner-Gate-relevanten Entscheidungen (startingTreasury-Update via `setStartingTreasury()`, Ratchet-Transition, Stage-Check, hasTradePartner-Bedingung) in einem einzigen Methoden-Body. Vorher waren das 3+ verstreute Static-Writes mit ungekoppelter Validierung. Im Sprint v0.13.120+StartingFromGround-Hotfix wird der `startingTreasury`-Default-Wert selbst zum Policy-Entscheid (CombineBootstrap 100k), wodurch applyEarlyPhaseBumpRules für Fresh-Saves dead-code wird aber für SaveLoad-Migration alter Saves aktiv bleibt."
 
 **Pre-Spec** — Eine vordefinierte deklarative Spezifikation (YAML oder JSON, oft aus Szenario-Generatoren), gegen die ein aktuelles Savegame validiert wird. Dient als starrer Soll-Zustand für reproduzierbare Integrationstests der Wirtschafts-Logik.
 → Tool: `tools/scenario_snapshot.py`, `tools/scenario_verify.py`
@@ -458,7 +458,7 @@ Ketten-Effekte über die gesamte Produktionskette.
 
 **Ratchet** — Eine „Zahnrad"-Logik (Sperrklinke) im State-Management, die einen Wert nur in eine Richtung wachsen lässt oder das Zurückfallen unter einen erreichten Höchststand (High-Water-Mark) verhindert. Speichert sich in `EconomySaveLoad` für Persistenz über Re-Loads.
 → Java-Klasse: `src/vannon/syx/economy/core/EconomySim.java`, `src/vannon/syx/economy/core/EconomySaveLoad.java`
-→ Cross-Ref: Once-Only-Bump, Threshold-Bump
+→ Cross-Ref: Once-Only-Bump, Threshold-Bump, StartingFromGround
 → Beispiel: „Once-Only-Bump-Ratchet in `EconomySaveLoad.java:161` — der `tradePartnerGatePassed` boolean wird ans Chunk-Ende geschrieben, damit Re-Loads den Bump nicht wiederholen."
 
 **Setter-Pattern** — Eine Hard-Cap-Setter-Discipline für kritische `public static`-Configs. Jeder kritische Static bekommt einen `setXxx`-Setter mit `clamp(...)`-Validation; Caller (UI-Slider, Save/Load, Auto-Krisen-Resolver) müssen durch den Setter routen statt direkt auf das Field zu schreiben. Vorbild: `setOddjobWage(int)` mit `clamp(wage, 0, defaultWage × oddjobWageCeilingRatio)` als Single-Choke-Point. Sprint v0.13.124+BootstrapEncapsulation hat `setStartingTreasury(int)`, `setMeticImmigrationDepth(double)`, `setMeticImmigrationSteepness(double)` nach diesem Muster eingeführt und direkte Static-Writes auf 3 Settings eliminiert.
@@ -481,6 +481,14 @@ Ketten-Effekte über die gesamte Produktionskette.
 → Cross-Ref: SSoT, Build-Gates (1–11), Stam-Doc-Sync-per-Sprint
 → Beispiel: „Wenn `mvn validate` ausgeführt wird, prüft verify-doc-sync.sh die 7 Stam-Doku-Marker gegen pom.xml <version> — Drift = Hard-Block."
 
+**StartingFromGround** — Ein 3-Sprint-evolutionärer Bootstrap-Strategy-Begriff, der die schrittweisen Reparaturen der v0.13.108-Cold-Start-Cascade dokumentiert. **Sprint v0.13.108+StartingFromGround** begann mit `startingTreasury = 0` als Drain-Loop-Fix (−1.8M-Symptom bei 200 k D). **Sprint v0.13.110+** ergänzte den Once-Only-Bump für Mid-Game bei `Stage.HANDEL + hasTradePartner()`. **Sprint v0.13.120+StartingFromGround-Hotfix** brachte den CombineBootstrap (`startingTreasury = 100_000`) als Wurzel-Heilung. **Sprint v0.13.124+** etablierte den Setter-Pattern als Schutz gegen spätere Re-Couplings. **Sprint v0.13.127+** pinnte die Decoupling-Garantie per Bench-Snapshot-Regression-Test.
+→ Java-Klasse: `src/vannon/syx/economy/core/EconConfig.java` (`startingTreasury`, `earlyPhaseHandelTreasury`, `setStartingTreasury`, `setEarlySettlerWalletBonus`), `src/vannon/syx/economy/core/EconomySim.java` (`applyEarlyPhaseBumpRules`)
+→ Tool: `tools/bench-baseline-snapshot.md` (Sprint v0.13.120+ Appendix dokumentiert empirische Headless-Bench-Verifikation), `tools/scenario_snapshot.py` + `tools/scenario_verify.py` (Pre-Spec-Tooling, cross-ref mit Concept Pre-Spec — Pre-Spec-Eintrag seinerseits verweist auf scenario_snapshot.py/verify.py für reproducible Save-Snapshots)
+→ Cross-Ref: Once-Only-Bump, Policy-Bundle, Setter-Pattern, Ratchet, Trade-Partner-Gate
+→ Sprint-Sequenz: `ZeroBootstrap (v0.13.108)` → `MidGameBootstrap (v0.13.110)` → `CombineBootstrap (v0.13.120)` → `Setter-Discipline (v0.13.124)` → `Regression-Test (v0.13.127)`
+→ Beispiel: „Sprint v0.13.120+ CombineBootstrap ist die Wurzel-Heilung der v0.13.108-Cascade: 100 k D Default sichert Settlers-Hunger-Cascade ab, ohne Drain-Loop zu re-triggern. Sprint v0.13.127+ Test beweist empirisch dass die Tax-Semantik nicht mehr von setMeticImmigrationDepth(0.7) leakt."
+
+
 **Thin-Wrapper-Deprecation-Pattern** — Konzept für das sanfte Löschen veralteter CI-Skripte (wie `verify-version-consistency.sh`). Das veraltete Skript funktioniert zunächst nur noch als „Thin Wrapper", der Warnungen loggt und an das neue Skript delegiert, bevor es im Folge-Sprint komplett gelöscht wird. Schritt 1: Logik ins SSoT-Skript mergen. Schritt 2: Wrapper-Script reduzieren auf `exec bash <ssoT-Script>`. Schritt 3: Deprecation-Warnung in Header. Schritt 4: Löschung.
 → Tool: `tools/install-hooks.sh`, `tools/verify-doc-sync.sh` (Gate 10 DEPRECATED_ALLOWLIST)
 → Cross-Ref: Hard-Fail vs Hard-Block
@@ -494,7 +502,7 @@ Ketten-Effekte über die gesamte Produktionskette.
 
 **Trade-Partner-Gate** — Eine spezifische Filter-Logik der `EconomySim.applyEarlyPhaseBumpRules()`, die früh entscheidet, ob ein Once-Only-Bump des Treasury-Tops (von 0 auf `earlyPhaseHandelTreasury`) feuern darf. Gekoppelt an `PolityPriceAnchor.hasTradePartner()` (Truth-Check: ein DIP.traders()-NPC mit Capitol-Region). Vermeidet Bumps ohne echte Handelsbasis.
 → Java-Klasse: `src/vannon/syx/economy/core/EconomySim.java` (`applyEarlyPhaseBumpRules`), `src/vannon/syx/economy/core/PolityPriceAnchor.java` (`hasTradePartner`, `isTradeable`)
-→ Cross-Ref: Once-Only-Bump, Build-Gates (1–11)
+→ Cross-Ref: Once-Only-Bump, Build-Gates (1–11), StartingFromGround
 → Beispiel: „Sprint v0.13.110+: startingTreasury 0 → 20000 Once-Only-Bump sobald Stage.HANDEL erreicht UND `PolityPriceAnchor.hasTradePartner()==true` UND api-Ready."
 
 ---
