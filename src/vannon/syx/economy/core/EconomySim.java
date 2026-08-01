@@ -121,6 +121,7 @@ public final class EconomySim {
         }
     }
     int ticks = 0;
+    int mirrorReinitCooldown = 60; // Sprint v0.13.130: Lazy mirror re-init for boot-race. Start at 60 (~1s) to let engine settle.
     final ReentryGuard updateGuard = new ReentryGuard("EconomySim.update()");
     final SimpleHistory treasuryHistory = new SimpleHistory(60);
     final SimpleHistory giniHistory = new SimpleHistory(60);
@@ -325,15 +326,29 @@ public final class EconomySim {
         if (!this.updateGuard.tryEnter()) return;
         try {
             this.debtDiplomacyBuffer.update();
-            // Sprint v0.13.119+B-008-Phase-2: EngineSeams.entitiesAvailable()-Fallback entfernt.
-            // Production-Kontext: AdapterDispatcher.build() initialisiert EngineMirror.api()
-            // im selben EconomySim-Constructor; api() ist vor update() garantiert != null und
-            // isFullyAvailable() == true (alle 7 Sub-Interfaces OK).
-            // Test-Kontext: bei `new EconomySim(mock, mock, ...)` ohne AdapterDispatcher ist
-            // api() == null → early-return statt NPE (Identisch zur alten Ternary-Semantik).
-            // Strikt-Equivalent zur alten `rooms().entitiesAvailable()`-Prüfung + null-safety.
+            // Sprint v0.13.130: Lazy mirror re-init für Boot-Race-Condition.
+            // Wenn EconomySim erstellt wird bevor die Spiel-Engine bereit ist,
+            // sind alle adapter.isAvailable()==false → update() kehrt früh zurück.
+            // Statt dauerhaft aufzugeben, versuchen wir periodisch die Adapter
+            // neu zu bauen (EngineMirror erlaubt jetzt Re-Init wenn degraded).
             EngineMirror m = EngineMirror.api();
-            if (m == null || !m.isFullyAvailable()) return;
+            if (m == null || !m.isFullyAvailable()) {
+                if (this.mirrorReinitCooldown-- <= 0) {
+                    this.mirrorReinitCooldown = 300; // ~5s bei 60fps
+                    try {
+                        AdapterDispatcher.AdapterBundle newBundle = AdapterDispatcher.build();
+                        this.npcAdapter = newBundle.npc;
+                        m = EngineMirror.api();
+                        if (m != null && m.isFullyAvailable()) {
+                            EventLog.log("MIRROR", "Lazy mirror re-init SUCCEEDED — "
+                                    + "economy simulation now active");
+                        }
+                    } catch (Exception t) {
+                        // Engine noch nicht bereit — nächster Versuch in 300 frames
+                    }
+                }
+                if (m == null || !m.isFullyAvailable()) return;
+            }
             // Sprint v0.13.110+: Once-Only-Bump sobald Stage≥HANDEL+Trade-Partner (Ratchet).
             // Hinter api-Guard weil PolityPriceAnchor.hasTradePartner() Headless-NPE werfen kann.
             applyEarlyPhaseBumpRules();

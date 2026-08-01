@@ -97,11 +97,16 @@ public final class EngineMirror {
                             IHumanoidAccess humanoids, IStatsAccess stats,
                             ITreasuryAccess treasury, IPopulationAccess population,
                             IGoodsAccess goods) {
-        if (instance != null) {
+        if (instance != null && instance.isFullyAvailable()) {
             EventLog.log("MIRROR", "EngineMirror.init() called twice — "
                     + "ignoring. Existing instance age: "
                     + (System.currentTimeMillis() - instance.initTimestamp) + "ms");
             return;
+        }
+        if (instance != null) {
+            EventLog.log("MIRROR", "EngineMirror.init() replacing degraded instance "
+                    + "(age: " + (System.currentTimeMillis() - instance.initTimestamp) + "ms, "
+                    + "fullyAvailable=" + instance.isFullyAvailable() + ")");
         }
         instance = new EngineMirror(rooms, factions, humanoids, stats,
                 treasury, population, goods);
@@ -126,9 +131,12 @@ public final class EngineMirror {
      * und initialisiert den EngineMirror in einem Schritt.
      */
     public static void initFromBundle(AdapterDispatcher.AdapterBundle bundle) {
-        if (instance != null) {
+        if (instance != null && instance.isFullyAvailable()) {
             EventLog.log("MIRROR", "EngineMirror.initFromBundle() called twice — ignoring");
             return;
+        }
+        if (instance != null) {
+            EventLog.log("MIRROR", "EngineMirror.initFromBundle() replacing degraded instance");
         }
 
         // Sub-Interfaces bauen — jeder nutzt die bestehenden Adapter
