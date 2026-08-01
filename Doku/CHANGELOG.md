@@ -129,6 +129,26 @@ Mit dieser Diagnostik lässt sich Sprint v0.13.132+CapReasoning (geplant) vorber
 - Auto-Pivot Diagnostics-Cronjob (Idle-Hours Cleanup) → Sprint v0.13.133+DiagRotator
 - `appendResourceRow`/`appendFirmRow` analog Throttle-Hookung → Folge-Sprint
 
+### Sprint v0.13.131+L-03-Recon — WealthRest in Code bereits implementiert (Doc-Only, 2 Files +1/-1 LOC netto)
+
+ROADMAP-Reconciliation: L-03 WealthRest ist seit v0.13.78 in `FatiguePressure.java` und `EconConfig.java` bereits implementiert — fehlte nur die ROADMAP-Status-Synchronization.
+
+**Reconciliation Befund:**
+
+- `FatiguePressure.java:42-43`: `if (EconConfig.wealthRestEnabled && sim.relativeWealth(indu) > EconConfig.wealthRestMedianMultiplier) { threshold = (int)(threshold * EconConfig.wealthRestThresholdFactor); }` — bereits voll umgesetzt.
+- `EconConfig.java:771/774/778`: `wealthRestEnabled = true`, `wealthRestMedianMultiplier = 3.0`, `wealthRestThresholdFactor = 0.5` (Spec sagte "2× Median"; tatsächlich 3× Median, konservativer).
+- Spec-Text "Kein Ruhestand, nur Teilzeit" wird erfüllt: `int` Threshold-Cast und `(int)` factor-anwendung reduziert Fatigue-Schwelle ohne Worker-Disengage zu erzwingen.
+- Kein Code-Change nötig. Backlog-Eintrag L-03 wird in ROADMAP von `🟡 P2` auf `✅ Closed (v0.13.78)` umgezogen.
+
+**Verification DoD (2/2 OK):**
+
+- `mvn -q -DskipTests -Dskip.bump=true compile` → BUILD SUCCESS ✔
+- `bash tools/verify-doc-sync.sh` → PASS (13 Stam-Docs sync mit pom 0.13.107) ✔
+
+**Lessons Learned (für Sprint v0.13.132+ Task-Reconciliation):**
+
+- Sprint v0.13.78 wurde mit `wealthRest`-Feldern ausgeliefert, aber ROADMAP nicht aktualisiert — typischer Drift-Befund bei Code-Themen die ohne atomaren Sprint-Commit wachsen. Folge-Sprint: ROADMAP-Tag-Audit. Quartalsweise: jedes Closed-Tag (✅) in ROADMAP gegen CHANGELOG-Sprint-Eintrag verifizieren.
+
 ### Sprint v0.13.131+LOG-02 — Session-Identifikation in DebugCsv vereinheitlicht (1 File, +12/-4 LOC netto)
 
 `DebugCsv` schreibt jetzt analog zu `DiagnosticExporter.{rebalance_macro_,rebalance_resources_,rebalance_firms_,rebalance_io_,rebalance_immigration_,trace_dump_,summary_}_*.csv` mit Session-Epoch-Suffix. Damit ist `pandas.read_*()` Session-Join trivial: gemeinsamer `*_<seed>.csv`-Substring filtert oder `pd.merge(.., on='session_seed')` aus den Header-Metadaten.
