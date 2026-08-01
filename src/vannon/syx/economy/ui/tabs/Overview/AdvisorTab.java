@@ -195,15 +195,25 @@ public final class AdvisorTab implements EconWindowBase.TabContent {
         // Causality-Triplet: {Wahrscheinlichkeit p, Empfehlung A, Alternativen [B, C] mit Trade-off-Tabelle}.
         AdvisorEngine.Advice advice = AdvisorEngine.buildAdvice(sim, stats, ind, treasury);
 
-        // ─── Empfehlung A (prominent) ───
-        String recText = advice.recommendation() + "  (" + advice.probability() + "% Konfidenz)";
-        GText recLine = advice.recommendation().length() > 80
-            ? new GText(UI.FONT().S, EconWindowBase.FONTW_BODY)
-            : new GText(UI.FONT().M, EconWindowBase.FONTW_BODY);
-        recLine.set(recText);
-        recLine.color(GCOLOR.UI().SOSO.normal);
-        if (y < h - 30) content.add(recLine, x, y);
-        y += 22;
+        // ─── Empfehlung A (prominent) — Sprint v0.13.129+U-06 Multi-Line-Wrap ───
+        // Vorher: Einzel-GText mit FONTW_BODY kappte Text mid-sentence ohne
+        // Indikator ("kein Scrollindikator, kein Hinweis auf weiteren Inhalt").
+        // Jetzt: Wenn Empfehlung > ~60 Zeichen (FONTW_BODY / UI.FONT().S-Char-Breite),
+        // wird der Text auf 2 Zeilen verteilt mit einheitlich S-Font. Kurze
+        // Empfehlungen (≤ 1 Zeile) behalten M-Font für Prominenz.
+        // Gekürzter Text bekommt "…"-Suffix.
+        String[] recLines = wrapAdviceText(advice.recommendation(), advice.probability());
+        boolean singleLine = recLines.length == 1;
+        for (String line : recLines) {
+            if (y >= h - 20) break;
+            GText recLine = singleLine
+                ? new GText(UI.FONT().M, EconWindowBase.FONTW_BODY)
+                : new GText(UI.FONT().S, EconWindowBase.FONTW_BODY);
+            recLine.set(line);
+            recLine.color(GCOLOR.UI().SOSO.normal);
+            content.add(recLine, x, y);
+            y += singleLine ? 22 : 16;
+        }
 
         // ─── Alternativen-Tabelle (Top-3 mit 4 Trade-off-Spalten) ───
         if (advice.alternatives() != null && !advice.alternatives().isEmpty()) {
@@ -266,5 +276,42 @@ public final class AdvisorTab implements EconWindowBase.TabContent {
                 y += 14;
             }
         }
+    }
+
+    // ═══ Sprint v0.13.129+U-06: Multi-Line-Wrap für Berater-Text ═══
+    // FONTW_BODY = 512 px. Mit UI.FONT().S ≈ 8 px/Zeichen → ~64 Zeichen pro Zeile.
+    // Text > 64 Zeichen wird in 2 Zeilen gesplittet (Wort-Grenze). > 128 Zeichen
+    // wird auf 2 Zeilen gekürzt mit "…"-Trunkations-Indikator.
+    // Einfacher Split-Algorithmus ohne Vanilla-Engine-Touch (Rule-15 safe).
+
+    private static final int CHARS_PER_LINE = 62;
+
+    private static String[] wrapAdviceText(String recommendation, int probability) {
+        String confSuffix = "  (" + probability + "% Konfidenz)";
+        String full = recommendation + confSuffix;
+        if (full.length() <= CHARS_PER_LINE) return new String[] { full };
+
+        // Zwei-Zeilen-Split: finde Wortgrenze nahe der Mitte
+        int mid = CHARS_PER_LINE;
+        while (mid > CHARS_PER_LINE / 2 && mid < full.length()
+                && full.charAt(mid) != ' ') mid++;
+        if (mid >= full.length() || mid <= CHARS_PER_LINE / 2) {
+            // Keine gute Wortgrenze — hart bei CHARS_PER_LINE kürzen
+            mid = CHARS_PER_LINE;
+        }
+
+        String line1 = full.substring(0, mid).trim();
+        String line2 = full.substring(mid).trim();
+
+        // Wenn line2 noch zu lang, kürzen mit "…"
+        if (line2.length() > CHARS_PER_LINE) {
+            int cut = CHARS_PER_LINE - 1;
+            while (cut > CHARS_PER_LINE - 15 && cut < line2.length()
+                    && line2.charAt(cut) != ' ') cut++;
+            if (cut >= line2.length()) cut = CHARS_PER_LINE - 1;
+            line2 = line2.substring(0, Math.min(cut, line2.length())).trim() + "…";
+        }
+
+        return new String[] { line1, line2 };
     }
 }
