@@ -424,3 +424,69 @@ Ketten-Effekte über die gesamte Produktionskette.
 | **Leontief-Inverse** | L[i][j] = Gesamtbedarf von i für eine Einheit finale Nachfrage nach j (inkl. aller Ketteneffekte). |
 | **Ketten-Engpass** | Advisor-Warnung wenn eine Ressource mit coverage < 0.5 als Input für ≥3 Downstream-Industrien dient. |
 | **rebalance_io_*.csv** | DiagnosticExporter Long-Format: game_day, resource, type (direct/total), downstream_resource, coefficient. |
+
+---
+
+## 🟪 Concept-Glossar (A–Z, ab v0.13.121+)
+
+> **Hinweis:** Im Gegensatz zum Klassen-Glossar (das physische Java-Dateien abbildet), definiert dieses Concept-Glossar domänenspezifische Architektur- und Tooling-Begriffe des SyxEconomyMods. Die grundlegenden Commit-Konzepte (`Sprint`, `Sub-Phase`, `Atomic-Commit`, `Stam-Doc-Sync-per-Sprint`) sind aus historischen Gründen oben in „Neue Begriffe“ dokumentiert.
+
+**Build-Gates (1–11)** — Die 11 sequentiellen CI-Checks im `build-gate.sh`. Gate 1–8 prüfen Code-Qualität und Kompilierbarkeit, während Gate 9 (God-Class-Guard), 10 (Doku-Sync) und 11 (Audit) die Mod-Governance garantieren. Ein Fehler in einem Gate stoppt die gesamte Pipeline.
+→ Tool: `tools/build-gate.sh`
+→ Cross-Ref: Hard-Fail vs Hard-Block
+→ Beispiel: „Gate 9 God-Class-Guard schlägt fehl, Pipeline sicher abgebrochen — Hard-Block aktiv."
+
+**Hard-Fail vs Hard-Block** — Ein *Hard-Fail* bezeichnet Skripte oder Tests, die mit Exit-Code > 0 abstürzen (z. B. Build-Failure durch fehlgeschlagene Assertion). Ein *Hard-Block* hingegen ist ein absichtlich vorgeschaltetes Gate (wie der God-Class-Guard), das Commits oder Builds proaktiv verhindert, bevor architektonischer Schaden entsteht.
+→ Tool: `tools/god-class-guard.sh`, `tools/gate.sh`
+→ Cross-Ref: Build-Gates (1–11)
+→ Beispiel: „Der God-Class-Guard agiert als expliziter Hard-Block in der Pre-Commit-Phase — Hard-Fail ist die Konsequenz, nicht das Ziel."
+
+**Once-Only-Bump** — Ein Hybrid aus Bump- und Ratchet-Mechanismus. Ein boolescher oder numerischer Status, der nur ein einziges Mal in eine bestimmte Richtung getriggert wird (z. B. „erster Markttag erreicht" oder „Trade-Partner-Gate gefeuert") und dann für die Lebensdauer der Spielinstanz gesperrt bleibt. Verhindert zyklisches State-Flackern bei Save/Load-Zyklen.
+→ Java-Klasse: `src/vannon/syx/economy/core/EconomySim.java`, `src/vannon/syx/economy/core/EconomySaveLoad.java`
+→ Cross-Ref: Ratchet, Threshold-Bump, Trade-Partner-Gate
+→ Beispiel: „Sprint v0.13.110+: Once-Only-Bump sobald Stage ≥ HANDEL + Trade-Partner existiert — `tradePartnerGatePassed` Flag persistiert via Save/Load."
+
+**Pre-Spec** — Eine vordefinierte deklarative Spezifikation (YAML oder JSON, oft aus Szenario-Generatoren), gegen die ein aktuelles Savegame validiert wird. Dient als starrer Soll-Zustand für reproduzierbare Integrationstests der Wirtschafts-Logik.
+→ Tool: `tools/scenario_snapshot.py`, `tools/scenario_verify.py`
+→ Cross-Ref: SSoT, Stam-Doku
+→ Beispiel: „das bench-baseline.save enthält einen YAML-Pre-Spec-Block mit population/world_x/world_y/seed/mods/note als Single-Source-of-Truth für reproduzierbare Test-Runs."
+
+**Ratchet** — Eine „Zahnrad"-Logik (Sperrklinke) im State-Management, die einen Wert nur in eine Richtung wachsen lässt oder das Zurückfallen unter einen erreichten Höchststand (High-Water-Mark) verhindert. Speichert sich in `EconomySaveLoad` für Persistenz über Re-Loads.
+→ Java-Klasse: `src/vannon/syx/economy/core/EconomySim.java`, `src/vannon/syx/economy/core/EconomySaveLoad.java`
+→ Cross-Ref: Once-Only-Bump
+→ Beispiel: „Once-Only-Bump-Ratchet in `EconomySaveLoad.java:161` — der `tradePartnerGatePassed` boolean wird ans Chunk-Ende geschrieben, damit Re-Loads den Bump nicht wiederholen."
+
+**SSoT** (Single Source of Truth) — Der eine maßgebliche Ort, an dem ein Referenzdatum gepflegt wird (z. B. `pom.xml <version>` für Releases, `tools/god-class-baselines.yml` für grandfathered Metriken). Alle anderen Systeme und Stam-Docs lesen diesen Wert ausschließlich oder werden per Tooling dagegen validiert.
+→ Tool: `tools/doku-sync.sh`, `tools/verify-doc-sync.sh`, `tools/god-class-baselines.yml`
+→ Cross-Ref: Stam-Doku
+→ Beispiel: „`pom.xml` ist die unwiderlegbare SSoT für alle Versionsmarker in den 7 Stam-Docs — verify-doc-sync.sh validiert das vor jedem `mvn validate`."
+
+**Staircase** — Eine stufenweise Progressions-Logik (oft bei Löhnen, Preisen oder Firmen-Cap). Schwellwerte werden in diskreten „Treppenstufen" (Tier 0..4) angehoben, statt bei jedem Tick mikroskopisch zu fluktuieren. Reduziert Markt-Spam und Audit-Rauschen. Staatsbestand-Override-Flag kann die Staircase für government-owned Firms selektiv ausser Kraft setzen.
+→ Java-Klasse: `src/vannon/syx/economy/core/FirmLedger.java`, `src/vannon/syx/economy/core/EconProgression.java`
+→ Cross-Ref: Ratchet
+→ Beispiel: „Sprint v0.13.103+ Staircase-Cap: max-Worker-Limit aus 5-Tier-Skalierung in FirmLedger.java:822-827; Staatsbestand-Override ignoriert staircaseCap für staatliche Firmen."
+
+**Stam-Doku** (Stamm-Dokumentation) — Die 7 Master-Doku-Files des Repos (`Doku/README`, `Doku/ARCHITECTURE`, `Doku/CHANGELOG`, `Doku/ROADMAP`, `Doku/GLOSSARY`, `Doku/WORKFLOW`, `Doku/RULE_CHANGELOG`), deren Versions-Marker zwingend mit `pom.xml <version>` synchron sein MÜSSEN. Der Stam-Doku-Sync-Anker steht oben in jeder dieser Dateien als Kommentar-Block.
+→ Tool: `tools/doku-sync.sh`, `tools/verify-doc-sync.sh`, `tools/gate.sh`
+→ Cross-Ref: SSoT, Build-Gates (1–11), Stam-Doc-Sync-per-Sprint
+→ Beispiel: „Wenn `mvn validate` ausgeführt wird, prüft verify-doc-sync.sh die 7 Stam-Doku-Marker gegen pom.xml <version> — Drift = Hard-Block."
+
+**Thin-Wrapper-Deprecation-Pattern** — Konzept für das sanfte Löschen veralteter CI-Skripte (wie `verify-version-consistency.sh`). Das veraltete Skript funktioniert zunächst nur noch als „Thin Wrapper", der Warnungen loggt und an das neue Skript delegiert, bevor es im Folge-Sprint komplett gelöscht wird. Schritt 1: Logik ins SSoT-Skript mergen. Schritt 2: Wrapper-Script reduzieren auf `exec bash <ssoT-Script>`. Schritt 3: Deprecation-Warnung in Header. Schritt 4: Löschung.
+→ Tool: `tools/install-hooks.sh`, `tools/verify-doc-sync.sh` (Gate 10 DEPRECATED_ALLOWLIST)
+→ Cross-Ref: Hard-Fail vs Hard-Block
+→ Beispiel: „verify-version-consistency.sh wurde im Sprint v0.13.118+Governance-Diät via Thin-Wrapper-Deprecation-Pattern zu `exec verify-doc-sync.sh` reduziert und im Sprint v0.13.121+ endgültig entfernt (DEPRECATED_TOOLS-List im verify-doc-sync Gate 10)."
+
+**Threshold-Bump** — Ein Schwellwert-Übertritt in der Simulation oder im Drift-Tracking, der sofort eine asynchrone, irreversible Logik-Regel triggert. Im Phase-4.7-Kontext: Strategische Schwellwert-Erhöhung (Threshold von 9→12, 0→10) wenn das Sprint-Backlog die echten Fixes noch nicht liefert — `TARGET=0` bleibt das Ideal, `THRESHOLD=N` ist die Übergangs-Realität.
+→ Tool: `tools/phase47-shield.sh` (Commit-Message Tags), `tools/gate.sh`
+→ Java-Klasse: `src/vannon/syx/economy/core/EconConfig.java`
+→ Cross-Ref: Once-Only-Bump, Build-Gates (1–11)
+→ Beispiel: „Sprint v0.13.107+ Phase-4.7-Shield: MAX_IDENTITYHASH_NONREGISTRY 9→12 als Übergangs-Threshold-Bump, bis Sprint v0.13.120+ die echten Fixes liefert."
+
+**Trade-Partner-Gate** — Eine spezifische Filter-Logik der `EconomySim.applyEarlyPhaseBumpRules()`, die früh entscheidet, ob ein Once-Only-Bump des Treasury-Tops (von 0 auf `earlyPhaseHandelTreasury`) feuern darf. Gekoppelt an `PolityPriceAnchor.hasTradePartner()` (Truth-Check: ein DIP.traders()-NPC mit Capitol-Region). Vermeidet Bumps ohne echte Handelsbasis.
+→ Java-Klasse: `src/vannon/syx/economy/core/EconomySim.java` (`applyEarlyPhaseBumpRules`), `src/vannon/syx/economy/core/PolityPriceAnchor.java` (`hasTradePartner`, `isTradeable`)
+→ Cross-Ref: Once-Only-Bump, Build-Gates (1–11)
+→ Beispiel: „Sprint v0.13.110+: startingTreasury 0 → 20000 Once-Only-Bump sobald Stage.HANDEL erreicht UND `PolityPriceAnchor.hasTradePartner()==true` UND api-Ready."
+
+---
+
+*Wenn ein neuer Fachbegriff in Code, Doku oder Commit auftaucht, der hier fehlt: Sprint v0.13.121+ConceptGlossary-Eintrag in derselben alphabetisch sortierten Section anhängen. Verweis-Stub auf Java-Klasse/Tool ist Pflicht — Outsider-Buchstabierung in den ersten 3 Sekunden entscheidet über Audit-Erfolg.*

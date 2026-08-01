@@ -1,19 +1,46 @@
 #!/usr/bin/env bash
-# SyxEconomyMod — Install Pre-Commit-Hooks (Sprint v0.13.108+Doku-Slim)
-# =====================================================================
-# Installiert die kombinierten Pre-Commit-Gates aus tools/.
-# Idempotent: bei wiederholtem Lauf werden bestehende Hooks ersetzt.
+# ==============================================================================
+# SyxEconomyMod — Git Hooks Installer (Operator Handbuch)
+# Version: Sprint v0.13.121+ConceptGlossary
+# ==============================================================================
+# ZWECK & IDEMPOTENZ:
+#   Installiert die kombinierten CI/CD-Pre-Commit-Gates im lokalen .git/ Ordner.
+#   Das Skript ist strikt IDEMPOTENT: Ein wiederholter Aufruf ueberschreibt
+#   bestehende Hooks sicher mit der aktuellen Version (siehe remove_hook())
+#   und richtet keinen Schaden an, sofern die Hook-Datei bereits aus diesem
+#   Skript installiert wurde; fremd-erzeugte Hooks bleiben unangetastet.
 #
-# Sprint v0.13.108+Doku-Slim: 1 Universal-Gate statt 4 Skripten.
-#   - Alte Skripte (verify-version-consistency.sh, docs-truth-consistency.sh,
-#     verify-audit-claims.sh, post-commit-pom-watchdog.sh, truth-stamp.sh+py,
-#     post-commit-session-handover.sh) wurden geloescht — preflight-Guard
-#     verifiziert NICHT mehr deren Existenz.
-#   - Hook-Template ruft einheitlich `bash tools/gate.sh precommit`.
+# HISTORIE (Migration via Thin-Wrapper-Deprecation-Pattern):
+#   VOR v0.13.118+Governance-Diät: Es gab unzaehlige Einzelskripte:
+#     - verify-version-consistency.sh (Versions-Checks)
+#     - docs-truth-consistency.sh (Doku-Drift)
+#     - verify-audit-claims.sh ([PM-OK]/[HYP]-Tag-Validation)
+#     - post-commit-pom-watchdog.sh (Maven-Property-Watch)
+#     - truth-stamp.sh + truth-stamp.py (Post-Commit Truth-Stamp)
+#     - post-commit-session-handover.sh (Auto-Handover-Generation)
+#   DIESE WURDEN via Thin-Wrapper-Deprecation-Pattern zuerst zu hohlen Echos
+#   degradiert und im Sprint v0.13.118+ endgueltig geloescht.
+#   AB v0.13.121+: Alles laeuft zentral ueber EINEN Pflicht-Hook.
 #
-# Verwendung:
-#   bash tools/install-hooks.sh          # installiert nach .git/hooks/pre-commit
-#   bash tools/install-hooks.sh --remove # entfernt installierte Hooks
+# INSTALLIERTE HOOK-DATEIEN:
+#   1. .git/hooks/pre-commit  (BLOCKIEREND):
+#      Ruft `bash tools/gate.sh precommit` auf und
+#        - Phase-4.7-Shield (IdentityHashMap/catch(Throwable-Drift)
+#        - Doku-Sync (Stam-Doku-Marker vs pom.xml)
+#        - God-Class-Guard (Hard-Block bei Drift)
+#      Bei Fail: Git-Commit wird abgebrochen. Developer sieht rote Meldung
+#                und kann den Drift fixen ODER explizit GATE_SKIP=true setzen.
+#
+#   2. .git/hooks/post-commit  (NON-BLOCKING):
+#      Ruft `bash tools/post-commit-shield.sh` auf und
+#        - Hard-Block-Drift nach dem Commit
+#        - mod.homepage/mod.credits-Sync-Probe (soft-WARN)
+#      Bei Fail: nur Log-Eintrag im Working-Tree, KEIN Rollback.
+#
+# VERWENDUNG:
+#   bash tools/install-hooks.sh           # Default: installiert beide Hooks
+#   bash tools/install-hooks.sh --remove  # entfernt beide Hooks (idempotent)
+#   bash tools/install-hooks.sh --help    # zeigt diesen Header an
 
 set -eo pipefail
 

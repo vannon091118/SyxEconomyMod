@@ -1,21 +1,43 @@
 #!/usr/bin/env bash
-# SyxEconomyMod — Universal Gate (Sprint v0.13.108+Doku-Slim)
-# ===========================================================
-# Ein Skript fuer alle Pre-Commit/Pre-Build/Release-Checks.
+# ╔════════════════════════════════════════════════════════════════════════╗
+# ║ SyxEconomyMod — Universal Gate (Operator Handbuch)                     ║
+# ║ Version: Sprint v0.13.121+ConceptGlossary                              ║
+# ╚════════════════════════════════════════════════════════════════════════╝
+# Ein Skript fuer ALLE Pre-Commit/Pre-Build/Release-Checks im Mod-Repo.
+# Konsolidiert seit Sprint v0.13.108+Doku-Slim mehrere legacy-Skripte in
+# EINEN Pflicht-Entry-Point — siehe Concept-Glossar „Thin-Wrapper-
+# Deprecation-Pattern" fuer den Migrations-Pfad.
 #
-# Modi:
-#   precommit  -> Phase-4.7-Shield + doku-sync check + god-class-guard hard
-#   prebuild   -> build-gate.sh (full 9 Gates)
-#   release    -> prebuild + bump-version check + balance-regression
+# MODI & BEISPIEL-AUFRUFE:
+#   1. precommit ->  `bash tools/gate.sh precommit`
+#      Sub-Phase-Suite: Phase-4.7-Shield + doku-sync check
+#                       + God-Class-Guard Hard-Block.
+#      Zielgruppe: Pre-Commit-Hook, schneller lokaler Dev-Loop.
+#   2. prebuild  ->  `bash tools/gate.sh prebuild`
+#      Ruft build-gate.sh mit allen 11 CI-Gates auf (siehe Concept-Glossar
+#      „Build-Gates (1–11)"). Zielgruppe: Maven validate / CI-Server.
+#   3. release   ->  `bash tools/gate.sh release`
+#      prebuild + balance-regression-check.sh + bump-version-readiness.
+#      Zielgruppe: pre-tag/push-Tag-Pipeline.
 #
-# Skip-Mechanismus (Sprint v0.13.108 Vereinheitlichung):
-#   GATE_SKIP=true (env-var)   -> ueberspringt ALLE Gates
-#   -Dgate.skip=true bei mvn   -> geleitet in env
+# AUSGANGS-SPEC (WAS PASSIERT WENN EIN GATE FAILT?):
+#   Exit-Code 0  — Alle Checks bestanden. Pipeline laeuft weiter.
+#   Exit-Code 1  — Mindestens ein Gate schlug fehl (Pipeline HARD-BLOCKED):
+#                   * im precommit-Modus blockiert Git den Commit strikt;
+#                   * im prebuild-Modus bricht Maven / CI den Build ab;
+#                   * im release-Modus wird der Tag-Push verhindert.
+#   Exit-Code 2  — Umgebungs- oder Aufruffehler (z. B. falsches Argument,
+#                   fehlender python3, fehlende pom.xml).
 #
-# Exit-Codes:
-#   0 — alle Gates bestanden
-#   1 — mindestens ein Gate fehlgeschlagen
-#   2 — Skript-Umgebungsfehler
+# SKIP-MECHANISMUS (NOTFALL-BYPASS — DOKUMENTATIONSPFLICHT):
+#   Wenn ein Gate fehlerhaft blockiert, kann es via env-var ausgesetzt
+#   werden. JEDER Skip MUSS im Commit-Body dokumentiert sein:
+#     Shell-env:  `GATE_SKIP=true bash tools/gate.sh precommit`
+#     Maven:      `mvn clean install -Dgate.skip=true`
+#                 (Property wird automatisch als env in die Bash-Ungebung geleitet).
+#   Per-Gate-Skip mit `SKIP_<GATE_NAME>=1` ist VEREHRT — Sprint v0.13.108+
+#           hat das im Zuge der Gate-Vereinheitlichung verworten.
+#
 
 # Sprint v0.13.108+Doku-Slim: set -eo pipefail (ohne -u).
 # Punkt-Var-Namen vermeiden — keine "Bad substitution"-Risiken in altem bash.
