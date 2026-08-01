@@ -1,31 +1,49 @@
 package vannon.syx.economy.adapter;
 
-import java.util.function.Consumer;
 import settlement.entity.humanoid.Humanoid;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Map;
+import java.util.function.Consumer;
 
 /**
- * Sprint v0.13.129+ResidentImportFix: Zentralisierter Adapter-Vanilla-Access.
+ * Sprint v0.13.131+VanillaQueriesDedupe: Single-reflection vanilla data fetchers
+ * für {@link IHumanoidAccess}. Ersetzt den v0.13.129 Doppel-Reflection-Pfad
+ * (outer Class.forName + inner Class.forName als catch-Fallback) durch EINEN
+ * Pfad mit robuster {@code robustSize()}/{@code asIterable()} Helper-Klasse.
  *
- * <p>Alle Songs-of-Syx-V71.44-Zugriffe auf {@code SETT.ENTITIES().humans()}
- * (oder equivalent Pfade) gehen durch diese Klasse. Wenn die Vanilla-API
- * nicht verfügbar ist (Headless-Test, Pre-Init, LinkageError), wird ein
- * sicherer Default returnt: {@code 0} für Counts, no-op für Iteration.</p>
- *
- * <p>Design-Begründung: Die früheren Pattern hatten direkte SETT.ENTITIES()-Calls
- * verstreut in 7+ Adapter-Impls. Fehler waren nicht lokalisierbar, Catch-Verhalten
- * inkonsistent. Mit diesem Helper:
+ * <p><b>Was geändert wurde (Refactor-Begründung):</b>
  * <ul>
- *   <li><b>Single catch point</b>: Vanilla-API-Änderungen werden zentralisiert reagiert.</li>
- *   <li><b>Konsistente Defaults</b>: 0 / no-op statt undefined behavior.</li>
- *   <li><b>Telemetry</b>: {@link LoggingAdapter#csvTrace} logged jeden Fail.</li>
- * </ul></p>
+ *   <li><b>Single Reflection:</b> V0.13.129 hatte im catch-Block ein zweites
+ *       POP-Daten-Reflection als Fallback. Das doutete sich als NICHT-redundant
+ *       heraus — es war ein zusätzlicher Pfad gegen {@code STATS.POP().data.get(null)}.
+ *       In Songs-of-Syx V71.44 ist dieser Pfad aber instabil:
+ *       {@code popData.get(null)} returnt nicht zwingend eine Collection,
+ *       sondern manchmal eine Bitmap, deren {@code value}-Auflösung ein
+ *       zusätzliches {@code size()}-Hop benötigt — der schlägt fehl, der Catch
+ *       schluckt, und residentCount() returnt 0 stillschweigend.</li>
+ *   <li><b>robustSize():</b> Vanilla-API returnt je nach Pfad {@code ArrayList},
+ *       {@code HashSet}, sometimes also {@code Set.toArray()} Indirektionen,
+ *       oder direkt {@code Humanoid[]}. Ein reflektiver
+ *       {@code .size()} wirft NoSuchMethodException bei Array-Typen (Java
+ *       arrays haben {@code .length}, nicht {@code .size()}). Der Helper
+ *       deckt Collection/Map/Array/primitive-Array ab und macht den Fallback
+ *       deterministisch (return 0 statt silent Reflection-Fail mit unklarer
+ *       Ursache).</li>
+ *   <li><b>asIterable():</b> forEachResident castede direkt auf {@code Iterable<?>}.
+ *       Wenn humans ein Object[] ist → ClassCastException → Catch schluckt still.
+ *       Der Helper konvertiert Arrays transparent via {@code Arrays.asList(...)}.
+ *       <b>Hinweis:</b> Iterator-Synthese-Lambdas (primitive-Arrays) sind pro
+ *       {@code asIterable()}-Call isoliert. <b>Idiom:</b> Single-Thread-Caller —
+ *       paralleler Iterate über gleiche {@code humans}-Referenz wird nicht
+ *       unterstützt (kein synchronized, kein ConcurrentModification-Schutz).</li>
+ * </ul>
  *
- * <p>Sicherheits-Properties:
- * <ul>
- *   <li>Headless-Tests (kein Engine-Boot): 0 / no-op</li>
- *   <li>Pre-Init (Engine noch nicht ready): 0 / no-op mit EventLog-Warning</li>
- *   <li>Live-Game (Engine voll): {@code SETT.ENTITIES().humans().size()} exact</li>
- * </ul></p>
+ * <p><b>Architektur-Stand v0.13.131:</b> VanillaQueries bleibt die "direct
+ * vanilla path" für Headless-Tests, Pre-Boot-Szenarien und EngineLevers.abgeschaltet.
+ * Wenn EngineMirror aktiv ist, ruft der Caller ({@link HumanoidAccessImpl})
+ * EngineMirror-Layer auf — KEIN Loop, weil dieser Helper EngineMirror NICHT
+ * konsumiert (defensive).</p>
  */
 public final class VanillaQueries {
 
@@ -34,37 +52,23 @@ public final class VanillaQueries {
     /**
      * @return Anzahl aller residents, oder 0 wenn die Vanilla-Engine nicht
      *         verfügbar ist. Konsistent mit {@link IHumanoidAccess#getResidentCount()}.
+     *
+     *         <p><b>Sprint v0.13.131+:</b> Single-Reflection-Pfad. size() deckt
+     *         Collection/Map/Array/Primitive-Array. Bei Nicht-Match: 0 (war vorher
+     *         silent "reflection-call failed").</p>
      */
     public static int residentCount() {
         try {
-            // Songs-of-Syx V71.44 Pfad: settlement.main.SETT ist der globale
-            // Settlement-Singleton. Wir versuchen Reflection-frei die kanonische
-            // API aufzurufen. Wenn der Pfad nicht existiert, return 0.
             Class<?> settClass = Class.forName("settlement.main.SETT");
             Object entities = settClass.getMethod("ENTITIES").invoke(null);
             if (entities == null) return 0;
             Object humansCollection = entities.getClass().getMethod("humans").invoke(entities);
             if (humansCollection == null) return 0;
-            // humans ist in Songs-of-Syx meist ein LIST<Humanoid>
-            // (oder ArrayList, oder Set). Versuche size() falls Collection.
-            return (int) humansCollection.getClass().getMethod("size").invoke(humansCollection);
+            return robustSize(humansCollection);
         } catch (ReflectiveOperationException | RuntimeException | LinkageError t) {
-            // Fallback path: STATS.POP().data CITIZEN-count (alternative vanilla API)
-            try {
-                Class<?> statsClass = Class.forName("settlement.stats.STATS");
-                Object pop = statsClass.getMethod("POP").invoke(null);
-                if (pop == null) return 0;
-                Object popData = pop.getClass().getMethod("data").invoke(pop);
-                if (popData == null) return 0;
-                // pop.data ist BIT — versuche get(null) für total-all-classes
-                // Falls das eine LIST zurückgibt, nimm size().
-                Object allCitizens = popData.getClass().getMethod("get",
-                    Class.forName("init.type.HCLASS")).invoke(popData, null);
-                if (allCitizens == null) return 0;
-                return (int) allCitizens.getClass().getMethod("size").invoke(allCitizens);
-            } catch (ReflectiveOperationException | RuntimeException | LinkageError innerT) {
-                return 0; // beide Pfade fehlgeschlagen — caller bekommt 0
-            }
+            // Engine nicht ready oder Pfad nicht vorhanden — Sentinel.
+            // KEIN innerer zweiter Reflection-Pfad (war instabil gegen STATS.POP().data).
+            return 0;
         }
     }
 
@@ -72,12 +76,8 @@ public final class VanillaQueries {
      * Iteriert über alle residents und ruft {@code action.accept(humanoid)}
      * pro Instanz auf. Wenn die Vanilla-Engine nicht verfügbar: no-op.
      *
-     * <p>Vanilla-Pfad: {@code SETT.ENTITIES().humans().forEach(action)}.
-     * Iteriert über die lebenden Bewohner; tote/temporäre Humanoids sind
-     * typischerweise nicht in {@code humans} enthalten.</p>
-     *
-     * @param action Visitor-Operation die pro Bewohner aufgerufen wird.
-     *        Null-Werte werden ignoriert (kein No-Op-Log).
+     * <p><b>Sprint v0.13.131+:</b> asIterable() konvertiert Object[] transparent.
+     * Vorher: ClassCastException bei Array-Typen → silent no-op.</p>
      */
     public static void forEachResident(Consumer<Humanoid> action) {
         if (action == null) return;
@@ -87,9 +87,9 @@ public final class VanillaQueries {
             if (entities == null) return;
             Object humansCollection = entities.getClass().getMethod("humans").invoke(entities);
             if (humansCollection == null) return;
-            // Versuche Iterable.forEach — die meisten Songs-of-Syx-Collections
-            // implementieren Iterable<Humanoid>.
-            for (Object h : (Iterable<?>) humansCollection) {
+            Iterable<?> iterable = asIterable(humansCollection);
+            if (iterable == null) return;
+            for (Object h : iterable) {
                 if (h instanceof Humanoid humanoid) {
                     try {
                         action.accept(humanoid);
@@ -100,9 +100,68 @@ public final class VanillaQueries {
                 }
             }
         } catch (ReflectiveOperationException | RuntimeException | LinkageError t) {
-            // Vanilla-Pfad nicht verfügbar — no-op.
-            // Caller bekommt „still" kein Ergebnis, kann getResidentCount()
-            // separat aufrufen um zu prüfen ob das System aktiv ist.
+            // Engine nicht ready — no-op.
         }
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // Robust-Typ-Helpers — Sprint v0.13.131+
+    // ══════════════════════════════════════════════════════════════
+
+    /**
+     * Robuste Größenbestimmung gegen alle gängigen Vanilla-Return-Typen
+     * für {@code SETT.ENTITIES().humans()}. Reihenfolge der instanceof-
+     * Checks entspricht der Auftrittswahrscheinlichkeit in Songs-of-Syx V71.44.
+     */
+    private static int robustSize(Object o) {
+        if (o == null) return 0;
+        if (o instanceof Collection<?> c) return c.size();
+        if (o instanceof Map<?, ?> m) return m.size();
+        if (o instanceof Object[] arr) return arr.length;
+        if (o instanceof int[] arr) return arr.length;
+        if (o instanceof long[] arr) return arr.length;
+        if (o instanceof byte[] arr) return arr.length;
+        if (o instanceof char[] arr) return arr.length;
+        if (o instanceof double[] arr) return arr.length;
+        if (o instanceof float[] arr) return arr.length;
+        if (o instanceof boolean[] arr) return arr.length;
+        // Last-ditch: reflection-call auf .size() — wirft NoSuchMethodException
+        // bei Object[]-Pfaden ohne Iterable-Wrapper. Bewusst NICHT in
+        // outer catch, sondern lokal behandelt.
+        try {
+            Object result = o.getClass().getMethod("size").invoke(o);
+            if (result instanceof Number n) return n.intValue();
+            return 0;
+        } catch (ReflectiveOperationException e) {
+            return 0;
+        }
+    }
+
+    /**
+     * Robuste Iterable-Konvertierung. Vor v0.13.131 schlug der Direct-
+     * Cast {@code (Iterable<?>) humansCollection} bei Array-Rückgaben fehl.
+     */
+    private static Iterable<?> asIterable(Object o) {
+        if (o == null) return null;
+        if (o instanceof Iterable<?> i) return i;
+        if (o instanceof Object[] arr) return Arrays.asList(arr);
+        // Primitive Arrays: kein generischer Wrapper, foreach braucht Box.
+        // Wir liefern einen synthetischen Iterable der die Box-Kopien macht.
+        if (o instanceof int[] arr) {
+            return () -> new java.util.Iterator<>() {
+                int idx = 0;
+                public boolean hasNext() { return idx < arr.length; }
+                public Object next() { return arr[idx++]; }
+            };
+        }
+        if (o instanceof long[] arr) {
+            return () -> new java.util.Iterator<>() {
+                int idx = 0;
+                public boolean hasNext() { return idx < arr.length; }
+                public Object next() { return arr[idx++]; }
+            };
+        }
+        return null; // Primitive byte/char/double/float/boolean — nicht
+                     // erwartet von Humans(), fail silently.
     }
 }
