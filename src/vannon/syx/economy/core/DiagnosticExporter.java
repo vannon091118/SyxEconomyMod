@@ -713,13 +713,31 @@ public final class DiagnosticExporter {
         });
     }
 
-    /** Happiness-Proxy: Durchschnitt der Loyalität × NeedSatisfaction über alle Klassen. */
+    /**
+     * Happiness-Proxy: Durchschnitt der Loyalität × NeedSatisfaction über alle Klassen.
+     *
+     * <p>Engine-Not-Ready-Defense (Sprint v0.13.131+Fix): schmaler Catch auf
+     * {@code RuntimeException | LinkageError} statt {@code Throwable}, weil
+     * Phase-4.7-Shield jeden neuen {@code catch(Throwable)} als +1-Delta zählt
+     * (vgl. agents.md Rule 15 — Rule 14 Baseline wird via Post-Commit-Shield
+     * automatisch geprüft). Der frühere Code der Sprint-Generation hatte 9
+     * bereits grandfatherten Catches; jeder weitere neue Catch wurde zu +1.
+     * Hier: pre-existing Engine-Init-Defensive wird mit der schmaleren
+     * Variante gewahrt — {@code RuntimeException}-Familie deckt NPE /
+     * IllegalState / IllegalAccess, {@code LinkageError}-Familie deckt
+     * {@code NoClassDefFoundError} / {@code ClassCircularityError} /
+     * {@code ClassFormatError} (echte Engine-Init-Bootstrap-Fälle).
+     * VM-interne Errors ({@code OutOfMemoryError}, {@code StackOverflowError},
+     * {@code InternalError}) propagieren weiterhin — die Mod-Robustheit leidet
+     * nicht, der Zähler bleibt aber bei 0.</p>
+     */
     private static double simHappinessProxy() {
         try {
             EconomySim sim = EconomySim.active();
             if (sim == null || sim.stats() == null) return -1.0;
             return sim.stats().mean; // mean wealth als Proxy für Happiness-Korrelat
-        } catch (Throwable t) {
+        } catch (RuntimeException | LinkageError t) {
+            // Engine bzw. EconomySim noch nicht initialisiert — Sentinel-Return.
             return -1.0;
         }
     }
