@@ -338,6 +338,45 @@ public final class EconConfig {
         oddjobWagePerTask = clamp(wage, 0, ceiling);
     }
 
+    // ── Sprint v0.13.124+BootstrapEncapsulation ──────────────────────────
+    /**
+     * Hard-Cap-Setter für {@link #startingTreasury}. Sprint v0.13.124+BootstrapEncapsulation:
+     * Zentraler choke-point für Once-Only-Bump-Ratchet-Injection aus {@code EconomySim}.
+     * Caller (EconomySim.applyEarlyPhaseBumpRules) verwaltet tradePartnerGatePassed weiterhin
+     * — Config-Klassen haben keinen State-Tracker. Clamp verhindert negative Treasury.
+     */
+    public static void setStartingTreasury(int value) {
+        startingTreasury = clamp(value, 0, Integer.MAX_VALUE);
+    }
+
+    /**
+     * Hard-Cap-Setter für {@link #meticImmigrationDepth}. Sprint v0.13.124+BootstrapEncapsulation:
+     * Clamp auf [0.0, 1.0] wegen TanH-Mathematik — negative k invertiert Booster logisch falsch.
+     * Caller (EconProgression) ist verantwortlich für EventLog/diagnostische Logs.
+     */
+    public static void setMeticImmigrationDepth(double depth) {
+        meticImmigrationDepth = clamp(depth, 0.0, 1.0);
+    }
+
+    /**
+     * Hard-Cap-Setter für {@link #meticImmigrationSteepness}. Sprint v0.13.124+BootstrapEncapsulation:
+     * Floor 0.1 verhindert Division-by-Zero in {@code Taxes.immigrationMultiplier}. TanH(x/steepness)
+     * ist nur stabil wenn steepness > 0; 0.1 ist kleiner als der Default 10 — bewusst niedrig
+     * damit Stage-Overrides (z.B. IMPERIUM=8.0) komfortabel darunter bleiben.
+     */
+    public static void setMeticImmigrationSteepness(double steepness) {
+        meticImmigrationSteepness = Math.max(0.1, steepness);
+    }
+
+    /**
+     * Tax-Multiplier-Breite — VOLL entkoppelt von {@link #meticImmigrationDepth}.
+     * Sprint v0.13.124+BootstrapEncapsulation: andere Semantik — wird NICHT durch Stage-Override
+     * mitmutiert (EconProgression), sondern unabhängig kalibriert. Initial = 0.20 zur
+     * Backward-Compat; ab da frei tunbar via direct-Write (kein Setter-Pattern nötig,
+     * da Tax-Multiplier kein Sicherheits-Bound hat).
+     */
+    public static double taxImmigrationDepth = 0.20;
+
     /**
      * Opt-in-Toggle: Wenn true, lehnt {@code Wages.setWage()} f\u00fcr private R\u00e4ume (nicht
      * state-funded public works) ab. Default false (Backward-Compat).
@@ -642,6 +681,13 @@ public final class EconConfig {
         }
         if (foodAffordabilityGateEnabled && handoutWalletAmount > 200) {
             return "foodAffordabilityGate + Handout = doppelte Kosten";
+        }
+        // Sprint v0.13.124+BootstrapEncapsulation: Cold-Start-Cascade detection.
+        // Wenn kein Treasury UND kein Wallet-Bonus bei aktivem Food-Gate, verhungern Settlers
+        // nach 4 Tagen → Vanilla-Happiness stürzt → Immigration-Attraktion fällt auf 0.
+        // v0.13.108-Regression-Wurzel — diese Warning fängt künftige Re-Bumps.
+        if (startingTreasury == 0 && earlySettlerWalletBonus == 0 && foodAffordabilityGateEnabled) {
+            return "Kaltstart-Kaskade: startingTreasury=0 + wallet-bonus=0 + foodGate=on. Siedler verhungern.";
         }
         return null;
     }

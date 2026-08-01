@@ -83,7 +83,10 @@ public final class Taxes implements Saveable {
     }
 
     public static double immigrationMultiplier(int meticModifier) {
-        double k = EconConfig.meticImmigrationDepth;
+        // Sprint v0.13.124+BootstrapEncapsulation: taxImmigrationDepth ist VOLL entkoppelt
+        // von meticImmigrationDepth. Verhindert Cross-Semantik-Bug (Stage-Override hat
+        // vormals auch Tax-Multiplier mutiert). Initial identisch 0.20; frei tunbar.
+        double k = EconConfig.taxImmigrationDepth;
         double s = EconConfig.meticImmigrationSteepness;
         if (s <= 0.0) {
             return 1.0;

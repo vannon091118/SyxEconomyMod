@@ -113,7 +113,7 @@ public final class EconomySim {
         if (prog != null
                 && prog.stage.level >= EconProgression.Stage.HANDEL.level
                 && PolityPriceAnchor.hasTradePartner()) {
-            EconConfig.startingTreasury = EconConfig.earlyPhaseHandelTreasury;
+            EconConfig.setStartingTreasury(EconConfig.earlyPhaseHandelTreasury);
             tradePartnerGatePassed = true;
             EventLog.log("EARLY_PHASE",
                 "Trade-Partner-Gate fired at Stage.HANDEL: startingTreasury 0 → "

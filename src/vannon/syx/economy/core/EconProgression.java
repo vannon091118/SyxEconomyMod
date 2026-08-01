@@ -216,8 +216,8 @@ public final class EconProgression implements Saveable {
                 }
                 break;
             case IMPERIUM:
-                EconConfig.meticImmigrationDepth = 0.5;
-                EconConfig.meticImmigrationSteepness = 8.0;
+                EconConfig.setMeticImmigrationDepth(0.5);
+                EconConfig.setMeticImmigrationSteepness(8.0);
                 if (!EconConfig.workplaceSharesEnabled) {
                     EconConfig.workplaceSharesEnabled = true;
                     EventLog.log("STAGE", "Aktienhandel freigeschaltet: Betriebsanteile koennen nun erworben werden.");
