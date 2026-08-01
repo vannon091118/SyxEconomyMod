@@ -642,8 +642,93 @@ public final class EconConfig {
      */
     public static int debugFurnitureDumpEveryTicks = 50;
 
-    /** Initialization hook called once at mod startup. */
-    public static void init() {}
+    /**
+     * Sprint v0.13.126+InitValidationHook: Opt-in-Flag zum Deaktivieren der
+     * Init-Warnings (z. B. für Headless-Bench-Tests die Probleme provozieren wollen).
+     * Default false = Warnings aktiv. Test-Main kann `EconConfig.disableInitWarnings = true`
+     * setzen wenn die Bench-Configuration absichtlich Cold-Start ist. Production-
+     * Defaults belassen die Flag auf false, weil im Real-Game jede Warmstart-Spiral-
+     * Warnung wertvoll ist.
+     */
+    public static boolean disableInitWarnings = false;
+
+    /**
+     * Initialization hook called once at mod startup. Sprint v0.13.126+InitValidationHook:
+     * Führt {@link #applyConfigurationWarnings()} aus und emittiert Warnings via
+     * {@code snake2d.LOG}. Reine Warnungs-Defense-Line — keine Auto-Korrektur,
+     * kein Hard-Fail (Headless-Bench-Tests müssen trotz Cascade durchlaufen können).
+     * Setter-Discipline (Sprint v0.13.124+) bleibt der primäre Schutz; diese
+     * Validate-Defense ist per Design warn-only und nicht-auto-fixing, weil die
+     * korrekte Reaktion auf Cascade-Kombinationen ein domänen-spezifischer
+     * Designentscheid des Modders ist (z.B. startingTreasury auf 100000 vs. Bonus auf 300).
+     */
+    public static void init() {
+        if (disableInitWarnings) {
+            return;
+        }
+        String[] warnings = applyConfigurationWarnings();
+        if (warnings.length == 0) {
+            return;
+        }
+        for (String warning : warnings) {
+            snake2d.LOG.ln("[ECON-INIT-RISK] " + warning);
+        }
+    }
+
+    /**
+     * Sprint v0.13.126+InitValidationHook: Composite-Validator für alle
+     * Cold-Start-Konfigurations-Warnungen. Reine Read-Only-Inspection — keine Mutation.
+     * Wird vom Init-Hook sowie von externen Quality-Checks aufgerufen.
+     * @return Array von Warnungs-Strings (leer wenn keine Probleme).
+     */
+    public static String[] applyConfigurationWarnings() {
+        java.util.List<String> warnings = new java.util.ArrayList<>();
+        String s1 = justifyStartingTreasuryReduce();
+        if (s1 != null) warnings.add(s1);
+        if (isLiturgyDisabledWithActiveRate()) {
+            warnings.add("Liturgie-Konflikt: liturgyEnabled=false aber liturgyRate="
+                + liturgyRate + " (Wirksamer Wert ohne Wirkung).");
+        }
+        if (isCorveeDisabledWithActiveDraft()) {
+            warnings.add("Corvee-Konflikt: corveeEnabled=false aber corveeDraftPercent="
+                + corveeDraftPercent + " (Draft kann nicht feuern).");
+        }
+        if (marketTaxRate > 0.5 || marketTaxRate < 0.0) {
+            warnings.add("marketTaxRate außerhalb sichere Grenzen (0.0-0.5): "
+                + marketTaxRate);
+        }
+        return warnings.toArray(new String[0]);
+    }
+
+    /**
+     * Sprint v0.13.126+InitValidationHook: Spezifische Validierung für die
+     * v0.13.108-Cold-Start-Cascade-Konfiguration. Wenn {@code startingTreasury=0}
+     * UND {@code earlySettlerWalletBonus=0} UND {@code foodAffordabilityGateEnabled=true},
+     * ist Cascade-Spirale garantiert (Settlers verhungern → Happiness-Crash →
+     * keine Immigration). Predict-only: gibt Warning-String zurück, modifiziert nichts.
+     */
+    private static String justifyStartingTreasuryReduce() {
+        if (startingTreasury == 0
+                && earlySettlerWalletBonus == 0
+                && foodAffordabilityGateEnabled) {
+            return "Kaltstart-Kaskade: startingTreasury=0 + wallet-bonus=0 + foodGate=on. Settlers verhungern.";
+        }
+        return null;
+    }
+
+    /**
+     * Sprint v0.13.126+InitValidationHook: Helper-Check für Liturgie-Widerspruch.
+     */
+    private static boolean isLiturgyDisabledWithActiveRate() {
+        return !liturgyEnabled && liturgyRate > 0.0;
+    }
+
+    /**
+     * Sprint v0.13.126+InitValidationHook: Helper-Check für Corvee-Widerspruch.
+     */
+    private static boolean isCorveeDisabledWithActiveDraft() {
+        return !corveeEnabled && corveeDraftPercent > 0;
+    }
 
     public static void resetLaborDefaults() {
         // v1.7.3-Fix: War 150 — hat den Balance-Fix von v1.7.0 bei jedem Reset
