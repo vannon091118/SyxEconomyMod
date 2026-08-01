@@ -53,7 +53,7 @@
 | **L-02** | ✅ Closed (v0.13.79) | **SubjectFatigue + FatiguePressure:** FatigueTracker extrahiert (int[60000] + STAMINA-Booster via BOOSTABLES.PHYSICS().STAMINA). Config: fatigueEnabled, fatiguePerTick=1, fatigueRestThreshold=100, fatigueRecoveryRate=5, fatigueStaminaMin=0.5. Wallets v34 Save-Format. `FatigueTracker.java`, `FatiguePressure.java`, `Wallets.java`, `EconConfig.java`, `MainScript.java`, `EconomySim.java` | ~80 | L-1 |
 | **L-03** | ✅ Closed (v0.13.78) | **WealthRest:** Reiche Bürger arbeiten Teilzeit via reduzierter Fatigue-Schwelle. `EconConfig.wealthRestEnabled` + `wealthRestMedianMultiplier` (3.0× Median) + `wealthRestThresholdFactor` (0.5 = halbierte Schwelle). Implementiert in `FatiguePressure.java:42-43` — wenn `wealthRestEnabled && sim.relativeWealth(indu) > wealthRestMedianMultiplier` → `threshold = (int)(threshold * wealthRestThresholdFactor)`. Kein Ruhestand, nur reduzierte Arbeitszeit. | ~40 | L-1 |
 | **LOG-01** | ✅ Closed (v0.13.79) | **ACTION-Logging:** 25/27 clickActionSet-Calls in 4 UI-Fenstern mit DiagnosticExporter verknüpft (2 verbleibende: EconWindowBase Slider-Primitive ohne Kontext). WindowState, EconWindowBase Tab-Switch, + WindowOverview/WindowQuickview (Spluck-Prep). | ~10 | LOG-1 |
-| **LOG-02** | 🟡 P2 | **Session-Identifikation:** nanoTime-Epoch im Dateinamen vereinheitlichen (DebugTracer/DebugCsv/DiagnosticExporter). Gemeinsamer Session-Join-Key. | ~20 | LOG-1 |
+| **LOG-02** | ✅ Closed (v0.13.131, Commit `42b2de7`) | **Session-Identifikation:** `SESSION_EPOCH` als zentrale Konstante in `DebugCsv` + `DiagnosticExporter`. DebugCsv nimmt die exportierte Epoch in die Header-Zeile und ersetzt eigene nanoTime beim DUMP → SQL-Join DebugCsv ↔ DiagnosticExporter möglich. Detail-Block 1-Diff-Modifikation: Session-Header konsistent `nanoTime` aus einer eingefrorenen `final`-Konstante. | ~45 | LOG-1 |
 | **LOG-03** | 🟡 P2 | **4-Log-Split (Variante C Hybrid):** log_berechnung/log_aktionen/log_zugriffe/log_sonstiges.csv via LoggingAdapter. economy_events.log bleibt als In-Game-Chronik. debug.csv + rebalance_*.csv entfallen. | ~150 | LOG-1 |
 | **BA-01** | ✅ Closed (v0.13.79) | **Treasury-Drain Early-Game:** `earlySettlerWalletBonus` 300→500, `earlySettlerDoleThreshold` 5000→10000. Mehr Startkapital + breitere Gratiskorn-Versorgung. `EconConfig.java` | ~5 | BA |
 | **BA-02** | ✅ Closed (bfde22e) | **Extrem-Gini 0.946:** Progressive Wealth-Surcharge via EconomyTickOrchestrator.collectGiniSurcharge() — Gini>0.80 → 5% Überschuss-Steuer ab 50× Median. | ~10 | BA |
@@ -296,6 +296,18 @@ Siehe `docs/superpowers/specs/HANDOFF_M1.md`.
 3. `bash tools/verify-doc-sync.sh` — 9 Checks PASS
 4. Pre-Commit-Hook: `.git/hooks/pre-commit → tools/build-gate.sh`
 
+### Schnellpfade für den Dev-Loop (Sprint v0.13.131+Quickstart-Sprint)
+
+| Ziel | Einzeiler | Tradeoff |
+|---|---|---|
+| Schnellster Build (kein Gates, keine Tests) | `mvn -Dgate.skip=true -DskipTests=true -o clean package` | Kein Tracking-Regression-Scan, keine Doc-Anker-Sync, keine Tests |
+| Build + Tests, kein Gate | `mvn -Dgate.skip=true -o clean test package` | Tests müssen grün, Doc-Anker-Drift egal |
+| Voller CI-Lauf (Pre-Push) | `mvn -o clean verify install && bash tools/gate.sh release` | Alles — langsam (~3 Min) |
+| Nur Regressions-Delta (Skip Pre-existing) | `bash tools/phase47-shield.sh --mode=delta-only` | Nur NEUE catch(Throwable)/EngineSeams/IdentityHashMap-Drift failt — Pre-existing-Violations ignoriert |
+| Catch(Throwable)-Reduction Audit (warum wurde da was geändert?) | `bash tools/audit-bytecode.sh` | Bytecode-Injection-Scan + defensive-catch-Inventar |
+
+`tools/install-hooks.sh` installiert den vollen Pre-Commit-Hook (alle Gates). Für Fast-Iter-Work **pre-commit Hook NICHT installieren** oder mit `GATE_SKIP=true bash tools/gate.sh precommit` umgehen.
+
 ---
 
 ## Sprint U-1 — Livetest UI-Fixes (v0.13.64-B868DC9-DIRTY)
@@ -369,7 +381,7 @@ Siehe `docs/superpowers/specs/HANDOFF_M1.md`.
 | Task | Prio | Beschreibung | LoC |
 |---|---|---|---|
 | **LOG-01** | 🟠 P1 | **ACTION-Logging:** Alle `clickActionSet`-Calls (25 in WindowOverview/Quickview/State) mit `EventLog.log("ACTION", "slider=headTax old=45 new=135")` verknüpfen. Old/New-Transition dokumentieren. | ~35 |
-| **LOG-02** | 🟡 P2 | **Session-Identifikation:** `SESSION_EPOCH` als zentrale Konstante in `DiagnosticExporter`. DebugTracer.dump() verwendet diesen Epoch, nicht eigenen nanoTime(). DebugCsv schreibt Epoch in Header-Zeile. | ~20 |
+| **LOG-02** | ✅ Closed (v0.13.131, Commit `42b2de7`) | **Session-Identifikation:** `SESSION_EPOCH` als zentrale Konstante in `DebugCsv` + `DiagnosticExporter`. DebugCsv nimmt die exportierte Epoch in die Header-Zeile und ersetzt eigene nanoTime beim DUMP → SQL-Join DebugCsv ↔ DiagnosticExporter möglich. Detail-Block 1-Diff-Modifikation: Session-Header konsistent `nanoTime` aus einer eingefrorenen `final`-Konstante. | ~45 |
 | **LOG-03** | 🟡 P2 | **4-Log-Split (Variante C Hybrid):** `log_berechnung.csv` (ECON/TREND/STAGE/REBALANCE), `log_aktionen.csv` (ACTION), `log_zugriffe.csv` (SEAM/ACCESS/BOOSTERS/ADAPTER), `log_sonstiges.csv` (SYSTEM/CHEAT/CONFIG/TRACE). `economy_events.log` bleibt In-Game-Chronik. `debug.csv` + `rebalance_*.csv` entfallen, Schema in 4-Log übernommen. | ~150 |
 
 **Geschätzt:** 3 Tasks, ~205 LoC
