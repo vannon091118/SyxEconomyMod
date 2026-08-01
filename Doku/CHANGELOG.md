@@ -129,6 +129,35 @@ Mit dieser Diagnostik lässt sich Sprint v0.13.132+CapReasoning (geplant) vorber
 - Auto-Pivot Diagnostics-Cronjob (Idle-Hours Cleanup) → Sprint v0.13.133+DiagRotator
 - `appendResourceRow`/`appendFirmRow` analog Throttle-Hookung → Folge-Sprint
 
+### Sprint v0.13.131+LOG-02 — Session-Identifikation in DebugCsv vereinheitlicht (1 File, +12/-4 LOC netto)
+
+`DebugCsv` schreibt jetzt analog zu `DiagnosticExporter.{rebalance_macro_,rebalance_resources_,rebalance_firms_,rebalance_io_,rebalance_immigration_,trace_dump_,summary_}_*.csv` mit Session-Epoch-Suffix. Damit ist `pandas.read_*()` Session-Join trivial: gemeinsamer `*_<seed>.csv`-Substring filtert oder `pd.merge(.., on='session_seed')` aus den Header-Metadaten.
+
+**Subsummiert 1 Task (~12 LOC Sprint-Scope):**
+
+1. **`DebugCsv.computeDebugCsv()` (NEU, ~12 LOC)** — Lazy-Berechnung des Output-Paths aus `DiagnosticExporter.diagnosticDirectory()` + `DiagnosticExporter.sessionSeed()`. `Paths.get(System.getProperty("user.home"), ".local", ...)` raus, da das Directory jetzt SSoT bei DiagnosticExporter ist (verhindert Path-Drift zwischen 9 Files). Klassen-Init-Order korrekt: DebugCsv-Init triggert DiagnosticExporter-Init (selbes Package), wodurch SESSION_EPOCH stabil vor Path-Lookup gesetzt ist.
+
+**Verification DoD (3/3 OK):**
+
+- `mvn -q -DskipTests -Dskip.bump=true compile` → BUILD SUCCESS ✔
+- `bash tools/god-class-guard.sh --mode=hard` → 186 PASS / 0 WARN / 0 BLOCK ✔
+- `bash tools/verify-doc-sync.sh` → PASS (13 Stam-Docs sync mit pom 0.13.107) ✔
+
+**Pre-existing richtig erkannt:**
+
+- `DebugTracer.dump()` und `DiagnosticExporter.flush(long seed)` waren bereits Session-aware — `Sprint v0.13.131+LOG-02` schließt den Audit-Befund: DebugCsv war die letzte Lücke.
+- Keine Änderung an `EconDaySnapshot`, `summary_*.csv`, `Macro_HEADER` nötig.
+
+**Was der Spieler/Live-Tester sieht:**
+
+Vor Sprint: `~/.local/share/songsofsyx/mods/SyxEconomyMod/diagnostics/debug.csv` (überschrieben bei jedem Restart).
+Nach Sprint: `~/.local/share/songsofsyx/mods/SyxEconomyMod/diagnostics/debug_<session-epoch>.csv` (Rotation pro Session, joins zu allen anderen `*_<seed>.csv`-Files).
+
+**Out-of-Scope (deliberately deferred):**
+
+- 4-Log-Split (LOG-03, ~150 LOC) — Folge-Sprint; aktuell weiterhin 1 File mit `category`-Spalte
+- Auto-Rotation per Cron-Hook (z.B. 7-Tage-Expiry auf Files älter als 7 Tage) — Folge-Sprint
+
 ### Sprint v0.13.107 — PolityPriceAnchor: Trade-Partner-Only Pricing
 
 - **Marktpreise folgen nur noch Handelspartnern** — `RD.DIST().neighs()`-Fallback entfernt.

@@ -48,10 +48,22 @@ public final class DebugCsv {
     /** Schema version — printed in note on first row for parser migrations. */
     public static final String SCHEMA_VERSION = "v1";
 
-    private static final Path DEBUG_CSV = Paths.get(
-            System.getProperty("user.home"),
-            ".local", "share", "songsofsyx", "mods", "SyxEconomyMod",
-            "diagnostics", "debug.csv");
+    /**
+     * Sprint v0.13.131+LOG-02 — Session-Identifier im Filename vereinheitlichen.
+     * Vorher: hardcoded "debug.csv" (kein Session-Join mit {rebalance_macro_, trace_dump_, summary_}.csv).
+     * Nachher: "debug_<sessionSeed>.csv" via {@link DiagnosticExporter#sessionSeed()} — gleicher
+     * Suffix-Stil wie alle anderen Diagnostic-Files. Session-Join via gemeinsamem Seed.
+     *
+     * <p>Lazy-Berechnung: DebugCsv-Klasse triggert DiagnosticExporter-Klasseninit (selbes Package)
+     * wodurch zuerst {@code SESSION_EPOCH = System.nanoTime()} in DiagnosticExporter gesetzt wird.
+     * Dadurch ist die Filename-Berechnung deterministisch nach erster Reference.</p>
+     */
+    private static final Path DEBUG_CSV = computeDebugCsv();
+
+    private static Path computeDebugCsv() {
+        Path dir = Paths.get(DiagnosticExporter.diagnosticDirectory());
+        return dir.resolve("debug_" + DiagnosticExporter.sessionSeed() + ".csv");
+    }
 
     private static final DateTimeFormatter TS_FMT =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
