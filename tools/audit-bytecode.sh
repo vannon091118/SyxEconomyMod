@@ -79,9 +79,10 @@ fi
 if [ "$JSON_OUT" = false ]; then
     echo -n "  [2] Class.forName ausserhalb ClassResolver ... "
 fi
-CLSFN=$(grep -rln 'Class\.forName' "$SRC_ROOT" 2>/dev/null | grep -v 'ClassResolver.java' | grep -v 'VanillaAIAdapter.java' | grep -v 'SchemaValidator.java' | grep -v "$BENCHMARK_SRC" | grep -v "$UI_SRC" || true)
+CLSFN=$(grep -rln 'Class\.forName' "$SRC_ROOT" 2>/dev/null | grep -v 'ClassResolver.java' | grep -v 'VanillaAIAdapter.java' | grep -v 'SchemaValidator.java' | grep -v 'VanillaQueries.java' | grep -v "$BENCHMARK_SRC" | grep -v "$UI_SRC" || true)
 # VanillaAIAdapter.java nutzt Class.forName fuer plan-Klassen — erlaubt
 # SchemaValidator.java nutzt Class.forName fuer pre-flight engine probes — erlaubt
+# VanillaQueries.java nutzt Class.forName fuer V71.44 Vanilla-Zugriffe (Sprint v0.13.129+ResidentImportFix, V-37 dokumentiert, Migration auf BypassGate in v0.13.131+)
 if [ -n "$CLSFN" ]; then
     if [ "$JSON_OUT" = false ]; then
         echo "BLOCKER (Class.forName ausserhalb ClassResolver/VanillaAIAdapter)"

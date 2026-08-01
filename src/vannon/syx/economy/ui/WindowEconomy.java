@@ -580,12 +580,25 @@ public final class WindowEconomy extends EconWindowBase {
             content.add(sanity, x, y);
             y += 16;
 
+            // Sprint v0.13.129+U-09 — Detail-Zeile mit neutralen Separatoren statt
+            // mathematischem '+', damit "Kasse -1.8M | Umlauf 2.0M" nicht wie
+            // eine Addition mit negativem Summand aussieht (widerspricht dann
+            // nicht mehr dem positiven Geldmenge-heute-Wert).
             GText detail = new GText(UI.FONT().S, FONTW_BODY);
-            detail.set("Kasse " + CompactNumber.format(treasury) + " + Umlauf " + CompactNumber.format(circulating)
-                + " + Pendings " + CompactNumber.format(pendingEst) + " = " + CompactNumber.format(totalNow));
+            detail.set("Komponenten: Kasse " + CompactNumber.format(treasury) + "  |  Umlauf " + CompactNumber.format(circulating)
+                + "  |  Pendings " + CompactNumber.format(pendingEst));
             detail.color(GCOLOR.T().INACTIVE);
             content.add(detail, x, y);
             y += 24;
+
+            // Zusätzliche Erklärung wenn Treasury negativ aber Geldmenge positiv
+            if (treasury < 0 && totalNow > 0) {
+                GText note = new GText(UI.FONT().S, FONTW_BODY);
+                note.set("→ Kasse im Minus, aber Umlaufgeld bei Bürgern gleicht aus. Geldmenge insgesamt positiv.");
+                note.color(GCOLOR.UI().SOSO.normal);
+                content.add(note, x, y);
+                y += 16;
+            }
 
             // Event-Chronik
             java.util.List<EventLog.EventEntry> events = EventLog.getRecentEvents();
