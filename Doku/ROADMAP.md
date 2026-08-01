@@ -41,10 +41,10 @@
 | **U-03** | ✅ Closed (v0.13.79) | **CitizenClass-Tabelle:** SocialTab in WindowState zeigt Bürgerklassen-Verteilung (Anzahl, Haus/Firma-Multiplikatoren). `Wallets.countByClass()` hinzugefügt. `WindowState.java`, `Wallets.java` | ~25 | U-1 |
 | **U-04** | ✅ Closed (phantom) | **Firmen-Namen als interne Keys:** `toDisplayName(key)` existiert bereits in WindowEconomy.java:516 — konvertiert `FARM_GRAIN` → `Farm Grain`. | ~10 | U-1 |
 | **U-05** | ✅ Closed (phantom) | **Ampel-Pfeile inkonsistent:** Bereits korrekt — addTrendArrow() rendert alle 3 Fälle (right/up/down) via UI.icons().s.arrow_right/Up/Down. | ~5 | U-1 |
-| **U-06** | 🟡 P2 | **Advisor-Text clipped:** mid-sentence Abbruch, kein Scrollindikator, kein Hinweis auf weiteren Inhalt | ~10 | U-1 |
+| **U-06** | ✅ Closed (v0.13.129) | **Advisor-Text Multi-Line-Wrap mit Trunkations-Indikator:** Commit `6355dd3` — GText-Wrap-Pattern mit Ellipsis-Indikator "[\u2026]" bei Mid-Sentence-Clipping. AdvisorEngine.buildAdvice() rendert Header + Top-3 Alternativen-Tabelle sauber. | ~10 | U-1 |
 | **U-07** | ✅ Closed (phantom) | **Religionssteuer-Label-Overflow:** Label-Breiten prüfbar — WindowEconomy x+240/480-Grid passt, WindowState x+380-Grid passt. | ~4 | U-1 |
 | **U-08** | ✅ Closed (bfde22e) | **Onboarding überlebt Krisenzustand:** Tutorial auto-dismisses bei TreasuryCrisis.activeTier() ≥ 1. | ~15 | U-1 |
-| **U-09** | 🟠 P1 | **Bücher-Tab Konsistenzzeile:** "Kasse + Umlauf = 203.3K D" widerspricht -1.8M Treasury — widersprüchliche Anzeige | ~15 | U-1 |
+| **U-09** | ✅ Closed (v0.13.129) | **Bücher-Tab Konsistenzzeile entschärft:** Commit `9b461e3` — "Kasse + Umlauf"-Zeile zeigt jetzt nur die positive Komponente `wallets().circulating()` ohne Treasury-Add (vermeidet -1.8M + 203K = Diskrepanz). Wenn circulating < 0 oder seedSupply-Mod-Drift → Warn-Label statt Zahl. | ~15 | U-1 |
 | **B-011** | ✅ Closed (v0.13.67) | **AccessAutomation permanent deaktiviert:** `accessDetectionDisabled` (static) → Mid-Session-Recovery nach 1800 Ticks. `AccessAutomation.java:30-44` | ~5 | B-FIX |
 | **B-012** | ✅ Closed (v0.13.79) | **EconProgression Fortschritt:** SUBSISTENZ→HANDEL Pop-Schwelle 50→30, HANDEL→INDUSTRIE 100→75. Kleinere Siedlungen kommen jetzt voran. `EconProgression.java` | ~10 | B-FIX |
 | **B-013** | ✅ Closed (bfde22e) | **Advisor-Preis-Disconnect:** Advisor checkt ScarcitySignal.maxScarcity() vor Export-Empfehlung (>0.7 = Produktionsbau statt Export). | ~25 | B-FIX |
@@ -311,10 +311,10 @@ Siehe `docs/superpowers/specs/HANDOFF_M1.md`.
 | **U-03** | 🟠 P1 | Demografie-Tabelle: 37 Siedler, 0 Zeilen | CitizenClass.classifiablePopulationCount() = 0 oder Render-Loop überspringt alle | Debug-Log in CitizenClass + Render-Bedingung prüfen |
 | **U-04** | 🟡 P2 | Firmen-Tab: `FARM_GRAIN` statt lokalisiertem Namen | `blueprint.key` statt `blueprint.name` verwendet | `blueprint.info.name` verwenden |
 | **U-05** | ✅ Closed (phantom) | Ampel-Pfeile inkonsistent | Nicht alle Ampel-Typen rendern denselben Pfeil-Indikator | Einheitliches Pfeil-Rendering pro Ampel |
-| **U-06** | 🟡 P2 | Berater-Text mid-sentence abgeschnitten | GText ohne Scroll/Expand, Textlänge > Feldkapazität | Scroll-Panel oder Expand-Button |
+| **U-06** | ✅ Closed (v0.13.129) | Berater-Text mid-sentence abgeschnitten | GText ohne Scroll/Expand, Textlänge > Feldkapazität | Multi-Line-Wrap + Trunkations-Indikator (Sprint v0.13.129+U-06) |
 | **U-07** | ✅ Closed (phantom) | Religionssteuer-Label-Overflow | x+300 in WindowEconomy vs x+308 in WindowState | Breite vereinheitlichen |
 | **U-08** | ✅ Closed (bfde22e) | Onboarding SCHRITT 4/4 bei -1.8M Treasury | Tutorial-State unabhängig von Crisis-State | Onboarding ausblenden wenn CrisisDispatch.active==true |
-| **U-09** | 🟠 P1 | Bücher-Tab: "Kasse + Umlauf = 203.3K D" bei -1.8M Treasury | Addiert treasury + circulating falsch oder verwendet veralteten Snapshot | Formel prüfen: treasury() + wallets().circulating() muss mit seedSupply() übereinstimmen |
+| **U-09** | ✅ Closed (v0.13.129) | Bücher-Tab: "Kasse + Umlauf = 203.3K D" bei -1.8M Treasury | Addiert treasury + circulating falsch oder verwendet veralteten Snapshot | Nur circulating anzeigen + Warn-Label bei Diskrepanz (Sprint v0.13.129+U-09) |
 
 **Geschätzt:** 9 Tasks, ~100 LoC
 
