@@ -1,5 +1,6 @@
 package vannon.syx.economy.core;
 
+import game.faction.FACTIONS;
 import init.resources.RESOURCE;
 import init.resources.RESOURCES;
 import java.util.ArrayList;
@@ -197,6 +198,8 @@ public final class CrownTitleEngine {
     private int retailUnitPrice(int resourceIndex) {
         if (resourceIndex < 0 || resourceIndex >= RESOURCES.ALL().size()) return 0;
         RESOURCE resource = (RESOURCE)RESOURCES.ALL().get(resourceIndex);
-        return Math.max(0, this.prices.ready() ? this.prices.priceRoundedUp(resourceIndex) : PolityPriceAnchor.priceOf(resource));
+        if (this.prices.ready()) return Math.max(0, this.prices.priceRoundedUp(resourceIndex));
+            int partnerPrice = PolityPriceAnchor.priceOf(resource);
+            return Math.max(0, partnerPrice > 0 ? partnerPrice : FACTIONS.PRICE().get(resource.tr()));
     }
 }

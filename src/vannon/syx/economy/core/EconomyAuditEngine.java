@@ -258,7 +258,14 @@ final class EconomyAuditEngine {
         double[] targets = new double[goods];
         for (int i = 0; i < goods; ++i) {
             RESOURCE resource = (RESOURCE) RESOURCES.ALL().get(i);
-            anchors[i] = PolityPriceAnchor.priceOf(resource);
+            // PolityPriceAnchor returns trade-partner price, or 0 if none.
+            // When 0 → fall back to vanilla base price as anchor. This is NOT
+            // a "global market" price — it's the engine's default valuation,
+            // used only until a trade partner is established.
+            int partnerPrice = PolityPriceAnchor.priceOf(resource);
+            anchors[i] = partnerPrice > 0
+                ? partnerPrice
+                : FACTIONS.PRICE().get(resource.tr());
             targets[i] = RESOURCES.EDI().is(resource)
                 ? EconConfig.targetFoodDays
                 : (RESOURCES.DRINKS().is(resource)

@@ -59,11 +59,14 @@ legacy_baselines:
     fields: 29
     imports: 23
     status_at_emit: block
+    reason_at_emit: fields 29 > block 24
+  src/vannon/syx/economy/core/EconConfig.java:
+    loc: 329
     pubM: 7
-    fields: 238
+    fields: 256
     imports: 0
     status_at_emit: block
-    reason_at_emit: fields 207 > block 24
+    reason_at_emit: fields 256 > block 24
   src/vannon/syx/economy/core/EconProgression.java:
     loc: 252
     pubM: 10
@@ -72,15 +75,17 @@ legacy_baselines:
     status_at_emit: pass
     reason_at_emit: fields 46 > block 24
   src/vannon/syx/economy/core/EconomySim.java:
-    loc: 351
+    loc: 370
     pubM: 70
-    fields: 9
+    fields: 10
     imports: 23
     status_at_emit: pass
-    reason_at_emit: 'Spluck-TECHD-01: 1323→439 LOC via 3-class extraction.
+    reason_at_emit: |
+      Spluck-TECHD-01: 1323→439 LOC via 3-class extraction.
       Sprint E1: -56 LOC via EconomyDebugTools extraction.
-      Sprint E2: -46 LOC via resetEconomy→EconomySaveLoad.resetAll delegation.'
-    baseline_update: Sprint E2 resetEconomy extraction (-46 LOC, -1 field)
+      Sprint E2: -46 LOC via resetEconomy→EconomySaveLoad.resetAll delegation.
+      Sprint v0.13.110+: + applyEarlyPhaseBumpRules (21 LOC) + tradePartnerGatePassed-field (+1 field).
+    baseline_update: "Sprint v0.13.120+Phase-4.7-Sweep Re-Baseline: loc 351→370, fields 9→10."
   src/vannon/syx/economy/core/EconomyTickOrchestrator.java:
     loc: 192
     pubM: 0
@@ -325,13 +330,13 @@ legacy_baselines:
     baseline_update: "Sprint v0.13.113+M-UI-3.3 Pre-Existing-BLOCK-Grandfather - Build-Gate-BLOCKER fix vor Sprint v0.13.107-112 Push-Wave."
 
   src/vannon/syx/economy/core/EconomySim.java:
-    loc: 351
+    loc: 370
     pubM: 70
-    fields: 9
+    fields: 10
     imports: 23
     status_at_emit: pass
-    reason_at_emit: "Sprint E1+E2: EconomyDebugTools extraction + resetEconomy→EconomySaveLoad.resetAll. Total: -102 LOC from453."
-    baseline_update: "Sprint E2 resetEconomy extraction — re-baseline per Rule 14."
+    reason_at_emit: "Sprint E1+E2: EconomyDebugTools extraction + resetEconomy→EconomySaveLoad.resetAll. + applyEarlyPhaseBumpRules (Sprint v0.13.110+) + tradePartnerGatePassed-field."
+    baseline_update: "Sprint v0.13.120+Phase-4.7-Sweep Re-Baseline: loc 351→370, fields 9→10."
 
   src/vannon/syx/economy/core/EngineLevers.java:
     loc: 237

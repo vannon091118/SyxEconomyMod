@@ -147,7 +147,8 @@ public final class EconConfig {
     // auf 150 zurückgesetzt — der Bug reparierte sich selbst.
     // Alle 13 jetzt auf 50 aligniert, consistent mit defaultWage.
     public static int defaultWage = 50;
-    public static int startingTreasury = 200000;
+    public static int startingTreasury = 0; // Sprint v0.13.108+StartingFromGround: 200000→0 — State fängt OHNE Geldreserven an. Bürger müssen mit eigenem Wallet starten, Treasury-Drain-Loop wird so unterbunden (war v0.13.107 mit -1.8M als Symptom sichtbar).
+    public static int earlyPhaseHandelTreasury = 20000; // Sprint v0.13.110+: Once-Only-Bump sobald Stage≥HANDEL+hasTradePartner (siehe EconomySim.applyEarlyPhaseBumpRules).
     public static int wageMax = 1000;
     public static int wageStep = 5;
     public static int militaryTrainingWagePerDay = 50;
@@ -388,8 +389,19 @@ public final class EconConfig {
     public static double taxHappinessAtFullRate = 0.5;
     public static double taxPainReference = 0.25;
     public static double taxPainFreeRate = 0.05;
-    public static double meticImmigrationDepth = 0.35;
+    // Sprint v0.13.108+StartingFromGround: meticImmigrationDepth sehr klein gehalten
+    // — bei 0 Bürger ist Immigration-Booster-Range sehr eng, was die Eintreffens-Wahrscheinlichkeit
+    // drückt; ergänzend meticImmigrationCap als harte Obergrenze (siehe MeticImmigration.java).
+    public static double meticImmigrationDepth = 0.20; // 0.35→0.20 — weniger Spike-Migration bei negativer Reputation
     public static double meticImmigrationSteepness = 10.0;
+    /**
+     * Migrations-Cap (Sprint v0.13.108+StartingFromGround). Bis dieser Population-Wert erreicht ist,
+     * wirkt der MeticImmigration-Booster normal (Steigung via meticImmigrationDepth/-Steepness).
+     * Ab diesem Wert: Immigration-Booster wird auf 0.5 (neutral) gesetzt — Vanilla-Engine akzeptiert
+     * damit keine weiteren Immigranten mehr solange Cap voll ist. User kann Cap später via UI-Toggle
+     * anheben sobald ein Handelspartner oder Lagerhaus gebaut ist (Folge-Sprint UI-Knopf).
+     */
+    public static int meticImmigrationCap = 50;
     public static boolean grainDoleEnabled = true;
     public static boolean grainDoleToSlaves = false;
     public static boolean militaryPayrollEnabled = true;
@@ -710,7 +722,7 @@ public final class EconConfig {
      *  sanften Early-Game-Einstieg. */
     public static boolean earlySettlerBuffEnabled = true;
     public static int earlySettlerPopThreshold = 50;
-    public static int earlySettlerWalletBonus = 500; // BA-01: 300→500 — mehr Startkapital gegen Treasury-Drain
+    public static int earlySettlerWalletBonus = 0; // Sprint v0.13.108+StartingFromGround: 500→0 — kein silent Treasury-Drain mehr; wenn startingTreasury=0 und bonus>0 wäre Bürger-Wallet > State-Reserve unsicher.
 
     /** BA-04 (v0.13.67): Bootstrap GrainDole-Schwellwert.
      *  Solange {@code population < earlySettlerPopThreshold}, gilt dieser

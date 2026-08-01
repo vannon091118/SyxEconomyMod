@@ -65,7 +65,7 @@ class EconConfigTest {
     void wageDefaults() {
         assertTrue(EconConfig.wagesEnabled);
         assertEquals(50, EconConfig.defaultWage);
-        assertEquals(200000, EconConfig.startingTreasury);
+        assertEquals(0, EconConfig.startingTreasury);
         assertEquals(1000, EconConfig.wageMax);
         assertEquals(5, EconConfig.wageStep);
     }
@@ -259,7 +259,7 @@ class EconConfigTest {
 
     @Test
     void immigrationDefaults() {
-        assertEquals(0.35, EconConfig.meticImmigrationDepth, 1e-9);
+        assertEquals(0.20, EconConfig.meticImmigrationDepth, 1e-9);
         assertEquals(10.0, EconConfig.meticImmigrationSteepness, 1e-9);
     }
 

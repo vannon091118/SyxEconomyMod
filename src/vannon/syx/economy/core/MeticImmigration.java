@@ -42,6 +42,14 @@ public final class MeticImmigration {
                 if (sim == null) {
                     return 0.5;
                 }
+                // Sprint v0.13.108+StartingFromGround: harter Migrations-Cap.
+                // Bei Pop >= Cap wird der tanh-Booster neutralisiert (return 0.5),
+                // sodass die Vanilla-Engine bis Cap-Anhebung via UI keine neuen
+                // Bürger akzeptiert. Pop-Quelle: EconConfig.population (live, durch
+                // EconomySim.update() aktualisiert via T8).
+                if (EconConfig.population >= EconConfig.meticImmigrationCap) {
+                    return 0.5;
+                }
                 int m = sim.taxes().foreignTaxModifier();
                 double s = EconConfig.meticImmigrationSteepness;
                 if (s <= 0.0) {

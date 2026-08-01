@@ -99,6 +99,27 @@ public final class EconomySim {
     final HousingMarket housingMarket = new HousingMarket();
     final ForeignTradeLedger foreignTradeLedger = new ForeignTradeLedger();
     private static volatile EconomySim active = null;
+
+    boolean tradePartnerGatePassed = false; // Sprint v0.13.110+: Once-Only-Bump-Ratchet (Save/Load via EconomySaveLoad).
+
+    private void applyEarlyPhaseBumpRules() {
+        if (tradePartnerGatePassed) return;
+        if (EconConfig.startingTreasury != 0) {
+            // Bereits vorgesetzt → Ratchet zu, kein Re-Bump.
+            tradePartnerGatePassed = true;
+            return;
+        }
+        EconProgression prog = progression();
+        if (prog != null
+                && prog.stage.level >= EconProgression.Stage.HANDEL.level
+                && PolityPriceAnchor.hasTradePartner()) {
+            EconConfig.startingTreasury = EconConfig.earlyPhaseHandelTreasury;
+            tradePartnerGatePassed = true;
+            EventLog.log("EARLY_PHASE",
+                "Trade-Partner-Gate fired at Stage.HANDEL: startingTreasury 0 → "
+                    + EconConfig.earlyPhaseHandelTreasury + " D.");
+        }
+    }
     int ticks = 0;
     final ReentryGuard updateGuard = new ReentryGuard("EconomySim.update()");
     final SimpleHistory treasuryHistory = new SimpleHistory(60);
@@ -313,6 +334,9 @@ public final class EconomySim {
             // Strikt-Equivalent zur alten `rooms().entitiesAvailable()`-Prüfung + null-safety.
             EngineMirror m = EngineMirror.api();
             if (m == null || !m.isFullyAvailable()) return;
+            // Sprint v0.13.110+: Once-Only-Bump sobald Stage≥HANDEL+Trade-Partner (Ratchet).
+            // Hinter api-Guard weil PolityPriceAnchor.hasTradePartner() Headless-NPE werfen kann.
+            applyEarlyPhaseBumpRules();
             if (ds <= 0.0) return;
             this.roster.rebuild();
             this.wallets.clearPaidThisTick();

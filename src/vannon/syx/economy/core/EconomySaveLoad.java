@@ -158,6 +158,7 @@ final class EconomySaveLoad {
         file.l(sim.propertyMarket.salesCollected());
         file.l(sim.propertyMarket.dividendsPaid());
         file.i(sim.propertyMarket.lastSeason());
+        file.bool(sim.tradePartnerGatePassed); // Sprint v0.13.110+: Once-Only-Bump-Ratchet (Forward-Compat mit alten Saves).
         ChunkedSave.endChunk(file, pos);
 
         pos = ChunkedSave.startChunk(file, Tags.ECON_CONFIG);
@@ -282,6 +283,8 @@ final class EconomySaveLoad {
                         sim.reportedAuditDelta = file.l();
                         sim.housingRentCollected = expectedEnd - file.getPosition() >= 8 ? file.l() : 0L;
                         sim.propertyMarket.load(file, expectedEnd);
+                        sim.tradePartnerGatePassed =
+                            file.getPosition() < expectedEnd ? file.bool() : false; // Sprint v0.13.110+ Forward-Compat.
                         loadedCore = true;
                         break;
                     case Tags.ECON_CONFIG:

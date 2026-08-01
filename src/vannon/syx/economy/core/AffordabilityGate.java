@@ -24,6 +24,7 @@ import vannon.syx.economy.core.GrainDole;
 import vannon.syx.economy.core.LocalPrices;
 import vannon.syx.economy.core.PolityPriceAnchor;
 import vannon.syx.economy.core.Roster;
+import game.faction.FACTIONS;
 
 public final class AffordabilityGate {
     private final Escrow escrow;
@@ -71,7 +72,7 @@ public final class AffordabilityGate {
             if (input == null || rate <= 0.0) {
                 continue;
             }
-            double price = prices.ready() ? prices.price(input.index()) : (double) PolityPriceAnchor.priceOf(input);
+            double price = prices.ready() ? prices.price(input.index()) : effectiveFallbackPrice(input);
             expectedCost += rate * price;
         }
         return expectedCost <= 0.0;
@@ -161,7 +162,7 @@ public final class AffordabilityGate {
         double[] unitPrices = new double[RESOURCES.DRINKS().all().size()];
         for (int i = 0; i < unitPrices.length; ++i) {
             RESOURCE resource = RESOURCES.DRINKS().all().get(i).resource;
-            unitPrices[i] = this.prices.ready() ? this.prices.price(resource.index()) : (double)PolityPriceAnchor.priceOf(resource);
+            unitPrices[i] = this.prices.ready() ? this.prices.price(resource.index()) : effectiveFallbackPrice(resource);
         }
         return unitPrices;
     }
@@ -218,7 +219,7 @@ public final class AffordabilityGate {
         double[] unitPrices = new double[RESOURCES.EDI().all().size()];
         for (int i = 0; i < RESOURCES.EDI().all().size(); ++i) {
             RESOURCE resource = RESOURCES.EDI().all().get(i).resource;
-            unitPrices[i] = this.prices.ready() ? this.prices.price(resource.index()) : (double)PolityPriceAnchor.priceOf(resource);
+            unitPrices[i] = this.prices.ready() ? this.prices.price(resource.index()) : effectiveFallbackPrice(resource);
         }
         return unitPrices;
     }
@@ -247,7 +248,7 @@ public final class AffordabilityGate {
         double[] unitPrices = new double[RESOURCES.EDI().all().size()];
         for (int i = 0; i < unitPrices.length; ++i) {
             RESOURCE resource = RESOURCES.EDI().all().get(i).resource;
-            unitPrices[i] = this.prices.ready() ? this.prices.price(resource.index()) : (double)PolityPriceAnchor.priceOf(resource);
+            unitPrices[i] = this.prices.ready() ? this.prices.price(resource.index()) : effectiveFallbackPrice(resource);
         }
         int priced = FoodGateKernel.bill(quantities, unitPrices, admission.free() ? Integer.MAX_VALUE : admission.quote());
         int bill = admission.free() ? 0 : priced;
@@ -382,6 +383,17 @@ public final class AffordabilityGate {
 
     private static Humanoid foodPayer(Humanoid humanoid) {
         return humanoid.indu().hType() == HTYPES.CHILD() ? livingParent(humanoid) : humanoid;
+    }
+
+    /**
+     * Fallback price when FlowPrices isn't ready. Uses trade-partner price
+     * from PolityPriceAnchor, or vanilla base price if no trade partner.
+     * PolityPriceAnchor.priceOf() returns 0 when no trade partner exists;
+     * in that case we fall back to FACTIONS.PRICE() (vanilla default).
+     */
+    private static double effectiveFallbackPrice(RESOURCE resource) {
+        int partnerPrice = PolityPriceAnchor.priceOf(resource);
+        return partnerPrice > 0 ? partnerPrice : FACTIONS.PRICE().get(resource.tr());
     }
 
     private static int safeAdd(int a, int b) {
