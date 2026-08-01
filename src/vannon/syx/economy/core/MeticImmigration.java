@@ -17,6 +17,7 @@ import snake2d.LOG;
 import snake2d.util.sprite.SPRITE;
 import vannon.syx.economy.core.EconConfig;
 import vannon.syx.economy.core.EconomySim;
+import vannon.syx.economy.core.DiagnosticExporter;
 import world.map.regions.Region;
 
 public final class MeticImmigration {
@@ -42,20 +43,25 @@ public final class MeticImmigration {
                 if (sim == null) {
                     return 0.5;
                 }
-                // Sprint v0.13.108+StartingFromGround: harter Migrations-Cap.
-                // Bei Pop >= Cap wird der tanh-Booster neutralisiert (return 0.5),
-                // sodass die Vanilla-Engine bis Cap-Anhebung via UI keine neuen
-                // Bürger akzeptiert. Pop-Quelle: EconConfig.population (live, durch
-                // EconomySim.update() aktualisiert via T8).
-                if (EconConfig.population >= EconConfig.meticImmigrationCap) {
-                    return 0.5;
-                }
                 int m = sim.taxes().foreignTaxModifier();
                 double s = EconConfig.meticImmigrationSteepness;
-                if (s <= 0.0) {
-                    return 0.5;
-                }
-                return (1.0 + Math.tanh((double)(-m) / s)) / 2.0;
+                double boosterRaw = (s > 0.0)
+                        ? (1.0 + Math.tanh((double)(-m) / s)) / 2.0
+                        : 0.5;
+                // Sprint v0.13.108+StartingFromGround: harter Migrations-Cap.
+                boolean capHit = EconConfig.population >= EconConfig.meticImmigrationCap;
+                double boosterFinal = capHit ? 0.5 : boosterRaw;
+                // Sprint v0.13.130+MeticImmigrationDebug: pro-Tick CSV-Diagnostik
+                // (1× pro Tick via DiagnosticExporter Throttle, nicht pro Race)
+                long tick = sim.ticks();
+                long day = tick / (long) EconConfig.DEFAULT_TICKS_PER_DAY;
+                DiagnosticExporter.appendImmigrationRow(
+                        day, tick,
+                        EconConfig.population, EconConfig.meticImmigrationCap,
+                        sim.stats() != null ? sim.stats().median : 0,
+                        sim.stats() != null ? sim.stats().mean : 0.0,
+                        m, boosterRaw, boosterFinal);
+                return boosterFinal;
             }
 
             public double vGet(Induvidual indu) {

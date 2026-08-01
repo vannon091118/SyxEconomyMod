@@ -91,6 +91,44 @@ für `mod.info`.
 
 ## v0.13.107 — 2026-08-01
 
+### Sprint v0.13.131+MeticImmigrationDebug-doD — Pro-Tick CSV-Diagnostik für TanH-Booster (3 Files, +109/-18 LOC)
+
+Pro-Tick-Immigration-Diagnostik als Throttle-via-Tick über `DiagnosticExporter.appendImmigrationRow(...)`. Damit lässt sich nachweisen ob der Migrations-Cap wirklich greift (`boosterFinal=0.5` trotz attraktivem `boosterRaw>0.6`) oder ob der TanH-Steepness-Hebel noch im aktiven Bereich ist.
+
+**Subsummiert 3 Tasks (~85 LOC Sprint-Scope + 24 LOC Baselines-Drift-Re-Baseline):**
+
+1. **`DiagnosticExporter.appendImmigrationRow(...)` (NEU, ~80 LOC)** — Asynchroner CSV-Write via `IO.submit(...)` mit Tick-Throttle (`if (tick == lastImmigrationDebugTick) return;`). Header `IMMIGRATION_HEADER` (14 Cols: day, tick, population, cap, cap_hit, wallet_median, mean_wealth, foreign_tax_modifier, booster_raw, booster_value, depth, steepness, phase_factor, happiness_proxy). File-Constant `rebalance_immigration_<epoch>.csv` analog zu Macro/Resource/Firms/IO.
+2. **`MeticImmigration.vGet()` DiagnosticHook (~25 LOC netto)** — Booster-Raw vor Cap-Clamp und Booster-Final separat exportieren, plus Wallet-Median/Mean, Foreign-Tax-Modifier, cap_hit-Bool. `EconConfig.DEFAULT_TICKS_PER_DAY` für Day-Berechnung (`tick / ticksPerDay`). Per-Tick Throttle garantiert 1× pro Tick statt 1× pro Race (verhindert IO-Storm vor Missbrauch).
+3. **`tools/god-class-baselines.yml` Re-Baseline per Rule 14** — DiagnosticExporter loc 590→646, fields 48→54 (Pflicht: loc 646 > warn 600; fields 54 > block 24). baselines.yml Stand v0.13.131.
+
+**Verification DoD (3/3 OK):**
+
+- `mvn -q -DskipTests -Dskip.bump=true compile` → BUILD SUCCESS ✔
+- `bash tools/god-class-guard.sh --mode=hard` → 186 PASS / 0 WARN / 0 BLOCK ✔
+- `bash tools/verify-doc-sync.sh` → PASS (Stam-Docs sync mit pom 0.13.107) ✔
+
+**Rule 3 (ReentryGuard) & Rule 15 (Static-Engine-Touch) respektiert:**
+
+- `ioRows`/`immigrationRows` strikt getrennte File-Lifetime + Lock-Patterns.
+- `appendImmigrationRow` ist reine Helper-Klasse — kein `static final`-Touch auf Engine-Singletons (Rule 15 clean).
+- Tick-Throttle verhindert Reentry über `IO.submit(...)` Async-Pfad (Rule 3 clean).
+
+**Was der Spieler/Live-Tester sieht:**
+
+`mods/SyxEconomyMod/logs/rebalance_immigration_<epoch>.csv` enthält pro Tick genau eine Zeile mit:
+- `booster_raw` (tanh-Wert vor Cap-Clamp, 0–1)
+- `booster_value` (= 0.5 wenn `cap_hit==1`, sonst = `booster_raw`)
+- `cap_hit` (0/1 Bool)
+- `mean_wealth`, `wallet_median` als Happiness-Proxies
+
+Mit dieser Diagnostik lässt sich Sprint v0.13.132+CapReasoning (geplant) vorbereiten: warum 5+1 Neueinwanderer trotz `cap=75` durchrutschten — Booster clamp, oder Cap kaputt?
+
+**Out-of-Scope (deliberately deferred):**
+
+- Cap-Reasoning-Sprint (warum cap_hit manchmal ≠ booster_calculated) → Sprint v0.13.132+CapReasoning
+- Auto-Pivot Diagnostics-Cronjob (Idle-Hours Cleanup) → Sprint v0.13.133+DiagRotator
+- `appendResourceRow`/`appendFirmRow` analog Throttle-Hookung → Folge-Sprint
+
 ### Sprint v0.13.107 — PolityPriceAnchor: Trade-Partner-Only Pricing
 
 - **Marktpreise folgen nur noch Handelspartnern** — `RD.DIST().neighs()`-Fallback entfernt.

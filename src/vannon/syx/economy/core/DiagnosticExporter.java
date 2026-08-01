@@ -84,6 +84,7 @@ public final class DiagnosticExporter {
     private static final String RESOURCE_FILE = "rebalance_resources_" + SESSION_EPOCH + ".csv";
     private static final String FIRMS_FILE = "rebalance_firms_" + SESSION_EPOCH + ".csv";
     private static final String IO_FILE = "rebalance_io_" + SESSION_EPOCH + ".csv";
+    private static final String IMMIGRATION_FILE = "rebalance_immigration_" + SESSION_EPOCH + ".csv";
 
     private static final String[] MACRO_HEADER = {
             "game_day", "season", "population", "deaths", "emigrations", "inherited", "heirless",
@@ -162,11 +163,19 @@ public final class DiagnosticExporter {
             "downstream_resource", "coefficient"
     };
 
+    private static final String[] IMMIGRATION_HEADER = {
+            "game_day", "tick", "population", "migration_cap", "cap_hit",
+            "wallet_median", "mean_wealth", "foreign_tax_modifier",
+            "booster_raw", "booster_value", "depth", "steepness",
+            "phase_factor", "happiness_proxy"
+    };
+
     /** Header-Flag: verhindert Doppel-Header bei append. */
     private static volatile boolean macroHeaderWritten = false;
     private static volatile boolean resourceHeaderWritten = false;
     private static volatile boolean firmsHeaderWritten = false;
     private static volatile boolean ioHeaderWritten = false;
+    private static volatile boolean immigrationHeaderWritten = false;
 
     private DiagnosticExporter() {
     }
@@ -335,6 +344,8 @@ public final class DiagnosticExporter {
                         ioRows,
                         StandardOpenOption.CREATE, StandardOpenOption.APPEND);
             }
+            // Immigration-Diagnostik wird über appendImmigrationRow() asynchron geschrieben
+            // (separate write-Methode unten)
         } catch (IOException e) {
             // Disk voll? Read-only? Mod-Directory schreibgeschützt?
             // Wir loggen an stderr und versuchen es morgen erneut — gibt kein EventLog hier.
@@ -637,6 +648,80 @@ public final class DiagnosticExporter {
 
     private static double unpaidRatio(EconSnapshot snap) {
         return snap != null ? snap.unpaidRatio : 0.0;
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // Immigration-Diagnostik (Sprint v0.13.130+MeticImmigrationDebug)
+    // ═══════════════════════════════════════════════════════
+
+    /** Letzter Tick für den Immigration-Debug geschrieben wurde — Throttle. */
+    private static volatile long lastImmigrationDebugTick = -1;
+
+    /**
+     * Schreibt eine Immigration-Diagnostik-Zeile asynchron.
+     * Wird von {@code MeticImmigration.vGet()} aufgerufen, maximal 1× pro Tick.
+     *
+     * @param day       aktueller Spieltag
+     * @param tick      aktueller Tick
+     * @param pop       aktuelle Bevölkerung
+     * @param cap       Migrations-Cap
+     * @param median    Wallet-Median
+     * @param mean      mittleres Vermögen
+     * @param taxMod    foreignTaxModifier (negativ = attraktiv)
+     * @param boosterRaw berechneter tanh-Wert vor Cap-Check
+     * @param boosterFinal effektiver Wert (0.5 wenn Cap erreicht)
+     */
+    public static void appendImmigrationRow(long day, long tick, int pop, int cap,
+                                             int median, double mean, int taxMod,
+                                             double boosterRaw, double boosterFinal) {
+        if (!EconConfig.diagnosticsExportEnabled) return;
+        if (tick == lastImmigrationDebugTick) return; // 1× pro Tick
+        lastImmigrationDebugTick = tick;
+
+        boolean capHit = pop >= cap;
+        double phaseFac = EconConfig.phaseFactor();
+        double happinessProxy = simHappinessProxy();
+
+        StringBuilder sb = new StringBuilder(200);
+        sb.append(day).append(',').append(tick).append(',').append(pop)
+          .append(',').append(cap).append(',').append(capHit ? 1 : 0)
+          .append(',').append(median).append(',').append(fmt(mean, 1))
+          .append(',').append(taxMod)
+          .append(',').append(fmt(boosterRaw, 6)).append(',').append(fmt(boosterFinal, 6))
+          .append(',').append(fmt(EconConfig.meticImmigrationDepth, 3))
+          .append(',').append(fmt(EconConfig.meticImmigrationSteepness, 1))
+          .append(',').append(fmt(phaseFac, 3))
+          .append(',').append(fmt(happinessProxy, 3))
+          .append('\n');
+
+        final String row = sb.toString();
+        IO.submit(() -> {
+            try {
+                ensureDir();
+                if (!immigrationHeaderWritten) {
+                    Files.writeString(DIAG_DIR.resolve(IMMIGRATION_FILE),
+                            join(IMMIGRATION_HEADER) + "\n",
+                            StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+                    immigrationHeaderWritten = true;
+                }
+                Files.writeString(DIAG_DIR.resolve(IMMIGRATION_FILE),
+                        row, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+            } catch (IOException e) {
+                System.err.println("[ECON] Immigration diagnostic write failed: "
+                        + e.getMessage());
+            }
+        });
+    }
+
+    /** Happiness-Proxy: Durchschnitt der Loyalität × NeedSatisfaction über alle Klassen. */
+    private static double simHappinessProxy() {
+        try {
+            EconomySim sim = EconomySim.active();
+            if (sim == null || sim.stats() == null) return -1.0;
+            return sim.stats().mean; // mean wealth als Proxy für Happiness-Korrelat
+        } catch (Throwable t) {
+            return -1.0;
+        }
     }
 
     /** Diagnose-Pfad für externe Tools (z. B. Tests oder UI-Hilfetexte). */

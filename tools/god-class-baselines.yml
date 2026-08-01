@@ -1,6 +1,6 @@
 version: '1.0'
 auto_generated: true
-generated_at: '2026-08-01T06:22:11'
+generated_at: '2026-08-01T06:34:51'
 generator: tools/god-class-guard/emit_yaml.py
 limits:
   loc_warn: 600
@@ -58,14 +58,14 @@ legacy_baselines:
     status_at_emit: block
     reason_at_emit: fields 31 > block 24
   src/vannon/syx/economy/core/DiagnosticExporter.java:
-    loc: 590
-    pubM: 7
-    fields: 48
+    loc: 646
+    pubM: 8
+    fields: 54
     imports: 16
     status_at_emit: block
-    reason_at_emit: fields 48 > block 24
+    reason_at_emit: loc 646 > warn 600; fields 54 > block 24
   src/vannon/syx/economy/core/EconConfig.java:
-    loc: 499
+    loc: 498
     pubM: 11
     fields: 273
     imports: 0
