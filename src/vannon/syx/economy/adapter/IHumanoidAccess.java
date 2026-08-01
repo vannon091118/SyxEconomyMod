@@ -5,6 +5,7 @@ import settlement.entity.humanoid.Humanoid;
 import settlement.entity.humanoid.ai.main.AIPLAN;
 import settlement.room.main.RoomInstance;
 import settlement.stats.service.StatService;
+import java.util.function.Consumer;
 
 /**
  * Humanoid-Zugriff — Arbeitsstatistiken, Hunger, Bedürfnisse, Religion,
@@ -28,6 +29,41 @@ public interface IHumanoidAccess {
      *         (SETT.ENTITIES() != null).
      */
     boolean isAvailable();
+
+    // ═══ Resident Enumeration ═════════════════════════════════
+    // Sprint v0.13.129+ResidentImportFix: Aggregat- und Iterations-API
+    // für Subsysteme die "alle Bewohner" brauchen (Census-View,
+    // Demographie-Walk, Cleaning-Pass). Vorher nur insel-query API
+    // (Humanoid → property); ohne Enumeration konnten Census-Code-Pfade
+    // nicht durchlaufen was zu "Bewohner werden nicht erkannt" führte.
+
+    /**
+     * Gesamtzahl aller residenten Humanoid-Instanzen (alle Klassen,
+     * alle Rassen, alle Sub-Types wie SLAVE/CHILD etc.).
+     *
+     * <p>Vanilla-Pfad: {@code SETT.ENTITIES().humans().size()} oder
+     * Equivalent (z. B. STATS.POP().POP.data CITIZEN + SLAVE + ...).</p>
+     *
+     * <p>Stub-Pfad: {@code MockWorldState.citizenCount} (zero-sum
+     * pairwise-lottery population).</p>
+     *
+     * @return Anzahl Bewohner, 0 wenn Humanoid-Engine nicht verfügbar.
+     */
+    int getResidentCount();
+
+    /**
+     * Iteriert über alle residenten Humanoid-Instanzen. Visitor-Pattern
+     * damit's speichereffizient bleibt und kein Vanilla-Iterable durch
+     * den Mod-Kern geleakt wird.
+     *
+     * <p>Vanilla-Pfad: {@code SETT.ENTITIES().humans().forEach(action)}.</p>
+     *
+     * <p>Stub-Pfad: no-op Consumer oder iterator über
+     * {@code MockWorldState}-Mock-Instanzen.</p>
+     *
+     * @param action Visitors-Operation die pro Bewohner aufgerufen wird.
+     */
+    void forEachResident(Consumer<Humanoid> action);
 
     // ═══ Employment & Labor ═════════════════════════════════
 

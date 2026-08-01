@@ -342,3 +342,43 @@ Y.BOOSTABLES.Noble;boostable;BOOSTABLES;Noble;static;ja;ja;[x];Inner-Class;Engin
 Y.Boostable.get(faction);double;Boostable;get(faction);instance;ja;ja;[x];Mod-Lesen;Engine-API direkt genutzt — sauber verfügbar, kein Gap;++
 Y.Boostable.value.map;Map;Boostable;value;instance;ja;ja;[x];Mod-Lesen;Engine-API direkt genutzt — sauber verfügbar, kein Gap;++
 Y.BoosterValue.add(d);void;BoosterValue;add(double);instance;ja;ja;[x];Mod-3-Schreiber;Engine-API direkt genutzt — sauber verfügbar, kein Gap;++
+V.01;DipWarPlayer.upI;int;game.faction.diplomacy.DipWarPlayer;upI;Field;ja (VanillaDiplomacyAdapter);nein;[x];BypassGate+VarHandle;V71.44 (2026-06)
+V.02;DipWarPlayer.pPow;int;game.faction.diplomacy.DipWarPlayer;pPow;Field;ja (VanillaDiplomacyAdapter);nein;[x];BypassGate+VarHandle;V71.44
+V.03;DipWarPlayer.coalitionPow;int;game.faction.diplomacy.DipWarPlayer;coalitionPow;Field;ja;nein;[x];BypassGate+VarHandle;V71.44
+V.04;DipWarPlayer.bWilling;boolean;game.faction.diplomacy.DipWarPlayer;bWilling;Field;ja;nein;[x];BypassGate+VarHandle;V71.44
+V.05;StockpileInstance.storingSet;Method;settlement.room.infra.stockpile.StockpileInstance;storingSet();Method;ja (VanillaWarehouseAdapter);nein;[x];BypassGate+MethodHandle FindVirtual/FindStatic Fallback;V71.44
+V.06;TransportInstance.distance;int;settlement.room.infra.transport.TransportInstance;distance;Field;ja (VanillaTransportAdapter);nein;[x];Package-Private class -- ClassLoader-Resolved;V71.44
+V.07;BOOSTABLES$CIVICS.GOV;Boostable;game.boosting.BOOSTABLES$CIVICS;GOV;RefField;ja (VanillaBoostingAdapter);nein;[x];Inner-Class via $ Notation;V71.44
+V.08;PlanOddjobber;Class;settlement.entity.humanoid.ai.work.PlanOddjobber;-;Class;ja (VanillaAIAdapter);nein;[x];ClassResolver existence-check;V71.44
+V.09;F_SPlanEatery;Class;settlement.entity.humanoid.ai.consume.F_SPlanEatery;-;Class;ja (VanillaAIAdapter);nein;[x];ClassResolver existence-check;V71.44
+V.10;F_SPlanCanteen;Class;settlement.entity.humanoid.ai.consume.F_SPlanCanteen;-;Class;ja (VanillaAIAdapter);nein;[x];ClassResolver existence-check;V71.44
+V.11;F_PlanEat;Class;settlement.entity.humanoid.ai.consume.F_PlanEat;-;Class;ja (VanillaAIAdapter);nein;[x];ClassResolver existence-check;V71.44
+V.12;PlanTavern;Class;settlement.entity.humanoid.ai.consume.PlanTavern;-;Class;ja (VanillaAIAdapter);nein;[x];ClassResolver existence-check;V71.44
+V.13;M_PlanMarket;Class;settlement.entity.humanoid.ai.consume.M_PlanMarket;-;Class;ja (VanillaAIAdapter);nein;[x];ClassResolver existence-check;V71.44
+V.14;FactionNPC;Class;game.faction.npc.FactionNPC;-;Class;ja (NpcFactionAdapter);nein;[x];ClassResolver existence-check;V71.44 (2026-06-01)
+V.15;NPCResources.priceSell;[!];"game.faction.npc.NPCResources$""FactionResource""";priceSell;Field;ja (NpcFactionAdapter);nein;[!];**NAME-DRIFT DETECTED ITERATION**: JAR hat NPCResources NICHT (kein .java-Source). Nächste Klassen: game/faction/npc/NPCResource.java (singular!, 450 bytes 2026-05-29) + NPCRequest + NPCBonus. Mod-Path vermutlich NICHT-funktionsfähig -- Class.forName schlägt fehl, BypassGate markFailed, Adapter deaktiviert. **TODO Sprint v0.13.130+**: Migration auf game.faction.npc.NPCResource oder game.faction.npc.NPCRes (stockpile/NPCRes.java ist 6234 bytes -- eher Trade-Resource);v0.13.130+
+V.16;NPCResources.priceBuy;[!];game.faction.npc.NPCResources$FactionResource;priceBuy;Field;ja (NpcFactionAdapter);nein;[!];gleiches NAME-DRIFT wie V-15;v0.13.130+
+V.17;Player;Class;game.faction.player.Player;-;Class;ja (TreasuryAccessImpl);nein;[x];ClassResolver existence-check;V71.44
+V.18;PCredits.credits;int;game.faction.player.PCredits;credits;Field;ja (TreasuryAccessImpl);nein;[x];BypassGate+VarHandle;V71.44
+V.19;PCredits.yearly;int;game.faction.player.PCredits;yearly;Field;ja (TreasuryAccessImpl);nein;[x];BypassGate+VarHandle;V71.44
+V.20;PCredits$Yearly.TURNOVER;int;game.faction.player.PCredits$Yearly;TURNOVER;Field;ja (TreasuryAccessImpl);nein;[~];Inner-Class Field;V71.44
+V.21;PCredits$Yearly.PROFITS;int;game.faction.player.PCredits$Yearly;PROFITS;Field;ja (TreasuryAccessImpl);nein;[~];Inner-Class Field;V71.44
+V.22;PCredits$Yearly.LOSSES;int;game.faction.player.PCredits$Yearly;LOSSES;Field;ja (TreasuryAccessImpl);nein;[~];Inner-Class Field;V71.44
+V.23;PCredits.all;List;game.faction.player.PCredits;all;Field;ja (TreasuryAccessImpl);nein;[x];BypassGate+VarHandle;V71.44
+V.24;STATS;Class;settlement.stats.STATS;-;Class;ja (PopulationAccessImpl);nein;[x];ClassResolver;V71.44
+V.25;STATS.POP();Method;settlement.stats.STATS;POP();Method;ja (PopulationAccessImpl);nein;[x];Package-Private Singleton-Instance;V71.44
+V.26;StatsPopulation;Class;settlement.stats.colls.StatsPopulation;-;Class;ja (PopulationAccessImpl);nein;[x];ClassResolver;V71.44
+V.27;STANDINGS;Class;settlement.stats.standing.STANDINGS;-;Class;ja (PopulationAccessImpl);nein;[x];ClassResolver;V71.44
+V.28;STANDINGS.get();Method;settlement.stats.standing.STANDINGS;get();Method;ja (PopulationAccessImpl);nein;[x];Package-Private Instance-Method;V71.44
+V.29;HTYPES;Class;init.type.HTYPES;-;Class;ja (PopulationAccessImpl);nein;[x];ClassResolver;V71.44
+V.30;SettTrade;Class;settlement.trade.SettTrade;-;Class;ja (GoodsAccessImpl);nein;[x];ClassResolver;V71.44
+V.31;SettTrade.buyer();Method;settlement.trade.SettTrade;buyer(r);Method;ja (GoodsAccessImpl);nein;[x];Package-Private Method;V71.44
+V.32;SettTrade.seller();Method;settlement.trade.SettTrade;seller(r);Method;ja (GoodsAccessImpl);nein;[x];Package-Private Method;V71.44
+V.33;StockpileTally;Class;settlement.room.infra.stockpile.StockpileTally;-;Class;ja (GoodsAccessImpl);nein;[x];ClassResolver;V71.44
+V.34;StockpileTally.tally();Method;settlement.room.infra.stockpile.StockpileTally;tally();Method;ja (GoodsAccessImpl);nein;[x];MethodHandle lookup;V71.44
+V.35;ResourcePrices;Class;game.faction.trade.ResourcePrices;-;Class;ja (GoodsAccessImpl);nein;[x];ClassResolver;V71.44
+V.36;ResourcePrices.get();Method;game.faction.trade.ResourcePrices;get(res);Method;ja (GoodsAccessImpl);nein;[x];Public API;V71.44
+V.37;[AUDIT] VanillaQueries direkte Reflection;Method;settlement.main.SETT;ENTITIES()/humans();Class.forName+invoke;[!];NEIN-USED-BYPASSGATE;nein;[!];**ARCHITEKTUR-VERSTOSS**: VanillaQueries.java:43-88 nutzt 6× Class.forName + 7× invoke() direkt statt BypassGate. SK-Sprint: Migration auf ClassResolver+MethodAccessor in Sprint v0.13.131+ Security-Hardening;V71.44-DEPRECATED
+V.38;[AUDIT] WindowState direkte Reflection;Method;game.boosting.BOOSTING;available();Class.forName+invoke;ja (DebugTab);ja;[~];**OPTIONAL-VERSTOSS**: WindowState.java:599-611 nutzt java.lang.reflect direkt für BOOSTING-Dump im Debug-Tab. Akzeptabel für UI-Debug-Pfad -- BypassGate-Migration optional;V71.44-OK-IN-DEBUG-TAB
+V.39;[AUDIT] NPCResource Singular vermutlich Out-of-Date;-;game.faction.npc;NPCResource;N/A;-;[!];NEIN-CLASSNOTFOUND;nein;[!];JAR-Lookup: NPCResource.java (singular) found, NPCResources.java (plural used im Mod) NOT found. Mod-Path NpcFactionAdapter.isAvailable() returns false;V71.44-NAME-DRIFT-CONFIRMED
+V.40;[AUDIT] EngineLevers eigene Field-Iteration;[!];EngineLevers (eigene Klasse);getDeclaredFields() + Field.set/-get;[!];NEIN-RAW-REFLECTION;nein;[!];**ARCHITEKTUR-VERSTOSS**: EngineLevers.java:375/393 iteriert eigene EngineLevers.class.getDeclaredFields() direkt (4 raw-Reflection-Calls) statt seam/BypassGate.Helper. Sprint v0.13.132+BootstrapEncapsulation Folge-Sprint plant Migration auf FieldAccessor.SetStatic-Helper (analog Player.credits-Setter);v0.13.132+

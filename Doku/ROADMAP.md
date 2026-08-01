@@ -443,6 +443,103 @@ Das Tagebuch ist eine akkurate Außenperspektive auf den Code-Stand v0.13.64→v
 
 ---
 
+## Vanilla-Import-Index V71.44 — Vollständige Adapter-Schema-Sicht
+
+> **Single Source of Truth:** `src/vannon/syx/economy/adapter/AdapterDispatcher.java#registerSchema()`
+> **Runtime-Verifikation:** `seam/SchemaValidator.probeAccess()` (probe-only, kein Type-Check)
+> **Manifest-Twin:** `tools/vanilla-schema.yaml` — muss synchron gehalten werden (verifiziert von Gate 9)
+
+**Architektur:** Alle Vanilla-Zugriffe gehen durch das BypassGate-SDK (`adapter/seam/`):
+- **Preferiert:** `VarHandle` / `MethodHandle` via `MethodHandles.privateLookupIn(owner, lookup)`
+- **Fallback:** `Field.setAccessible(true)` + `Class.getDeclaredField/walkHierarchy`
+- **ClassResolver:** `Class.forName(fqcn, true, gameClassLoader)` für package-private Klassen
+- **Fail-Fast:** `SchemaValidator.validate()` läuft beim Mod-Boot, jeder fehlende Member → `EventLog.SEAM` + `BypassGate.isAvailable()=false`
+
+### 35 registrierte Adapter-Schema-Einträge (V71.44 verifiziert)
+
+| # | Vanilla-Klasse | Member | AccessType | Adapter-Callsite | JAR V71.44 |
+|---|---|---|---|---|---|
+| V-01 | `game.faction.diplomacy.DipWarPlayer` | `upI` | Field | `VanillaDiplomacyAdapter` | ✅ EXISTS (Source:2026-06) |
+| V-02 | `game.faction.diplomacy.DipWarPlayer` | `pPow` | Field | `VanillaDiplomacyAdapter` | ✅ |
+| V-03 | `game.faction.diplomacy.DipWarPlayer` | `coalitionPow` | Field | `VanillaDiplomacyAdapter` | ✅ |
+| V-04 | `game.faction.diplomacy.DipWarPlayer` | `bWilling` | Field | `VanillaDiplomacyAdapter` | ✅ |
+| V-05 | `settlement.room.infra.stockpile.StockpileInstance` | `storingSet()` | Method | `VanillaWarehouseAdapter` | ✅ EXISTS |
+| V-06 | `settlement.room.infra.transport.TransportInstance` | `distance` | Field | `VanillaTransportAdapter` | ✅ EXISTS |
+| V-07 | `game.boosting.BOOSTABLES$CIVICS` | `GOV` | RefField | `VanillaBoostingAdapter` | ✅ (Outer-Klasse BOOSTABLES + Inner-Class CIVICS im JAR) |
+| V-08 | `settlement.entity.humanoid.ai.work.PlanOddjobber` | — | Class | `VanillaAIAdapter` | ✅ EXISTS |
+| V-09 | `settlement.entity.humanoid.ai.consume.F_SPlanEatery` | — | Class | `VanillaAIAdapter` | ✅ EXISTS |
+| V-10 | `settlement.entity.humanoid.ai.consume.F_SPlanCanteen` | — | Class | `VanillaAIAdapter` | ✅ EXISTS |
+| V-11 | `settlement.entity.humanoid.ai.consume.F_PlanEat` | — | Class | `VanillaAIAdapter` | ✅ EXISTS |
+| V-12 | `settlement.entity.humanoid.ai.consume.PlanTavern` | — | Class | `VanillaAIAdapter` | ✅ EXISTS |
+| V-13 | `settlement.entity.humanoid.ai.consume.M_PlanMarket` | — | Class | `VanillaAIAdapter` | ✅ EXISTS |
+| V-14 | `game.faction.npc.FactionNPC` | — | Class | `NpcFactionAdapter` | ✅ EXISTS (2026-06-01) |
+| **V-15** | **`game.faction.npc.NPCResources`** | **`priceSell`** | **Field** | **`NpcFactionAdapter`** | **⚠️ NAME-DRIFT: JAR hat `NPCResource` (singular!), 450 bytes (2026-05-29)** |
+| V-16 | `game.faction.npc.NPCResources$FactionResource` | `priceBuy` | Field | `NpcFactionAdapter` | ⚠️ dito (Inner-Class `FactionResource` in `NPCResource`) |
+| V-17 | `game.faction.player.Player` | — | Class | `TreasuryAccessImpl` | ✅ EXISTS |
+| V-18 | `game.faction.player.PCredits` | `credits` | Field | `TreasuryAccessImpl` | ✅ EXISTS |
+| V-19 | `game.faction.player.PCredits` | `yearly` | Field | `TreasuryAccessImpl` | ✅ EXISTS |
+| V-20 | `game.faction.player.PCredits$Yearly` | `TURNOVER` | Field | `TreasuryAccessImpl` | ✅ (Inner-Class `Yearly` in `PCredits`) |
+| V-21 | `game.faction.player.PCredits$Yearly` | `PROFITS` | Field | `TreasuryAccessImpl` | ✅ |
+| V-22 | `game.faction.player.PCredits$Yearly` | `LOSSES` | Field | `TreasuryAccessImpl` | ✅ |
+| V-23 | `game.faction.player.PCredits` | `all` | Field | `TreasuryAccessImpl` | ✅ |
+| V-24 | `settlement.stats.STATS` | — | Class | `PopulationAccessImpl` | ✅ EXISTS |
+| V-25 | `settlement.stats.STATS` | `POP` | Method | `PopulationAccessImpl` | ✅ |
+| V-26 | `settlement.stats.colls.StatsPopulation` | — | Class | `PopulationAccessImpl` | ✅ EXISTS |
+| V-27 | `settlement.stats.standing.STANDINGS` | — | Class | `PopulationAccessImpl` | ✅ EXISTS |
+| V-28 | `settlement.stats.standing.STANDINGS` | `get` | Method | `PopulationAccessImpl` | ✅ |
+| V-29 | `init.type.HTYPES` | — | Class | `PopulationAccessImpl` | ✅ EXISTS |
+| V-30 | `settlement.trade.SettTrade` | — | Class | `GoodsAccessImpl` | ✅ EXISTS |
+| V-31 | `settlement.trade.SettTrade` | `buyer` | Method | `GoodsAccessImpl` | ✅ |
+| V-32 | `settlement.trade.SettTrade` | `seller` | Method | `GoodsAccessImpl` | ✅ |
+| V-33 | `settlement.room.infra.stockpile.StockpileTally` | — | Class | `GoodsAccessImpl` | ✅ EXISTS |
+| V-34 | `settlement.room.infra.stockpile.StockpileTally` | `tally` | Method | `GoodsAccessImpl` | ✅ |
+| V-35 | `game.faction.trade.ResourcePrices` | — | Class | `GoodsAccessImpl` | ✅ EXISTS |
+| V-36 | `game.faction.trade.ResourcePrices` | `get` | Method | `GoodsAccessImpl` | ✅ |
+
+**Stand:** 35 `registerSchema()`-Registrierungen (36 V-01..V-36 Tabellenzeilen inkl. 2 SDK-Mirror für `Yearly/TURNOVER/PROFITS/LOSSES`) / **33 ✅ verifiziert** / **2 ⚠️ NAME-DRIFT** (V-15 + V-16 — beide betroffen vom selben `NPCResources` → `NPCResource`-Singular-Plural-Fall)
+
+### 🚨 Reflektions-Audit: Direkte Reflection ausserhalb `adapter/seam/`
+
+Soll = 0 Hits (Architektur-Prinzip: jede Reflection soll BypassGate nutzen). **Ist = 3 Verstöße:**
+
+| Datei | Befund | Empfehlung |
+|---|---|---|
+| `src/vannon/syx/economy/adapter/VanillaQueries.java` | 6 `Class.forName(...)` + 7 `.getMethod()` + 7 `.invoke()` Calls für `SETT.ENTITIES().humans()`-Chains | **MIGRATION → BypassGate**: `ClassResolver` + `FieldAccessor` für `ENTITIES`, `humans`, `size` |
+| `src/vannon/syx/economy/ui/WindowState.java:599-611` | `Class.forName(cn)` + 3 `getMethod` + 3 `invoke` für `BOOSTING.available()` dump | **KANN BLEIBEN** (UI-Debug-Tab, nicht Production-Critical) |
+| `src/vannon/syx/economy/core/EngineLevers.java:3-4` | Nur Imports `java.lang.reflect.Field` + `Modifier` (tatsächliche Nutzung prüfen) | **PRÜFEN** — Imports evtl. dead |
+
+Vom Gate 12 `verify-doc-sync.sh` zukünftig als **Build-Blocker** geflaggt.
+
+### Vanilla-Import-Coverage by Adapter
+
+| Adapter | seam-Calls | registrierte Vanilla-Members | Verifizierungs-Status |
+|---|---|---|---|
+| `RoomAccessImpl` | **26** | nicht in registerSchema (Dynamic-Discovery) | 🟠 Selfcontained via public API |
+| `GoodsAccessImpl` | 14 | 7 (V-30..V-36) | ✅ |
+| `StatsAccessImpl` | 12 | 0 (Public-API) | ✅ |
+| `VanillaDiplomacyAdapter` | 11 | 4 (V-01..V-04) | ✅ |
+| `PopulationAccessImpl` | 11 | 6 (V-24..V-29) | ✅ |
+| `VanillaTransportAdapter` | 10 | 1 (V-06) | ✅ |
+| `TreasuryAccessImpl` | 10 | 7 (V-17..V-23) | ✅ |
+| `HumanoidAccessImpl` | 10 | Erst Sprint v0.13.129+ ResidentImportFix | 🟡 in-progress |
+| `VanillaWarehouseAdapter` | 8 | 1 (V-05) | ✅ |
+| `FactionAccessImpl` | 8 | 4 (V-01..V-04 indirekt) | ✅ |
+| `VanillaBoostingAdapter` | 6 | 1 (V-07) | ✅ |
+| `VanillaAIAdapter` | 6 | 7 (V-08..V-13) | ✅ |
+| `NpcFactionAdapter` | — | 3 (V-14..V-16) | ⚠️ NAME-DRIFT (V-15/16) |
+
+**Total adapter-seam-Lookup-Pfade:** ~120 / Monolith reduziert von 55 Direktzugriffen auf 0 (Sprint v0.13.66 B-008-Phase-2 abgeschlossen)
+
+### Vanilla-Update-Sicherheitsnetz (V71 → V72)
+
+Bei jedem Engine-Update:
+1. JAR-Diff: `unzip -p SongsOfSyx-sources.jar {class}.java | grep -E "^\s*(public|private)\s+(static\s+)?(final\s+)?\w+\s+\w+(\s*\(\s*[^\)]*\s*\))?\s*[;=]"` für jede registrierte Klasse
+2. Drift-Detector generiert `Doku/audit/v72-vanilla-drift.md` mit umbenannten/entfernten Membern
+3. `AdapterDispatcher.registerSchema()` wird aktualisiert — alle Member-Drift-Lines rot markiert bis Sprint-Close
+4. `SchemaValidator.probeAccess()` triggert Fail-Fast beim Mod-Boot wenn Member fehlt
+
+---
+
 ## Sprint DIPLO — Faction-Opinion/Trust-Mechanik (Vanilla-Lücke)
 
 **Quelle:** Vanilla-Source-Analyse `BOOSTABLES.CIVICS().bOpinion` + `ROPINION.trust()` vs. Mod-Code

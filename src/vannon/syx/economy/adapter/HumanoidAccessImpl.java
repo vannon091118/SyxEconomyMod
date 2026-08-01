@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import init.type.HCLASSES;
 import init.type.HTYPES;
@@ -113,6 +114,43 @@ public final class HumanoidAccessImpl implements IHumanoidAccess {
     @Override
     public boolean isAvailable() {
         return initOk;
+    }
+
+    // ═══ Resident Enumeration (Sprint v0.13.129+ResidentImportFix) ═══
+
+    /**
+     * Vanilla-Pfad: {@link VanillaQueries#residentCount()} zentralisiert den
+     * Songs-of-Syx-V71.44-Zugriff auf {@code SETT.ENTITIES().humans()} mit
+     * mehrschichtigem graceful Fallback. Wenn die Engine nicht verfügbar
+     * (Headless-Test / Pre-Init), return 0 (= "no census available").
+     */
+    @Override
+    public int getResidentCount() {
+        if (!canAccess("getResidentCount", EngineLevers.humanoidAccessEnabled)) return 0;
+        try {
+            int n = VanillaQueries.residentCount();
+            trace("getResidentCount", String.valueOf(n), "");
+            return n;
+        } catch (Throwable t) {
+            return fail("getResidentCount", t, 0);
+        }
+    }
+
+    /**
+     * Vanilla-Pfad: {@link VanillaQueries#forEachResident(Consumer)} iteriert
+     * über die lebenden Bewohner. Eine einzelne Visitor-Exception darf nicht
+     * die ganze Iteration abbrechen (graceful Skip-and-Continue-Semantik).
+     */
+    @Override
+    public void forEachResident(Consumer<Humanoid> action) {
+        if (!canAccess("forEachResident", EngineLevers.humanoidAccessEnabled)) return;
+        if (action == null) return;
+        try {
+            VanillaQueries.forEachResident(action);
+            trace("forEachResident", "ok", "");
+        } catch (RuntimeException t) {
+            failVoid("forEachResident", t);
+        }
     }
 
     // ─── Employment & Labor ─────────────────────────────────
