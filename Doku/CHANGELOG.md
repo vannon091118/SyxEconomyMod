@@ -255,6 +255,14 @@ User-Auftrag "u1-6 durchführen" (read-only-Verifikation vom 2026-07-31 Tiefen-A
 - **U5 Toggle-Konsolidierung religionTax×3/corvee×2/oddjobWage×2**: Wuerde Designentscheidung FaithTab vs PublicWorksTab als SSoT-Tab vs SSoT-Visualisierung erfordern (User-Plan hatte das als separat-diskutiert markiert). Sprint v0.13.119+ SSoT-Toggle-Sprint.
 - **Sprint M-UI-5 Layout-Migration** war bereits im Backlog (Sprint v0.13.107+M-UI-3.5 hat es als Migration-Sprint markiert) — nun obsolet durch U3 Layout-Drop.
 
+## v0.13.125+ ConceptGlossary-Phase-2 — Setter-Pattern + Policy-Bundle (Doc-Only)
+
+- 🟪 **Concept-Glossar erweitert** (2 neue Einträge, alphabetisch in `Doku/GLOSSARY.md` A-Z-Sektion ab v0.13.121+):
+  - **Setter-Pattern** (Sprint v0.13.124+BootstrapEncapsulation) — Hard-Cap-Setter-Discipline für kritische `public static`-Configs mit `clamp(...)`-Validation; Vorbild `setOddjobWage` erweitert um `setStartingTreasury`, `setMeticImmigrationDepth`, `setMeticImmigrationSteepness`. Caller aus `EconomySim.applyEarlyPhaseBumpRules` + `EconProgression.IMPERIUM`-Case routen durch Setter statt direktem Static-Write. Cross-Ref: `Policy-Bundle`, `StartingFromGround`, `Ratchet`.
+  - **Policy-Bundle** (Migrated von `Once-Only-Bump`) — Kohärente Sammlung verwandter Settings-Bumps als Single-Choke-Point-Methode statt isolierte Static-Writes. Vorbild: `EconomySim.applyEarlyPhaseBumpRules()` gruppiert alle Trade-Partner-Gate-relevanten Bootstrap-Writes (startingTreasury-Update via Setter, Ratchet-Transition, Stage-Check, hasTradePartner-Bedingung, EventLog-Eintrag). Cross-Ref: `Once-Only-Bump`, `Setter-Pattern`, `Trade-Partner-Gate`.
+- Cross-Ref-Tiefe aktualisiert: `Once-Only-Bump`, `Ratchet`, `Staircase` haben jetzt `Policy-Bundle` / `Threshold-Bump` als zusätzliche Verweise.
+- Doc-Sync verifiziert mit `tools/verify-doc-sync.sh` — 13 Stamm-Docs bleiben sync mit `pom.xml 0.13.107`. Kein pom.xml-Evolve nötig (Doc-Only-Sprint).
+
 ## v0.13.124+ Hotfix-2 — Regular `/`-Taste gated (Slash neben Shift)
 
 User-Live-Test-Regression vom 2026-07-31 nach Sprint v0.13.116+ Hotfix + Sprint v0.13.123+M-UI-1.1 Polishing: "Q und A sind auch durch die Mod belegt?! UND AUCH AUF DEM NUMPED". Diagnose (Code-Trace + Thinker-Audit): Sprint v0.13.116+ Hotfix hat E/O/S/Q-Letter-Keys sauber hinter `EconConfig.letterHotkeyFallbackEnabled` (Default OFF = NumPad-only) gegated. ABER: `regular /` (ASCII 47, deutsche Tastatur: Slash neben Shift-rechts) war in `pollDumpHotkey()` IMMER aktiv (nicht-gated) — Bug der beim Sprint v0.13.116+ uebersehen wurde. User hat das als Doppelbelegung wahrgenommen (entweder mit `letterHotkeyFallbackEnabled = true` getestet, oder Key-Verwechslung mit WASD/QE-Vanilla-Kamera-Rotation).

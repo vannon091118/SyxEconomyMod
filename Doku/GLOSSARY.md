@@ -443,8 +443,13 @@ Ketten-Effekte über die gesamte Produktionskette.
 
 **Once-Only-Bump** — Ein Hybrid aus Bump- und Ratchet-Mechanismus. Ein boolescher oder numerischer Status, der nur ein einziges Mal in eine bestimmte Richtung getriggert wird (z. B. „erster Markttag erreicht" oder „Trade-Partner-Gate gefeuert") und dann für die Lebensdauer der Spielinstanz gesperrt bleibt. Verhindert zyklisches State-Flackern bei Save/Load-Zyklen.
 → Java-Klasse: `src/vannon/syx/economy/core/EconomySim.java`, `src/vannon/syx/economy/core/EconomySaveLoad.java`
-→ Cross-Ref: Ratchet, Threshold-Bump, Trade-Partner-Gate
+→ Cross-Ref: Policy-Bundle, Ratchet, Threshold-Bump, Trade-Partner-Gate
 → Beispiel: „Sprint v0.13.110+: Once-Only-Bump sobald Stage ≥ HANDEL + Trade-Partner existiert — `tradePartnerGatePassed` Flag persistiert via Save/Load."
+
+**Policy-Bundle** — Eine kohärente Sammlung verwandter Settings-Bumps, die als Single-Choke-Point-Methode bündelt statt als isolierte statische Field-Writes. Im Sprint v0.13.124+BootstrapEncapsulation entstanden: `applyEarlyPhaseBumpRules()` gruppiert alle Once-Only-Bump-relevanten Bootstrap-Writes (`startingTreasury`-Write, Ratchet-Flag-Set, EventLog-Eintrag) zu einem Single-Entry-Point und verhindert verstreute Mutations an anderen Stellen. Future-Variante `applyStartingGroundConfig()` ist explizit im Sprint-Backlog als kohärente Phase-Welle.
+→ Java-Klasse: `src/vannon/syx/economy/core/EconomySim.java`, `src/vannon/syx/economy/core/EconConfig.java` (Setter-Routes)
+→ Cross-Ref: Once-Only-Bump, Setter-Pattern, Trade-Partner-Gate
+→ Beispiel: „Sprint v0.13.124+: `applyEarlyPhaseBumpRules()` ist ein Policy-Bundle — alle Trade-Partner-Gate-relevanten Entscheidungen (startingTreasury-Update via `setStartingTreasury()`, Ratchet-Transition, Stage-Check, hasTradePartner-Bedingung) in einem einzigen Methoden-Body. Vorher waren das 3+ verstreute Static-Writes mit ungekoppelter Validierung."
 
 **Pre-Spec** — Eine vordefinierte deklarative Spezifikation (YAML oder JSON, oft aus Szenario-Generatoren), gegen die ein aktuelles Savegame validiert wird. Dient als starrer Soll-Zustand für reproduzierbare Integrationstests der Wirtschafts-Logik.
 → Tool: `tools/scenario_snapshot.py`, `tools/scenario_verify.py`
@@ -453,8 +458,13 @@ Ketten-Effekte über die gesamte Produktionskette.
 
 **Ratchet** — Eine „Zahnrad"-Logik (Sperrklinke) im State-Management, die einen Wert nur in eine Richtung wachsen lässt oder das Zurückfallen unter einen erreichten Höchststand (High-Water-Mark) verhindert. Speichert sich in `EconomySaveLoad` für Persistenz über Re-Loads.
 → Java-Klasse: `src/vannon/syx/economy/core/EconomySim.java`, `src/vannon/syx/economy/core/EconomySaveLoad.java`
-→ Cross-Ref: Once-Only-Bump
+→ Cross-Ref: Once-Only-Bump, Threshold-Bump
 → Beispiel: „Once-Only-Bump-Ratchet in `EconomySaveLoad.java:161` — der `tradePartnerGatePassed` boolean wird ans Chunk-Ende geschrieben, damit Re-Loads den Bump nicht wiederholen."
+
+**Setter-Pattern** — Eine Hard-Cap-Setter-Discipline für kritische `public static`-Configs. Jeder kritische Static bekommt einen `setXxx`-Setter mit `clamp(...)`-Validation; Caller (UI-Slider, Save/Load, Auto-Krisen-Resolver) müssen durch den Setter routen statt direkt auf das Field zu schreiben. Vorbild: `setOddjobWage(int)` mit `clamp(wage, 0, defaultWage × oddjobWageCeilingRatio)` als Single-Choke-Point. Sprint v0.13.124+BootstrapEncapsulation hat `setStartingTreasury(int)`, `setMeticImmigrationDepth(double)`, `setMeticImmigrationSteepness(double)` nach diesem Muster eingeführt und direkte Static-Writes auf 3 Settings eliminiert.
+→ Java-Klasse: `src/vannon/syx/economy/core/EconConfig.java` (Setter-Definition), `src/vannon/syx/economy/core/EconomySim.java` & `EconProgression.java` (Caller-Conformance)
+→ Cross-Ref: Policy-Bundle, StartingFromGround, Ratchet
+→ Beispiel: „Sprint v0.13.124+ Setter-Migration: `setStartingTreasury(int value) = clamp(value, 0, Integer.MAX_VALUE)` — Caller wie `EconomySim.applyEarlyPhaseBumpRules()` rufen den Setter statt `EconConfig.startingTreasury = ...` direkt. Verhindert negative Treasury (Owner-Cashflow-Malfunction) als strukturelle Unmöglichkeit, nicht nur als Konvention."
 
 **SSoT** (Single Source of Truth) — Der eine maßgebliche Ort, an dem ein Referenzdatum gepflegt wird (z. B. `pom.xml <version>` für Releases, `tools/god-class-baselines.yml` für grandfathered Metriken). Alle anderen Systeme und Stam-Docs lesen diesen Wert ausschließlich oder werden per Tooling dagegen validiert.
 → Tool: `tools/doku-sync.sh`, `tools/verify-doc-sync.sh`, `tools/god-class-baselines.yml`
@@ -463,7 +473,7 @@ Ketten-Effekte über die gesamte Produktionskette.
 
 **Staircase** — Eine stufenweise Progressions-Logik (oft bei Löhnen, Preisen oder Firmen-Cap). Schwellwerte werden in diskreten „Treppenstufen" (Tier 0..4) angehoben, statt bei jedem Tick mikroskopisch zu fluktuieren. Reduziert Markt-Spam und Audit-Rauschen. Staatsbestand-Override-Flag kann die Staircase für government-owned Firms selektiv ausser Kraft setzen.
 → Java-Klasse: `src/vannon/syx/economy/core/FirmLedger.java`, `src/vannon/syx/economy/core/EconProgression.java`
-→ Cross-Ref: Ratchet
+→ Cross-Ref: Ratchet, Threshold-Bump
 → Beispiel: „Sprint v0.13.103+ Staircase-Cap: max-Worker-Limit aus 5-Tier-Skalierung in FirmLedger.java:822-827; Staatsbestand-Override ignoriert staircaseCap für staatliche Firmen."
 
 **Stam-Doku** (Stamm-Dokumentation) — Die 7 Master-Doku-Files des Repos (`Doku/README`, `Doku/ARCHITECTURE`, `Doku/CHANGELOG`, `Doku/ROADMAP`, `Doku/GLOSSARY`, `Doku/WORKFLOW`, `Doku/RULE_CHANGELOG`), deren Versions-Marker zwingend mit `pom.xml <version>` synchron sein MÜSSEN. Der Stam-Doku-Sync-Anker steht oben in jeder dieser Dateien als Kommentar-Block.
