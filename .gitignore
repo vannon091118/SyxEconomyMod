@@ -45,3 +45,4 @@ __pycache__/
 # ── Diagnostic exports (runtime, not source) ──────────────────────
 diagnostics/
 economy_events.log
+.claude/
