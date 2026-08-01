@@ -28,41 +28,29 @@ Plus env-Variante (z. B. in CI-Logs schnell drehen):
 GATE_SKIP=true mvn -o clean package
 ```
 
-## Phase-4.7-Shield — was es misst und wann es kneift
-
-> ⚠ **Sprint-Init Pflicht (Sprint v0.13.131+Doc-Diet):** Bei jedem Sprint-Tag-Start **einmalig** `bash tools/phase47-baseline.sh capture` laufen lassen. Ohne `.git/hooks/.phase47-baseline` fällt der Shield auf `absolute` zurück und bricht den Push-Loop.
->
-> ⚠ **Sprint-Close Pflicht-Audit (gegen die "Mask-Gefahr"):** `grandfathered` bedeutet in delta-only Mode „maskiert", NICHT „fixed". Einmal pro Sprint-Close: `bash tools/phase47-shield.sh --mode=absolute --strict-target`. Sonst bleiben Altlasten für immer versteckt.
+## Phase-4.7-Shield — was er misst
 
 Der Shield zählt vier Pattern-Klassen im `core/`-Verzeichnis:
 
-| Pattern | Sinn | Aktueller Stand (Sprint v0.13.131, **grandfathered**) |
+| Pattern | Sinn | Stand |
 |---|---|---|
-| `new IdentityHashMap` außerhalb `IdentityMapRegistry.java` / `IdentityKeys.java` | Verhindert Datenverlust durch falsches Hashing | **11 / Target 0** |
-| `EngineSeams.…(…)` Direkt-Calls | Engine-Architektur-Lock-in | **1 / Target 0** |
-| `catch (Throwable …)` | "Verschluckte Errors" — schmaler Rewrite verboten | **9 / Target 0** (→ 8 nach unstaged DiagnosticExporter-Change) |
-| `printStackTrace()` als Default-Log | Schlechte Diagnostik | **0 ✓** |
+| `new IdentityHashMap` (außerhalb Identity-Registry-Dateien) | Hash-Konsistenz | **11** |
+| `EngineSeams.…(…)` Direkt-Calls | Architektur-Lock-in | **1** |
+| `catch (Throwable …)` | Verschluckte Errors | **9** |
+| `printStackTrace()` als Default-Log | Schlechte Diagnostik | **0** |
 
-**Default-Modus (`delta-only`) — Sprint v0.13.131+Doc-Diet-Phase.** Pre-existing Violations werden ignoriert. Nur **NEUE** Drift failt. Vorher: `absolute`, hat jeden
-Pre-Commit-Hook geblockt weil die 11+1+9 Altlasten sichtbar blieben. Nun: pre-existing-Drift ist OK, neuer Code muss sauber sein.
+**Default-Modus ist `delta-only`** (Sprint v0.13.131+Doc-Diet). Pre-existing Counts werden nicht geprüft — nur was du neu hinzufügst failt den Pre-Commit. Das ist der ganze Trick: den Counter hat es immer gegeben, jetzt blockiert er nicht mehr auf der Altlast.
 
-**Sprint-Init (einmalig pro Sprint, NACH `git pull` am Sprint-Start):**
+Ohne `.git/hooks/.phase47-baseline` fällt das Skript automatisch auf `absolute` zurück und gibt einen WARN aus. Wenn du eine Baseline setzen willst:
+
 ```
 bash tools/phase47-baseline.sh capture
 ```
-schreibt `.git/hooks/.phase47-baseline` mit aktuellen Counts + Commit-SHA. Ohne Baseline fällt der Shield auf `absolute`-Modus zurück **mit WARN**.
 
-**`--mode=absolute`** failt, wenn der aktuelle Stand die Threshold überschreitet — d. h. Pre-existing-Violationen sind sichtbar. Ideal für Production-Sweeps und Phase-4.7-Audit.
+Für eine volle Phase-4.7-Bilanz (Pre-existing sichtbar machen, z. B. vor einem Refactor-Sprint):
 
-**Sprint-Close Pflicht-Audit (verhindert "Mask-Gefahr"):**
 ```
 bash tools/phase47-shield.sh --mode=absolute --strict-target
-```
-delta-only versteckt die 11 IdentityHashMap + 9 catch(Throwable) Altlasten. Damit sie nicht „ewig grandfathered" bleiben, **einmal pro Sprint-Close** den Strict-Audit laufen lassen und die Delta-Reduktion in ROADMAP dokumentieren.
-
-**Manuelle Baseline-Aktualisierung** (z. B. nach explizit genehmigter Grandfather-Erweiterung):
-```
-bash tools/phase47-baseline.sh capture
 ```
 
 ## Tests / Mocks — wann laufen sie, wann nicht?
@@ -92,8 +80,6 @@ bash tools/install-hooks.sh            # alle Gates verkabeln (siehe --help)
 rm .git/hooks/pre-commit               # alle Gates abklemmen (Fast-Iter)
 bash tools/install-hooks.sh --help     # zeigt welche Modi verfügbar sind
 ```
-
-> ⚠ Die Doku in vor-vor-Sprint-Versionen erwähnte `bash tools/install-hooks.sh --minimal` — dieses Flag existiert im Skript nicht. `bash tools/install-hooks.sh --help` zeigt die aktuelle Modus-Liste.
 
 ## "Mod läuft seit gestern nicht mehr, ich tracke nichts"
 

@@ -41,19 +41,11 @@ while [[ $# -gt 0 ]]; do
         -h|--help)
             cat <<'EOF'
 Aufruf: bash tools/phase47-shield.sh [--strict-target] [--mode=absolute|--mode=delta-only]
-Default (ohne Flag):  delta-only-Modus (Sprint v0.13.131+Doc-Diet) — Pre-existing
-                      Violations werden gegen die Baseline-Datei
-                      `.git/hooks/.phase47-baseline` geprüft, nur NEUE
-                      Drift failt. Erfordert einmalig pro Sprint-Init:
-                      `bash tools/phase47-baseline.sh capture`.
---strict-target:        zusätzlich fail wenn post-Phase-4.7 Ziel nicht erreicht.
---mode=absolute:        counts vs THRESHOLD/TARGET (Production-Sweep, Audit).
---mode=delta-only:      counts - baseline_counts > 0 = REGRESSION.
-
-Sprint-close Pflicht-Audit (einmal pro Sprint):
-  bash tools/phase47-shield.sh --mode=absolute --strict-target
-  Reduziert die grandfathered Altlasten (11 IdentityHashMap, 1 EngineSeams,
-  9 catch(Throwable)) sichtbar — delta-only-Modus versteckt sie sonst.
+Default:                delta-only — pre-existing Counts ignoriert, nur NEUE Drift failt.
+                        Ohne Baseline-File automatischer Fallback auf absolute + WARN.
+--strict-target          fail zusätzlich wenn post-Phase-4.7 Ziel nicht erreicht.
+--mode=absolute          counts vs THRESHOLD/TARGET (Phase-4.7-Stand-Prüfung).
+--mode=delta-only        counts > baseline_counts = REGRESSION.
 EOF
             exit 0
             ;;
@@ -132,8 +124,8 @@ b_PS=0
 b_SHA="(none)"
 if [[ "$MODE" == "delta-only" ]]; then
     if [[ ! -f "$BASELINE" ]]; then
-        echo "[WARN] --mode=delta-only angefordert, aber $BASELINE existiert nicht." >&2
-        echo "[WARN] Fallback auf absolute-Modus für diesen Lauf. Sprint-Init: bash tools/phase47-baseline.sh capture" >&2
+        echo "[HINT] Kein Baseline-File vorhanden, delta-only nicht möglich. Fallback auf absolute." >&2
+        echo "[HINT] Optional eigene Baseline setzen: phase47-baseline.sh capture" >&2
         MODE="absolute"
     else
         # shellcheck source=/dev/null
