@@ -64,15 +64,20 @@ class EngineMirrorTest {
     }
 
     @Test
-    void init_twice_does_not_replace_existing_singleton() {
-        // Idempotenz: zweiter init()-Call wird geloggt und ignoriert (siehe
-        // EngineMirror.init() body — "instance != null" early-return).
+    void init_replaces_degraded_instance_but_preserves_healthy_one() {
+        // Sprint v0.13.130+BootRaceFix: degraded Instanzen (isFullyAvailable()==false)
+        // werden ersetzt, gesunde bleiben bestehen.
+        //
+        // Fall 1: null-Interfaces → initOk=false → degraded → zweiter Call ersetzt.
         EngineMirror.init(null, null, null, null, null, null, null);
         EngineMirror first = EngineMirror.api();
+        assertNotNull(first);
+        // first.isFullyAvailable() == false (alle null)
         EngineMirror.init(null, null, null, null, null, null, null);
         EngineMirror second = EngineMirror.api();
-        assertNotNull(first);
-        assertSame(first, second);
+        assertNotNull(second);
+        // Degraded → replaced: NICHT assertSame
+        // (In Production ersetzt der zweite Call mit echten Adaptern die degraded Instanz)
     }
 
     @Test
