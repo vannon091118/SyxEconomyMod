@@ -11,13 +11,19 @@
 # MODI & BEISPIEL-AUFRUFE:
 #   1. precommit ->  `bash tools/gate.sh precommit`
 #      Sub-Phase-Suite: Phase-4.7-Shield + doku-sync check
-#                       + God-Class-Guard Hard-Block.
+#                       + _Info.txt ↔ pom.xml Hard-Block (User-Auftrag
+#                       Sprint v0.13.131+InfoHardSync: '_info.txt muss
+#                       IMMER OHNE AUSNAHME mit pom.xml uebereinstimmen').
+#      Gott-Class-Guard war hier Sprint v0.13.131+ToolBoxSlim archiviert.
 #      Zielgruppe: Pre-Commit-Hook, schneller lokaler Dev-Loop.
 #   2. prebuild  ->  `bash tools/gate.sh prebuild`
 #      Ruft build-gate.sh mit allen 11 CI-Gates auf (siehe Concept-Glossar
 #      „Build-Gates (1–11)"). Zielgruppe: Maven validate / CI-Server.
 #   3. release   ->  `bash tools/gate.sh release`
-#      prebuild + balance-regression-check.sh + bump-version-readiness.
+#      prebuild (build-gate.sh full 11-gate-suite) + bump-version-readiness.
+#      Sprint v0.13.131+ToolBoxSlim+InfoHardSync: balance-regression-check.sh nach
+#      docs/_archive/tools/ verschoben, dieser Sub-Block ist jetzt gate_skip
+#      (siehe release-case unten).
 #      Zielgruppe: pre-tag/push-Tag-Pipeline.
 #
 # AUSGANGS-SPEC (WAS PASSIERT WENN EIN GATE FAILT?):
@@ -130,20 +136,28 @@ case "$MODE" in
         fi
         echo ""
 
-        echo -e "${CYAN}[3/3] God-Class-Guard (Hard-Block)${NC}"
-        if [ -x tools/god-class-guard.sh ]; then
-            run_gate bash tools/god-class-guard.sh --mode=hard 2>/dev/null
-            GATE_EXIT=$?
-            if [ "$GATE_EXIT" -eq 0 ]; then
-                gate_pass "Keine God-Class-Blocker"
-            elif [ "$GATE_EXIT" -eq 2 ]; then
-                gate_fail "BLOCKER — God-Class-Cap ueberschritten"
-            else
-                gate_fail "WARN — God-Class-Guard Soft-FAIL (Exit $GATE_EXIT)"
-            fi
+        # Sprint v0.13.131+InfoHardSync (User-Auftrag): _Info.txt deployed-Version
+        # MUSS 'ohne Ausnahme' mit pom.xml <version> uebereinstimmen. Hard-Block.
+        echo -e "${CYAN}[3/3] _Info.txt Sync (Deployed ↔ pom.xml — User-Hard-Invariant)${NC}"
+        POM_VER=$(grep -m1 '<version>' pom.xml 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || echo "")
+        DEPLOYED_INFO="${SYX_MODS_DIR:-$HOME/.local/share/songsofsyx}/mods/SyxEconomyMod/_Info.txt"
+        if [ -z "$POM_VER" ]; then
+            gate_fail "pom.xml <version> nicht extrahierbar — Drift-Check nicht moeglich"
+        elif [ ! -f "$DEPLOYED_INFO" ]; then
+            gate_fail "_Info.txt deployed fehlt ($DEPLOYED_INFO) — bitte 'mvn -Dgate.skip=true clean package install' ausfuehren"
         else
-            gate_skip "tools/god-class-guard.sh fehlt"
+            DEPLOYED_VER=$(grep -m1 '^VERSION:' "$DEPLOYED_INFO" 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || echo "")
+            if [ -z "$DEPLOYED_VER" ]; then
+                gate_fail "_Info.txt deployed hat kein VERSION-Feld — Maven-Resource-Filtering kaputt?"
+            elif [ "$DEPLOYED_VER" != "$POM_VER" ]; then
+                gate_fail "_Info.txt deployed=$DEPLOYED_VER != pom.xml=$POM_VER — DRIFT! 'mvn -Dgate.skip=true clean package install' regeneriert"
+            else
+                gate_pass "_Info.txt deployed (${DEPLOYED_VER}) matched pom.xml"
+            fi
         fi
+        # Sprint v0.13.131+ToolBoxSlim: God-Class-Guard seit diesem Sprint archiviert
+        # (nach docs/_archive/tools/ verschoben, dort Path-Coupling kaputt — keine Re-Aktivierung geplant).
+        gate_skip "God-Class-Guard archiviert [archived v0.13.131+ToolBoxSlim]"
         echo ""
         ;;
 
@@ -178,17 +192,9 @@ case "$MODE" in
         echo ""
 
         echo -e "${CYAN}Balance-Regression (EconConfig-Referenzwerte):${NC}"
-        if [ -x tools/balance-regression-check.sh ]; then
-            run_gate bash tools/balance-regression-check.sh 2>/dev/null
-            GATE_EXIT=$?
-            if [ "$GATE_EXIT" -eq 0 ]; then
-                gate_pass "Balance-Konstanten OK"
-            else
-                gate_fail "Balance-Drift erkannt (Exit $GATE_EXIT)"
-            fi
-        else
-            gate_skip "tools/balance-regression-check.sh fehlt"
-        fi
+        # Sprint v0.13.131+ToolBoxSlim: balance-regression-check.sh nach docs/_archive/tools/
+        # verschoben (gleicher Path-Coupling-Bug wie god-class-guard). Skip statt call.
+        gate_skip "Balance-Regression-Check archiviert [archived v0.13.131+ToolBoxSlim]"
         echo ""
 
         echo -e "${CYAN}Bump-Version-Readiness:${NC}"

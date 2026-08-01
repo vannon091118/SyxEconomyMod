@@ -68,7 +68,7 @@ beim `mvn package` zwar `${mod.version}` korrekt nach `${project.version}`, aber
 **Verification DoD (4/4 OK):**
 
 - `bash tools/verify-doc-sync.sh` → PASS (Stam-Docs sync mit pom v0.13.101) ✔
-- `bash tools/god-class-guard.sh --mode=hard` → unverändert PASS ✔
+- `bash tools/god-class-guard.sh --mode=hard [archived v0.13.131+ToolBoxSlim] ` → unverändert PASS ✔
 - `mvn verify install -DskipTests -Dskip.bump=true` → BUILD SUCCESS ✔
 - **Substitution-Check** (`grep 'mod.info' pom.xml` darf KEINE hardcoded
   `vX.Y.Z`-Substring enthalten): `grep -E 'mod.info.*v[0-9]+\.[0-9]+\.[0-9]+' pom.xml`
@@ -99,12 +99,12 @@ Pro-Tick-Immigration-Diagnostik als Throttle-via-Tick über `DiagnosticExporter.
 
 1. **`DiagnosticExporter.appendImmigrationRow(...)` (NEU, ~80 LOC)** — Asynchroner CSV-Write via `IO.submit(...)` mit Tick-Throttle (`if (tick == lastImmigrationDebugTick) return;`). Header `IMMIGRATION_HEADER` (14 Cols: day, tick, population, cap, cap_hit, wallet_median, mean_wealth, foreign_tax_modifier, booster_raw, booster_value, depth, steepness, phase_factor, happiness_proxy). File-Constant `rebalance_immigration_<epoch>.csv` analog zu Macro/Resource/Firms/IO.
 2. **`MeticImmigration.vGet()` DiagnosticHook (~25 LOC netto)** — Booster-Raw vor Cap-Clamp und Booster-Final separat exportieren, plus Wallet-Median/Mean, Foreign-Tax-Modifier, cap_hit-Bool. `EconConfig.DEFAULT_TICKS_PER_DAY` für Day-Berechnung (`tick / ticksPerDay`). Per-Tick Throttle garantiert 1× pro Tick statt 1× pro Race (verhindert IO-Storm vor Missbrauch).
-3. **`tools/god-class-baselines.yml` Re-Baseline per Rule 14** — DiagnosticExporter loc 590→646, fields 48→54 (Pflicht: loc 646 > warn 600; fields 54 > block 24). baselines.yml Stand v0.13.131.
+3. **`tools/god-class-baselines.yml [archived v0.13.131+ToolBoxSlim] ` Re-Baseline per Rule 14** — DiagnosticExporter loc 590→646, fields 48→54 (Pflicht: loc 646 > warn 600; fields 54 > block 24). baselines.yml Stand v0.13.131.
 
 **Verification DoD (3/3 OK):**
 
 - `mvn -q -DskipTests -Dskip.bump=true compile` → BUILD SUCCESS ✔
-- `bash tools/god-class-guard.sh --mode=hard` → 186 PASS / 0 WARN / 0 BLOCK ✔
+- `bash tools/god-class-guard.sh --mode=hard [archived v0.13.131+ToolBoxSlim] ` → 186 PASS / 0 WARN / 0 BLOCK ✔
 - `bash tools/verify-doc-sync.sh` → PASS (Stam-Docs sync mit pom 0.13.107) ✔
 
 **Rule 3 (ReentryGuard) & Rule 15 (Static-Engine-Touch) respektiert:**
@@ -154,7 +154,7 @@ Diese Session (`v0.13.131`) hat 4 Commits produziert + gepushed:
 
 - `mvn -q -DskipTests -Dskip.bump=true compile` → BUILD SUCCESS ✔
 - `bash tools/verify-doc-sync.sh` → PASS (13 Stam-Docs sync mit pom 0.13.107) ✔
-- `bash tools/god-class-guard.sh --mode=hard` → 186 PASS / 0 WARN / 0 BLOCK ✔
+- `bash tools/god-class-guard.sh --mode=hard [archived v0.13.131+ToolBoxSlim] ` → 186 PASS / 0 WARN / 0 BLOCK ✔
 
 **Noch offene Tasks (Deferral-Quo für nächste Session):**
 
@@ -210,7 +210,7 @@ ROADMAP-Reconciliation: L-03 WealthRest ist seit v0.13.78 in `FatiguePressure.ja
 **Verification DoD (3/3 OK):**
 
 - `mvn -q -DskipTests -Dskip.bump=true compile` → BUILD SUCCESS ✔
-- `bash tools/god-class-guard.sh --mode=hard` → 186 PASS / 0 WARN / 0 BLOCK ✔
+- `bash tools/god-class-guard.sh --mode=hard [archived v0.13.131+ToolBoxSlim] ` → 186 PASS / 0 WARN / 0 BLOCK ✔
 - `bash tools/verify-doc-sync.sh` → PASS (13 Stam-Docs sync mit pom 0.13.107) ✔
 
 **Pre-existing richtig erkannt:**
@@ -259,17 +259,17 @@ Nach Sprint: `~/.local/share/songsofsyx/mods/SyxEconomyMod/diagnostics/debug_<se
 - `docs/OPEN_POINTS_AUDIT.md` — 1× `[PM-OK: FirmStaircase.java:loc=372]` + 1× `[HYP: requires-git-sha-verification]`.
 - `docs/UI_GRID_LAYOUT_SPEC.md` — 4× `[HYP]`-Tags (Prototyp-Schätzungen markiert).
 - `agents.md` — NEUE Sub-Rule 3.2 `Audit-Claims MÜSSEN parse_metrics-verifizierbar sein` mit Tag-System (PM-OK/HYP), Gate-11-Implementation, Drift-Detection-Performance-Edge-Cases, Reference zu Sprint v0.13.128+.
-- `tools/verify-audit-claims.sh` (NEU, ~130 SLOC) — Scannt `docs/*_AUDIT*.md + docs/*_SPEC*.md` auf `[PM-OK:...]`-Tags, validiert jeden gegen `python3 tools/god-class-guard/parse_metrics.py`, Drift = HARD-BLOCK.
-- `tools/verify-doc-sync.sh` — NEUE Block-11 "Gate 11: Audit-Claims Verification (Rule 3.2)" vor Block-4 Result: ruft `bash tools/verify-audit-claims.sh`, bei Drifts `FAILED=1`.
+- `docs/_archive/tools/verify-audit-claims.sh [archived v0.13.131+ToolBoxSlim] ` (NEU, ~130 SLOC) — Scannt `docs/*_AUDIT*.md + docs/*_SPEC*.md` auf `[PM-OK:...]`-Tags, validiert jeden gegen `python3 tools/god-class-guard/parse_metrics.py`, Drift = HARD-BLOCK.
+- `tools/verify-doc-sync.sh` — NEUE Block-11 "Gate 11: Audit-Claims Verification (Rule 3.2)" vor Block-4 Result: ruft `bash docs/_archive/tools/verify-audit-claims.sh [archived v0.13.131+ToolBoxSlim] `, bei Drifts `FAILED=1`.
 - **Out-of-Scope notiert:** `BINDUNGSMATRIX.csv` Audit-Validation ist als **separater Sprint geplant** (CSV-Parser-Pattern erforderlich; Gate-12-Spec). Doc-Tag-System zielt auf Markdown-Tags, nicht auf CSV-DataIntegrität.
 - **Pre-Existing-Blocker:** Sprint atomic-push deferred bis Sprint v0.13.120+Phase-4.7-Sweep die 11 IdentityHashMap + 9 catch(Throwable) pre-existing Violations löst (Phase-4.7-Shield blockiert JEDEN Commit).
 
 ### Sprint v0.13.128+Anti-Regression-Audit-Decay
 
-- **`tools/verify-audit-claims.sh`** — Anti-Regression-Erweiterung: Auto-Detection von ungetaggten numerischen Claims (Pattern A: `\b[0-9]+(\.[0-9]+)?\s*(SLOC|LOC|fields|pubM|imports|public methods)\b` + Pattern B: `\b[A-Za-z][A-Za-z0-9_]*\.java:[0-9]+\b`); Stats-Counter `unparsed-claims=N`; Soft-WARN heute mit `TODO-List`-Ausgabe am Gate-11-Ende; Future-Stagger: HARD-BLOCK ab v0.13.130+.
+- **`docs/_archive/tools/verify-audit-claims.sh [archived v0.13.131+ToolBoxSlim] `** — Anti-Regression-Erweiterung: Auto-Detection von ungetaggten numerischen Claims (Pattern A: `\b[0-9]+(\.[0-9]+)?\s*(SLOC|LOC|fields|pubM|imports|public methods)\b` + Pattern B: `\b[A-Za-z][A-Za-z0-9_]*\.java:[0-9]+\b`); Stats-Counter `unparsed-claims=N`; Soft-WARN heute mit `TODO-List`-Ausgabe am Gate-11-Ende; Future-Stagger: HARD-BLOCK ab v0.13.130+.
 - **`agents.md`** — NEUE Sub-Rule 3.3 *Anti-Decay: Audit-claims werden Auto-Detected*; dokumentiert den heutigen SOFT-WARN-Modus, das Future-Stagger-Pattern, und das Anti-Pattern-Verbot (kein Inline-Auto-Insert, kein `-Daudit.skipUnparsed=true`-Bypass).
 - **`CHANGELOG.md`** — Sub-Sprint-Header (dieser Eintrag); präzise Differenzierung gegen den Sprint v0.13.128+Audit-Claims-Verification (selbstständiger Sprint, distinct theme: *Future-Hardening von Gate 11*).
-- **Design-Rationale:** Heutiges SOFT-WARN lässt 35 Baseline-Unparsed-Claims (Aktueller Stand: `AUDIT_2026-07-31` 11 / `OPEN_POINTS_AUDIT` 15 / `UI_GRID_LAYOUT_SPEC` 4 / `HANDOFF_M1` 2 / `HANDOFF_T101` 3) durchgehen — sie werden als TODO-List in `bash tools/verify-audit-claims.sh` Output geprintet. Sprint v0.13.129+ räumt die 35 Claims auf. Sprint v0.13.130+ flipped den Soft-Warn zu HARD-BLOCK (Future-Stagger fein-grained dokumentiert in Sub-Rule 3.3).
+- **Design-Rationale:** Heutiges SOFT-WARN lässt 35 Baseline-Unparsed-Claims (Aktueller Stand: `AUDIT_2026-07-31` 11 / `OPEN_POINTS_AUDIT` 15 / `UI_GRID_LAYOUT_SPEC` 4 / `HANDOFF_M1` 2 / `HANDOFF_T101` 3) durchgehen — sie werden als TODO-List in `bash docs/_archive/tools/verify-audit-claims.sh [archived v0.13.131+ToolBoxSlim] ` Output geprintet. Sprint v0.13.129+ räumt die 35 Claims auf. Sprint v0.13.130+ flipped den Soft-Warn zu HARD-BLOCK (Future-Stagger fein-grained dokumentiert in Sub-Rule 3.3).
 - **Rule 3 respektiert:** KEIN Inline-Auto-Insert durch das Skript (`agents.md` verbietet explizit `tools/sync-doc-anchors.sh`-Pattern). Mechanik bleibt report-only; Author MUSS manuell taggen.
 - **Pre-Existing-Blocker** (geerbt, kein Sprint-interner Blocker): Sprint atomic-push deferred bis Sprint v0.13.120+Phase-4.7-Sweep pre-existing Violations löst.
 
@@ -334,7 +334,7 @@ User-Trigger (per `docs/Anti-Over-Engineering-Gutachten`): 6 Governance-Befunde 
 
 **Verification DoD (alle gruen erwartet):**
 
-- `bash tools/god-class-guard.sh --mode=hard` → 180 PASS / 0 WARN / 0 BLOCK ✔
+- `bash tools/god-class-guard.sh --mode=hard [archived v0.13.131+ToolBoxSlim] ` → 180 PASS / 0 WARN / 0 BLOCK ✔
   (Skript-Aenderungen sind keine .java-Drift)
 - `bash tools/verify-doc-sync.sh` → PASS, alle 12 sync-Checks inkl. Rule 3.1 +
   mod.version.history + mod.changelog first-entry + _Info.txt-Strict + _Info.txt
@@ -367,12 +367,12 @@ User-Auftrag "u1-6 durchführen" (read-only-Verifikation vom 2026-07-31 Tiefen-A
 **Subsummiert 4 Tasks (~280 LOC weg):**
 1. **U1 Dead-Code-Entfernung (-42 LOC)**: WindowQuickview.renderSidePanelContent() public-Method komplett entfernt (war no-op seit v0.13.116+ Hotfix, 0 Caller) — per agents.md "no new dead code". WindowOverview.activeInstance()/setActiveTab(int) entfernt (0 Caller). EconWindowBase.getSim() entfernt (0 Caller).
 2. **U2 Stale-Refs bereinigt**: KpiSection.java:11 Javadoc-Reference auf no-op `renderSidePanelContent()` entfernt. EconWindowBase.java:432 Stale-Kommentar "unused by quickview" → "active Window-switcher" korrigiert (WindowQuickview benutzt winOverview()/winEconomy()/winState() aktiv).
-3. **U3 Layout-Prototyp-Drop (-213 SLOC)**: src/vannon/syx/economy/ui/Layout.java komplett entsorgt (0 Consumer, 213 SLOC, grandfathered-warn). tools/god-class-baselines.yml Layout-Entry entfernt. Sprint M-UI-5 Layout-Migration aus Backlog.
+3. **U3 Layout-Prototyp-Drop (-213 SLOC)**: src/vannon/syx/economy/ui/Layout.java komplett entsorgt (0 Consumer, 213 SLOC, grandfathered-warn). tools/god-class-baselines.yml [archived v0.13.131+ToolBoxSlim]  Layout-Entry entfernt. Sprint M-UI-5 Layout-Migration aus Backlog.
 4. **U6 addSlider step-Parameter-Drop (-9 LOC)**: 4 Overloads in EconWindowBase (IntSupplier + suffixx2 + int/current + suffixx2) — `int step` Parameter entfernt (+Javadoc-Notiz das LiveSlider-Konstruktor step ignoriert). 8 Caller in WindowState.java/PropertyTab.java/DashboardTab.java updaten (step-Argument entfernt).
 5. **Pflicht-Re-Baseline per Rule 14** (entdeckt waehrend Validation-Wave): OverviewHelpers.java hatte stray pubM:2-Line in baselines.yml (Sprint v0.13.106+M-UI-3 Pflicht-Re-Baseline verletzt + drift pubM 2→13 +550% ueber Cap). Bereinigt: stray-Lines entfernt, reason_at_emit + baseline_update mit korrekten aktuellen Werten. WindowQuickview re-baselined (168→161 SLOC nach U1). KpiSection + EconWindowBase baseline_update editorial erweitert mit Sprint v0.13.117+ Notiz.
 
 **Verification DoD (alle grün):**
-- `bash tools/god-class-guard.sh --mode=hard` → 181 PASS / 0 WARN / 0 BLOCK ✔ (BLOCKER behoben)
+- `bash tools/god-class-guard.sh --mode=hard [archived v0.13.131+ToolBoxSlim] ` → 181 PASS / 0 WARN / 0 BLOCK ✔ (BLOCKER behoben)
 - `bash tools/verify-doc-sync.sh` → PASS (11 Stam-Docs sync mit pom v0.13.101) ✔
 - `mvn verify install -DskipTests -Dskip.bump=true` → BUILD SUCCESS ✔
 - Pflicht-Re-Baseline per Rule 14 erfuellt fuer: WindowQuickview + OverviewHelpers + KpiSection + EconWindowBase alle im selben Sprint-Commit
@@ -408,7 +408,7 @@ User-Live-Test-Regression vom 2026-07-31 nach Sprint v0.13.116+ Hotfix + Sprint 
 1. **InstanceScript.pollDumpHotkey() regular-slash gated** — regular / (47) wird jetzt analog zum letter-Fallback-Pattern der pollHotkeys()-Keys (E/O/S/Q) hinter `EconConfig.letterHotkeyFallbackEnabled` als Letter-Fallback gated. Numpad / (331) bleibt unconditional active (NumPad-only-Policy konsistent). Default OFF = regular / ist no-op, NumPad / triggert weiterhin Debug-Dump.
 
 **Verification DoD (4/4 OK):**
-- `bash tools/god-class-guard.sh --mode=hard` → 181 PASS / 0 WARN / 0 BLOCK ✔
+- `bash tools/god-class-guard.sh --mode=hard [archived v0.13.131+ToolBoxSlim] ` → 181 PASS / 0 WARN / 0 BLOCK ✔
 - `bash tools/verify-doc-sync.sh` → PASS (Stam-Docs sync mit pom v0.13.101) ✔
 - `mvn verify install -DskipTests -Dskip.bump=true` → BUILD SUCCESS ✔
 - `mvn test -Dskip.bump=true -Dtest=*Hotkey*Test` → noch nicht existiert (Mockito-Blocker Folge Sprint v0.13.124+M-UI-1.2)
@@ -435,7 +435,7 @@ Code-Reviewer-Offene-Frage aus Sprint v0.13.104+M-UI-1 (788de18) und Sprint v0.1
 3. **baselines.yml KpiSection.java Re-Baseline (Rule 14 Pflicht, Sprint-modified)** -- fields=4 → 5 dokumentiert mit baseline_update-Begruendung (Floor-Schutz _DRIFT_FLOOR=2 deckt +1-Field-Drift ab). reason_at_emit von "fields 4 < warn 18" auf "fields 5 < warn 18" korrigiert (vorher: drift-stale).
 
 **Verification DoD (3/4 OK + 1 BLOCKER-dokumentiert):**
-- `bash tools/god-class-guard.sh --mode=hard` → 181 PASS / 0 WARN / 0 BLOCK ✔
+- `bash tools/god-class-guard.sh --mode=hard [archived v0.13.131+ToolBoxSlim] ` → 181 PASS / 0 WARN / 0 BLOCK ✔
 - `bash tools/verify-doc-sync.sh` → PASS (Stam-Docs sync mit pom v0.13.101) ✔
 - `mvn verify install -DskipTests -Dskip.bump=true` → BUILD SUCCESS ✔
 - `mvn test -Dskip.bump=true -Dtest=KpiSectionTest` → ⚠ **BLOCKER-DOKUMENTIERT**: Mockito-inline kann final-class KpiSection auf Java 21 wegen CDS/ByteBuddy dynamic-agent-loading-Sperre nicht mocken → 0/24 Tests gruen. POM.xml-XML-Argumente-Fix (`-XX:+EnableDynamicAgentLoading` + `-Xshare:off`) ist separates Sprint-Fix (Out-of-Scope). Severity.classify compile-state ist sauber und BUILD SUCCESS bestaetigt; die 24 Tests sind in-source dokumentiert, koennen aber lokal nicht ausgefuehrt werden bis Mockito-blocker separat gefixt ist.
@@ -462,7 +462,7 @@ Code-Reviewer-Offene-Frage aus Sprint v0.13.104+M-UI-1 (788de18) und Sprint v0.1
 8. **baselines.yml Re-Baseline** — Rule-14 Pflicht fuer 5 Sprint-MODIFIED Files: DiagnosticExporter dedup, FirmSizing 249→255 (Staircase +6 SLOC), 4 neue Entries (FirmLedger, PriorityRegistry, FirmStaircase, FirmStaircaseTest). YAML-VALID legacy_baselines=38.
 
 **Verification DoD (4/4 OK):**
-- `bash tools/god-class-guard.sh --mode=hard` → 181 PASS / 0 WARN / 0 BLOCK (Sprint-Scope-Files alle unter warn-Schwellen) ✔
+- `bash tools/god-class-guard.sh --mode=hard [archived v0.13.131+ToolBoxSlim] ` → 181 PASS / 0 WARN / 0 BLOCK (Sprint-Scope-Files alle unter warn-Schwellen) ✔
 - `bash tools/verify-doc-sync.sh` → PASS (Stam-Docs sync mit pom v0.13.101) ✔
 - `mvn verify install -DskipTests -Dskip.bump=true` → BUILD SUCCESS ✔
 - Rule-15 Engine-Singleton-Safety: Clean (PriorityRegistry.INSTANCE ist Self-Singleton; recompute()/FirmStaircase.static methods haben keine static-final Engine-Touches) ✔
@@ -489,7 +489,7 @@ Live-Test-Reports vom 2026-07-31 (Post-Push-Wave-und-Original-Push) zu zwei Regr
 **Verification DoD (4/4 ✅):**
 - `mvn compile -DskipTests -Dskip.bump=true` → BUILD SUCCESS (per Validation-Wave) ✔
 - `mvn verify install -DskipTests -Dskip.bump=true` → BUILD SUCCESS (per ge-pushed Sprint-Cluster 9a98e3d) ✔
-- `bash tools/god-class-guard.sh --mode=hard` → 181 PASS / 0 WARN / 0 BLOCK (Hotfix ändert keine Hard-Block-Files) ✔
+- `bash tools/god-class-guard.sh --mode=hard [archived v0.13.131+ToolBoxSlim] ` → 181 PASS / 0 WARN / 0 BLOCK (Hotfix ändert keine Hard-Block-Files) ✔
 - `bash tools/verify-doc-sync.sh` → PASS (10/10 Stam-Docs sync mit pom v0.13.101) ✔
 
 **Out-of-Scope (deliberately deferred):**
@@ -515,7 +515,7 @@ Tab-Modul-Split-Sprint (v0.13.106+M-UI-3) wird um eine generische Layout-API erw
 
 ## v0.13.113+M-UI-3.3 — Pre-Existing-BLOCK-Grandfather-Patch
 
-Grandfather-Patch für 17 Pre-Existing god-class-guard BLOCKs + YAML-Parse-Repair in tools/god-class-baselines.yml (Zeile 252/258 inner Apostrophe). Voraussetzung für Sprint v0.13.107-112 Push-Wave.
+Grandfather-Patch für 17 Pre-Existing god-class-guard BLOCKs + YAML-Parse-Repair in tools/god-class-baselines.yml [archived v0.13.131+ToolBoxSlim]  (Zeile 252/258 inner Apostrophe). Voraussetzung für Sprint v0.13.107-112 Push-Wave.
 
 ## v0.13.105+/M-UI-2 — Advisor Causality-Layer (Triplet + Trade-off-Tabelle)
 
@@ -554,7 +554,7 @@ Ergaenzt die ursprueglich deferred Mockito-Test-Infrastruktur von Sprint v0.13.1
 
 **Verification DoD:**
 - `mvn compile -DskipTests -Dskip.bump=true` → BUILD SUCCESS für AdvisorEngine/AdvisorTab/OverviewHelpers (Sprint-Scope)
-- `bash tools/god-class-guard.sh --mode=hard` → 0 BLOCK für Sprint v0.13.105+/M-UI-2 geänderte Files (3 re-baselines: AdvisorTab +51 SLOC, OverviewHelpers -63 SLOC, AdvisorEngine NEU)
+- `bash tools/god-class-guard.sh --mode=hard [archived v0.13.131+ToolBoxSlim] ` → 0 BLOCK für Sprint v0.13.105+/M-UI-2 geänderte Files (3 re-baselines: AdvisorTab +51 SLOC, OverviewHelpers -63 SLOC, AdvisorEngine NEU)
 - `bash tools/verify-doc-sync.sh` → PASS (Stam-Doc-Sync-Anker pom v0.13.101 unverändert)
 - `code-reviewer-minimax-m3` ≥ 1 PASS-Round
 
@@ -608,7 +608,7 @@ Subsummierte Tasks (5 total, 1 atomic commit):
   chipLabel (1). Ordinal-Contract (1: int-Index SSoT fuer PricesTab.currentFilter).
 
 **Stam-Docs-Sync per Rule 2 / 3 / 14**
-- `tools/god-class-baselines.yml`: KpiSection NEU + EconWindowBase Re-Baseline
+- `tools/god-class-baselines.yml [archived v0.13.131+ToolBoxSlim] `: KpiSection NEU + EconWindowBase Re-Baseline
   (loc 278→297, fields 33→32, imports 19→21). LOC-Drift +6.83% überschreitet
   +5%-Hard-Block, daher re-baselined == Gate 1 nach Rule 14 Pflicht.
 - `CHANGELOG.md` Sprint-Header (dieser Eintrag).
@@ -616,7 +616,7 @@ Subsummierte Tasks (5 total, 1 atomic commit):
 
 **Verification (DoD Sprint M-UI-1):**
 - ✅ `mvn compile -DskipTests -Dskip.bump=true` → BUILD SUCCESS.
-- ✅ `bash tools/god-class-guard.sh --mode=hard` → 174 PASS / 0 WARN / 0 BLOCK.
+- ✅ `bash tools/god-class-guard.sh --mode=hard [archived v0.13.131+ToolBoxSlim] ` → 174 PASS / 0 WARN / 0 BLOCK.
 - ✅ Code-Reviewer PASS nach 2 Runden (BLOCKEr Re-Baseline + catch-Refactor).
 - ⚠️ `bash tools/verify-doc-sync.sh` → erwartet PASS (pom.xml unangetastet).
 
@@ -771,11 +771,11 @@ Subsummierte Tasks (12 total, 1 atomic commit):
   (HIGH #2 Fix), pre-compile exempt_patterns regexes mit leerer-Regex-Erkennung
   (HIGH #3 Fix). Status-UEbergang `pass→warn→block` statt nonlocal-Workaround.
 - **T-GC-03** — `tools/god-class-guard/emit_yaml.py` — Auto-Generator fuer
-  `tools/god-class-baselines.yml`. Erfasst grandfathered Files automatisch anhand
+  `tools/god-class-baselines.yml [archived v0.13.131+ToolBoxSlim] `. Erfasst grandfathered Files automatisch anhand
   aktueller Metriken. Sprint-Planning-Tool, nicht im Build-Path.
 - **T-GC-04** — `tools/god-class-guard/run_check.py` + `tools/god-class-guard.sh` —
   Master-Runner mit `--mode=dry|soft|hard`, `--json` und `--run-meta-tests`.
-- **T-GC-05** — `tools/god-class-baselines.yml` — 19 grandfathered entries
+- **T-GC-05** — `tools/god-class-baselines.yml [archived v0.13.131+ToolBoxSlim] ` — 19 grandfathered entries
   (auto-generiert aus aktuellem Repo-Stand). Top-3: EconomySim (1381 LOC),
   WarehouseMarket (1785 LOC), FirmLedger (757 LOC).
 - **T-GC-06** — `tools/god-class-guard.on-failure.md` — 3-Pfad Recovery-Anleitung
@@ -796,7 +796,7 @@ Subsummierte Tasks (12 total, 1 atomic commit):
 
 **Verification:**
 - `bash tools/god-class-guard.sh --run-meta-tests` → exit 2 (T1+T4 BLOCK; T2+T3 PASS)
-- `bash tools/god-class-guard.sh --mode=hard` → 132 PASS / 0 WARN / 0 BLOCK auf
+- `bash tools/god-class-guard.sh --mode=hard [archived v0.13.131+ToolBoxSlim] ` → 132 PASS / 0 WARN / 0 BLOCK auf
   aktueller Codebasis (alle 19 grandfathered innerhalb Drift-Caps)
 - `mvn verify install -DskipTests -Dskip.bump=true` → BUILD SUCCESS
 - Stam-Doc-Version bleibt v0.13.61 (kein Bump per `-Dskip.bump=true`)### 🚨 P0 Hotfix — BrokeFoodPlan clinit Crash (L-04)
@@ -920,7 +920,7 @@ commit `c523659`):
   Reflection-Fenster-Field-Zugriffe vorgebahnt für BypassGate-SDK-Migration.)*
 
 - **Sprint-Anker / Drift-Tools** (1 Tool modifiziert + 1 Datei neu):
-  `tools/god-class-baselines.yml` (PATCH) — Spluck-Residue-Baselines für die
+  `tools/god-class-baselines.yml [archived v0.13.131+ToolBoxSlim] ` (PATCH) — Spluck-Residue-Baselines für die
   Spluck-Pre → Spluck-Post Delta-Berechnung integriert.
   `baseline_metrics.txt` **(NEU, 9 LOC)** — Pre-Sprint EconomySim-Metriken
   (LOC: 1692, Fields: 136, PubM: 68) als Drift-Anker für God-Class-Guard
@@ -964,7 +964,7 @@ commit `c523659`):
 
 - Stam-Doc-Sync: `bash tools/verify-doc-sync.sh` ← erwartet PASS vor
   Sprint-Landing (Gate 1 erfüllt durch c523659 drift-resolution).
-- God-Class-Guard: `bash tools/god-class-guard.sh --mode=hard` ← erwartet
+- God-Class-Guard: `bash tools/god-class-guard.sh --mode=hard [archived v0.13.131+ToolBoxSlim] ` ← erwartet
   Spluck-Pre → Spluck-Post Delta: EconomySim 1692 → ≤900 LOC; alle anderen
   modifizierten core/-Files innerhalb bestehender grandfathered Baselines.
 - Build-Gate: `bash tools/build-gate.sh` ← 10 Gates erwartet PASS (Gate 0
@@ -1076,13 +1076,13 @@ Sprint-Header per agents.md Rule 11: 1 Sprint = 1 atomic commit. WindowOverview-
 - **T5** — `AdvisorTab.java` NEU (152 SLOC, 1:1): 6-Ampel-Dashboard + Warnketten (kausale Abhängigkeiten: Schuldenkrise → Lohnsenkung → Abwanderung) + 3-Tage-Trend-Tabelle (Kasse/Gini/Lohn/Nahrung/Unpaid) + Stufe & 7 Meilensteine + Priority-Based Advisor (B-013 Scarcity-aware).
 - **T6** — `PropertyTab.java` NEU (91 SLOC, 1:1): 5 Immobilien-KPIs + 3 Hebel-Slider (Miete/Kachel, Räumung-Schwelle, Schonfrist) + 2 Toggle-Checkboxen (Immobilienmarkt aktiv, Hauskauf erlaubt).
 - **T7** — `WindowOverview.java` SLIM: 948 → 48 LOC (-92%). Nur noch Composition-Shell mit `extends EconWindowBase`, `private static final TabContent[] TABS = { Dashboard, Demographics, Advisor, Property }`, `activeInstance` Singleton 1:1, title/anchorX/anchorY/panelWidth/tabs/setActiveTab Overrides.
-- **T8** — `tools/god-class-baselines.yml`: 5 neue Einträge (OverviewHelpers + 4 Tabs). Alle pass strict thresholds (max: 255 SLOC / 14 pubM / 13 fields / 18 imports vs. 800/35/24/40). WindowOverview-Exempt via `^ui/Window.*\.java$` Pattern — keine Baseline-Pflicht.
+- **T8** — `tools/god-class-baselines.yml [archived v0.13.131+ToolBoxSlim] `: 5 neue Einträge (OverviewHelpers + 4 Tabs). Alle pass strict thresholds (max: 255 SLOC / 14 pubM / 13 fields / 18 imports vs. 800/35/24/40). WindowOverview-Exempt via `^ui/Window.*\.java$` Pattern — keine Baseline-Pflicht.
 - **T9** — `ARCHITECTURE.md` Synchronisation (Rule 2): UI-File-Count 5 → 11, Truth-Table +6 neue Einträge (KpiSection + 5 M-UI-3 Files), Lines 137-139 Strikethrough-Erklärung aktualisiert (Tabs nicht mehr inner-Klassen).
 - **T10** — `OverviewTabsTest.java` NEU (Pattern analog `KpiSectionTest`): 9 Pure-Logic-Tests für `OverviewHelpers.countLines` (5 Cases), `CHAIN_IMPACT_THRESHOLD` Konstante, private Constructor Reflection-Test, Placeholder-Test für Sprint M-UI-3.1 (EngineMock-Fixture).
 
 **Verification DoD (Rule 11 Sprint-3-Phasen):**
 - ✅ BAUEN: `mvn verify install -DskipTests -Dskip.bump=true` → BUILD SUCCESS (Tabs kompilieren gegen `EconWindowBase.<public-static>` + `OverviewHelpers.<public-static>`).
-- ✅ PRÜFEN: `bash tools/god-class-guard.sh --mode=hard` → 0 BLOCKS (5 neue Files in legacy_baselines mit status=pass; WindowOverview exempt via Pattern).
+- ✅ PRÜFEN: `bash tools/god-class-guard.sh --mode=hard [archived v0.13.131+ToolBoxSlim] ` → 0 BLOCKS (5 neue Files in legacy_baselines mit status=pass; WindowOverview exempt via Pattern).
 - ⚠ HÄRTEN: Mockito-Tab-build()-Smoke-Tests deferred → Sprint M-UI-3.1 (EngineMirror-Mock-Fixture analog T-COV-9, separate Task).
 
 **Sprint-Total:** 10 Tasks, eine atomare Sprint-Commit.
