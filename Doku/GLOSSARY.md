@@ -1,5 +1,6 @@
 # SyxEconomyMod — Klassen-Glossar
 
+> **Version:** v0.13.107 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-08-01
 >
 > Stam-Doku-Synchron-Anker: Die obenstehende Versions-Zeile MUSS identisch mit `pom.xml` `<version>` sein.
 > Der Sync-Gate `tools/verify-doc-sync.sh` validiert dies vor jedem `mvn compile`.

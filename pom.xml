@@ -29,7 +29,7 @@
         <mod.credits>Original mod by Vannon; localization and optimizations by the SyxEconomyMod team.</mod.credits>
         <mod.dependencies>Requires Songs of Syx V71.44 or compatible. No other mods required.</mod.dependencies>
         <mod.changelog>v0.13.107 - Phase A-F: BypassGate SDK (FieldAccessor/MethodAccessor/ClassResolver), 5 Adapter auf BypassGate migriert, 7 Dateien gelöscht (4 Fallback + 3 MH), EconConfig.useMethodHandleAdapters entfernt, BuildStamp-Identität, Adapter-READY-Logs; v0.13.1 - UX-Cleanup: Tooltip-Echo entfernt, Fenster-Stack-Offset+Defensiv-Audit, Deutsche Labels 140px+, Unicode→→Fix, Debug-Tab versteckt, close()-Reihenfolge fix, Farbige Balken (coloredBar) statt ASCII-Rauten, EconHud C.WIDTH()-Pos, LiveSlider-IntSupplier; v0.13.0 - Vanilla-Nativity: SPanel-Hintergrund, GCOLOR-Theme, Vanilla-Icons+Checkbox, Slider, EconHud; v0.1.3 - UX-Audit: 15 interaktive Tabs, Debug-Tab (Logger opt-in/out), SubjectJob Overlay, Block-Char-Balken fuer Ampeln, Not-Liquidation+Lohn-Slider+Steuer-Toggle, 'Was soll ich heute tun?'-Berater, Trend-Pfeile, IdentityMapRegistry LOG-Fix, TopBar entfernt, alle Toggles interaktiv; v0.1.2 - Hotfix: Phantom-Profit, globales Rate-Limiting, insolvenzsichere Surplus-Share; v0.1.1 - Balance-Krisen-Fixes: Firma-Cold-Start, Gewinnverteilung, Kopfsteuer-Armutsfreigrenze; v0.1.0 (Phase 4) - Adapter-Architektur: 5 Vanilla/Fallback-Interfaces, DiagnosticExporter, Rebalancing-Dashboard; v0.0.9 - Bauarbeiter swarming-Schutz, Starvation EventLog, O(1) ServiceCache; v0.0.8 - Audit-Fixes, Advisor Meilensteine; v0.0.7 - PovertyPressure, OddjobAutomation, WarehouseAutomation; v0.0.6 - Gini→Loyalty, Stufen-Freischaltung; v0.0.5 - Property-Markt; v0.0.4 - Scarcity→Price→Priority; v0.0.3 - roundingDrift-Fix, Housing-Miete; v0.0.2 - Chunked save/load; v0.0.1 - Berater-Tab, Erstveröffentlichung | CHANGELOG.md enthaelt die vollstaendige Historie.</mod.changelog>
-        <mod.version.history>pre-m1-reset-2026-07-28</mod.version.history>
+        <mod.version.history>v0.13.108-docu-slim;v0.13.107-docu-baseline;pre-m1-reset-2026-07-28</mod.version.history>
         <game.version.major>71</game.version.major>
         <game.version.minor>44</game.version.minor>
 
@@ -183,12 +183,20 @@
                     </execution>
 
                     <!--
-                      Gate A: Stam-Doku-Sync (alleine, vor dem vollen build-gate.sh).
-                      Stellt sicher dass README/CHANGELOG/ARCHITECTURE/ROADMAP/GLOSSARY/pom.xml
-                      die SELBE Versions-Information tragen. Schlägt fehl bei Drift.
+                      Sprint v0.13.108+Doku-Slim GATE-12: Unified Pre-Build Gate.
+
+                      Single antrun-execution fasst die 3 ehemaligen validations-
+                      (preflight-stam-doc-sync + preflight-god-class-guard + build-gate)
+                      zu EINEM bash-Invok zusammen. gate.sh prebuild delegiert intern
+                      an build-gate.sh (alle 9 Gates); doku-sync.sh ist jetzt Gate 1 in
+                      build-gate.sh (war frueher standalone Preflight via verify-doc-sync.sh).
+                      Reduziert 3 Maven-Validate-Runs auf 1 und eliminiert den
+                      POM_PREFLIGHT_DONE Sub-Shell-Hack. SKIP_* env-vars sind in
+                      build-gate.sh vollstaendig entfernt — einzige Skip-Variante ist
+                      -Dgate.skip=true (Maven) bzw. GATE_SKIP=true / gate.skip=true (env).
                     -->
                     <execution>
-                        <id>preflight-stam-doc-sync</id>
+                        <id>preflight-unified-gate</id>
                         <phase>validate</phase>
                         <goals>
                             <goal>run</goal>
@@ -197,58 +205,8 @@
                             <skip>${gate.skip}</skip>
                             <target>
                                 <exec executable="bash" failonerror="true" dir="${basedir}">
-                                    <arg value="tools/verify-doc-sync.sh"/>
-                                </exec>
-                            </target>
-                        </configuration>
-                    </execution>
-
-                    <!--
-                      Gate 9 (Sprint M-3): God-Class-Guard Preflight.
-                      Hard-Block (agents.md Rule 14): neue Java-Klassen > 800 LOC,
-                      > 35 PubM oder > 24 Fields werden geblockt. Grandfathered
-                      Files via tools/god-class-baselines.yml mit 5% Drift-Toleranz.
-                      Sprint M-3.1 plant Schema-Validation in load_baselines().
-                    -->
-                    <execution>
-                        <id>preflight-god-class-guard</id>
-                        <phase>validate</phase>
-                        <goals><goal>run</goal></goals>
-                        <configuration>
-                            <skip>${gate.skip}</skip>
-                            <target>
-                                <exec executable="bash" failonerror="true" dir="${basedir}">
-                                    <arg value="tools/god-class-guard.sh"/>
-                                    <arg value="--mode=hard"/>
-                                </exec>
-                            </target>
-                        </configuration>
-                    </execution>
-
-                    <!--
-                      Gate B: Voller Master-Build-Gate (Audit + Version + Adapter).
-                      Reihenfolge = Deklarationsreihenfolge der <execution>-Elemente in
-                      DIESER Phase gleich. Maven antrun fuehrt gleichphasige Executions
-                      sequentiell in XML-Ordnung aus. Phase-Reihenfolge wirkt NUR zwischen
-                      verschiedenen Phasen (validate < compile < ... < install), daher ist
-                      die validate-Phase der Synchronisationspunkt und die install-Phase wird
-                      immer NACH allen validate-Gates erreicht.
-                    -->
-                    <execution>
-                        <id>build-gate</id>
-                        <phase>validate</phase>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <configuration>
-                            <skip>${gate.skip}</skip>
-                            <target>
-                                <exec executable="bash" failonerror="true" dir="${basedir}">
-                                    <arg value="tools/build-gate.sh"/>
-                                <!-- Sprint v0.13.118+Governance-Diät: POM_PREFLIGHT_DONE markiert den SubShell-Kontext,
-                                     damit build-gate.sh Gate 1 (verify-doc-sync) + Gate 9 (god-class-guard) ueberspringt
-                                     (siehe pom.xml preflight-stam-doc-sync + preflight-god-class-guard). -->
-                                <env key="POM_PREFLIGHT_DONE" value="1"/>
+                                    <arg value="tools/gate.sh"/>
+                                    <arg value="prebuild"/>
                                 </exec>
                             </target>
                         </configuration>

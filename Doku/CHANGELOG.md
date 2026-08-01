@@ -1,6 +1,6 @@
 # SyxEconomyMod — Changelog
 
-> **Version:** v0.13.106 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-07-31
+> **Version:** v0.13.107 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-08-01
 >
 > Stam-Doku-Synchron-Anker: Die obenstehende Versions-Zeile MUSS identisch mit `pom.xml` `<version>` sein.
 > Der Sync-Gate `tools/verify-doc-sync.sh` scheitert wenn dieser Anker driftet.
@@ -88,6 +88,20 @@ für `mod.info`.
   auf Rule 3.1 Violation) → separate Sprint v0.13.128+ Gate-Hardening (CI-Build-Gate-Schritt).
 - Resource-Filtering-Warning für andere Mod-Properties (z.B. `<mod.changelog>` falls
   diese auch hardcoded Werte enthält — Audit empfohlen) → Sprint v0.13.128+ Sync-Properties-Audit.
+
+## v0.13.107 — 2026-08-01
+
+### Sprint v0.13.107 — PolityPriceAnchor: Trade-Partner-Only Pricing
+
+- **Marktpreise folgen nur noch Handelspartnern** — `RD.DIST().neighs()`-Fallback entfernt.
+  Keine Nachbar-Fraktionen ohne Handelsvertrag beeinflussen mehr die lokalen Ankerpreise.
+- `PolityPriceAnchor.priceOf()` gibt `0` zurück wenn kein Handelspartner existiert.
+  Caller (`AffordabilityGate`, `CrownTitleEngine`, `RetailSyncEngine`, `EconomyAuditEngine`)
+  fallen auf `FACTIONS.PRICE()` (Vanilla-Basispreis) zurück — kein "globaler Markt".
+- `PolityPriceAnchor.hasTradePartner()` als UI-Hilfsfunktion hinzugefügt.
+- `KPI_ROW_HEIGHT=38` Konstante in `EconWindowBase` eingeführt (Befund 2 Fix).
+- 18 y-spacing Violations across 6 Tab-Dateien gefixt (`y+=30` → `y+=38`).
+- `KpiCoordinateDumpTest` — deterministischer Regressionsschutz für alle 16 Tabs (17 Tests).
 
 ## v0.13.106 — 2026-07-31
 

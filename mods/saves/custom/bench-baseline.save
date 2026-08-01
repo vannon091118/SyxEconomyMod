@@ -1,0 +1,21 @@
+SYXSCN01
+---YAML-SPEC-V1---
+scriptguide_version: 1
+world_x: 128
+world_y: 64
+population: 50
+seed: 1392191
+mods:
+  - id: SyxEconomyMod
+    version: "0.13.108"
+note: |
+  Bench-baseline scenario for SyxBenchmarkHarness + EconomyMock + HeadlessBenchTest + benchmark-compare.sh. Deterministic by seed; rerun this tool with same params for byte-identical output.
+---END-YAML-SPEC-V1---
+---SCRIPTGUIDE-V1---
+# ScriptGuide Trailer V1
+# This trailer block is reserved for future integration with vanilla's
+# GameSpec section. The Pre-Spec YAML above is the SSoT for tooling.
+# Vanilla can list this file via PATHS.MISC().CUSTOM().list(); engine
+# will refuse to load until the binary GameSpec section is filled in via
+# the canonical 'Zufälliges Spiel → Save' workflow (see
+# tools/bench-baseline-snapshot.md).

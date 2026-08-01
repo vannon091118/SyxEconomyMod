@@ -1,5 +1,6 @@
 # 🏛️ SyxEconomyMod
 
+> **Version:** v0.13.107 | **Spiel:** Songs of Syx V71.44 | **Stand:** 2026-08-01
 
 **Deine Bürger haben jetzt Geldbeutel. Deine Firmen haben Bilanzen. Dein Staat hat ein echtes Budget — und kann pleitegehen.**
 

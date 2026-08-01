@@ -4,18 +4,20 @@
 # Master-Orchestrator: führt alle Checks vor dem Build aus.
 #
 # Gates (Reihenfolge = Abhängigkeiten):
-#   1. Stam-Doku-Sync        (SKIP_SYNC=1)             → doku-sync.sh check
-#   2. Code Audit            (SKIP_AUDIT=1)            → code-audit.sh
+#   1. Stam-Doku-Sync                          → doku-sync.sh check
+#   2. Code Audit                              → code-audit.sh
 #   3. Adapter Signaturen    (ADAPTER_JAR=…; sonst Light-Check)
-#   4. Bytecode-Injection    (Sprint 6.2)              → audit-bytecode.sh
-#   5. Sim-Logik Audit       (Sprint 6.3)              → audit-sim-logic.sh
-#   6. Schema-Validierung    (Sprint 7)                → vanilla-schema.yaml vs. adapter/*
-#   7. Balance-Regression    (Sprint 9 / 7-2)          → balance-regression-check.sh
-#   8. God-Class-Guard       (SKIP_GOD_GUARD=1)        → god-class-guard.sh --mode=hard
-#   9. BINDUNGSMATRIX Canon  (SKIP_BINDUNGSMATRIX=1)
+#   4. Bytecode-Injection    (Sprint 6.2)      → audit-bytecode.sh
+#   5. Sim-Logik Audit       (Sprint 6.3)      → audit-sim-logic.sh
+#   6. Schema-Validierung    (Sprint 7)        → vanilla-schema.yaml vs. adapter/*
+#   7. Balance-Regression    (Sprint 9)        → balance-regression-check.sh
+#   8. God-Class-Guard                         → god-class-guard.sh --mode=hard
+#   9. BINDUNGSMATRIX Canon
+#  10. Benchmark-CSV Compare (Sprint StartingFromGround) → tools/benchmark-compare.sh
 #
 # Exit-Codes: 0 = alle Gates bestanden, 1 = mindestens ein Gate fehlgeschlagen.
-# Sprung-Break: -Dgate.skip=true (Maven) bzw. gate.skip=true überspringt ALLE Gates.
+# Sprung-Break: -Dgate.skip=true (Maven) bzw. GATE_SKIP=true / gate.skip=true
+# überspringt ALLE Gates. Keine per-Gate SKIP_*-env-vars mehr (Sprint v0.13.108+Doku-Slim GATE-13).
 #
 # Usage:
 #   bash tools/build-gate.sh                     # Alle Gates
@@ -61,26 +63,22 @@ echo -e "${CYAN}╚════════════════════�
 echo ""
 
 # ── Gate 1: Stam-Doku-Sync (Sprint v0.13.108+Doku-Slim: Migration verify-doc-sync.sh → doku-sync.sh check) ──
-echo -e "${CYAN}[1/9] Stam-Doku-Sync (Doku ↔ pom.xml)${NC}"
-if [ "${SKIP_SYNC:-0}" = "1" ]; then
-    gate_skip "Sync-Gate uebersprungen (SKIP_SYNC=1)"
+echo -e "${CYAN}[1/10] Stam-Doku-Sync (Doku ↔ pom.xml)${NC}"
+# Fallback auf verify-doc-sync.sh wenn doku-sync.sh noch nicht migriert (Legacy-Pfad)
+if [ -x tools/doku-sync.sh ]; then
+    SYNC_CMD="bash tools/doku-sync.sh check"
 else
-    # Fallback auf verify-doc-sync.sh wenn doku-sync.sh noch nicht migriert (Legacy-Pfad)
-    if [ -x tools/doku-sync.sh ]; then
-        SYNC_CMD="bash tools/doku-sync.sh check"
-    else
-        SYNC_CMD="bash tools/verify-doc-sync.sh"
-    fi
-    if $SYNC_CMD 2>/dev/null; then
-        gate_pass "Alle Doku-Anker sync mit pom.xml"
-    else
-        gate_fail "Stam-Doku-Drift — ${SYNC_CMD} Details"
-    fi
+    SYNC_CMD="bash tools/verify-doc-sync.sh"
+fi
+if $SYNC_CMD 2>/dev/null; then
+    gate_pass "Alle Doku-Anker sync mit pom.xml"
+else
+    gate_fail "Stam-Doku-Drift — ${SYNC_CMD} Details"
 fi
 echo ""
 
 # ── Gate 2: Code Audit ──────────────────────────────────────────────────
-echo -e "${CYAN}[2/9] Code Audit (silent failure detection)${NC}"
+echo -e "${CYAN}[2/10] Code Audit (silent failure detection)${NC}"
 
 AUDIT_ARGS=""
 if [ "$STRICT" = true ]; then
@@ -103,7 +101,7 @@ echo ""
 # in doku-sync.sh integriert. ───────────────────────────────────────────
 
 # ── Gate 3: Adapter Signature Verification ─────────────────────────────
-echo -e "${CYAN}[4/9] Adapter ↔ Engine-Signaturen${NC}"
+echo -e "${CYAN}[3/10] Adapter ↔ Engine-Signaturen${NC}"
 
 ADAPTER_JAR="${ADAPTER_JAR:-}"
 ADAPTER_SRC="src/vannon/syx/economy/adapter/"
@@ -169,7 +167,7 @@ fi
 echo ""
 
 # ── Gate 4: Bytecode-Injection Audit (Sprint 6.2) ────────────────────
-echo -e "${CYAN}[5/9] Bytecode-Injection Audit (Reflection-Patterns)${NC}"
+echo -e "${CYAN}[4/10] Bytecode-Injection Audit (Reflection-Patterns)${NC}"
 if bash tools/audit-bytecode.sh ${AUDIT_ARGS:-} 2>/dev/null; then
     gate_pass "Keine ungesicherten Bytecode-Injection-Pfade"
 else
@@ -183,7 +181,7 @@ fi
 echo ""
 
 # ── Gate 6: Sim-Logik Audit (Sprint 6.3) ───────────────────────────────
-echo -e "${CYAN}[5/9] Ingame-Sim-Logik Audit (Boundary-Conditions)${NC}"
+echo -e "${CYAN}[5/10] Ingame-Sim-Logik Audit (Boundary-Conditions)${NC}"
 if bash tools/audit-sim-logic.sh ${AUDIT_ARGS:-} 2>/dev/null; then
     gate_pass "Keine Boundary-Condition-Verletzungen in Sim-Klassen"
 else
@@ -197,7 +195,7 @@ fi
 echo ""
 
 # ── Gate 7: Schema-Validierung (Sprint 7) ──────────────────────────────
-echo -e "${CYAN}[6/9] Vanilla-Schema ↔ Adapter-Dateien${NC}"
+echo -e "${CYAN}[6/10] Vanilla-Schema ↔ Adapter-Dateien${NC}"
 if [ -f "tools/vanilla-schema.yaml" ]; then
     # Prüfe ob jede Klasse im YAML eine entsprechende Adapter-Datei hat
     SCHEMA_CLASS=$(grep -c 'class:' tools/vanilla-schema.yaml 2>/dev/null || echo 0)
@@ -213,33 +211,25 @@ fi
 echo ""
 
 # ── Gate 8: Balance-Regression (Sprint 9 / 7-2) ──────────────────────────────
-echo -e "${CYAN}[7/9] Balance-Regression (EconConfig-Referenzwerte)${NC}"
-if [ "${SKIP_BALANCE:-0}" = "1" ]; then
-    gate_skip "Balance-Check uebersprungen (SKIP_BALANCE=1)"
+echo -e "${CYAN}[7/10] Balance-Regression (EconConfig-Referenzwerte)${NC}"
+if bash tools/balance-regression-check.sh 2>/dev/null; then
+    gate_pass "Balance-Konstanten im Soll-Bereich"
 else
-    if bash tools/balance-regression-check.sh 2>/dev/null; then
-        gate_pass "Balance-Konstanten im Soll-Bereich"
-    else
-        gate_fail "Balance-Drift — tools/balance-regression-check.sh Details"
-    fi
+    gate_fail "Balance-Drift — tools/balance-regression-check.sh Details"
 fi
 echo ""
 
 # ── Gate 8: God-Class-Guard (Hard-Block Struktur-Quo) — Sprint M-3 ────────
-echo -e "${CYAN}[8/11] God-Class-Guard (LOC/PubM/Fields-Caps + Baseline-Drift)${NC}"
-if [ "${SKIP_GOD_GUARD:-0}" = "1" ]; then
-    gate_skip "God-Class-Guard uebersprungen (SKIP_GOD_GUARD=1)"
+echo -e "${CYAN}[8/10] God-Class-Guard (LOC/PubM/Fields-Caps + Baseline-Drift)${NC}"
+# Mode=hard: WARN zählt als BLOCKER (god-class-guard.sh --mode=hard)
+if bash tools/god-class-guard.sh --mode=hard 2>/dev/null; then
+    gate_pass "Keine God-Class-Blocker; Baselines eingehalten"
 else
-    # Mode=hard: WARN zählt als BLOCKER (god-class-guard.sh --mode=hard)
-    if bash tools/god-class-guard.sh --mode=hard 2>/dev/null; then
-        gate_pass "Keine God-Class-Blocker; Baselines eingehalten"
+    GUARD_EXIT=$?
+    if [ "$GUARD_EXIT" -eq 2 ]; then
+        gate_fail "BLOCKER — God-Class-Cap ueberschritten oder Drift > +5%/-YAML-Outdated (siehe tools/god-class-guard.on-failure.md)"
     else
-        GUARD_EXIT=$?
-        if [ "$GUARD_EXIT" -eq 2 ]; then
-            gate_fail "BLOCKER — God-Class-Cap ueberschritten oder Drift > +5%/-YAML-Outdated (siehe tools/god-class-guard.on-failure.md)"
-        else
-            gate_fail "WARN — Annäherung an God-Class-Limit (siehe tools/god-class-guard.on-failure.md)"
-        fi
+        gate_fail "WARN — Annäherung an God-Class-Limit (siehe tools/god-class-guard.on-failure.md)"
     fi
 fi
 echo ""
@@ -250,10 +240,8 @@ echo ""
 # intakt ist: 11 Spalten pro Zeile (awk NF==11), und >=100 Zeilen als Sanity-Check.
 # Seit der Doku-Restruktur liegt die SSoT unter Doku/ (Root-Fallback fuer Alt-Branches).
 # Bypass: SKIP_BINDUNGSMATRIX=1
-echo -e "${CYAN}[9/11] BINDUNGSMATRIX Canon (332 Hebel × 11 Spalten SSoT)${NC}"
-if [ "${SKIP_BINDUNGSMATRIX:-0}" = "1" ]; then
-    gate_skip "BINDUNGSMATRIX Canon uebersprungen (SKIP_BINDUNGSMATRIX=1)"
-elif [ -f "Doku/BINDUNGSMATRIX.csv" ] || [ -f "BINDUNGSMATRIX.csv" ]; then
+echo -e "${CYAN}[9/10] BINDUNGSMATRIX Canon (332 Hebel × 11 Spalten SSoT)${NC}"
+if [ -f "Doku/BINDUNGSMATRIX.csv" ] || [ -f "BINDUNGSMATRIX.csv" ]; then
     BM_FILE="BINDUNGSMATRIX.csv"
     if [ -f "Doku/BINDUNGSMATRIX.csv" ]; then
         BM_FILE="Doku/BINDUNGSMATRIX.csv"
@@ -276,10 +264,8 @@ echo ""
 # überspringt wenn die CSV-Paare im Repo-Root fehlen (kein Benchmark-Harness
 # in diesem Build-Kontext eingesetzt). Paths via BENCH_BASELINE / BENCH_RUN.
 # Skip-Flag: SKIP_BENCH_COMPARE=1 (respektiert gate.skip=true übergeordnet).
-echo -e "${CYAN}[10/11] Benchmark-CSV Compare (Baseline vs. aktueller Run)${NC}"
-if [ "${SKIP_BENCH_COMPARE:-0}" = "1" ]; then
-    gate_skip "Benchmark-CSV-Compare übersprungen (SKIP_BENCH_COMPARE=1)"
-elif [ ! -x "tools/benchmark-compare.sh" ]; then
+echo -e "${CYAN}[10/10] Benchmark-CSV Compare (Baseline vs. aktueller Run)${NC}"
+if [ ! -x "tools/benchmark-compare.sh" ]; then
     gate_skip "tools/benchmark-compare.sh nicht installiert (muss chmod +x) — Gate inert"
 elif [ -f "${BENCH_BASELINE:-./bench-baseline.csv}" ] && \
      [ -f "${BENCH_RUN:-./bench-run.csv}" ]; then
