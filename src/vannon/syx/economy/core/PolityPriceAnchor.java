@@ -63,15 +63,29 @@ public final class PolityPriceAnchor {
      */
     public static boolean hasTradePartner() {
         for (Faction faction : DIP.traders()) {
-            if (faction instanceof FactionNPC npc && npc.isActive()) {
+            if (faction instanceof FactionNPC npc && isTradeable(npc)) {
                 return true;
             }
         }
         return false;
     }
 
+    /**
+     * Ein NPC-Faction ist ein gueltiger Trade-Partner genau dann wenn er aktiv ist
+     * UND eine Capitol-Region hat. Wird von {@link #hasTradePartner()} (Gate-Check
+     * fuer Once-Only-Bump in {@code EconomySim.applyEarlyPhaseBumpRules}) und von
+     * {@link #consider(int, FactionNPC, RESOURCE)} (Preis-Lookup in
+     * {@link #priceOf(RESOURCE)}) gemeinsam genutzt — damit beide Methoden
+     * konsistent entscheiden, ob ein NPC tatsaechlich zum Pricing beitragen kann.
+     * Sprint v0.13.107+: extrahiert aus hasTradePartner() und consider() zur
+     * Vereinheitlichung der Active-Check-Logik.
+     */
+    private static boolean isTradeable(FactionNPC npc) {
+        return npc.isActive() && npc.capitolRegion() != null;
+    }
+
     private static int consider(int current, FactionNPC faction, RESOURCE resource) {
-        if (!faction.isActive() || faction.capitolRegion() == null) {
+        if (!isTradeable(faction)) {
             return current;
         }
         int quote = faction.res(resource.tr()).priceSellP();
