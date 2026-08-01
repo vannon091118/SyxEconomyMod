@@ -147,7 +147,12 @@ public final class EconConfig {
     // auf 150 zurückgesetzt — der Bug reparierte sich selbst.
     // Alle 13 jetzt auf 50 aligniert, consistent mit defaultWage.
     public static int defaultWage = 50;
-    public static int startingTreasury = 0; // Sprint v0.13.108+StartingFromGround: 200000→0 — State fängt OHNE Geldreserven an. Bürger müssen mit eigenem Wallet starten, Treasury-Drain-Loop wird so unterbunden (war v0.13.107 mit -1.8M als Symptom sichtbar).
+    // Sprint v0.13.120+StartingFromGround-Hotfix: 0→100000 — CombineBootstrap heilt Wallet-Cascade.
+    // Geschichte: v0.13.108 hatte startingTreasury=0 um Treasury-Drain-Loop zu stoppen (-1.8M Symptom bei 200000),
+    // aber cold-start (treasury=0+bonus=0+gate=true) löste Settlers-Hunger → Happiness-Crash → Immigration-Block aus.
+    // v0.13.110+Once-Only-Bump half nur mid-game bei HANDEL+Trade-Partner. Jetzt: 100k Default sichert Early-Game ab,
+    // earlyPhaseHandelTreasury=20k bleibt für SaveLoad-Migration alter Saves (v0.13.110-ära).
+    public static int startingTreasury = 100000;
     public static int earlyPhaseHandelTreasury = 20000; // Sprint v0.13.110+: Once-Only-Bump sobald Stage≥HANDEL+hasTradePartner (siehe EconomySim.applyEarlyPhaseBumpRules).
     public static int wageMax = 1000;
     public static int wageStep = 5;
@@ -366,6 +371,18 @@ public final class EconConfig {
      */
     public static void setMeticImmigrationSteepness(double steepness) {
         meticImmigrationSteepness = Math.max(0.1, steepness);
+    }
+
+    /**
+     * Hard-Cap-Setter für {@link #earlySettlerWalletBonus}. Sprint v0.13.120+StartingFromGround-Hotfix:
+     * Single choke-point für ALLE Writes auf den Early-Settler-Wallet-Bonus. Tests (TreasuryCrisisTest)
+     * und zukünftige UI-Slider routen hierdurch — Direktzuweisung auf das public static ist
+     * Setter-Pattern-Verstoß und wird vom god-class-guard (Audit-Invariants Sprint v0.13.128+)
+     * abgefangen. Clamp auf {@code [0, Integer.MAX_VALUE]} verhindert negative Boni die
+     * das Sub-Wohlstand-Wallet-Modell kompromittieren würden.
+     */
+    public static void setEarlySettlerWalletBonus(int bonus) {
+        earlySettlerWalletBonus = clamp(bonus, 0, Integer.MAX_VALUE);
     }
 
     /**

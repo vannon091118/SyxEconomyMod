@@ -65,7 +65,8 @@ class EconConfigTest {
     void wageDefaults() {
         assertTrue(EconConfig.wagesEnabled);
         assertEquals(50, EconConfig.defaultWage);
-        assertEquals(0, EconConfig.startingTreasury);
+        // Sprint v0.13.120+StartingFromGround-Hotfix: 0→100000 (CombineBootstrap heilt Wallet-Cascade)
+        assertEquals(100000, EconConfig.startingTreasury);
         assertEquals(1000, EconConfig.wageMax);
         assertEquals(5, EconConfig.wageStep);
     }

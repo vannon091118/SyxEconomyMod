@@ -402,7 +402,7 @@ class TreasuryCrisisTest {
     void earlySettlerBuff_appliesWhenPopLow() {
         EconConfig.earlySettlerBuffEnabled = true;
         EconConfig.earlySettlerPopThreshold = 50;
-        EconConfig.earlySettlerWalletBonus = 300;
+        EconConfig.setEarlySettlerWalletBonus(300); // Sprint v0.13.120+ Setter-Pattern-Discipline
         EconConfig.population = 20; // unter Schwelle
 
         int wallet = EconConfig.effectiveInitialWallet();
@@ -415,7 +415,7 @@ class TreasuryCrisisTest {
     void earlySettlerBuff_doesNotApplyWhenPopHigh() {
         EconConfig.earlySettlerBuffEnabled = true;
         EconConfig.earlySettlerPopThreshold = 50;
-        EconConfig.earlySettlerWalletBonus = 300;
+        EconConfig.setEarlySettlerWalletBonus(300); // Sprint v0.13.120+ Setter-Pattern-Discipline
         EconConfig.population = 100; // ueber Schwelle
 
         int wallet = EconConfig.effectiveInitialWallet();
