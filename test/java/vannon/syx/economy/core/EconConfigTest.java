@@ -416,7 +416,9 @@ class EconConfigTest {
         assertTrue(EconConfig.debugLoggingEnabled);
         assertTrue(EconConfig.debugTracing);
         assertTrue(EconConfig.debugPriceLogging);
-        assertFalse(EconConfig.diagnosticsExportEnabled);
+        // Sprint v0.13.131+NoSilentFail: Default-Flip false→true. CSV-Tracking
+        // läuft im Dev-Loop jetzt standardmäßig (Throttle 50 hält IO unter 6 syscalls/Tag).
+        assertTrue(EconConfig.diagnosticsExportEnabled);
         assertTrue(EconConfig.debugFurnitureDump);
         assertEquals(50, EconConfig.debugFurnitureDumpEveryTicks);
     }

@@ -796,7 +796,7 @@ public final class EconConfig {
      *
      * <p>Default: false — Opt-in, um Datei-IO f\u00fcr Endnutzer zu vermeiden.</p>
      */
-    public static boolean diagnosticsExportEnabled = false; // Public-Release-Default; per Debug-Tab aktivierbar
+    public static boolean diagnosticsExportEnabled = true; // Sprint v0.13.131+NoSilentFail: Default-Flip false→true. CSV-Schreibrate bleibt unter 6 syscalls/Tag (debugFurnitureDumpEveryTicks=50 Throttle), Datei-IO-Penalty ist im Dev-Loop tragbar.
 
     /**
      * Schreibt pro Tick die Carpenter/Möbel-Firma-Diagnose nach

@@ -43,6 +43,16 @@ public final class EngineMirror {
     // ─── Singleton ──────────────────────────────────────────
     private static volatile EngineMirror instance;
 
+    /**
+     * Static readiness probe — Single-Choke-Point statt direkt auf
+     * {@code api().isFullyAvailable()} zuzugreifen. Verwende dies für
+     * alle Pre-Tick / In-Tick Pre-Checks (Diagnostic, BootRace, Headless-Test).
+     * @return true wenn EngineMirror.init() gelaufen ist UND alle 7 Sub-Interfaces available sind.
+     */
+    public static boolean isReady() {
+        return instance != null && instance.isFullyAvailable();
+    }
+
     // ─── Sub-Interfaces ─────────────────────────────────────
     private final IRoomAccess rooms;
     private final IFactionAccess factions;

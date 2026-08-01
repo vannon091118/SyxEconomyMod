@@ -1,6 +1,7 @@
 package vannon.syx.economy.core;
 
 import game.time.TIME;
+import vannon.syx.economy.adapter.EngineMirror;
 import init.resources.RESOURCE;
 import init.resources.RESOURCES;
 import vannon.syx.economy.core.io.IOGraph;
@@ -733,11 +734,23 @@ public final class DiagnosticExporter {
      */
     private static double simHappinessProxy() {
         try {
+            // Sprint v0.13.131+NoSilentFail: Engine-Ready-Guard. Wenn die Engine noch
+            // nicht fully-verfügbar ist (BootRaceFix Sprint v0.13.130 degraded-mode
+            // recovery, Headless-Tests, Pre-Boot-Tick), Sentinel -1.0 statt throw
+            // — sonst spamt MeticImmigration bei jedem Re-Init-Cycle die ISE.
+            if (!EngineMirror.isReady() || EconomySim.active() == null) {
+                return -1.0;
+            }
             EconomySim sim = EconomySim.active();
-            if (sim == null || sim.stats() == null) return -1.0;
+            if (sim.stats() == null) {
+                throw new IllegalStateException(
+                        "EconomySim.stats() == null mid-tick — Engine-Init-Defekt oder Mod-Bug."
+                                + " Sentinel -1.0 wurde zuvor still zurückgegeben"
+                                + " und versteckte reale Initialisierungsfehler.");
+            }
             return sim.stats().mean; // mean wealth als Proxy für Happiness-Korrelat
-        } catch (RuntimeException | LinkageError t) {
-            // Engine bzw. EconomySim noch nicht initialisiert — Sentinel-Return.
+        } catch (LinkageError t) {
+            // Engine noch nicht im Klassenpfad — Sentinel OK, Bootstrap-Phase.
             return -1.0;
         }
     }

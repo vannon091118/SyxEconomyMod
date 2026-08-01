@@ -1,6 +1,7 @@
 package vannon.syx.economy.adapter;
 
 import settlement.entity.humanoid.Humanoid;
+import vannon.syx.economy.core.LoggingAdapter;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
@@ -44,6 +45,13 @@ import java.util.function.Consumer;
  * Wenn EngineMirror aktiv ist, ruft der Caller ({@link HumanoidAccessImpl})
  * EngineMirror-Layer auf — KEIN Loop, weil dieser Helper EngineMirror NICHT
  * konsumiert (defensive).</p>
+ *
+ * <p><b>Sprint v0.13.131+NoSilentFail (Compile-Fix):</b> LoggingAdapter-Aufrufe
+ * nutzen Literal-Strings statt der Constants-Refactor — der ehemalige Refactor
+ * platzierte {@code LoggingAdapter.Category.SEAM}, was nicht existiert
+ * (SEAM liegt in der {@code Subsystem}-Klasse, nicht in {@code Category}).
+ * Literal-Strings kompilieren direkt und sind binär-equivalent
+ * (compile-time Konstanten-Inlining). Constants-Refactor ist separate Cleanup-Sprint-Aufgabe.</p>
  */
 public final class VanillaQueries {
 
@@ -65,9 +73,21 @@ public final class VanillaQueries {
             Object humansCollection = entities.getClass().getMethod("humans").invoke(entities);
             if (humansCollection == null) return 0;
             return robustSize(humansCollection);
-        } catch (ReflectiveOperationException | RuntimeException | LinkageError t) {
-            // Engine nicht ready oder Pfad nicht vorhanden — Sentinel.
-            // KEIN innerer zweiter Reflection-Pfad (war instabil gegen STATS.POP().data).
+        } catch (ReflectiveOperationException | LinkageError t) {
+            // Engine noch nicht init oder Pfad nicht vorhanden — Sentinel.
+            return 0;
+        } catch (RuntimeException t) {
+            // Reflection-Call hat geklappt, Runtime-Cast-/Null-/Class-Probleme unten —
+            // das ist ein Mod-Bug, nicht Engine-Init-Defensive. LoggingAdapter statt
+            // stderr damit der Eintrag im In-Game Debug-Tab statt nur im Launcher-Terminal
+            // landet, und pandas-Filter (Subsystem=ECON, Category=SEAM) greifen.
+            // Sprint v0.13.131+NoSilentFail-Hardening: String.valueOf statt t.getMessage()
+            // weil die CSV-Row-Write-Pfad ein NPE hätte wenn der Throwable kein
+            // Message-Feld setzt (z.B. `new NullPointerException()` ohne expliziten Text).
+            LoggingAdapter.csvTrace("SEAM", "ECON", "WARN",
+                    "vanilla_queries_resident_runtime",
+                    t.getClass().getSimpleName(),
+                    String.valueOf(t.getMessage()));
             return 0;
         }
     }
@@ -99,8 +119,18 @@ public final class VanillaQueries {
                     }
                 }
             }
-        } catch (ReflectiveOperationException | RuntimeException | LinkageError t) {
-            // Engine nicht ready — no-op.
+        } catch (ReflectiveOperationException | LinkageError t) {
+            // Engine noch nicht ready oder Pfad nicht vorhanden — no-op (Boot-Defensive).
+        } catch (RuntimeException t) {
+            // Reflection hat geklappt, aber Runtime-Problem unten (Cast/Null/Class) —
+            // das ist ein Mod-Bug, nicht Engine-Init. LoggingAdapter statt stderr
+            // für konsistente In-Game-Visibility via Debug-Tab.
+            // Sprint v0.13.131+NoSilentFail-Hardening: String.valueOf statt t.getMessage()
+            // schützt den CSV-Write-Pfad vor NPE bei Throwables ohne Message-Text.
+            LoggingAdapter.csvTrace("SEAM", "ECON", "WARN",
+                    "vanilla_queries_foreach_runtime",
+                    t.getClass().getSimpleName(),
+                    String.valueOf(t.getMessage()));
         }
     }
 
