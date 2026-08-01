@@ -10,7 +10,8 @@
 #              FAIL = neue Violation hinzugekommen).
 #   TARGET:    post-Phase-4.7 Ziel. Über --strict-target aktivierbar.
 #
-# Sub-Rule 15.1 ab v0.13.129+ — Mode-Selection:
+# Sub-Rule 15.1 ab v0.13.129+ — Mode-Selection (Sprint v0.13.131+Doc-Diet:
+# absolute ist NICHT mehr Default — siehe MODE-Initialisierung weiter unten):
 #   --mode=absolute (default): misst current-counts vs THRESHOLD/TARGET.
 #                              Regression-Detection: JEDE Drift nach oben failt.
 #                              Entry-Point für Pre-Production-Sweeps und Pre-Commit-Hook.
@@ -31,7 +32,7 @@ cd "$ROOT"
 
 # Arg-Parsing — `while [[ $# -gt 0 ]]` umgeht bash-Quirks mit leerem $@.
 STRICT_TARGET=0
-MODE="absolute"   # default Sub-Rule 15.1: absolute-Modus (Pre-Commit-Hook bleibt safe)
+MODE="delta-only"   # Sprint v0.13.131+Doc-Diet: Default-Flip; Pre-existing grandfathered
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --strict-target) STRICT_TARGET=1; shift ;;
@@ -40,11 +41,19 @@ while [[ $# -gt 0 ]]; do
         -h|--help)
             cat <<'EOF'
 Aufruf: bash tools/phase47-shield.sh [--strict-target] [--mode=absolute|--mode=delta-only]
-Default (ohne Flag): absolute-Modus + Regression-Guard — fail nur bei Threshold-Drift.
---strict-target:       zusätzlich fail wenn post-Phase-4.7 Ziel nicht erreicht.
---mode=absolute:       (Default) counts vs THRESHOLD/TARGET.
---mode=delta-only:     counts - baseline_counts > 0 = REGRESSION. Benötigt
-                       `.git/hooks/.phase47-baseline` (tools/phase47-baseline.sh capture).
+Default (ohne Flag):  delta-only-Modus (Sprint v0.13.131+Doc-Diet) — Pre-existing
+                      Violations werden gegen die Baseline-Datei
+                      `.git/hooks/.phase47-baseline` geprüft, nur NEUE
+                      Drift failt. Erfordert einmalig pro Sprint-Init:
+                      `bash tools/phase47-baseline.sh capture`.
+--strict-target:        zusätzlich fail wenn post-Phase-4.7 Ziel nicht erreicht.
+--mode=absolute:        counts vs THRESHOLD/TARGET (Production-Sweep, Audit).
+--mode=delta-only:      counts - baseline_counts > 0 = REGRESSION.
+
+Sprint-close Pflicht-Audit (einmal pro Sprint):
+  bash tools/phase47-shield.sh --mode=absolute --strict-target
+  Reduziert die grandfathered Altlasten (11 IdentityHashMap, 1 EngineSeams,
+  9 catch(Throwable)) sichtbar — delta-only-Modus versteckt sie sonst.
 EOF
             exit 0
             ;;
